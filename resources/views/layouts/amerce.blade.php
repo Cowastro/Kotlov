@@ -76,6 +76,9 @@
     @if(! empty($faqJson))
     <script type="application/ld+json">{!! $faqJson !!}</script>
     @endif
+    @if(request()->is('/') || request()->routeIs('contacts'))
+    @include('partials.organization-schema')
+    @endif
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="format-detection" content="telephone=no">

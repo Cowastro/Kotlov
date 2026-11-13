@@ -531,7 +531,7 @@
                 @include('partials.promo-banner', [
                     'banner'        => $bannerPromoNasosy,
                     'fallbackImage' => 'img/banners/banner_pump.jpg',
-                    'fallbackLink'  => '/teplovye-nasosy',
+                    'fallbackLink'  => '/teplovyie-nasosyi',
                     'fallbackTitle' => 'Тепловые<br>насосы',
                     'fallbackDesc'  => 'Отопление, охлаждение и горячая вода круглый год.',
                     'fallbackBtn'   => 'Перейти в каталог',

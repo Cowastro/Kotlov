@@ -17,6 +17,7 @@ use App\Support\TransactionalMailbox;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -305,12 +306,22 @@ private function getNavBrands(): \Illuminate\Support\Collection
 
 private function getNavCategories()
 {
-    return Cache::remember('nav:categories:orderable:v3', 3600, function () {
+    return Cache::remember('nav:categories:orderable:v4', 3600, function () {
+        // A category whose URL is the source of an active redirect (e.g. a merged
+        // duplicate like /gas → /vodogreynaya-kolonka) must not be linked from the
+        // menu: every such link costs crawlers and visitors an extra 301 hop.
+        $redirectedPaths = DB::table('redirects')
+            ->where('is_active', 1)
+            ->pluck('from_url')
+            ->map(fn ($url) => '/' . trim((string) $url, '/'))
+            ->flip();
+
         $categories = Category::query()
             ->where('is_active', true)
             ->orderBy('name')
             ->orderBy('sort_order')
-            ->get();
+            ->get()
+            ->reject(fn (Category $category) => $redirectedPaths->has('/' . trim((string) $category->slug, '/')));
 
         $categoriesByParent = $categories->groupBy('parent_id');
         $directProductCounts = Product::query()
