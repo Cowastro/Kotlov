@@ -268,7 +268,6 @@ class OrderDealControlTest extends TestCase
     {
         $manager = $this->manager();
         $delivered = $this->order('delivered');
-        $finished = $this->order('completed');
         $stageFinished = $this->order('processing');
         $stageFinished->forceFill(['deal_stage' => 'completed', 'review_sms_sent_at' => now()])->save();
         $cancelled = $this->order('cancelled');
@@ -277,9 +276,17 @@ class OrderDealControlTest extends TestCase
         Livewire::actingAs($manager)->test(ListOrders::class)
             ->call('selectOrderTab', 'finished')
             ->assertSet('activeTab', 'finished')
-            ->assertCanSeeTableRecords([$delivered, $finished, $stageFinished])
+            ->assertCanSeeTableRecords([$delivered, $stageFinished])
             ->assertCanNotSeeTableRecords([$cancelled, $active])
             ->assertSee('Завершённые');
+    }
+
+    public function test_legacy_completed_status_is_recognized_without_inserting_an_unsupported_mysql_enum(): void
+    {
+        // MySQL persists delivered, while imported/legacy model values may contain completed.
+        $order = new Order(['status' => 'completed']);
+        $this->assertSame('completed', $order->effectiveDealStage());
+        $this->assertFalse($order->dealIsActive());
     }
 
     private function manager(): User
