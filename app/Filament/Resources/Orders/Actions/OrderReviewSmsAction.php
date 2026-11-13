@@ -9,6 +9,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Schema;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
@@ -36,11 +37,20 @@ final class OrderReviewSmsAction
                         ? \Illuminate\Support\Carbon::parse($record->review_sms_sent_at)->timezone('Europe/Minsk')->format('d.m.Y H:i').' (Минск)'
                         : 'Ещё не отправляли'),
             ])
-            ->action(function (Order $record, array $data): void {
+            ->action(function (Order $record, array $data, Schema $schema): void {
                 try {
                     app(OrderReviewSms::class)->send($record, $data['phone']);
+                } catch (ValidationException $e) {
+                    $statePath = $schema->getStatePath();
+                    throw ValidationException::withMessages(collect($e->errors())
+                        ->mapWithKeys(fn (array $messages, string $field): array => [
+                            ($statePath ? $statePath.'.' : '').$field => $messages,
+                        ])->all());
                 } catch (RuntimeException $e) {
-                    throw ValidationException::withMessages(['phone' => $e->getMessage()]);
+                    $statePath = $schema->getStatePath();
+                    throw ValidationException::withMessages([
+                        ($statePath ? $statePath.'.' : '').'phone' => $e->getMessage(),
+                    ]);
                 }
                 Notification::make()->success()->title('СМС принято сервисом отправки')->body('Ссылка на отзыв отправлена клиенту. Запись добавлена в историю заказа.')->send();
             });
