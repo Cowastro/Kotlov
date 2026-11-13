@@ -10,14 +10,15 @@
     $today = $active && $order->deal_control_at?->timezone('Europe/Minsk')->isToday();
     $context = ($isTable ?? false) ? ['table' => true, 'recordKey' => (string) $order->getKey()] : [];
 @endphp
-<div class="order-deal {{ ($isTable ?? false) ? 'order-deal--compact' : 'order-deal--full' }}"
-    wire:key="order-deal-layout-v2-{{ $order->getKey() }}-{{ ($isTable ?? false) ? 'table' : 'card' }}"
-    style="display:grid;grid-template-columns:minmax(0,1fr);gap:6px;width:100%;min-width:0;">
+<section class="order-deal {{ ($isTable ?? false) ? 'order-deal--compact' : 'order-deal--full' }}"
+    wire:key="order-deal-layout-v3-{{ $order->getKey() }}-{{ ($isTable ?? false) ? 'table' : 'card' }}-{{ $order->effectiveDealStage() }}"
+    style="display:block;flex:none;{{ ($isTable ?? false) ? 'width:384px;min-width:384px;max-width:384px;' : 'width:100%;min-width:0;' }}">
     <div class="order-deal__heading">
         <strong title="Исполнение заказа · {{ \App\Models\Order::STATUSES[$order->status] ?? $order->status }}">{{ $order->status === 'cancelled' ? 'Закрыт с причиной' : $stages[$order->effectiveDealStage()] }}</strong>
         <span>{{ $currentIndex + 1 }} / {{ count($stages) }}</span>
     </div>
-    <div class="order-deal__track" aria-label="Этапы сделки">
+    <div class="order-deal__track" aria-label="Этапы сделки"
+        style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));width:100%;gap:4px;">
         @foreach ($stages as $key => $label)
             @php
                 $event = $history[$key] ?? null;
@@ -68,4 +69,4 @@
         <div class="order-deal__changed">Последняя отметка менеджера {{ $order->deal_stage_changed_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}. Все изменения — в истории этапов и действий.</div>
     @endif
     @include('filament.resources.orders.review-status', ['order' => $order])
-</div>
+</section>
