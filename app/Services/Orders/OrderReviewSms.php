@@ -45,6 +45,9 @@ final class OrderReviewSms
         }
         try {
             $order->refresh();
+            if (! $order->canRequestCustomerReview()) {
+                throw ValidationException::withMessages(['phone' => 'Запрос отзыва доступен после завершения сделки.']);
+            }
             if ($order->review_sms_attempted_at && Carbon::parse($order->review_sms_attempted_at)->gt(now()->subMinute())) {
                 throw ValidationException::withMessages(['phone' => 'Повторная отправка доступна через минуту. При ошибке сначала проверьте журнал SMS.BY.']);
             }

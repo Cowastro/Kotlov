@@ -69,6 +69,11 @@ class Order extends Model
             && ! in_array($this->status, ['cancelled', 'delivered', 'completed'], true);
     }
 
+    public function canRequestCustomerReview(): bool
+    {
+        return $this->status !== 'cancelled' && $this->effectiveDealStage() === 'completed';
+    }
+
     public function dealControlLabel(): string
     {
         if (! $this->dealIsActive()) {
