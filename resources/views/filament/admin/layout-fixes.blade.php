@@ -114,6 +114,19 @@
         min-width: 0;
     }
 
+    /* Every order uses the same six-stage ruler, including archived orders. */
+    .order-deal > * + * {
+        margin-top: 6px;
+    }
+
+    .order-deal--compact > .order-deal__heading,
+    .order-deal--compact > .order-deal__track,
+    .order-deal--compact > .order-deal__control,
+    .order-deal--compact > .order-deal__facts {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
     .order-deal__heading > strong {
         font-size: .875rem;
         line-height: 1.25rem;
