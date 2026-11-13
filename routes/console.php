@@ -282,6 +282,13 @@ Schedule::command('deal:sync-brand-prices --supplier=prometall --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/deal-prometall-prices.log'));
 
+// Whole sbg.by catalog: exact one-to-one identities, verified retail prices, no fuzzy model matches.
+Schedule::command('deal:sync-catalog-prices --apply')
+    ->hourlyAt(20)
+    ->withoutOverlapping(120)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/deal-catalog-prices.log'));
+
 // Cards whose Чистый берег РРЦ equals опт get the market retail price (web research, a few cards at a time).
 // Each card is researched again after 90 days; every two hours keeps it at ~120 searches a day at most.
 Schedule::command('supplier:chisty-bereg-market-prices --limit=10 --recheck-days=90 --apply')
