@@ -10,7 +10,9 @@
     $today = $active && $order->deal_control_at?->timezone('Europe/Minsk')->isToday();
     $context = ($isTable ?? false) ? ['table' => true, 'recordKey' => (string) $order->getKey()] : [];
 @endphp
-<div class="order-deal {{ ($isTable ?? false) ? 'order-deal--compact' : 'order-deal--full' }}">
+<div class="order-deal {{ ($isTable ?? false) ? 'order-deal--compact' : 'order-deal--full' }}"
+    wire:key="order-deal-layout-v2-{{ $order->getKey() }}-{{ ($isTable ?? false) ? 'table' : 'card' }}"
+    style="display:grid;grid-template-columns:minmax(0,1fr);gap:6px;width:100%;min-width:0;">
     <div class="order-deal__heading">
         <strong title="Исполнение заказа · {{ \App\Models\Order::STATUSES[$order->status] ?? $order->status }}">{{ $order->status === 'cancelled' ? 'Закрыт с причиной' : $stages[$order->effectiveDealStage()] }}</strong>
         <span>{{ $currentIndex + 1 }} / {{ count($stages) }}</span>

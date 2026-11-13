@@ -100,14 +100,14 @@
     .order-deal--compact {
         padding: .4rem .375rem;
         min-width: 0;
-        font-size: .75rem;
-        line-height: 1.1rem;
+        font-size: .8125rem;
+        line-height: 1.25rem;
     }
 
     .orders-workspace .fi-ta-cell-deal-progress,
     .orders-workspace .fi-ta-header-cell-deal-progress {
-        width: 22rem;
-        min-width: 22rem;
+        width: 24rem;
+        min-width: 24rem;
     }
 
     .order-deal > * {
@@ -115,6 +115,8 @@
     }
 
     .order-deal__heading > strong {
+        font-size: .875rem;
+        line-height: 1.25rem;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -129,7 +131,7 @@
     }
 
     .order-deal__heading > span {
-        font-size: .7rem;
+        font-size: .75rem;
         opacity: .65;
         white-space: nowrap;
     }
@@ -144,7 +146,7 @@
     .order-deal__step {
         min-width: 0;
         width: 100%;
-        min-height: 24px;
+        min-height: 34px;
         cursor: pointer;
         text-align: center;
     }
@@ -192,8 +194,8 @@
     .order-deal--compact .order-deal__step-label {
         display: block;
         margin-top: .25rem;
-        font-size: .625rem;
-        line-height: .875rem;
+        font-size: .75rem;
+        line-height: 1rem;
         white-space: nowrap;
         max-width: 100%;
         overflow: hidden;
@@ -201,7 +203,7 @@
     }
 
     .order-deal__control {
-        font-size: .75rem;
+        font-size: .8125rem;
         color: var(--gray-500);
     }
 
@@ -259,7 +261,7 @@
         column-gap: .6rem;
         row-gap: .1rem;
         margin-top: .25rem;
-        font-size: .6875rem;
+        font-size: .75rem;
         opacity: .8;
     }
 
@@ -279,7 +281,7 @@
 
     @media (max-width: 640px) {
         .order-deal--full .order-deal__step-label {
-            font-size: .625rem;
+            font-size: .75rem;
             overflow-wrap: anywhere;
         }
     }

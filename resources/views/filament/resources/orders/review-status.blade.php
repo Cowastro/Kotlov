@@ -35,16 +35,16 @@
 <div class="order-review-status" aria-label="СМС и отзыв клиента" style="display:inline-flex;width:max-content;align-items:center;justify-content:flex-start;gap:5px;margin-top:2px;">
     @foreach($statuses as $status)
         @php
-            $style = 'display:inline-flex;align-items:center;justify-content:center;width:24px;min-width:24px;max-width:24px;height:24px;border-radius:6px;flex:0 0 24px;'
+            $style = 'display:inline-flex;align-items:center;justify-content:center;width:28px;min-width:28px;max-width:28px;height:28px;border-radius:6px;flex:0 0 28px;'
                 .($status['active'] ? 'color:#22c55e;background:rgba(34,197,94,.1);' : 'color:#9ca3af;background:rgba(156,163,175,.1);');
         @endphp
         @if($status['url'])
             <a href="{{ $status['url'] }}" title="{{ $status['hint'] }}" aria-label="{{ $status['label'] }}" style="{{ $style }}" x-on:click.stop>
-                <x-filament::icon :icon="$status['icon']" style="width:16px;height:16px;" />
+                <x-filament::icon :icon="$status['icon']" style="width:18px;height:18px;" />
             </a>
         @else
             <span title="{{ $status['hint'] }}" aria-label="{{ $status['label'] }}" role="img" style="{{ $style }}">
-                <x-filament::icon :icon="$status['icon']" style="width:16px;height:16px;" />
+                <x-filament::icon :icon="$status['icon']" style="width:18px;height:18px;" />
             </span>
         @endif
     @endforeach
