@@ -190,6 +190,9 @@ jobs:
                 "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}"
                 ;;
               diagnose-deal-currencies)
+                echo "metric.deal_failure.memory=$(grep -ic 'Allowed memory size' storage/logs/github-actions-artisan-apply.log || true)"
+                echo "metric.deal_failure.execution_time=$(grep -ic 'Maximum execution time' storage/logs/github-actions-artisan-apply.log || true)"
+                echo "metric.deal_failure.fatal=$(grep -ic 'Fatal error' storage/logs/github-actions-artisan-apply.log || true)"
                 "$PHP_BIN" -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $items = $app->make(\App\Services\Marketplaces\DealByClient::class)->listProducts(100); $counts = []; foreach ($items["products"] ?? [] as $item) { $value = strtoupper(trim((string) ($item["currency"] ?? ""))); $key = in_array($value, ["BYN", "BYR", "USD", "EUR", "RUB"], true) ? strtolower($value) : ($value === "" ? "missing" : "other"); $counts[$key] = ($counts[$key] ?? 0) + 1; } foreach ($counts as $key => $count) echo "metric.deal_currency.$key=$count\n";'
                 ;;
               artisan-background)
@@ -1198,6 +1201,7 @@ jobs:
           fi
           if [[ "$TASK" == "diagnose-deal-currencies" ]]; then
             grep -E '^metric\.deal_currency\.(byn|byr|usd|eur|rub|missing|other)=[0-9]+$' "$detail_log" || true
+            grep -E '^metric\.deal_failure\.(memory|execution_time|fatal)=[0-9]+$' "$detail_log" || true
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "deal:sync-catalog-prices" ]]; then
             grep -E '^metric\.deal_catalog_prices\.[a-z_]+=[0-9]+$' "$detail_log" || true
