@@ -13,6 +13,8 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
+use Illuminate\Validation\ValidationException;
 
 class ManageOrderDealAction
 {
@@ -56,8 +58,16 @@ class ManageOrderDealAction
                 Toggle::make('on_hold')->label('Отложить заказ до срока контроля'),
                 Textarea::make('comment')->label('Комментарий / причина возврата на этап')->rows(2)->maxLength(3000),
             ])
-            ->action(function (Order $record, array $data): void {
-                app(OrderDealControl::class)->save($record, auth()->user(), $data);
+            ->action(function (Order $record, array $data, Schema $schema): void {
+                try {
+                    app(OrderDealControl::class)->save($record, auth()->user(), $data);
+                } catch (ValidationException $exception) {
+                    $statePath = $schema->getStatePath();
+                    throw ValidationException::withMessages(collect($exception->errors())
+                        ->mapWithKeys(fn (array $messages, string $field): array => [
+                            ($statePath ? $statePath.'.' : '').$field => $messages,
+                        ])->all());
+                }
                 $record->refresh();
                 Notification::make()->success()->title('Этап и контроль сделки сохранены')->send();
             });

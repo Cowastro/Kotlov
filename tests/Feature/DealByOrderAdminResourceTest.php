@@ -81,5 +81,25 @@ class DealByOrderAdminResourceTest extends TestCase
         $this->assertTrue(DealByOrderResource::canEdit($order));
         $this->assertFalse(OrderResource::getEloquentQuery()->whereKey($order)->exists());
         $this->assertTrue(DealByOrderResource::getEloquentQuery()->whereKey($order)->exists());
+
+        $page = \Livewire\Livewire::actingAs($manager)->test(
+            \App\Filament\Resources\DealByOrders\Pages\ViewDealByOrder::class,
+            ['record' => $order->id],
+        )->mountAction('manageDeal')->setActionData([
+            'stage' => 'contacted', 'manager_id' => $manager->id,
+            'next_action' => 'Согласовать доставку', 'control_at' => now()->subDay()->toDateTimeString(),
+        ])->callMountedAction()->assertHasActionErrors(['control_at']);
+        $this->assertNull($order->fresh()->deal_control_at);
+
+        $page->setActionData(['control_at' => now()->addDay()->toDateTimeString()])
+            ->callMountedAction()->assertHasNoActionErrors();
+        $order->refresh();
+        $this->assertSame('contacted', $order->deal_stage);
+        $this->assertSame('Согласовать доставку', $order->deal_next_action);
+        $this->assertSame($manager->id, $order->manager_id);
+        $this->assertSame('new', $order->status);
+        $this->assertTrue($order->statusHistory()->where('user_id', $manager->id)
+            ->where('deal_stage_to', 'contacted')->exists());
+        $this->assertFalse(OrderResource::getEloquentQuery()->whereKey($order)->exists());
     }
 }
