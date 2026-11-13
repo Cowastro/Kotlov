@@ -4,12 +4,19 @@ namespace Tests\Feature;
 
 use App\Models\B2bClient;
 use App\Models\B2bOrder;
+use App\Models\B2bReconciliationStatement;
 use App\Models\B2bSavedCart;
 use App\Models\CommercialDocument;
 use App\Models\CrmCounterparty;
+use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
 use App\Models\User;
+use App\Services\CommercialDocuments\B2bReconciliationStatements;
+use App\Services\Integrations\CommerceMlOrderImporter;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class B2bCabinetTest extends TestCase
@@ -260,11 +267,30 @@ class B2bCabinetTest extends TestCase
         $this->assertSame(1, CommercialDocument::query()->where('type', 'invoice')->count());
         $this->assertSame(1, $client->auditLogs()->where('event', 'invoice_generated')->count());
 
+        $invoice->update([
+            'accounting_number' => 'СФ-00000456',
+            'accounting_status' => 'Проведён',
+            'accounting_payment_status' => 'paid',
+            'accounting_confirmed_at' => now(),
+        ]);
+        $client->auditLogs()->create([
+            'event' => 'invoice_accounting_synced',
+            'metadata' => [
+                'document_number' => $invoice->number,
+                'accounting_number' => 'СФ-00000456',
+                'order_number' => $order->number,
+            ],
+        ]);
+
         $this->get(route('b2b.cabinet', ['section' => 'documents']))
             ->assertOk()
             ->assertSeeText($invoice->number)
+            ->assertSeeText('Подтверждено 1С')
+            ->assertSeeText('счёт № СФ-00000456')
+            ->assertSeeText('Оплачен')
             ->assertSeeText('История действий с документами')
             ->assertSeeText('Сформирован счёт')
+            ->assertSeeText('Счёт подтверждён 1С')
             ->assertSeeText('заказ B2B-INVOICE-1');
     }
 
@@ -295,6 +321,214 @@ class B2bCabinetTest extends TestCase
         [$other] = $this->partner('foreign-invoice@example.by', 'ООО «Чужой счёт»');
         $foreign = $this->order($other, 'B2B-FOREIGN-INVOICE');
         $this->post(route('b2b.cabinet.orders.invoice', $foreign))->assertNotFound();
+    }
+
+    public function test_onec_invoice_confirmation_is_synced_to_b2b_document_once(): void
+    {
+        [$partner, $client] = $this->partner('onec-invoice@example.by', 'ООО «Тест 1С»');
+        $source = IntegrationSource::query()->firstOrCreate(['code' => 'onec'], ['name' => '1С']);
+        $invoice = CommercialDocument::query()->create([
+            'type' => 'invoice',
+            'status' => 'sent',
+            'client_email' => $partner->email,
+            'currency' => 'BYN',
+            'total' => 120,
+        ]);
+        $order = $this->order($partner, 'ORD-1C-INVOICE-CONFIRMATION');
+        $order->update([
+            'commercial_document_id' => $invoice->id,
+            'status' => 'processing',
+            'onec_exported_at' => now(),
+            'b2b_commercial_terms_snapshot' => ['b2b_client_id' => $client->id],
+        ]);
+        OrderIntegrationDelivery::query()->create([
+            'order_id' => $order->id,
+            'integration_source_id' => $source->id,
+            'status' => OrderIntegrationDelivery::STATUS_SENT,
+            'external_id' => 'kotlov-order-'.$order->id,
+            'exported_at' => now(),
+        ]);
+        $xml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Документ>
+    <Ид>kotlov-order-{$order->id}</Ид>
+    <Номер>{$order->number}</Номер>
+    <ЗначенияРеквизитов>
+      <ЗначениеРеквизита><Наименование>GUID счёта 1С</Наименование><Значение>invoice-guid-456</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Номер счёта 1С</Наименование><Значение>СФ-00000456</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Статус счёта</Наименование><Значение>Проведён</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Статус оплаты</Наименование><Значение>Оплачен</Значение></ЗначениеРеквизита>
+    </ЗначенияРеквизитов>
+  </Документ>
+</КоммерческаяИнформация>
+XML;
+
+        $importer = app(CommerceMlOrderImporter::class);
+        $this->assertSame(1, $importer->import($xml, $source)['matched']);
+        $this->assertSame(1, $importer->import($xml, $source)['matched']);
+
+        $exactPaymentXml = str_replace(
+            '    </ЗначенияРеквизитов>',
+            <<<'XML'
+      <ЗначениеРеквизита><Наименование>GUID платежа 1С</Наименование><Значение>payment-guid-182</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Номер платёжного поручения</Наименование><Значение>ПП-00000182</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Дата платежа 1С</Наименование><Значение>20.10.2026</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Сумма платежа 1С</Наименование><Значение>80,00 BYN</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>GUID корректировки 1С</Наименование><Значение>adjustment-guid-19</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Номер корректировки 1С</Наименование><Значение>КР-00000019</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Дата корректировки 1С</Наименование><Значение>22.10.2026</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Сумма корректировки 1С</Наименование><Значение>20,00 BYN</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Вид корректировки</Наименование><Значение>Уменьшение</Значение></ЗначениеРеквизита>
+    </ЗначенияРеквизитов>
+XML,
+            $xml,
+        );
+        $this->assertSame(1, $importer->import($exactPaymentXml, $source)['matched']);
+        $this->assertSame(1, $importer->import($exactPaymentXml, $source)['matched']);
+
+        $invoice->refresh();
+        $this->assertSame($source->id, $invoice->accounting_source_id);
+        $this->assertSame('invoice-guid-456', $invoice->accounting_external_id);
+        $this->assertSame('СФ-00000456', $invoice->accounting_number);
+        $this->assertSame('Проведён', $invoice->accounting_status);
+        $this->assertSame('paid', $invoice->accounting_payment_status);
+        $this->assertSame('paid', $invoice->status);
+        $this->assertNotNull($invoice->accounting_confirmed_at);
+        $this->assertNotNull($invoice->closed_at);
+        $this->assertSame('paid', $order->fresh()->payment_status);
+        $this->assertSame(1, $client->auditLogs()->where('event', 'invoice_accounting_synced')->count());
+        $this->assertSame(2, $client->auditLogs()->where('event', 'accounting_ledger_synced')->count());
+        $this->assertDatabaseCount('b2b_accounting_entries', 3);
+        $this->assertDatabaseHas('b2b_accounting_entries', [
+            'b2b_client_id' => $client->id,
+            'entry_type' => 'charge',
+            'document_number' => 'СФ-00000456',
+            'debit' => 120,
+            'credit' => 0,
+        ]);
+        $this->assertDatabaseHas('b2b_accounting_entries', [
+            'b2b_client_id' => $client->id,
+            'entry_type' => 'payment',
+            'external_key' => 'payment:payment-guid-182',
+            'document_number' => 'ПП-00000182',
+            'occurred_at' => '2026-10-20 00:00:00',
+            'debit' => 0,
+            'credit' => 80,
+        ]);
+        $this->assertSame(
+            'payment-guid-182',
+            $client->accountingEntries()->where('entry_type', 'payment')->sole()->metadata['external_document_id']
+        );
+        $this->assertDatabaseHas('b2b_accounting_entries', [
+            'b2b_client_id' => $client->id,
+            'entry_type' => 'adjustment',
+            'external_key' => 'adjustment:adjustment-guid-19',
+            'document_number' => 'КР-00000019',
+            'occurred_at' => '2026-10-22 00:00:00',
+            'debit' => 0,
+            'credit' => 20,
+        ]);
+
+        $this->actingAs($partner)
+            ->get(route('b2b.cabinet', ['section' => 'reconciliation']))
+            ->assertOk()
+            ->assertSeeText('Акт по подтверждённым данным 1С')
+            ->assertSeeText('Акт сверки по данным 1С')
+            ->assertSeeText('СФ-00000456 · Начисление по счёту')
+            ->assertSeeText('ПП-00000182 · Оплата')
+            ->assertSeeText('КР-00000019 · Корректировка')
+            ->assertSeeText('20,00 BYN')
+            ->assertSeeText('Закупочные цены и внутренняя маржа не раскрываются')
+            ->assertDontSeeText('Предварительная сверка сформирована');
+    }
+
+    public function test_reconciliation_version_is_confirmed_by_both_sides_and_invalidated_by_new_ledger_data(): void
+    {
+        [$partner, $client] = $this->partner('reconciliation@example.by', 'ООО «Сверка»');
+        $entry = $client->accountingEntries()->create([
+            'external_key' => 'invoice:statement-1',
+            'entry_type' => 'charge',
+            'occurred_at' => '2026-10-15 00:00:00',
+            'document_number' => 'СФ-00000001',
+            'description' => 'Счёт СФ-00000001',
+            'debit' => 150,
+            'credit' => 0,
+            'currency' => 'BYN',
+            'imported_at' => now(),
+        ]);
+        $dates = ['date_from' => '2026-10-01', 'date_to' => '2026-10-31'];
+
+        $this->actingAs($partner)
+            ->get(route('b2b.cabinet', ['section' => 'reconciliation'] + $dates))
+            ->assertOk()
+            ->assertSeeText('Подтверждение акта защищено');
+
+        $this->post(route('b2b.cabinet.reconciliation.confirm'), $dates + ['confirmation' => '1'])
+            ->assertRedirect(route('b2b.cabinet', ['section' => 'reconciliation']));
+        $this->assertDatabaseCount('b2b_reconciliation_statements', 0);
+
+        $response = $this->withSession(['auth.password_confirmed_at' => time()])
+            ->post(route('b2b.cabinet.reconciliation.confirm'), $dates + ['confirmation' => '1']);
+        $response->assertRedirect(route('b2b.cabinet', ['section' => 'reconciliation'] + $dates));
+
+        $statement = B2bReconciliationStatement::query()->sole();
+        $this->assertSame('client_confirmed', $statement->status);
+        $this->assertSame($partner->id, $statement->client_confirmed_by);
+        $this->assertSame('150.00', $statement->closing_balance);
+        $this->assertSame('СФ-00000001', $statement->entries_snapshot[0]['document_number']);
+        $this->assertArrayNotHasKey('purchase_price', $statement->entries_snapshot[0]);
+        $this->assertSame(1, $client->auditLogs()->where('event', 'reconciliation_client_confirmed')->count());
+
+        $this->withSession(['auth.password_confirmed_at' => time()])
+            ->post(route('b2b.cabinet.reconciliation.confirm'), $dates + ['confirmation' => '1'])
+            ->assertRedirect();
+        $this->assertDatabaseCount('b2b_reconciliation_statements', 1);
+        $this->assertSame(1, $client->auditLogs()->where('event', 'reconciliation_client_confirmed')->count());
+
+        $manager = User::factory()->create(['role' => 'admin']);
+        app(B2bReconciliationStatements::class)->confirmByManager($statement, $manager);
+        $statement->refresh();
+        $this->assertSame('agreed', $statement->status);
+        $this->assertSame($manager->id, $statement->manager_confirmed_by);
+        $this->assertSame(1, $client->auditLogs()->where('event', 'reconciliation_manager_confirmed')->count());
+
+        $entry->update(['debit' => 175]);
+        $this->get(route('b2b.cabinet', ['section' => 'reconciliation'] + $dates))
+            ->assertOk()
+            ->assertSeeText('Требуется новая версия')
+            ->assertSeeText('После предыдущего подтверждения состав проводок изменился');
+
+        $this->withSession(['auth.password_confirmed_at' => time()])
+            ->post(route('b2b.cabinet.reconciliation.confirm'), $dates + ['confirmation' => '1'])
+            ->assertRedirect();
+        $this->assertDatabaseCount('b2b_reconciliation_statements', 2);
+    }
+
+    public function test_manager_cannot_agree_a_reconciliation_version_after_entries_change(): void
+    {
+        [$partner, $client] = $this->partner('stale-reconciliation@example.by', 'ООО «Старая сверка»');
+        $entry = $client->accountingEntries()->create([
+            'external_key' => 'invoice:stale-statement',
+            'entry_type' => 'charge',
+            'occurred_at' => '2026-10-10 00:00:00',
+            'document_number' => 'СФ-00000002',
+            'debit' => 100,
+            'credit' => 0,
+            'currency' => 'BYN',
+            'imported_at' => now(),
+        ]);
+        $service = app(B2bReconciliationStatements::class);
+        $statement = $service->confirmByClient(
+            $client,
+            $partner,
+            CarbonImmutable::parse('2026-10-01'),
+            CarbonImmutable::parse('2026-10-31'),
+        );
+        $entry->update(['debit' => 101]);
+
+        $this->expectException(ValidationException::class);
+        $service->confirmByManager($statement, User::factory()->create(['role' => 'admin']));
     }
 
     /** @return array{User, B2bClient} */
