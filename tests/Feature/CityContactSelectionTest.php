@@ -33,7 +33,7 @@ class CityContactSelectionTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->get('https://kotlov.by/city/select/gomel?return=%2Fcontacts')
+        $this->get($this->citySelectionLink('https://kotlov.by/city/select/gomel?return=%2Fcontacts'))
             ->assertRedirect('/contacts')
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
             ->assertPlainCookie('selected_city', 'gomel')
@@ -80,7 +80,7 @@ class CityContactSelectionTest extends TestCase
     {
         $this->city('vitebsk', 'Витебск', false);
 
-        $this->get('https://kotlov.by/city/select/vitebsk?return=%2F')
+        $this->get($this->citySelectionLink('https://kotlov.by/city/select/vitebsk?return=%2F'))
             ->assertRedirect('/')
             ->assertPlainCookie('selected_city', 'vitebsk');
 
@@ -149,12 +149,12 @@ class CityContactSelectionTest extends TestCase
         $city = $this->city('grodno', 'Гродно', false);
         $city->update(['is_active' => false]);
 
-        $this->get('https://kotlov.by/city/select/grodno')->assertNotFound();
+        $this->get($this->citySelectionLink('https://kotlov.by/city/select/grodno'))->assertNotFound();
     }
 
     public function test_external_return_url_is_rejected(): void
     {
-        $this->get('https://kotlov.by/city/select/minsk?return=https%3A%2F%2Fevil.example')
+        $this->get($this->citySelectionLink('https://kotlov.by/city/select/minsk?return=https%3A%2F%2Fevil.example'))
             ->assertRedirect('/')
             ->assertPlainCookie('selected_city', 'minsk');
     }

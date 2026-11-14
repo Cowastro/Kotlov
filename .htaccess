@@ -1,5 +1,11 @@
 RewriteEngine On
 
+# Legacy crawlable city links are retired. The POST selector creates a signed
+# short-lived GET handoff when crossing hosts. Reject old links before PHP/MySQL.
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{QUERY_STRING} !(^|&)signature=[0-9a-f]{64}(&|$) [NC]
+RewriteRule ^(?:public/)?city/select/[^/]+/?$ - [G,L]
+
 # Убираем trailing slash — всегда на HTTPS
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} ^/(.+)/$

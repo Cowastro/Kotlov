@@ -85,11 +85,11 @@ class RegionalNewsTest extends TestCase
         $this->get('https://lida.kotlov.by/news/local-story')->assertOk();
         $return = '?return=%2Fnews%2Flocal-story';
 
-        $this->get('https://lida.kotlov.by/city/select/borisov'.$return)
+        $this->get($this->citySelectionLink('https://lida.kotlov.by/city/select/borisov'.$return))
             ->assertRedirect('https://borisov.kotlov.by/news');
-        $this->get('https://lida.kotlov.by/city/select/minsk'.$return)
-            ->assertRedirect('https://kotlov.by/city/select/minsk'.$return);
-        $this->get('https://kotlov.by/city/select/minsk'.$return)
+        $this->get($this->citySelectionLink('https://lida.kotlov.by/city/select/minsk'.$return))
+            ->assertRedirectContains('https://kotlov.by/city/select/minsk?');
+        $this->get($this->citySelectionLink('https://kotlov.by/city/select/minsk'.$return))
             ->assertRedirect('https://kotlov.by/regions/news')
             ->assertPlainCookie('selected_city', 'minsk');
     }

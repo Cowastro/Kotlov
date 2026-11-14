@@ -94,12 +94,6 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
-        // During a fresh test database boot the provider runs before
-        // RefreshDatabase has created the catalogue tables.
-        if (app()->runningUnitTests() && ! Schema::hasTable('categories')) {
-            return;
-        }
-
         // Пропускаем для реальных консольных команд (artisan/queue), но НЕ для
         // тестов: под `php artisan test` runningInConsole() == true, а вьюхи всё
         // равно рендерятся HTTP-запросами и требуют navCategories и т.п.
@@ -107,25 +101,33 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        $navCategories = $this->getNavCategories();
-
-        View::share('navCategories', $navCategories);
-        View::share('navCategoryUrls', $this->getNavCategoryUrls($navCategories));
-        View::share('navBrands', $this->getNavBrands());
-
-        // Location selection is independent from SEO storefront activation.
-        // Every active delivery city is selectable; storefront_enabled still
-        // controls only dedicated city storefronts/subdomains.
-        $citySelector = $this->getCitySelectorState();
-        $cities = $citySelector['regions'];
-        View::share('citySelectorRegions', $cities);
-        View::share('citySelectorEnabled', $citySelector['enabled']);
-        View::share('obl1', $cities['Минская']);
-        View::share('obl2', $cities['Гомельская'] ?? []);
-        View::share('obl3', $cities['Брестская'] ?? []);
-        View::share('obl4', $cities['Гродненская'] ?? []);
-        View::share('obl5', $cities['Могилёвская'] ?? []);
-        View::share('obl6', $cities['Витебская'] ?? []);
+        // Redirects, JSON and rejected crawl URLs must not open a database
+        // connection just to prepare a menu that will never be rendered.
+        View::composer(['pages.*', 'partials.*', 'layouts.amerce'], function (): void {
+            $request = request();
+            if (AdminSurfaceRequest::matches($request)
+                || $request->attributes->get('storefront_shared_data_loaded')) {
+                return;
+            }
+            if (app()->runningUnitTests() && ! Schema::hasTable('categories')) {
+                return;
+            }
+            $request->attributes->set('storefront_shared_data_loaded', true);
+            $navCategories = $this->getNavCategories();
+            View::share('navCategories', $navCategories);
+            View::share('navCategoryUrls', $this->getNavCategoryUrls($navCategories));
+            View::share('navBrands', $this->getNavBrands());
+            $citySelector = $this->getCitySelectorState();
+            $cities = $citySelector['regions'];
+            View::share('citySelectorRegions', $cities);
+            View::share('citySelectorEnabled', $citySelector['enabled']);
+            View::share('obl1', $cities['Минская']);
+            View::share('obl2', $cities['Гомельская'] ?? []);
+            View::share('obl3', $cities['Брестская'] ?? []);
+            View::share('obl4', $cities['Гродненская'] ?? []);
+            View::share('obl5', $cities['Могилёвская'] ?? []);
+            View::share('obl6', $cities['Витебская'] ?? []);
+        });
     }
 
     /** @return array{regions: array<string, array<int, array<string, string>>>, enabled: bool} */

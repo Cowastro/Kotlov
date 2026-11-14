@@ -266,6 +266,9 @@ class HandleRedirects
 
     private function shouldSkip(string $path): bool
     {
+        if ($path === '/city/select' || str_starts_with($path, '/city/select/')) {
+            return true;
+        }
         if ($path === '/news' || str_starts_with($path, '/news/') || $path === '/regions/news') {
             return true;
         }
