@@ -55,19 +55,18 @@ class AppServiceProvider extends ServiceProvider
             'partials.product-card-list',
             'pages.product',
         ], function ($view): void {
-            if (! Schema::hasTable('wishlist_items')) {
-                $view->with([
-                    'wishlistCount' => 0,
-                    'wishlistProductIds' => [],
-                ]);
-
-                return;
-            }
-
             $request = request();
             $state = $request->attributes->get('wishlist_state');
 
             if ($state === null) {
+                if (! Schema::hasTable('wishlist_items')) {
+                    $state = ['count' => 0, 'product_ids' => []];
+                    $request->attributes->set('wishlist_state', $state);
+                    $view->with(['wishlistCount' => 0, 'wishlistProductIds' => []]);
+
+                    return;
+                }
+
                 $query = WishlistItem::query();
 
                 if (auth()->check()) {

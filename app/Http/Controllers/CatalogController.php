@@ -161,14 +161,23 @@ class CatalogController extends Controller
             ->where('is_active', true)
             ->orderBy('name')
             ->orderBy('sort_order')
-            ->get()
-            ->each(function ($subcategory) use ($selectedBrandId, $isBoilerHub, $isWaterHeaterHub) {
-                $ids = $this->collectCategoryAndDescendantIds($subcategory->id);
-                $subcategory->products_count = Product::query()
-                    ->orderable()
-                    ->whereIn('category_id', $ids)
-                    ->when($selectedBrandId && ! $isBoilerHub && ! $isWaterHeaterHub, fn ($query) => $query->where('brand_id', $selectedBrandId))
-                    ->count();
+            ->get();
+        $subcategoryIds = $subcategories->mapWithKeys(fn ($subcategory) => [
+            $subcategory->id => $this->collectCategoryAndDescendantIds($subcategory->id),
+        ]);
+        $subcategoryCounts = $subcategories->isEmpty() ? collect() : Product::query()
+            ->orderable()
+            ->whereIn('category_id', $subcategoryIds->flatten()->unique())
+            ->when($selectedBrandId && ! $isBoilerHub && ! $isWaterHeaterHub, fn ($query) => $query->where('brand_id', $selectedBrandId))
+            ->select('category_id')
+            ->selectRaw('count(*) as product_count')
+            ->groupBy('category_id')
+            ->toBase()
+            ->pluck('product_count', 'category_id');
+        $subcategories = $subcategories
+            ->each(function ($subcategory) use ($subcategoryIds, $subcategoryCounts) {
+                $subcategory->products_count = $subcategoryIds[$subcategory->id]
+                    ->sum(fn ($id) => (int) $subcategoryCounts->get($id, 0));
             })
             ->filter(fn ($subcategory) => $subcategory->products_count > 0)
             ->values();
@@ -871,7 +880,7 @@ class CatalogController extends Controller
         }
 
         $totalCount = $query->count();
-        $products = $query->paginate(24)->withQueryString();
+        $products = $query->paginate(24)->withQueryString()->fragment('catalog-products');
         if ($isMinskFireplaceCatalog && $products->onFirstPage()
             && ! request()->anyFilled(['sort', 'brand', 'subcategory', 'price_min', 'price_max', 'attr'])) {
             $pageProducts = $products->getCollection();
@@ -1898,9 +1907,14 @@ class CatalogController extends Controller
 
     private function collectCategoryAndDescendantIds(int $categoryId): Collection
     {
-        $categories = Category::where('is_active', true)
-            ->get(['id', 'parent_id'])
-            ->groupBy('parent_id');
+        $request = request();
+        $categories = $request->attributes->get('catalog_category_children');
+        if ($categories === null) {
+            $categories = Category::where('is_active', true)
+                ->get(['id', 'parent_id'])
+                ->groupBy('parent_id');
+            $request->attributes->set('catalog_category_children', $categories);
+        }
 
         $ids = collect([$categoryId]);
         $queue = [$categoryId];

@@ -8,6 +8,15 @@
 .infiniteSlide-text-v03 .infiniteSlide > * { flex: 0 0 auto; }
 .product-card-hover { display: contents; }
 
+@media (max-width: 1199px) {
+    .sidebar-filter.offcanvas-xl { width: calc(100vw - 24px); max-width: 360px; }
+    .sidebar-filter.showing { transform: none; }
+    .sidebar-filter.show.hiding { transform: translateX(-100%); }
+    .sidebar-filter .canvas-header .title { font-size: 20px; }
+    .sidebar-filter .close-filter { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: inherit; }
+    .sidebar-filter .canvas-body { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+}
+
 .tf-product-extra-link .wishlist-toggle.is-active {
     color: var(--primary) !important;
 }
