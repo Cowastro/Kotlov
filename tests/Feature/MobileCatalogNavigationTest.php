@@ -44,7 +44,7 @@ class MobileCatalogNavigationTest extends TestCase
             ->assertSee('class="catalog-index-page"', false)
             ->assertSee('class="mobile-catalog-index d-md-none"', false)
             ->assertSee('Поиск в каталоге KOTLOV')
-            ->assertSee('/icons/heater.svg', false)
+            ->assertSee('/assets/icon/catalog/heater.svg', false)
             ->assertSee('class="mb-cat-icon"', false)
             ->assertSeeInOrder(['Альфа раздел', 'Бета раздел'])
             // Desktop: a compact card per section with its subcategories and a picture.

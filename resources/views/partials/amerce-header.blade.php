@@ -259,7 +259,7 @@
                                 <a href="/{{ $rootCat->slug }}" class="nav-category_link">
                                     <span class="d-flex align-items-center gap-2">
                                         @if ($iconFile)
-                                            <img src="{{ asset('icons/'.$iconFile.'.svg') }}"
+                                            <img src="{{ asset('assets/icon/catalog/'.$iconFile.'.svg') }}"
                                                 alt="{{ $rootCat->name }}"
                                                 class="cat-icon" width="28" height="28" loading="lazy" decoding="async">
                                         @elseif ($iconClass)
