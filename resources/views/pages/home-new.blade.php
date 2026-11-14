@@ -1,7 +1,12 @@
 @extends('layouts.amerce')
 
+@push('preloads')
+@unless(isset($primaryBranch))
+<link rel="preload" as="image" href="{{ asset('img/banners/ecokamin-primo/primo-cover.webp') }}" fetchpriority="high">
+@endunless
+@endpush
+
 @push('styles')
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&text=ABCDEFGHIJKLMNOPQRSTUVWXYZ%D0%90%D0%91%D0%92%D0%93%D0%94%D0%95%D0%81%D0%96%D0%97%D0%98%D0%99%D0%9A%D0%9B%D0%9C%D0%9D%D0%9E%D0%9F%D0%A0%D0%A1%D0%A2%D0%A3%D0%A4%D0%A5%D0%A6%D0%A7%D0%A8%D0%A9%D0%AA%D0%AB%D0%AC%D0%AD%D0%AE%D0%AF0123456789%25%E2%88%92-%E2%80%93.%2C&display=swap" rel="stylesheet">
 <style>
     .city-home-slide { position: relative; display: flex; align-items: end; min-height: clamp(390px, 38vw, 580px); isolation: isolate; background: #40362d; color: #fff; }
     .city-home-slide > img, .city-home-slide::before { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -100,13 +105,7 @@
         </button>
         <!-- /Scroll Top -->
 
-        <!-- Preload -->
-        <div class="preload preload-container" id="preload">
-            <div class="preload-logo">
-                <div class="spinner"></div>
-            </div>
-        </div>
-        <!-- /Preload -->
+
 
         <main id="wrapper">
             @unless(isset($primaryBranch))
@@ -200,7 +199,7 @@
                                 @if($banner->image === 'banners/ecokamin-prime-launch')
                                 <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden prime-cover">
                                     <span class="prime-cover__word" aria-hidden="true">PRIME</span>
-                                    <img class="prime-cover__art" width="1600" height="981" loading="eager" decoding="async" src="{{ asset('img/banners/ecokamin-prime/prime-group.webp') }}" alt="Каминные топки ЭкоКамин ВЕГА ПРАЙМ 1000, ДЕЛЬТА ПРАЙМ 1000 и ДЕЛЬТА ПРАЙМ 1100">
+                                    <img class="prime-cover__art" width="1600" height="981" loading="lazy" decoding="async" src="{{ asset('img/banners/ecokamin-prime/prime-group.webp') }}" alt="Каминные топки ЭкоКамин ВЕГА ПРАЙМ 1000, ДЕЛЬТА ПРАЙМ 1000 и ДЕЛЬТА ПРАЙМ 1100">
                                     <div class="prime-cover__copy">
                                         <div class="prime-cover__mast"><span>ЭкоКамин</span><i></i><span>Новинка 2026</span></div>
                                         <span class="prime-cover__kicker">{{ $banner->subtitle }}</span>
@@ -214,7 +213,7 @@
                                 @elseif($banner->image === 'banners/invicta-shaman-launch.svg')
                                 <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden prime-cover prime-cover--shaman">
                                     <span class="prime-cover__word" aria-hidden="true">SHAMAN</span>
-                                    <img class="prime-cover__art" width="656" height="1100" loading="eager" decoding="async" src="{{ asset('img/banners/ecokamin-shaman/shaman-cover.webp') }}" alt="Чугунный камин ЭкоКамин ШАМАН 14 кВт">
+                                    <img class="prime-cover__art" width="656" height="1100" loading="lazy" decoding="async" src="{{ asset('img/banners/ecokamin-shaman/shaman-cover.webp') }}" alt="Чугунный камин ЭкоКамин ШАМАН 14 кВт">
                                     <div class="prime-cover__copy">
                                         <div class="prime-cover__mast"><span>ЭкоКамин</span><i></i><span>В наличии</span></div>
                                         <span class="prime-cover__kicker">{{ $banner->subtitle }}</span>
@@ -233,7 +232,7 @@
                                     <div class="sld_image" aria-hidden="true">
                                         <picture>
                                             <source media="(max-width: 767px)" srcset="{{ asset('storage/' . $banner->image_mobile) }}">
-                                            <img width="1770" height="680" loading="eager" decoding="async" src="{{ asset('storage/' . $banner->image) }}" alt="">
+                                            <img width="1770" height="680" loading="lazy" decoding="async" src="{{ asset('storage/' . $banner->image) }}" alt="">
                                         </picture>
                                     </div>
                                     <div class="pellet-clearance__layout">
@@ -245,9 +244,9 @@
                                             <a href="{{ $banner->link }}" class="tf-btn btn-white">{{ $banner->button_text }}</a>
                                         </div>
                                         <div class="pellet-clearance__products" aria-label="Акционные пеллетные горелки">
-                                            <a href="/akcii/kotlov-xo-ceramic-pro" class="pellet-clearance__product"><span class="pellet-clearance__offer">−10%</span><span class="pellet-clearance__media"><img loading="eager" src="/proxy-image/product/0012/012203/cp-100_1.jpg" alt="KOTLOV XO Ceramic PRO 100 кВт"></span><span class="pellet-clearance__name"><strong>Ceramic PRO · 100 кВт</strong><span class="pellet-clearance__price"><del>14 400</del>12 960 BYN</span></span></a>
-                                            <a href="/akcii/kotlov-xo-evo-26" class="pellet-clearance__product"><span class="pellet-clearance__offer">−20%</span><span class="pellet-clearance__media pellet-clearance__media--photo"><img loading="eager" src="{{ asset('img/promotions/kotlov-xo-evo-26-stock-cover.jpg') }}" alt="KOTLOV XO EVO 26 кВт"></span><span class="pellet-clearance__name"><strong>XO EVO · 26 кВт</strong><span class="pellet-clearance__price"><del>6 400</del>5 120 BYN</span></span></a>
-                                            <a href="/akcii/hotta-ceramik-20-30" class="pellet-clearance__product"><span class="pellet-clearance__offer">СУПЕРЦЕНА</span><span class="pellet-clearance__media"><span class="pellet-clearance__hotta-visual"><img class="pellet-clearance__hotta-render" loading="eager" src="{{ asset('img/promotions/hotta-ceramik/hotta-20-1.jpg') }}" alt="Рендер HOTTA Ceramik 20 и 30 кВт"><span class="pellet-clearance__hotta-real"><img loading="eager" src="{{ asset('img/promotions/hotta-ceramik/hotta-stock-real-side.jpg') }}" alt="Реальная фотография HOTTA Ceramik"><img loading="eager" src="{{ asset('img/promotions/hotta-ceramik/hotta-stock-real-firebox.jpg') }}" alt="Реальная топка HOTTA Ceramik"></span></span></span><span class="pellet-clearance__name"><strong>HOTTA · 20/30 кВт</strong><span class="pellet-clearance__price">от 4 300 BYN · Wi‑Fi</span></span></a>
+                                            <a href="/akcii/kotlov-xo-ceramic-pro" class="pellet-clearance__product"><span class="pellet-clearance__offer">−10%</span><span class="pellet-clearance__media"><img loading="lazy" src="/proxy-image/product/0012/012203/cp-100_1.jpg" alt="KOTLOV XO Ceramic PRO 100 кВт"></span><span class="pellet-clearance__name"><strong>Ceramic PRO · 100 кВт</strong><span class="pellet-clearance__price"><del>14 400</del>12 960 BYN</span></span></a>
+                                            <a href="/akcii/kotlov-xo-evo-26" class="pellet-clearance__product"><span class="pellet-clearance__offer">−20%</span><span class="pellet-clearance__media pellet-clearance__media--photo"><img loading="lazy" src="{{ asset('img/promotions/kotlov-xo-evo-26-stock-cover.jpg') }}" alt="KOTLOV XO EVO 26 кВт"></span><span class="pellet-clearance__name"><strong>XO EVO · 26 кВт</strong><span class="pellet-clearance__price"><del>6 400</del>5 120 BYN</span></span></a>
+                                            <a href="/akcii/hotta-ceramik-20-30" class="pellet-clearance__product"><span class="pellet-clearance__offer">СУПЕРЦЕНА</span><span class="pellet-clearance__media"><span class="pellet-clearance__hotta-visual"><img class="pellet-clearance__hotta-render" loading="lazy" src="{{ asset('img/promotions/hotta-ceramik/hotta-20-1.jpg') }}" alt="Рендер HOTTA Ceramik 20 и 30 кВт"><span class="pellet-clearance__hotta-real"><img loading="lazy" src="{{ asset('img/promotions/hotta-ceramik/hotta-stock-real-side.jpg') }}" alt="Реальная фотография HOTTA Ceramik"><img loading="lazy" src="{{ asset('img/promotions/hotta-ceramik/hotta-stock-real-firebox.jpg') }}" alt="Реальная топка HOTTA Ceramik"></span></span></span><span class="pellet-clearance__name"><strong>HOTTA · 20/30 кВт</strong><span class="pellet-clearance__price">от 4 300 BYN · Wi‑Fi</span></span></a>
                                         </div>
                                     </div>
                                 </div>
@@ -258,7 +257,7 @@
                                             @if($banner->image_mobile)
                                             <source media="(max-width: 767px)" srcset="{{ asset('storage/' . $banner->image_mobile) }}">
                                             @endif
-                                            <img width="1770" height="680" loading="eager" decoding="async"
+                                            <img width="1770" height="680" loading="lazy" decoding="async"
                                                 src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}"
                                                 class="lazyload scale-item scale-item-1">
                                         </picture>
@@ -300,7 +299,7 @@
                             <div class="swiper-slide">
                                 <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
                                     <div class="sld_image">
-                                        <img width="1770" height="680" loading="eager" decoding="async"
+                                        <img width="1770" height="680" loading="lazy" decoding="async"
                                             src="{{ asset('img/hero/heatpump-hero.jpg') }}" alt="KOTLOV.BY"
                                             class="lazyload scale-item scale-item-1">
                                     </div>
@@ -360,7 +359,7 @@
                             <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
                                 <div class="cate-image img-style">
                                     <img loading="lazy" width="240" height="180"
-                                        src="{{ $category->catalogThumb }}"
+                                        src="{{ \App\Support\StorefrontImage::categoryThumbnail($category->catalogThumb) }}"
                                         alt="{{ $category->name }}">
                                 </div>
                                 <div class="cate-content text-center">
@@ -378,7 +377,7 @@
                             <a href="/partners" class="category-v04 hover-img wow fadeInUp">
                                 <div class="cate-image img-style">
                                     <img loading="lazy" width="240" height="180"
-                                        src="{{ asset('img/popular/cooperation.jpg') }}"
+                                        src="{{ asset('img/popular/optimized/cooperation.webp') }}"
                                         alt="Стать партнёром">
                                 </div>
                                 <div class="cate-content text-center">

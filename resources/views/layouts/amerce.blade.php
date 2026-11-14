@@ -97,7 +97,10 @@
 
     @include('partials.yandex-metrika-head')
 
-    <link rel="stylesheet" href="{{ asset('assets/fonts/fonts.css') }}">
+    <link rel="preload" href="{{ asset('assets/fonts/storefront/manrope-cyrillic.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{{ asset('assets/fonts/storefront/manrope-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+    @stack('preloads')
+    <link rel="stylesheet" href="{{ asset('assets/fonts/fonts.css') }}?v={{ filemtime(public_path('assets/fonts/fonts.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/icon/icomoon/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/swiper-bundle.min.css') }}">
@@ -106,10 +109,6 @@
     <link rel="stylesheet" href="{{ asset('assets/css/styles.css') }}?v={{ filemtime(public_path('assets/css/styles.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/css/kotlov.css') }}?v={{ filemtime(public_path('assets/css/kotlov.css')) }}">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="shortcut icon" href="{{ asset('img/favicon.ico') }}">
 

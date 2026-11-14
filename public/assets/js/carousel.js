@@ -1,4 +1,4 @@
-$(window).on("load", function () {
+$(function () {
     $(".tf-swiper").each(function (index, element) {
         var $this = $(element);
         var laptop = $this.data("laptop") || 1;
@@ -142,6 +142,24 @@ $(window).on("load", function () {
                 },
             },
         });
+        // Auto-height cards can finish loading after DOM ready. Refresh their
+        // height without delaying every carousel until all page images load.
+        if (mobileAutoHeight) {
+            var imageUpdateFrame = 0;
+            $this.find("img").each(function (_, image) {
+                if (image.complete) return;
+                image.addEventListener("load", function () {
+                    if (imageUpdateFrame) return;
+                    imageUpdateFrame = requestAnimationFrame(function () {
+                        imageUpdateFrame = 0;
+                        if (!swiperT.destroyed) {
+                            swiperT.update();
+                            swiperT.updateAutoHeight();
+                        }
+                    });
+                }, { once: true });
+            });
+        }
         $(".swiper-button")
             .on("mouseenter", function () {
                 var slideIndex = $(this).data("slide");

@@ -127,7 +127,7 @@
                     @foreach ($rootCategories as $category)
                         <article class="catalog-section-card">
                             <a href="/{{ $category->slug }}" class="catalog-section-card__image" tabindex="-1" aria-hidden="true">
-                                <img loading="lazy" width="96" height="96" src="{{ $category->catalogThumb }}" alt=""
+                                <img loading="lazy" width="96" height="96" src="{{ \App\Support\StorefrontImage::categoryThumbnail($category->catalogThumb) }}" alt=""
                                     onerror="this.src='{{ asset('img/products/product-placeholder.jpg') }}'">
                             </a>
                             <div class="catalog-section-card__body">

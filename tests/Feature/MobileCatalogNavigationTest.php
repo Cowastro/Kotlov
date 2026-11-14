@@ -44,12 +44,12 @@ class MobileCatalogNavigationTest extends TestCase
             ->assertSee('class="catalog-index-page"', false)
             ->assertSee('class="mobile-catalog-index d-md-none"', false)
             ->assertSee('Поиск в каталоге KOTLOV')
-            ->assertSee('/catalog-icons/heater', false)
+            ->assertSee('/icons/heater.svg', false)
             ->assertSee('class="mb-cat-icon"', false)
             ->assertSeeInOrder(['Альфа раздел', 'Бета раздел'])
             // Desktop: a compact card per section with its subcategories and a picture.
             ->assertSee('class="catalog-section-card"', false)
-            ->assertSee('img/popular/boiler_img.jpg', false)
+            ->assertSee('img/popular/optimized/boiler_img.webp', false)
             ->assertSee('href="/mobile-alpha"', false);
     }
 

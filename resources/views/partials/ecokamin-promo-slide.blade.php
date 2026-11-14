@@ -57,7 +57,7 @@
             @foreach($ecokaminPromoHits->take(3) as $hit)
             @php($ecoHitArt = $ecoArt($hit))
             <a href="/{{ $hit->category->slug }}/{{ $hit->slug }}" class="eco-promo-slide__product{{ $ecoHitArt ? '' : ' eco-promo-slide__product--photo' }}">
-                <span class="eco-promo-slide__media"><img loading="eager" decoding="async" src="{{ $ecoHitArt ?: $hit->image_url }}" alt="{{ $hit->name }}"><span class="eco-promo-slide__offer">−{{ $hit->discount_percent }}%</span></span>
+                <span class="eco-promo-slide__media"><img loading="lazy" decoding="async" src="{{ $ecoHitArt ?: $hit->image_url }}" alt="{{ $hit->name }}"><span class="eco-promo-slide__offer">−{{ $hit->discount_percent }}%</span></span>
                 <span class="eco-promo-slide__name">{{ \Illuminate\Support\Str::limit($ecoShort($hit), 30) }}</span>
                 <span class="eco-promo-slide__price"><del>{{ number_format((float) $hit->price_old, 0, '.', ' ') }}</del>{{ number_format((float) $hit->price, 0, '.', ' ') }} BYN</span>
             </a>
@@ -67,7 +67,6 @@
 </div>
 @once
 @push('styles')
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&text=ABCDEFGHIJKLMNOPQRSTUVWXYZ%D0%90%D0%91%D0%92%D0%93%D0%94%D0%95%D0%81%D0%96%D0%97%D0%98%D0%99%D0%9A%D0%9B%D0%9C%D0%9D%D0%9E%D0%9F%D0%A0%D0%A1%D0%A2%D0%A3%D0%A4%D0%A5%D0%A6%D0%A7%D0%A8%D0%A9%D0%AA%D0%AB%D0%AC%D0%AD%D0%AE%D0%AF0123456789%25%E2%88%92-%E2%80%93.%2C&display=swap" rel="stylesheet">
 <style>
     .eco-promo-slide{position:relative;width:100%;height:560px;color:#f6efe7;isolation:isolate;background:radial-gradient(ellipse 50% 60% at 74% 72%,rgba(232,104,40,.30),rgba(232,104,40,0) 70%),radial-gradient(ellipse 80% 90% at 70% 100%,rgba(90,40,20,.35),transparent 70%),linear-gradient(115deg,#0a0807 0%,#120d0b 42%,#1b130f 100%)}
     .eco-promo-slide:after{position:absolute;inset:0;z-index:3;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(214,172,120,.18),inset 0 0 120px rgba(0,0,0,.55);border-radius:inherit;content:""}
