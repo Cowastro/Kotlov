@@ -80,9 +80,11 @@ abstract class SpecificationCatalog
     {
         $dimensions = $this->dimensions($slug);
 
-        return Cache::remember(
+        // Refresh after the response while the previous facts are still within
+        // the existing five-minute freshness limit. Prices/stock stay live.
+        return Cache::flexible(
             static::class.':specs-v1:'.$slug.':'.implode('-', $categoryIds->sort()->all()),
-            now()->addMinutes(5),
+            [240, 300],
             function () use ($slug, $categoryIds, $dimensions) {
                 $facts = [];
                 foreach (Product::query()->orderable()->whereIn('category_id', $categoryIds)
@@ -93,6 +95,7 @@ abstract class SpecificationCatalog
 
                 return $facts;
             },
+            ['seconds' => 30],
         );
     }
 

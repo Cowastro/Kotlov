@@ -225,12 +225,11 @@
 
                 {{-- Сайдбар с фильтрами --}}
                 <div class="col-xl-3">
-                    <div class="canvas-sidebar sidebar-filter canvas-filter left">
+                    <div class="offcanvas-xl offcanvas-start canvas-sidebar sidebar-filter canvas-filter" id="catalog-filters" tabindex="-1" aria-labelledby="catalog-filters-title">
                         <div class="canvas-wrapper">
                             <div class="canvas-header">
-                                <h4 class="title d-none d-xl-block">Фильтры</h4>
-                                <h5 class="title d-xl-none">Фильтры</h5>
-                                <span class="icon-X2 fs-24 close-filter d-xl-none"></span>
+                                <h4 class="title" id="catalog-filters-title">Фильтры</h4>
+                                <button type="button" class="icon-X2 fs-24 close-filter d-xl-none" data-bs-dismiss="offcanvas" aria-label="Закрыть фильтры"></button>
                             </div>
                             <div class="canvas-body">
 
@@ -245,7 +244,7 @@
                                         <div id="subcategories" class="collapse show">
                                             <ul class="collapse-body filter-group-check group-category">
                                                 <li class="list-item">
-                                                    <a href="?{{ http_build_query(array_merge(request()->except('subcategory'), [])) }}"
+                                                    <a href="?{{ http_build_query(request()->except('subcategory', 'page')) }}#catalog-products"
                                                         class="label link {{ !request('subcategory') ? 'fw-semibold' : '' }}">
                                                         <span class="cate-text">Все</span>
                                                         <span class="count">({{ $allProductsCount }})</span>
@@ -253,7 +252,7 @@
                                                 </li>
                                                 @foreach ($subcategories as $sub)
                                                     <li class="list-item">
-                                                        <a href="?{{ http_build_query(array_merge(request()->except('subcategory'), ['subcategory' => $sub->slug])) }}"
+                                                        <a href="?{{ http_build_query(array_merge(request()->except('subcategory', 'page'), ['subcategory' => $sub->slug])) }}#catalog-products"
                                                             class="label link {{ request('subcategory') == $sub->slug ? 'fw-semibold' : '' }}">
                                                             <span class="cate-text">{{ $sub->name }}</span>
                                                             <span class="count">({{ $sub->products_count }})</span>
@@ -482,7 +481,7 @@
 
                     <div class="tf-shop-control">
                         {{-- Кнопка открытия фильтров на мобильных --}}
-                        <button type="button" id="filterShop" class="tf-btn-filter d-xl-none">
+                        <button type="button" id="filterShop" class="tf-btn-filter d-xl-none" data-bs-toggle="offcanvas" data-bs-target="#catalog-filters" aria-controls="catalog-filters">
                             <span class="icon icon-filter"></span>
                             <span class="text">Фильтры</span>
                         </button>
@@ -759,6 +758,7 @@ function applyFilter(key, value) {
         url.searchParams.set(key, value);
     }
     url.searchParams.delete('page');
+    url.hash = 'catalog-products';
     window.location.href = url.toString();
 }
 
@@ -786,6 +786,7 @@ function applyPriceFilter() {
     }
 
     url.searchParams.delete('page');
+    url.hash = 'catalog-products';
     window.location.href = url.toString();
 }
 
@@ -808,6 +809,7 @@ function applyAttrFilter(attrId, optionId, checked) {
     selectedKeys.forEach(key => url.searchParams.delete(key));
     current.forEach(value => url.searchParams.append(`${group}[]`, value));
     url.searchParams.delete('page');
+    url.hash = 'catalog-products';
     window.location.href = url.toString();
 }
 
