@@ -676,16 +676,17 @@ class CatalogController extends Controller
             $query->prioritizeSpotlight();
         }
 
-        // Confirmed stock is the primary catalogue order for every user-selected
-        // sort. Price, popularity, name and novelty only sort within each group.
+        // Price sorting must stay monotonic across stock provenance groups.
+        // Keep consultation cards after offers with an approved retail price.
+        if (in_array(request('sort'), ['price_asc', 'price_desc'], true)) {
+            $query->prioritizeApprovedPrice()
+                ->orderBy('price', request('sort') === 'price_desc' ? 'desc' : 'asc');
+        }
         $query->prioritizeConfirmedStock();
 
         switch (request('sort')) {
             case 'price_asc':
-                $query->orderBy('price');
-                break;
             case 'price_desc':
-                $query->orderByDesc('price');
                 break;
             case 'name_asc':
                 $query->orderBy('name');

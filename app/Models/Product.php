@@ -850,6 +850,13 @@ class Product extends Model
             ]
         );
 
+        return $query->prioritizeApprovedPrice();
+    }
+
+    public function scopePrioritizeApprovedPrice($query)
+    {
+        $requiresConfirmation = $query->getModel()->qualifyColumn('requires_price_confirmation');
+
         // Products with an approved retail price stay ahead of consultation
         // cards even when neither item currently has a confirmed stock count.
         // The mass safety hold sets this flag for every unlinked price, so an
