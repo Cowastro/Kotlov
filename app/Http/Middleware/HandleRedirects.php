@@ -58,6 +58,9 @@ class HandleRedirects
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->is('catalog-icons/*')) {
+            return $next($request);
+        }
         $response = $this->resolve($request, $next);
         if (! $response->isRedirection() || ! $request->isMethod('GET')) {
             return $response;

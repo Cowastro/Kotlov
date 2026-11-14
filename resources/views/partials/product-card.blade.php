@@ -85,10 +85,13 @@
                 src="{{ $imageUrl }}"
                 alt="{{ $product->name }}"
                 onerror="this.src='{{ asset('img/products/product-placeholder.jpg') }}'">
-            <img class="img-hover" loading="lazy" width="330" height="330"
-                src="{{ $imageHover }}"
-                alt="{{ $product->name }}"
-                onerror="this.src='{{ asset('img/products/product-placeholder.jpg') }}'">
+            <picture class="product-card-hover">
+                <source media="(hover: hover) and (pointer: fine)" srcset="{{ $imageHover }}">
+                <img class="img-hover" loading="lazy" decoding="async" width="330" height="330"
+                    src="{{ $imageUrl }}"
+                    alt="{{ $product->name }}"
+                    onerror="this.src='{{ asset('img/products/product-placeholder.jpg') }}'">
+            </picture>
         </a>
 
         <ul class="product-action_list">

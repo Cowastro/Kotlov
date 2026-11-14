@@ -41,7 +41,7 @@
                                 <a href="/{{ $rootCat->slug }}" class="mb-cat-link">
                                     <span class="mb-cat-icon" aria-hidden="true">
                                         @if ($iconFile)
-                                            <img src="{{ route('catalog.icon', ['file' => pathinfo($iconFile, PATHINFO_FILENAME)]) }}"
+                                            <img src="{{ asset('icons/'.pathinfo($iconFile, PATHINFO_FILENAME).'.svg') }}"
                                                 alt="" width="26" height="26" loading="lazy">
                                         @else
                                             <i class="icon {{ $iconClass }}"></i>
@@ -82,7 +82,7 @@
                                 <a href="/{{ $rootCat->slug }}" class="mb-cat-link">
                                     <span class="mb-cat-icon" aria-hidden="true">
                                         @if ($iconFile)
-                                            <img src="{{ route('catalog.icon', ['file' => pathinfo($iconFile, PATHINFO_FILENAME)]) }}"
+                                            <img src="{{ asset('icons/'.pathinfo($iconFile, PATHINFO_FILENAME).'.svg') }}"
                                                 alt="" width="26" height="26" loading="lazy">
                                         @else
                                             <i class="icon {{ $iconClass }}"></i>

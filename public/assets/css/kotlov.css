@@ -2,6 +2,12 @@
    KOTLOV Custom Styles
 ========================================= */
 
+/* Reserve the ticker's final row before its animation plugin starts. */
+.infiniteSlide-text-v03 { min-height: 56px; overflow: hidden; }
+.infiniteSlide-text-v03 .infiniteSlide { display: flex; align-items: center; width: max-content; white-space: nowrap; }
+.infiniteSlide-text-v03 .infiniteSlide > * { flex: 0 0 auto; }
+.product-card-hover { display: contents; }
+
 .tf-product-extra-link .wishlist-toggle.is-active {
     color: var(--primary) !important;
 }

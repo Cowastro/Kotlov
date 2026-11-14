@@ -76,7 +76,7 @@
     </div>
 
     <a href="/" class="logo-site">
-        <img loading="lazy" width="150" height="30" src="{{ asset('img/logo.svg') }}" alt="KOTLOV">
+        <img loading="eager" decoding="async" width="150" height="30" src="{{ asset('img/logo.svg') }}" alt="KOTLOV">
     </a>
 
     <div class="d-none d-xl-block">
@@ -259,9 +259,9 @@
                                 <a href="/{{ $rootCat->slug }}" class="nav-category_link">
                                     <span class="d-flex align-items-center gap-2">
                                         @if ($iconFile)
-                                            <img src="{{ route('catalog.icon', ['file' => $iconFile]) }}"
+                                            <img src="{{ asset('icons/'.$iconFile.'.svg') }}"
                                                 alt="{{ $rootCat->name }}"
-                                                class="cat-icon">
+                                                class="cat-icon" width="28" height="28" loading="lazy" decoding="async">
                                         @elseif ($iconClass)
                                             <i class="icon {{ $iconClass }} cat-icon cat-icon--font"></i>
                                         @endif

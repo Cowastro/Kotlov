@@ -12,7 +12,7 @@
 <div class="swiper-slide">
     <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden prime-cover primo-cover">
         <span class="prime-cover__word" aria-hidden="true">PRIMO</span>
-        <img class="prime-cover__art" width="877" height="937" loading="eager" decoding="async" src="{{ asset('img/banners/ecokamin-primo/primo-cover.webp') }}" alt="Чугунная каминная топка ЭкоКамин PRIMO 700 с огнём и решёткой-гриль">
+        <img class="prime-cover__art" width="877" height="937" loading="{{ isset($primaryBranch) ? 'lazy' : 'eager' }}" fetchpriority="{{ isset($primaryBranch) ? 'auto' : 'high' }}" decoding="async" src="{{ asset('img/banners/ecokamin-primo/primo-cover.webp') }}" alt="Чугунная каминная топка ЭкоКамин PRIMO 700 с огнём и решёткой-гриль">
         <div class="prime-cover__copy">
             <div class="prime-cover__mast"><span>ЭкоКамин</span><i></i><span>Хит сезона</span></div>
             <span class="prime-cover__kicker">Чугунная каминная топка</span>

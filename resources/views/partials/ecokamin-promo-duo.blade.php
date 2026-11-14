@@ -50,7 +50,6 @@
     </a>
     @endif
 </section>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&text=ABCDEFGHIJKLMNOPQRSTUVWXYZ%D0%90%D0%91%D0%92%D0%93%D0%94%D0%95%D0%81%D0%96%D0%97%D0%98%D0%99%D0%9A%D0%9B%D0%9C%D0%9D%D0%9E%D0%9F%D0%A0%D0%A1%D0%A2%D0%A3%D0%A4%D0%A5%D0%A6%D0%A7%D0%A8%D0%A9%D0%AA%D0%AB%D0%AC%D0%AD%D0%AE%D0%AF0123456789%25%E2%88%92-%E2%80%93.%2C&display=swap" rel="stylesheet">
 <style>
     .eco-promo-duo{display:grid;grid-template-columns:1fr 1fr;gap:20px}
     .eco-promo-duo__card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);min-height:360px;overflow:hidden;border-radius:24px;color:#f6efe7;text-decoration:none;isolation:isolate;background:radial-gradient(ellipse 55% 70% at 78% 78%,rgba(232,104,40,.32),rgba(232,104,40,0) 70%),linear-gradient(115deg,#0a0807 0%,#120d0b 45%,#1d140f 100%);box-shadow:0 22px 50px rgba(20,10,6,.2);transition:transform .3s ease,box-shadow .3s ease}

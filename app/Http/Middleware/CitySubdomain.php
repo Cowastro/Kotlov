@@ -14,7 +14,7 @@ class CitySubdomain
 
     public function handle(Request $request, Closure $next)
     {
-        if (AdminSurfaceRequest::matches($request) || $request->is('city/select', 'city/select/*')) {
+        if (AdminSurfaceRequest::matches($request) || $request->is('city/select', 'city/select/*', 'catalog-icons/*')) {
             return $next($request);
         }
 
