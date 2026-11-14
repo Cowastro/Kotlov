@@ -42,3 +42,9 @@ Allow: /js/general.js
 Sitemap: https://kotlov.by/sitemap.xml
 Sitemap: https://borisov.kotlov.by/sitemap.xml
 Sitemap: https://lida.kotlov.by/sitemap.xml
+
+# High-volume nonessential crawlers are also rejected before PHP.
+User-agent: ExaSearchBot
+User-agent: serpstatbot
+User-agent: meta-externalagent
+Disallow: /

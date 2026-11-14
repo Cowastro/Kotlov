@@ -202,7 +202,9 @@ class SyncOmenergoCommand extends Command
 
     private function classify(array $rows, OmenergoPriceList $parser, ?Supplier $supplier): array
     {
-        $products = Product::with('brand')->get();
+        // Identity matching must not hydrate descriptions, media or specs for the entire catalog.
+        $products = Product::query()->select(['id', 'name', 'sku', 'brand_id', 'is_archived'])
+            ->with('brand:id,name')->get()->keyBy('id');
         $names = [];
         $modelAliases = [];
         $catalog = new OmenergoCatalog;
@@ -216,8 +218,8 @@ class SyncOmenergoCommand extends Command
                 $articles[$parser->articleKey($product->sku)][] = $product->id;
             }
         }
-        foreach ($supplier?->supplierProducts ?? [] as $link) {
-            if ($link->product_id && $products->contains('id', $link->product_id)) {
+        foreach ($supplier?->supplierProducts()->get(['product_id', 'supplier_article']) ?? [] as $link) {
+            if ($link->product_id && $products->has($link->product_id)) {
                 $articles[$parser->articleKey($link->supplier_article)][] = $link->product_id;
             }
         }
@@ -233,7 +235,7 @@ class SyncOmenergoCommand extends Command
             $row['product_id'] = count($matches) === 1 ? $matches[0] : null;
             $row['action'] = count($matches) > 1 ? 'ambiguous' : ($matches ? 'matched' : 'create_candidate');
             if ($row['product_id']) {
-                $matchedProduct = $products->firstWhere('id', $row['product_id']);
+                $matchedProduct = $products->get($row['product_id']);
                 if ($matchedProduct->is_archived || ($matchedProduct->brand && $parser->nameKey($matchedProduct->brand->name) !== $parser->nameKey($row['brand']))) {
                     $row['product_id'] = null;
                     $row['action'] = 'review_archived_or_brand';
@@ -554,12 +556,13 @@ class SyncOmenergoCommand extends Command
 
     private function auditCurrentState(?Supplier $supplier, array $rows): void
     {
-        $links = $supplier?->supplierProducts()->with('product')->get() ?? collect();
+        $links = $supplier?->supplierProducts()->with('product:id,name,price,is_active,images,specs,documents')->get() ?? collect();
         $products = $links->pluck('product')->filter();
         $feed = collect($rows)->keyBy('article_key');
         // Audit the whole branded catalog, not just the successfully imported links.
         // Old cards may have another category, no brand relation, or a duplicate brand.
-        $catalogCards = Product::with('brand')->get()->filter(fn ($product) => preg_match('/(?<![\p{L}\p{N}])(?:энергия|энерготех|energiya|energotex|energotech)(?![\p{L}\p{N}])/iu',
+        $catalogCards = Product::query()->select(['id', 'name', 'brand_id', 'is_active', 'is_archived'])
+            ->with('brand:id,name')->get()->filter(fn ($product) => preg_match('/(?<![\p{L}\p{N}])(?:энергия|энерготех|energiya|energotex|energotech)(?![\p{L}\p{N}])/iu',
             $product->name.' '.($product->brand?->name ?? '')) === 1
             || $products->contains('id', $product->id));
         $legacy = $catalogCards->whereNotIn('id', $products->pluck('id'));

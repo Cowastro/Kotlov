@@ -256,7 +256,7 @@ Route::get('/', function () {
 
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
-    $data = Cache::remember('home:data:v9', 600, function () {
+    $data = Cache::flexible('home:data:v9', [540, 600], function () {
         $categories = Category::active()->get()->sortBy('sort_order');
         $categoriesByParent = $categories->groupBy('parent_id');
         $categoryBranchIds = function ($categoryId) use ($categoriesByParent) {
@@ -462,7 +462,7 @@ Route::get('/', function () {
             'bannerPartners', 'homeBlogPosts', 'ecokaminSaleCount',
             'ecokaminPromoHits', 'ecokaminPromoMaxDiscount', 'ecokaminPromoFrom'
         );
-    });
+    }, ['seconds' => 60]);
 
     return view('pages.home-new', array_merge($data, $cityData, [
         'regionalStores' => app(\App\Services\RegionalStoreDirectory::class)->stores(),
