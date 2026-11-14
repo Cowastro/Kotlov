@@ -6,6 +6,7 @@ use App\Models\PartnerBranch;
 use App\Services\CityContactResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 
 class CitySelectionController extends Controller
 {
@@ -29,7 +30,11 @@ class CitySelectionController extends Controller
         // the main domain, where the cookie lives. A redirect turns the POST of the city form into a GET, so it goes
         // to the GET address with the city in the path — «/city/select» alone has no GET route (404).
         if (! $hasStorefront && str_ends_with($request->getHost(), '.'.$baseDomain)) {
-            return redirect()->away('https://'.$baseDomain.'/city/select/'.$city->slug.'?'.http_build_query(['return' => $returnTo]))
+            $handoff = URL::temporarySignedRoute('city.select', now()->addMinutes(10), [
+                'slug' => $city->slug, 'return' => $returnTo,
+            ], absolute: false);
+
+            return redirect()->away('https://'.$baseDomain.$handoff)
                 ->header('X-Robots-Tag', 'noindex, nofollow');
         }
 

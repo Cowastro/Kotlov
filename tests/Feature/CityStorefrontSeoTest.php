@@ -178,19 +178,21 @@ class CityStorefrontSeoTest extends TestCase
     {
         $this->branch($this->city('borisov', 'Борисов'));
 
-        $this->get('https://kotlov.by/city/select/borisov?return=%2Fcatalog')
+        $this->get($this->citySelectionLink('https://kotlov.by/city/select/borisov?return=%2Fcatalog'))
             ->assertRedirect('https://borisov.kotlov.by/')
             ->assertPlainCookie('selected_city', 'borisov');
 
-        $this->get('https://borisov.kotlov.by/city/select/minsk?return=%2Fcatalog')
-            ->assertRedirect('https://kotlov.by/city/select/minsk?return=%2Fcatalog');
+        $this->get($this->citySelectionLink('https://borisov.kotlov.by/city/select/minsk?return=%2Fcatalog'))
+            ->assertRedirectContains('https://kotlov.by/city/select/minsk?');
 
         // The city form of a storefront posts to «/city/select»: the way back to Minsk keeps the city (it was a 404).
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
+        $handoff = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
             ->post('https://borisov.kotlov.by/city/select', ['slug' => 'minsk', 'return' => '/catalog'])
-            ->assertRedirect('https://kotlov.by/city/select/minsk?return=%2Fcatalog');
+            ->assertRedirectContains('https://kotlov.by/city/select/minsk?');
 
-        $this->get('https://kotlov.by/city/select/minsk?return=%2Fcatalog')
+        $this->assertStringContainsString('return=%2Fcatalog', $handoff->headers->get('Location'));
+        $this->assertStringContainsString('signature=', $handoff->headers->get('Location'));
+        $this->get($handoff->headers->get('Location'))
             ->assertRedirect('https://kotlov.by/catalog')
             ->assertPlainCookie('selected_city', 'minsk');
     }
@@ -208,7 +210,7 @@ class CityStorefrontSeoTest extends TestCase
             ->assertSee('https://www.google.com/maps?q=53.889934,25.316627&amp;output=embed', false);
 
         foreach (['kotlov.by', 'borisov.kotlov.by', 'lida.kotlov.by'] as $host) {
-            $this->get('https://'.$host.'/city/select/lida?return=%2Fcatalog')
+            $this->get($this->citySelectionLink('https://'.$host.'/city/select/lida?return=%2Fcatalog'))
                 ->assertRedirect('https://lida.kotlov.by/');
         }
 

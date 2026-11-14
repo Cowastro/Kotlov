@@ -5,6 +5,12 @@
 
     RewriteEngine On
 
+    # Match the root docroot guard too: unsigned legacy city links never need PHP.
+    RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+    RewriteCond %{QUERY_STRING} !(^|&)signature=[0-9a-f]{64}(&|$) [NC]
+    RewriteRule ^city/select/[^/]+/?$ - [G,L]
+    ErrorDocument 410 "This city-selection link has expired. Please choose your city on the website."
+
     # ── Блокируем агрессивных AI/SEO-скрейперов ─────────────────────────
     # 403 на уровне Apache, до запуска PHP. Реальным посетителям и
     # Google/Bing/Yandex не мешает. Если что-то ломает индексацию —
