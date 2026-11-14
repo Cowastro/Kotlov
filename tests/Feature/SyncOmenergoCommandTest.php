@@ -12,11 +12,37 @@ use App\Services\Suppliers\OmenergoPriceList;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class SyncOmenergoCommandTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_identity_scan_does_not_load_heavy_catalog_columns(): void
+    {
+        Storage::fake('local');
+        Http::fake([OmenergoPriceList::CSV_URL => Http::response($this->feed())]);
+        $category = Category::create(['name' => 'Other products', 'slug' => 'other-products']);
+        Product::create([
+            'category_id' => $category->id, 'name' => 'Unrelated product', 'slug' => 'unrelated-product',
+            'content' => str_repeat('Large description ', 10000),
+        ]);
+        $scans = [];
+        DB::listen(function ($query) use (&$scans): void {
+            if (preg_match('/from ["`]products["`]/i', $query->sql) && ! str_contains(strtolower($query->sql), ' where ')) {
+                $scans[] = $query->sql;
+            }
+        });
+        $this->artisan('supplier:sync-omenergo', ['--dry-run' => true])->assertSuccessful();
+        $this->assertNotEmpty($scans);
+        foreach ($scans as $sql) {
+            $this->assertStringNotContainsString('*', $sql);
+            foreach (['content', 'specs', 'images', 'documents'] as $column) {
+                $this->assertStringNotContainsString($column, $sql);
+            }
+        }
+    }
 
     private function feed(int $count = 150): string
     {

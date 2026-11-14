@@ -1,5 +1,12 @@
 RewriteEngine On
 
+# Serve crawler policy without PHP, sessions or MySQL on the primary/admin hosts.
+# City hosts retain their existing branch-aware robots policy in Laravel.
+RewriteCond %{HTTP_HOST} ^(?:www\.|new\.)?kotlov\.by(?::[0-9]+)?$ [NC]
+RewriteRule ^robots\.txt$ public/seo/robots-main.txt [L]
+RewriteCond %{HTTP_HOST} ^admin\.kotlov\.by(?::[0-9]+)?$ [NC]
+RewriteRule ^robots\.txt$ public/seo/robots-admin.txt [L]
+
 # Legacy crawlable city links are retired. The POST selector creates a signed
 # short-lived GET handoff when crossing hosts. Reject old links before PHP/MySQL.
 RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$

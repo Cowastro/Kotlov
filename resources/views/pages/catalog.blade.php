@@ -603,7 +603,7 @@
                                         @else
                                             <a href="{{ $products->previousPageUrl() }}" class="pag-item"><i class="icon icon-CaretLeftThin"></i></a>
                                         @endif
-                                        @foreach ($products->getUrlRange(max(1, $products->currentPage() - 2), min($products->lastPage(), $products->currentPage() + 2)) as $page => $url)
+                                        @foreach (\App\Support\PaginationWindow::urls($products) as $page => $url)
                                             @if ($page == $products->currentPage())
                                                 <p class="pag-item active">{{ $page }}</p>
                                             @else
@@ -648,7 +648,7 @@
                                                 <i class="icon icon-CaretLeftThin"></i>
                                             </a>
                                         @endif
-                                        @foreach ($products->getUrlRange(max(1, $products->currentPage() - 2), min($products->lastPage(), $products->currentPage() + 2)) as $page => $url)
+                                        @foreach (\App\Support\PaginationWindow::urls($products) as $page => $url)
                                             @if ($page == $products->currentPage())
                                                 <p class="pag-item active">{{ $page }}</p>
                                             @else

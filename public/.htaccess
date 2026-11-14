@@ -5,6 +5,11 @@
 
     RewriteEngine On
 
+    RewriteCond %{HTTP_HOST} ^(?:www\.|new\.)?kotlov\.by(?::[0-9]+)?$ [NC]
+    RewriteRule ^robots\.txt$ seo/robots-main.txt [L]
+    RewriteCond %{HTTP_HOST} ^admin\.kotlov\.by(?::[0-9]+)?$ [NC]
+    RewriteRule ^robots\.txt$ seo/robots-admin.txt [L]
+
     # Match the root docroot guard too: unsigned legacy city links never need PHP.
     RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
     RewriteCond %{QUERY_STRING} !(^|&)signature=[0-9a-f]{64}(&|$) [NC]
@@ -14,7 +19,8 @@
     # 403 на уровне Apache, до запуска PHP. Реальным посетителям и
     # Google/Bing/Yandex не мешает. Если что-то ломает индексацию —
     # достаточно убрать конкретного бота из списка.
-    RewriteCond %{HTTP_USER_AGENT} (SemrushBot|GPTBot|GeedoShop|PetalBot|AhrefsBot|MJ12bot|DotBot|DataForSeoBot|ClaudeBot|Claude-Web|Bytespider|CCBot|Amazonbot|FacebookBot|Applebot-Extended|anthropic-ai|cohere-ai|Diffbot|ImagesiftBot|Omgilibot|Omgili|Timpibot|YouBot|ZoominfoBot) [NC]
+    RewriteCond %{REQUEST_URI} !^/(?:public/)?(?:robots\.txt|seo/robots-(?:main|admin)\.txt)$ [NC]
+    RewriteCond %{HTTP_USER_AGENT} (ExaSearchBot|serpstatbot|meta-externalagent|SemrushBot|GPTBot|GeedoShop|PetalBot|AhrefsBot|MJ12bot|DotBot|DataForSeoBot|ClaudeBot|Claude-Web|Bytespider|CCBot|Amazonbot|FacebookBot|Applebot-Extended|anthropic-ai|cohere-ai|Diffbot|ImagesiftBot|Omgilibot|Omgili|Timpibot|YouBot|ZoominfoBot) [NC]
     RewriteRule .* - [F,L]
 
     # Handle Authorization Header

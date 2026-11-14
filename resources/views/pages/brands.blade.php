@@ -91,10 +91,7 @@
                                     </a>
                                 @endif
 
-                                @foreach ($brands->getUrlRange(
-                                    max(1, $brands->currentPage() - 2),
-                                    min($brands->lastPage(), $brands->currentPage() + 2)
-                                ) as $page => $url)
+                                @foreach (\App\Support\PaginationWindow::urls($brands) as $page => $url)
                                     @if ($page == $brands->currentPage())
                                         <p class="pag-item active">{{ $page }}</p>
                                     @else

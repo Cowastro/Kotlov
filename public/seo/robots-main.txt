@@ -1,0 +1,50 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /cart/
+Disallow: /compare
+Disallow: /city/select
+Disallow: /*pcnt=20
+Disallow: /*pcnt=40
+Disallow: /*pcnt=60
+Disallow: /*pcnt=80
+Disallow: /*pcnt=100
+Disallow: /*?
+Allow: /pechi-kaminy?page=
+Disallow: /pechi-kaminy?page=*&
+Allow: /elektrokamini?page=
+Disallow: /elektrokamini?page=*&
+Allow: /kotly?page=
+Disallow: /kotly?page=*&
+Allow: /gazovye?page=
+Disallow: /gazovye?page=*&
+Allow: /gazovye/nastennye-dvuhkonturnye?page=
+Disallow: /gazovye/nastennye-dvuhkonturnye?page=*&
+Allow: /tverdotoplivnye?page=
+Disallow: /tverdotoplivnye?page=*&
+Allow: /tverdotoplivnye/na-drovah?page=
+Disallow: /tverdotoplivnye/na-drovah?page=*&
+Allow: /elektricheskie?page=
+Disallow: /elektricheskie?page=*&
+Allow: /kotly-na-pelletah?page=
+Disallow: /kotly-na-pelletah?page=*&
+Allow: /vodonagrevateli?page=
+Disallow: /vodonagrevateli?page=*&
+Allow: /electric?page=
+Disallow: /electric?page=*&
+Allow: /electric/nakopitelnye?page=
+Disallow: /electric/nakopitelnye?page=*&
+Allow: /electric/protochnye?page=
+Disallow: /electric/protochnye?page=*&
+
+Allow: /css/styles.css
+Allow: /js/general.js
+
+Sitemap: https://kotlov.by/sitemap.xml
+Sitemap: https://borisov.kotlov.by/sitemap.xml
+Sitemap: https://lida.kotlov.by/sitemap.xml
+
+# High-volume nonessential crawlers are also rejected before PHP.
+User-agent: ExaSearchBot
+User-agent: serpstatbot
+User-agent: meta-externalagent
+Disallow: /

@@ -26,7 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
         __DIR__.'/../app/Console/Commands',
     ])
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->prepend(\App\Http\Middleware\ProtectCitySelection::class);
+        $middleware->prepend([
+            \App\Http\Middleware\ServeRobots::class,
+            \App\Http\Middleware\ProtectStorefrontPagination::class,
+            \App\Http\Middleware\ProtectCitySelection::class,
+        ]);
         $middleware->web(append: [\App\Http\Middleware\CapturePartnerAttribution::class]);
         // The preference contains only a validated public city slug. Keeping
         // it plain lets global middleware read it before the web stack runs.
