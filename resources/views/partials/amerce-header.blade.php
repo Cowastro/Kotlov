@@ -76,7 +76,7 @@
     </div>
 
     <a href="/" class="logo-site">
-        <img loading="eager" decoding="async" width="150" height="30" src="{{ asset('img/logo.svg') }}" alt="KOTLOV">
+        <img loading="eager" decoding="async" width="150" height="30" src="{{ asset('img/logo-kotlov.png') }}" alt="KOTLOV">
     </a>
 
     <div class="d-none d-xl-block">

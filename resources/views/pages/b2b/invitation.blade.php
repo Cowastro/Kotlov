@@ -5,7 +5,7 @@
 @section('content')
 <main class="b2b-invite-page">
     <section class="b2b-invite-card">
-        <a class="b2b-invite-brand" href="{{ url('/') }}"><img src="{{ asset('img/logo.svg') }}" alt="KOTLOV.BY"><span>B2B</span></a>
+        <a class="b2b-invite-brand" href="{{ url('/') }}"><img src="{{ asset('img/logo-kotlov.png') }}" alt="KOTLOV.BY"><span>B2B</span></a>
         @if(!$invitation->isAvailable())
             <div class="b2b-invite-state is-error"><span>Ссылка недействительна</span><h1>Приглашение больше не активно</h1><p>Оно уже принято, отозвано владельцем компании или истёк срок действия. Попросите владельца отправить новое приглашение.</p></div>
         @elseif(auth()->check() && mb_strtolower(auth()->user()->email) !== mb_strtolower($invitation->email))

@@ -21,7 +21,7 @@
     <header class="b2b-topbar">
         <div class="b2b-topbar__inner">
             <a href="{{ route('b2b.catalog', array_filter(['b2b-preview' => $preview ? 1 : null])) }}" class="b2b-brand" aria-label="B2B KOTLOV">
-                <img src="{{ asset('img/logo.svg') }}" width="126" height="26" alt="KOTLOV">
+                <img src="{{ asset('img/logo-kotlov.png') }}" width="126" height="26" alt="KOTLOV">
                 <span>B2B</span>
             </a>
             <div class="b2b-topbar__company">

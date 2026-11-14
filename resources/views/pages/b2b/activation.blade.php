@@ -5,7 +5,7 @@
 @section('content')
 <main class="b2b-invite-page">
     <section class="b2b-invite-card">
-        <a class="b2b-invite-brand" href="{{ url('/') }}"><img src="{{ asset('img/logo.svg') }}" alt="KOTLOV.BY"><span>B2B</span></a>
+        <a class="b2b-invite-brand" href="{{ url('/') }}"><img src="{{ asset('img/logo-kotlov.png') }}" alt="KOTLOV.BY"><span>B2B</span></a>
         @if(!$valid || !$client)
             <div class="b2b-invite-state is-error"><span>Ссылка уже использована</span><h1>Пароль уже задан</h1><p>Войдите с e-mail {{ $user->email }} и своим паролем. Если не помните пароль — воспользуйтесь восстановлением на странице входа.</p><a href="{{ route('login') }}">Войти</a></div>
         @elseif(auth()->check() && auth()->id() !== $user->id)
