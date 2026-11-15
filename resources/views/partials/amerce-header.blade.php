@@ -289,6 +289,9 @@
                                                                 <a href="/{{ $child->slug }}" class="sub-nav__link tf-btn-line">
                                                                     {{ $child->name }}
                                                                 </a>
+                                                                @if ($child->relationLoaded('materialLinks'))
+                                                                    @include('partials.threaded-fitting-material-links', ['materialLinks' => $child->materialLinks])
+                                                                @endif
                                                             @endforeach
                                                             @if ($childGroup['more'] > 0)
                                                                 <a href="/{{ $rootCat->slug }}" class="sub-nav__link tf-btn-line cl-text-2">

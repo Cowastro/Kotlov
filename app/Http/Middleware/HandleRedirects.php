@@ -466,6 +466,13 @@ class HandleRedirects
         $uses = $route->getAction('uses');
         $parameters = $route->parameters();
 
+        if ($uses === CatalogController::class.'@threadedFittingLanding') {
+            $selection = (string) ($parameters['selection'] ?? '');
+            return \App\Support\Catalog\ThreadedFittingCatalog::landing($selection)
+                && Category::active()->where('slug', \App\Support\Catalog\ThreadedFittingCatalog::ROOT)->exists()
+                ? '/'.\App\Support\Catalog\ThreadedFittingCatalog::ROOT.'/'.$selection : null;
+        }
+
         if ($uses === CatalogController::class.'@show') {
             $slug = (string) ($parameters['category'] ?? '');
             $category = Category::query()
@@ -730,6 +737,8 @@ class HandleRedirects
         if (count($segments) === 2 && (
             (BoilerCatalog::LANDINGS[$segments[0]]['slug'] ?? null) === $segments[1]
             || ($segments[0] === 'electric' && isset(WaterHeaterCatalog::LANDINGS[$segments[1]]))
+            || ($segments[0] === \App\Support\Catalog\ThreadedFittingCatalog::ROOT
+                && \App\Support\Catalog\ThreadedFittingCatalog::landing($segments[1]) !== null)
         )) {
             return null;
         }

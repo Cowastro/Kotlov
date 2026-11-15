@@ -1008,6 +1008,11 @@ foreach (array_keys(\App\Support\Catalog\WaterHeaterCatalog::LANDINGS) as $selec
         ->defaults('selection', $selection);
 }
 
+foreach (array_keys(\App\Support\Catalog\ThreadedFittingCatalog::MATERIALS) as $selection) {
+    Route::get('/rezbovye-fitingi/'.$selection, [CatalogController::class, 'threadedFittingLanding'])
+        ->defaults('selection', $selection);
+}
+
 // ===== Динамические роуты — ПОСЛЕДНИМИ =====
 
 // 1 сегмент — категория

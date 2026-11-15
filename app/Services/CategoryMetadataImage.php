@@ -8,6 +8,19 @@ use Illuminate\Support\Facades\Cache;
 
 class CategoryMetadataImage
 {
+    public function forProducts(iterable $products): ?array
+    {
+        foreach ($products as $product) {
+            foreach (array_keys($product->imagePaths()) as $index) {
+                if ($image = $this->localImage($product->imageUrl($index))) {
+                    return [...$image, 'url' => url($image['path'])];
+                }
+            }
+        }
+
+        return null;
+    }
+
     public function resolve(Category $category, ?array $categoryIds = null, bool $fresh = false): ?array
     {
         $categoryIds ??= $this->descendantIds($category);
