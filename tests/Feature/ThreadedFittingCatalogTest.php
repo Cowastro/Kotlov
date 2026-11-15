@@ -8,6 +8,7 @@ use App\Models\Attribute;
 use App\Models\AttributeOption;
 use App\Models\ProductAttributeValue;
 use App\Models\City;
+use App\Models\Brand;
 use App\Support\Catalog\ThreadedFittingCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -101,5 +102,19 @@ class ThreadedFittingCatalogTest extends TestCase
         $this->fitting('Муфта латунная');
         City::create(['slug' => 'gomel', 'name' => 'Гомель', 'name_in' => 'в Гомеле', 'name_title' => 'Гомеле', 'is_active' => false]);
         $this->get('https://gomel.kotlov.by/rezbovye-fitingi/latunnye')->assertRedirect('https://kotlov.by/rezbovye-fitingi/latunnye');
+    }
+
+    public function test_brand_choices_belong_to_the_selected_material(): void
+    {
+        $brass = $this->fitting('Муфта латунная');
+        $iron = $this->fitting('Муфта чугунная');
+        $brassBrand = Brand::create(['name' => 'Brass brand', 'slug' => 'brass-brand']);
+        $ironBrand = Brand::create(['name' => 'Iron brand', 'slug' => 'iron-brand']);
+        $brass->update(['brand_id' => $brassBrand->id]);
+        $iron->update(['brand_id' => $ironBrand->id]);
+        foreach (['/rezbovye-fitingi/chugunnye', '/rezbovye-fitingi?fitting[material]=chugunnye'] as $url) {
+            $this->get($url)->assertOk()
+                ->assertViewHas('brands', fn ($brands) => $brands->pluck('id')->all() === [$ironBrand->id]);
+        }
     }
 }

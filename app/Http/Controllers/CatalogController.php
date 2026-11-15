@@ -814,6 +814,17 @@ class CatalogController extends Controller
                 $specificationFacets = $specificationFacts['facets'];
                 $specificationCards = $specificationFacts['cards'];
                 $specificationMatchingIds = $specificationFacts['matched'];
+                if ($fittingName !== null) {
+                    $material = $specificationLanding['filters']['material'] ?? $specificationSelection['material'] ?? null;
+                    if (is_string($material) && isset($specificationCatalog->dimensions($category->slug)['material'][1][$material])) {
+                        $materialIds = collect($specificationCatalog->facts($category->slug, $activeCategoryIds))
+                            ->filter(fn ($fact) => in_array($material, $fact['options']['material'] ?? [], true))->keys();
+                        $materialBrandCounts = Product::query()->orderable()->whereIntegerInRaw('products.id', $materialIds)
+                            ->selectRaw('brand_id, COUNT(*) as total')->groupBy('brand_id')->pluck('total', 'brand_id');
+                        $brands = $brands->each(fn ($brand) => $brand->products_count = (int) $materialBrandCounts->get($brand->id, 0))
+                            ->filter(fn ($brand) => $brand->products_count > 0)->values();
+                    }
+                }
             }
         }
 
