@@ -191,7 +191,7 @@ class SeoSurfaceTest extends TestCase
             ->assertSeeText('25–55 м²')
             ->assertSeeText('Сталь')
             ->assertDontSeeText('135 м³');
-        $this->assertSame(2, substr_count($response->getContent(), 'class="fireplace-card-specs '));
+        $this->assertSame(1, substr_count($response->getContent(), 'class="fireplace-card-specs '));
 
         $this->get('https://kotlov.by/pechi-kaminy/'.$product->slug)->assertOk()
             ->assertViewHas('fireplaceSpecs', [

@@ -47,7 +47,7 @@ class ElectricFireplaceCatalogTest extends TestCase
             ->assertSeeText('Электрокамины в Минске')->assertSeeText('33″')
             ->assertSeeText('до 25 м²')->assertSeeText('Водяной пар')->assertSeeText('Биокамин')
             ->assertDontSeeText('20 м²');
-        $this->assertSame(6, substr_count($page->getContent(), 'class="fireplace-card-specs '));
+        $this->assertSame(3, substr_count($page->getContent(), 'class="fireplace-card-specs '));
 
         $this->get($url.'?electric_mode=heat')->assertOk()
             ->assertViewHas('products', fn ($page) => $page->pluck('id')->all() === [$heater->id]);
