@@ -263,6 +263,18 @@
             </p>
         @endif
 
+        @if ($catalogUnified ?? false)
+            <div class="catalog-list-details">
+                @if ($product->short_description || $product->content)
+                    <p class="text-caption-01 cl-text-2">{{ Str::limit(strip_tags($product->short_description ?: $product->content), 200) }}</p>
+                @endif
+                <div class="d-flex flex-wrap gap-16 text-caption-01 cl-text-2">
+                    @if ($product->brand)<span>Бренд: <strong>{{ $product->brand->name }}</strong></span>@endif
+                    @if ($product->sku)<span>Арт: <strong>{{ $product->sku }}</strong></span>@endif
+                </div>
+            </div>
+        @endif
+
         @if ($showManagerContext ?? true)
             @include('partials.manager-product-context', ['product' => $product, 'compact' => true, 'productUrl' => $productUrl])
         @endif

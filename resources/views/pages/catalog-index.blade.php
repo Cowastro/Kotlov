@@ -19,6 +19,7 @@
         .catalog-section-card__links a:hover{color:var(--primary);text-decoration:underline}
         .catalog-section-card__more{display:inline-block;margin-top:8px;color:var(--primary);font-size:13px;font-weight:600}
         .catalog-section-card__links li{white-space:nowrap}
+        @media(max-width:767px){.catalog-index-page .section-page-title{padding:0!important;margin:0}.catalog-index-page .section-page-title .breadcrumbs,.catalog-index-page .section-page-title .main-page-title>p{display:none}.catalog-index-page .section-page-title h1{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}}
         @media(min-width:1440px){.catalog-sections{grid-template-columns:repeat(4,minmax(0,1fr))}}
         @media(max-width:1199px){.catalog-sections{grid-template-columns:repeat(2,minmax(0,1fr))}}
     </style>
@@ -47,7 +48,7 @@
         @endif
 
         <div class="mobile-catalog-list">
-            <h1 id="mobile-catalog-title" class="visually-hidden">Каталог товаров{{ ($isCityStorefront ?? false) ? ' '.$cityIn : '' }}</h1>
+            <h2 id="mobile-catalog-title" class="visually-hidden">Каталог товаров{{ ($isCityStorefront ?? false) ? ' '.$cityIn : '' }}</h2>
             @foreach ($rootCategories as $category)
                 @php
                     $children = $category->catalogChildren;
@@ -98,7 +99,7 @@
     </section>
 
     {{-- Заголовок --}}
-    <section class="section-page-title text-center flat-spacing-2 pb-0 d-none d-md-block">
+    <section class="section-page-title text-center flat-spacing-2 pb-0">
         <div class="container">
             <div class="main-page-title">
                 <div class="breadcrumbs">

@@ -42,6 +42,17 @@
     RewriteCond %{DOCUMENT_ROOT}/images/$1 -f
     RewriteRule ^proxy-image/(.+)$ images/$1 [L]
 
+    # Retain the old public image URL for cached links and structured-data consumers.
+    RewriteRule ^img/og-default\.jpg$ /img/og/kotlov-default.jpg [R=301,L]
+
+    # Missing files in static-only namespaces must not bootstrap Laravel/MySQL.
+    # Existing files and dynamic /proxy-image, /storage and download routes stay unchanged.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(?:assets|img|images|fonts|css|js)/.+\.(?:avif|gif|ico|jpe?g|png|svg|webp|woff2?|ttf|eot|css|js|map)$ - [R=404,L,NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^apple-touch-icon(?:-precomposed)?\.png$ - [R=404,L,NC]
+
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
