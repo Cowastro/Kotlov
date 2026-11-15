@@ -143,6 +143,12 @@ Route::get('/sitemap.xml', function (Request $request) {
             }
         }
 
+        if ($fittings = Category::active()->where('slug', \App\Support\Catalog\ThreadedFittingCatalog::ROOT)->first()) {
+            foreach (app(\App\Support\Catalog\ThreadedFittingCatalog::class)->links(collect([$fittings->id])) as $link) {
+                $addUrl($link['path']);
+            }
+        }
+
         Category::active()
             ->whereIn('id', app(\App\Services\CatalogPublishedCategories::class)->ids())
             ->when(Category::active()->where('slug', WaterHeaterCatalog::GAS)->exists(), fn ($query) => $query->where('slug', '!=', 'gas'))

@@ -308,7 +308,7 @@ private function getNavBrands(): \Illuminate\Support\Collection
 
 private function getNavCategories()
 {
-    return Cache::remember('nav:categories:orderable:v5', 3600, function () {
+    return Cache::remember('nav:categories:orderable:v6', 3600, function () {
         // A category whose URL is the source of an active redirect must not be
         // linked from the menu: every such link costs crawlers and visitors an
         // extra 301 hop.
@@ -367,6 +367,9 @@ private function getNavCategories()
                 ->values();
 
             $category->setRelation('children', $children);
+            if ($category->slug === \App\Support\Catalog\ThreadedFittingCatalog::ROOT) {
+                $category->setRelation('materialLinks', collect(app(\App\Support\Catalog\ThreadedFittingCatalog::class)->links(collect([$category->id]))));
+            }
 
             return $category;
         };

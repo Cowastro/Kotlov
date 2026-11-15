@@ -18,9 +18,12 @@
         @unless ($isBoilerHub || $isWaterHeaterHub || $isMinskFireplaceCatalog || $isStoveHeatingCatalog || $showElectricFireplaceNavigation || $isChimneySection || $isSaunaStoveCatalog || $category->slug === 'elektrokamenki' || $catalogNavigationGroups->isNotEmpty())
             @include('partials.catalog-stock-toggle')
         @endunless
+        @if ($category->slug === \App\Support\Catalog\ThreadedFittingCatalog::ROOT)
+            @include('partials.threaded-fitting-material-links', ['materialLinks' => $specificationCollections, 'materialButtons' => true])
+        @endif
         @if ($specificationLanding !== null)
             <a class="tf-btn btn-stroke small" href="{{ url('/'.$category->slug) }}">Все товары раздела</a>
-        @else
+        @elseif ($category->slug !== \App\Support\Catalog\ThreadedFittingCatalog::ROOT)
             @foreach ($specificationCollections as $collection)
                 <a class="tf-btn btn-stroke small" href="{{ url($collection['path']) }}">
                     {{ $collection['short'] }}

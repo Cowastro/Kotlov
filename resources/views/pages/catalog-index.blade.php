@@ -91,6 +91,9 @@
                                     <small>{{ $child->products_count }}</small>
                                 </a>
                             @endif
+                            @if ($child->slug === \App\Support\Catalog\ThreadedFittingCatalog::ROOT)
+                                @include('partials.threaded-fitting-material-links', ['materialLinks' => app(\App\Support\Catalog\ThreadedFittingCatalog::class)->links(collect([$child->id]))])
+                            @endif
                         @endforeach
                     </div>
                 </details>

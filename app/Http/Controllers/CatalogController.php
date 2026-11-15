@@ -27,6 +27,7 @@ use App\Support\Catalog\WaterHeaterCatalog;
 use App\Support\Catalog\HeaterCatalog;
 use App\Support\Catalog\RadiatorCatalog;
 use App\Support\Catalog\CatalogSearch;
+use App\Support\Catalog\ThreadedFittingCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -53,6 +54,14 @@ class CatalogController extends Controller
         abort_unless($landing, 404);
 
         return $this->show('electric', ['slug' => $selection, ...$landing]);
+    }
+
+    public function threadedFittingLanding(string $selection)
+    {
+        $landing = ThreadedFittingCatalog::landing($selection);
+        abort_unless($landing, 404);
+
+        return $this->show(ThreadedFittingCatalog::ROOT, $landing);
     }
 
     public function show(string $categorySlug, ?array $specificationLanding = null)
@@ -116,20 +125,22 @@ class CatalogController extends Controller
         $heaterName = WaterHeaterCatalog::name($category->slug);
         $roomHeaterName = HeaterCatalog::NAMES[$category->slug] ?? null;
         $radiatorName = RadiatorCatalog::NAMES[$category->slug] ?? null;
+        $fittingName = $category->slug === ThreadedFittingCatalog::ROOT ? 'Резьбовые фитинги' : null;
         $isRoomHeaterCatalog = $roomHeaterName !== null;
         $roomArea = $isRoomHeaterCatalog ? HeaterCatalog::roomArea(request()->query('room_area')) : null;
         $roomAreaInvalid = $isRoomHeaterCatalog && request()->has('room_area') && request('room_area') !== '' && $roomArea === null;
-        $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName ?? $roomHeaterName ?? $radiatorName;
+        $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName ?? $roomHeaterName ?? $radiatorName ?? $fittingName;
         $specificationSearch = CatalogSearch::term(request()->query('q'));
         $scopeCatalogSearch = fn ($query) => CatalogSearch::apply($query, $specificationSearch);
         $specificationCatalog = match (true) {
+            $fittingName !== null => app(ThreadedFittingCatalog::class),
             $radiatorName !== null => app(RadiatorCatalog::class),
             $roomHeaterName !== null => app(HeaterCatalog::class),
             $heaterName !== null => app(WaterHeaterCatalog::class),
             $specificationName !== null => app(BoilerCatalog::class),
             default => null,
         };
-        $specificationParameter = $radiatorName !== null ? 'radiator' : ($roomHeaterName !== null ? 'heating' : ($heaterName !== null ? 'heater' : 'boiler'));
+        $specificationParameter = $fittingName !== null ? 'fitting' : ($radiatorName !== null ? 'radiator' : ($roomHeaterName !== null ? 'heating' : ($heaterName !== null ? 'heater' : 'boiler')));
         if ($category->slug === WaterHeaterCatalog::GAS && ($gasId = Category::active()->where('slug', 'gas')->value('id'))) {
             $allCategoryIds = $allCategoryIds->merge($this->collectCategoryAndDescendantIds($gasId))->unique()->values();
         }
@@ -803,6 +814,17 @@ class CatalogController extends Controller
                 $specificationFacets = $specificationFacts['facets'];
                 $specificationCards = $specificationFacts['cards'];
                 $specificationMatchingIds = $specificationFacts['matched'];
+                if ($fittingName !== null) {
+                    $material = $specificationLanding['filters']['material'] ?? $specificationSelection['material'] ?? null;
+                    if (is_string($material) && isset($specificationCatalog->dimensions($category->slug)['material'][1][$material])) {
+                        $materialIds = collect($specificationCatalog->facts($category->slug, $activeCategoryIds))
+                            ->filter(fn ($fact) => in_array($material, $fact['options']['material'] ?? [], true))->keys();
+                        $materialBrandCounts = Product::query()->orderable()->whereIntegerInRaw('products.id', $materialIds)
+                            ->selectRaw('brand_id, COUNT(*) as total')->groupBy('brand_id')->pluck('total', 'brand_id');
+                        $brands = $brands->each(fn ($brand) => $brand->products_count = (int) $materialBrandCounts->get($brand->id, 0))
+                            ->filter(fn ($brand) => $brand->products_count > 0)->values();
+                    }
+                }
             }
         }
 
@@ -1041,6 +1063,7 @@ class CatalogController extends Controller
                 ? $seo->categoryTitle($category->slug, $specificationName, $specificationCity, null)
                 : $seo->title(null, $specificationName.' — купить '.$specificationCity.' | KOTLOV');
             $boilerDescription = match ($category->slug) {
+                ThreadedFittingCatalog::ROOT => $specificationLanding['description'] ?? 'Латунные, чугунные и стальные резьбовые фитинги. Выберите материал, размер резьбы и тип соединения, сравните цены и наличие.',
                 'gazovye' => 'Настенные и напольные газовые котлы для отопления и горячей воды. Сравните контуры, мощность и камеру сгорания.',
                 'elektricheskie' => 'Электрокотлы для дома. Сравните модели по мощности, площади отопления и подключению к сети 220 или 380 В.',
                 'tverdotoplivnye' => 'Котлы на дровах и угле для отопления дома. Сравните мощность, площадь обогрева и материал топки.',
@@ -1152,12 +1175,14 @@ class CatalogController extends Controller
         $heatFluidFaq = collect();
         $pelletComparisonProducts = collect();
         $categoryImageMetadata = true;
-        $categoryPhoto = app(CategoryMetadataImage::class)->resolve($category, $allCategoryIds->all());
+        $categoryPhoto = $fittingName !== null && $specificationLanding !== null
+            ? app(CategoryMetadataImage::class)->forProducts($products)
+            : app(CategoryMetadataImage::class)->resolve($category, $allCategoryIds->all());
         $ogImage = $categoryPhoto['url'] ?? null;
         $ogImageWidth = $categoryPhoto['width'] ?? null;
         $ogImageHeight = $categoryPhoto['height'] ?? null;
         $ogImageType = $categoryPhoto['type'] ?? null;
-        $ogImageAlt = $categorySchemaName;
+        $ogImageAlt = $fittingName !== null ? ($specificationLanding['title'] ?? $categorySchemaName) : $categorySchemaName;
         $collectionSchema = array_filter([
             '@context' => 'https://schema.org',
             '@type' => 'CollectionPage',
@@ -1538,6 +1563,7 @@ class CatalogController extends Controller
                 : ($specificationLanding['description'] ?? $catalogIntro);
         }
         $specificationCollections = match ($category->slug) {
+            ThreadedFittingCatalog::ROOT => app(ThreadedFittingCatalog::class)->links($activeCategoryIds),
             'kotly' => [
                 ['path' => '/gazovye/nastennye-dvuhkonturnye', 'short' => 'Настенные двухконтурные газовые котлы'],
                 ['path' => '/tverdotoplivnye/na-drovah', 'short' => 'Твердотопливные котлы на дровах'],
@@ -1551,7 +1577,7 @@ class CatalogController extends Controller
                 'short' => BoilerCatalog::LANDINGS[$category->slug]['short'],
             ]] : [],
         };
-        $replacedSpecificationAttributes = $roomHeaterName !== null ? [
+        $replacedSpecificationAttributes = $fittingName !== null ? ['material' => '/^материал(?: корпуса| изделия)?$/u'] : ($roomHeaterName !== null ? [
             'power' => '/мощност/u', 'area' => '/площад|эффективен для/u',
             'mount' => '/установ|монтаж|размещен/u',
         ] : ($heaterName !== null ? [
@@ -1570,7 +1596,7 @@ class CatalogController extends Controller
             'fuel' => '/^(?:топливо|тип топлива|вид топлива)/u',
             'firebox' => '/^материал топки/u',
             'voltage' => '/^напряжение/u',
-        ]);
+        ]));
         $specificationFilterAttributes = $filterAttributes;
         if ($specificationCatalog !== null && ! $isBoilerHub) {
             $replaced = $roomHeaterName !== null ? $replacedSpecificationAttributes : array_intersect_key($replacedSpecificationAttributes, $specificationFacets + ($specificationLanding['filters'] ?? []));
