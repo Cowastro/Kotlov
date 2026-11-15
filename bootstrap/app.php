@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->prepend([
             \App\Http\Middleware\ServeRobots::class,
+            \App\Http\Middleware\RejectMissingStaticAsset::class,
             \App\Http\Middleware\ProtectStorefrontPagination::class,
             \App\Http\Middleware\ProtectCitySelection::class,
         ]);

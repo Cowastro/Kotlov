@@ -14,7 +14,7 @@
         'legalName' => $seller['name'] ?? null,
         'url' => 'https://kotlov.by/',
         'logo' => asset('img/logo-kotlov.png'),
-        'image' => asset('img/og-default.jpg'),
+        'image' => asset('img/og/kotlov-default.jpg'),
         'email' => $seller['email'] ?? null,
         'telephone' => $phones[0] ?? null,
         'taxID' => $seller['unp'] ?? null,

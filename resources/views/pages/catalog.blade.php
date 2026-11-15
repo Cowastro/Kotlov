@@ -26,6 +26,10 @@
     @endpush
 @endif
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('assets/css/catalog-layout.css') }}?v=1">
+@endpush
+
 @section('content')
 <main id="wrapper">
 
@@ -557,10 +561,6 @@
                                 Показано {{ $products->firstItem() }}–{{ $products->lastItem() }}
                                 из {{ $products->total() }} товаров
                             </div>
-                            <div id="product-count-list" class="count-text text-caption-01" style="display:none">
-                                Показано {{ $products->firstItem() }}–{{ $products->lastItem() }}
-                                из {{ $products->total() }} товаров
-                            </div>
                             @php
                                 $hasActiveCatalogFilters = $hasActiveCatalogFilters ?? count(request()->except('sort', 'page', 'brand', 'brand_sort')) > 0;
                                 $resetCatalogParameters = array_filter([
@@ -584,46 +584,10 @@
                             </div>
                         @endif
 
-                        {{-- List вид товаров --}}
-                        <div class="tf-list-layout wrapper-shop" id="listLayout" style="display: none;">
-                            @forelse ($products as $product)
-                                @include('partials.product-card-list', ['product' => $product, 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? []])
-                            @empty
-                                <div class="text-center py-48 wd-full">
-                                    <p class="h5 cl-text-2">Товары не найдены</p>
-                                </div>
-                            @endforelse
-
-                            {{-- Пагинация list --}}
-                            @if ($products->hasPages())
-                                <div class="wd-full justify-content-center">
-                                    <div class="tf-page-pagination">
-                                        @if ($products->onFirstPage())
-                                            <span class="pag-item disabled"><i class="icon icon-CaretLeftThin"></i></span>
-                                        @else
-                                            <a href="{{ $products->previousPageUrl() }}" class="pag-item"><i class="icon icon-CaretLeftThin"></i></a>
-                                        @endif
-                                        @foreach (\App\Support\PaginationWindow::urls($products) as $page => $url)
-                                            @if ($page == $products->currentPage())
-                                                <p class="pag-item active">{{ $page }}</p>
-                                            @else
-                                                <a href="{{ $url }}" class="pag-item">{{ $page }}</a>
-                                            @endif
-                                        @endforeach
-                                        @if ($products->hasMorePages())
-                                            <a href="{{ $products->nextPageUrl() }}" class="pag-item"><i class="icon icon-CaretRightThin"></i></a>
-                                        @else
-                                            <span class="pag-item disabled"><i class="icon icon-CaretRightThin"></i></span>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
-
                         {{-- Сетка товаров --}}
                         <div class="wrapper-shop tf-grid-layout tf-col-2 md-col-3" id="gridLayout">
                             @forelse ($products as $product)
-                                @include('partials.product-card', ['product' => $product, 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? []])
+                                @include('partials.product-card', ['product' => $product, 'catalogUnified' => true, 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? []])
                             @empty
                                 <div class="wd-full text-center py-48">
                                     <i class="icon icon-Package fs-48 cl-text-3 mb-16"></i>
@@ -863,46 +827,47 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const switches = document.querySelectorAll('.tf-view-layout-switch');
     const gridLayout = document.getElementById('gridLayout');
-    const listLayout = document.getElementById('listLayout');
-    const countGrid  = document.getElementById('product-count-grid');
-    const countList  = document.getElementById('product-count-list');
-
-    // Восстанавливаем сохранённый вид (по умолчанию — 3 колонки)
-    const savedLayout = localStorage.getItem('catalog_layout') || 'tf-col-3';
+    const allowedLayouts = ['list', 'tf-col-2', 'tf-col-3', 'tf-col-4'];
+    let savedLayout = 'tf-col-3';
+    try { savedLayout = localStorage.getItem('catalog_layout') || savedLayout; } catch (_) {}
     applyLayout(savedLayout);
 
     switches.forEach(function (btn) {
+        btn.setAttribute('role', 'button');
+        btn.setAttribute('tabindex', '0');
+        btn.setAttribute('aria-label', btn.dataset.valueLayout === 'list'
+            ? 'Показать списком' : 'Показать сеткой: ' + btn.dataset.valueLayout.slice(-1) + ' колонки');
+        btn.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); btn.click(); }
+        });
         btn.addEventListener('click', function () {
             const layout = this.dataset.valueLayout;
-            localStorage.setItem('catalog_layout', layout);
+            try { localStorage.setItem('catalog_layout', layout); } catch (_) {}
             applyLayout(layout);
         });
     });
 
     function applyLayout(layout) {
-        // Активная кнопка
+        if (!allowedLayouts.includes(layout)) layout = 'tf-col-3';
+        const isList = layout === 'list';
         switches.forEach(function (btn) {
-            btn.classList.toggle('active', btn.dataset.valueLayout === layout);
+            const active = btn.dataset.valueLayout === layout;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', String(active));
         });
-
-        if (layout === 'list') {
-            // List вид
-            gridLayout.style.display = 'none';
-            listLayout.style.display = 'flex';
-            listLayout.style.flexDirection = 'column';
-            if (countGrid) countGrid.style.display = 'none';
-            if (countList) countList.style.display = 'block';
-        } else {
-            // Grid вид — меняем количество колонок
-            listLayout.style.display = 'none';
-            gridLayout.style.display = '';
-            if (countGrid) countGrid.style.display = 'block';
-            if (countList) countList.style.display = 'none';
-
-            // Сбрасываем и применяем нужный класс колонок
-            gridLayout.classList.remove('tf-col-2', 'tf-col-3', 'tf-col-4', 'md-col-3');
-            gridLayout.classList.add(layout);
-        }
+        gridLayout.classList.remove('tf-col-2', 'tf-col-3', 'tf-col-4', 'md-col-3');
+        gridLayout.classList.toggle('catalog-products--list', isList);
+        if (!isList) gridLayout.classList.add(layout);
+        gridLayout.querySelectorAll(':scope > .card-product').forEach(function (card) {
+            const image = card.querySelector('.card-product_wrapper');
+            const info = card.querySelector('.card-product_info');
+            const actions = card.querySelector('.product-action_list');
+            const purchase = card.querySelector('.product-action_bot');
+            // Move the existing controls; listeners, wishlist state and product data survive.
+            const target = isList ? info : image;
+            if (actions) target.append(actions);
+            if (purchase) target.append(purchase);
+        });
     }
 });
 </script>

@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\StorefrontProductSearch;
+use App\Support\Catalog\CatalogSearch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -13,9 +14,9 @@ class SearchController extends Controller
 {
     public function index(Request $request)
     {
-        $q = mb_substr(trim($request->get('q', '')), 0, 100);
-        $category = $request->get('category', '');
-        $sort = $request->get('sort', '');
+        $q = CatalogSearch::term($request->query('q'));
+        $category = CatalogSearch::term($request->query('category'));
+        $sort = CatalogSearch::term($request->query('sort'));
 
         $products = collect();
         $total = 0;
@@ -66,7 +67,7 @@ class SearchController extends Controller
      */
     public function suggest(Request $request)
     {
-        $q = mb_substr(trim($request->get('q', '')), 0, 100);
+        $q = CatalogSearch::term($request->query('q'));
 
         if (mb_strlen($q) < 2) {
             return response()->json([]);
