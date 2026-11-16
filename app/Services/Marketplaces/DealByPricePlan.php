@@ -2,11 +2,30 @@
 
 namespace App\Services\Marketplaces;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /** Exact identities only: no fuzzy model names or removal of model/size suffixes. */
 class DealByPricePlan
 {
+    public function hasBlockingDiscount(array $remote): bool
+    {
+        $discount = $remote['discount'] ?? null;
+        if (empty($discount)) {
+            return false;
+        }
+        // Deal.by retains expired promotions in the API. They no longer affect
+        // the selling price. Unknown, future and currently active promotions block writes.
+        $end = is_array($discount) ? ($discount['date_end'] ?? '') : '';
+        if (! is_string($end)) {
+            return true;
+        }
+        $date = \DateTimeImmutable::createFromFormat('!d.m.Y', $end);
+
+        return ! $date || $date->format('d.m.Y') !== $end
+            || $date->format('Y-m-d') >= CarbonImmutable::now('Europe/Minsk')->format('Y-m-d');
+    }
+
     public function fingerprint(array $remote): string
     {
         return hash('sha256', json_encode([$remote['sku'] ?? '', $remote['name'] ?? '', $remote['external_id'] ?? ''], JSON_UNESCAPED_UNICODE));
@@ -87,7 +106,7 @@ class DealByPricePlan
                 $row['reason'] = 'unsupported_currency';
             } elseif (! is_numeric($item['price'] ?? null) || ! is_finite((float) $item['price'])) {
                 $row['reason'] = 'invalid_remote_price';
-            } elseif (! empty($item['discount'])) {
+            } elseif ($this->hasBlockingDiscount($item)) {
                 // Do not accidentally apply an existing sbg.by discount on top of the KOTLOV retail price.
                 $row['reason'] = 'remote_discount';
             } else {

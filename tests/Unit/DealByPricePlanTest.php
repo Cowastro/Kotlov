@@ -6,10 +6,26 @@ use App\Models\IntegrationProduct;
 use App\Models\Product;
 use App\Models\SupplierProduct;
 use App\Services\Marketplaces\DealByPricePlan;
+use Carbon\CarbonImmutable;
 use PHPUnit\Framework\TestCase;
 
 class DealByPricePlanTest extends TestCase
 {
+    public function test_only_strictly_expired_promotions_allow_price_sync(): void
+    {
+        CarbonImmutable::setTestNow('2026-11-16 12:00:00');
+        try {
+            $planner = new DealByPricePlan;
+            foreach (['15.11.2026' => 'update', '16.11.2026' => 'remote_discount',
+                '17.11.2026' => 'remote_discount', '31.02.2025' => 'remote_discount', '' => 'remote_discount'] as $end => $expected) {
+                $item = array_replace($this->remote(10, 'A', 'Печь'), ['discount' => ['value' => 10, 'date_end' => $end]]);
+                $this->assertSame($expected, $planner->build(collect([$this->product(1, 'A', 'Печь')]), collect([$item]))[0]['reason']);
+            }
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
+    }
+
     public function test_exact_article_matches_but_conflicting_article_and_name_never_write(): void
     {
         $a = $this->product(1, 'A', 'Печь 18 М');

@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Services\Marketplaces\DealByClient;
 use App\Services\Marketplaces\DealByPricePlan;
 use Illuminate\Console\Command;
@@ -14,7 +16,7 @@ use Throwable;
 
 class SyncDealByCatalogPricesCommand extends Command
 {
-    protected $signature = 'deal:sync-catalog-prices {--apply : Persist verified links and update sbg.by prices} {--inspect-id= : Emit the matching decision for one public product}';
+    protected $signature = 'deal:sync-catalog-prices {--apply : Persist verified links and update sbg.by prices} {--supplier= : Limit writes to an active supplier code after global identity checks} {--inspect-id= : Emit the matching decision for one public product}';
 
     protected $description = 'Link exact catalog identities and synchronize KOTLOV retail prices to sbg.by';
 
@@ -31,7 +33,10 @@ class SyncDealByCatalogPricesCommand extends Command
         try {
             $products = Product::query()->with(['supplierProducts' => fn ($query) => $query
                 ->select(['id', 'product_id', 'supplier_article'])
-                ->where('match_status', 'matched')
+                ->where(fn ($links) => $links->where('match_status', 'matched')
+                    ->orWhere(fn ($imported) => $imported->where('match_status', 'created_from_price_list')
+                        ->where('raw->source', 'bania_google_wholesale_price_list')
+                        ->whereHas('supplier', fn ($supplier) => $supplier->where('code', 'bania'))))
                 ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true)),
                 'integrationProducts' => fn ($query) => $query
                     ->select(['id', 'product_id', 'external_sku', 'barcode'])
@@ -42,6 +47,13 @@ class SyncDealByCatalogPricesCommand extends Command
             $links = $disk->exists(self::LINKS) ? json_decode($disk->get(self::LINKS), true, 512, JSON_THROW_ON_ERROR) : [];
             $remote = $this->loadProducts($client);
             $plan = $planner->build($products, $remote, $links);
+            if ($supplierCode = trim((string) $this->option('supplier'))) {
+                $supplier = Supplier::query()->where('code', $supplierCode)->where('is_active', true)->firstOrFail();
+                $supplierProductIds = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->pluck('product_id');
+                // Filter only after matching the complete catalog: duplicate and conflicting
+                // identities belonging to another supplier must still prevent a write.
+                $plan = $plan->whereIn('local_id', $supplierProductIds)->values();
+            }
             $stamp = now()->format('Ymd-His').'-'.bin2hex(random_bytes(3));
             if (! $disk->put('deal-by/price-plans/'.$stamp.'.json', json_encode($plan->all(), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR))) {
                 throw new RuntimeException('Не удалось сохранить план цен sbg.by.');
@@ -86,7 +98,7 @@ class SyncDealByCatalogPricesCommand extends Command
             foreach ($accepted as $row) {
                 $item = $verified->get($row['deal_id']);
                 if (! $item || ($item['currency'] ?? '') !== 'BYN' || $planner->fingerprint($item) !== $row['fingerprint'] || ! is_numeric($item['price'] ?? null)
-                    || abs((float) $item['price'] - $row['new_price']) >= 0.005 || ! empty($item['discount'])) {
+                    || abs((float) $item['price'] - $row['new_price']) >= 0.005 || $planner->hasBlockingDiscount($item)) {
                     $failed++;
 
                     continue;
