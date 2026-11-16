@@ -28,6 +28,7 @@ use App\Support\Catalog\HeaterCatalog;
 use App\Support\Catalog\RadiatorCatalog;
 use App\Support\Catalog\CatalogSearch;
 use App\Support\Catalog\ThreadedFittingCatalog;
+use App\Support\Catalog\PumpCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -125,16 +126,22 @@ class CatalogController extends Controller
         $heaterName = WaterHeaterCatalog::name($category->slug);
         $roomHeaterName = HeaterCatalog::NAMES[$category->slug] ?? null;
         $radiatorName = RadiatorCatalog::NAMES[$category->slug] ?? null;
+        $pumpName = in_array($category->slug, PumpCatalog::PICKER_CATEGORIES, true) ? PumpCatalog::NAMES[$category->slug] : null;
+        $pumpHead = $pumpName !== null ? PumpCatalog::bound(request('pump_head'), 2000) : null;
+        $pumpFlow = $pumpName !== null ? PumpCatalog::bound(request('pump_flow'), 10000) : null;
+        $pumpHeadTo = $pumpName !== null ? PumpCatalog::bound(request('pump_head_to'), 2000) : null;
+        $pumpFlowTo = $pumpName !== null ? PumpCatalog::bound(request('pump_flow_to'), 10000) : null;
         $fittingName = $category->slug === ThreadedFittingCatalog::ROOT ? 'Резьбовые фитинги' : null;
         $isRoomHeaterCatalog = $roomHeaterName !== null;
         $roomArea = $isRoomHeaterCatalog ? HeaterCatalog::roomArea(request()->query('room_area')) : null;
         $roomAreaInvalid = $isRoomHeaterCatalog && request()->has('room_area') && request('room_area') !== '' && $roomArea === null;
-        $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName ?? $roomHeaterName ?? $radiatorName ?? $fittingName;
+        $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName ?? $roomHeaterName ?? $radiatorName ?? $fittingName ?? $pumpName;
         $specificationSearch = CatalogSearch::term(request()->query('q'));
         $scopeCatalogSearch = $fittingName !== null
             ? fn ($query) => app(ThreadedFittingCatalog::class)->search($query, $specificationSearch)
             : fn ($query) => CatalogSearch::apply($query, $specificationSearch);
         $specificationCatalog = match (true) {
+            $pumpName !== null => app(PumpCatalog::class),
             $fittingName !== null => app(ThreadedFittingCatalog::class),
             $radiatorName !== null => app(RadiatorCatalog::class),
             $roomHeaterName !== null => app(HeaterCatalog::class),
@@ -142,7 +149,7 @@ class CatalogController extends Controller
             $specificationName !== null => app(BoilerCatalog::class),
             default => null,
         };
-        $specificationParameter = $fittingName !== null ? 'fitting' : ($radiatorName !== null ? 'radiator' : ($roomHeaterName !== null ? 'heating' : ($heaterName !== null ? 'heater' : 'boiler')));
+        $specificationParameter = $pumpName !== null ? 'pump' : ($fittingName !== null ? 'fitting' : ($radiatorName !== null ? 'radiator' : ($roomHeaterName !== null ? 'heating' : ($heaterName !== null ? 'heater' : 'boiler'))));
         if ($category->slug === WaterHeaterCatalog::GAS && ($gasId = Category::active()->where('slug', 'gas')->value('id'))) {
             $allCategoryIds = $allCategoryIds->merge($this->collectCategoryAndDescendantIds($gasId))->unique()->values();
         }
@@ -808,6 +815,7 @@ class CatalogController extends Controller
         if ($specificationCatalog !== null) {
             if ($roomArea !== null) HeaterCatalog::forRoom($query, $roomArea);
             if (! $isBoilerHub) {
+                if ($pumpName !== null) $specificationCatalog->applyBounds($query, $category->slug, $activeCategoryIds, $pumpHead, $pumpFlow, $pumpHeadTo, $pumpFlowTo);
                 $specificationSelection = (array) request()->query($specificationParameter, []);
                 if ($category->slug === 'kotly-na-pelletah' && is_string(request('power'))) {
                     $specificationSelection['power'] ??= request('power');
@@ -816,6 +824,14 @@ class CatalogController extends Controller
                 $specificationFacets = $specificationFacts['facets'];
                 $specificationCards = $specificationFacts['cards'];
                 $specificationMatchingIds = $specificationFacts['matched'];
+                if ($pumpName !== null) {
+                    $pumpIds = $specificationCatalog->selectedIds($category->slug, $activeCategoryIds, $pumpHead, $pumpFlow, $specificationSelection, $pumpHeadTo, $pumpFlowTo);
+                    $pumpBrandCounts = Product::query()->orderable()->whereIntegerInRaw('products.id', $pumpIds)
+                        ->when($specificationSearch !== '', $scopeCatalogSearch)
+                        ->selectRaw('brand_id, COUNT(*) as total')->groupBy('brand_id')->pluck('total', 'brand_id');
+                    $brands = $brands->each(fn ($brand) => $brand->products_count = (int) $pumpBrandCounts->get($brand->id, 0))
+                        ->filter(fn ($brand) => $brand->products_count > 0)->values();
+                }
                 if ($fittingName !== null) {
                     $fittingSelection = [];
                     foreach ($specificationCatalog->dimensions($category->slug) as $key => [, $options]) {
@@ -1074,6 +1090,7 @@ class CatalogController extends Controller
                 ? $seo->categoryTitle($category->slug, $specificationName, $specificationCity, null)
                 : $seo->title(null, $specificationName.' — купить '.$specificationCity.' | KOTLOV');
             $boilerDescription = match ($category->slug) {
+                PumpCatalog::ROOT => 'Выберите насос по задаче: отопление, скважина, водоснабжение дома или откачка воды. Сравните напор, расход, питание и наличие.',
                 ThreadedFittingCatalog::ROOT => $specificationLanding['description'] ?? 'Латунные, чугунные и стальные резьбовые фитинги. Выберите материал, размер резьбы и тип соединения, сравните цены и наличие.',
                 'gazovye' => 'Настенные и напольные газовые котлы для отопления и горячей воды. Сравните контуры, мощность и камеру сгорания.',
                 'elektricheskie' => 'Электрокотлы для дома. Сравните модели по мощности, площади отопления и подключению к сети 220 или 380 В.',
@@ -1090,6 +1107,7 @@ class CatalogController extends Controller
             if ($roomHeaterName !== null) {
                 $boilerDescription = 'Сравните подтверждённые мощность, площадь обогрева и тип установки. Площадь указана по данным производителя и зависит от условий помещения.';
             }
+            if ($pumpName !== null) $boilerDescription = 'Сравните указанные в каталоге напор, расход и питание. Отфильтруйте модели по параметрам, цене и наличию; рабочую точку проверяют по кривой производителя.';
             if ($radiatorName !== null) $boilerDescription = 'Сравните материал, подключение и размеры. Теплоотдача указана вместе с температурным напором ΔT; для подбора учитывайте теплопотери помещения.';
             $description = $seo->description(null, 'Купить '.mb_strtolower($specificationName).' '.$specificationCity.'. '.($specificationLanding['description'] ?? $boilerDescription));
             if ($specificationLanding !== null) {
@@ -1542,6 +1560,10 @@ class CatalogController extends Controller
         }
 
         if ($specificationName !== null) {
+            foreach (['pump_head' => [$pumpHead, 'Макс. напор от', 'м'], 'pump_flow' => [$pumpFlow, 'Макс. расход от', 'м³/ч'], 'pump_head_to' => [$pumpHeadTo, 'Макс. напор до', 'м'], 'pump_flow_to' => [$pumpFlowTo, 'Макс. расход до', 'м³/ч']] as $parameter => [$value, $label, $unit]) {
+                if ($value !== null) $electricFilterChips[] = ['label' => $label.' '.str_replace('.', ',', (string) $value).' '.$unit,
+                    'url' => request()->fullUrlWithoutQuery([$parameter, 'page']).'#catalog-products'];
+            }
             if ($roomArea !== null) {
                 $electricFilterChips[] = [
                     'label' => 'Комната: '.str_replace('.', ',', (string) $roomArea).' м²',
@@ -1573,6 +1595,7 @@ class CatalogController extends Controller
                 ? 'Сравните мощность, площадь обогрева и тип установки. Площадь указана производителем: результат зависит от теплоизоляции и условий помещения.'
                 : ($specificationLanding['description'] ?? $catalogIntro);
         }
+        if ($pumpName !== null) $catalogIntro = 'Выберите задачу и сравните напор, расход и питание. Если меняете циркуляционный насос, проверьте также монтажную длину и присоединения.';
         $specificationCollections = match ($category->slug) {
             ThreadedFittingCatalog::ROOT => app(ThreadedFittingCatalog::class)->links($activeCategoryIds, is_string(request('fitting.type')) && isset(ThreadedFittingCatalog::TYPES[request('fitting.type')]) ? request('fitting.type') : null),
             'kotly' => [
@@ -1588,7 +1611,7 @@ class CatalogController extends Controller
                 'short' => BoilerCatalog::LANDINGS[$category->slug]['short'],
             ]] : [],
         };
-        $replacedSpecificationAttributes = $fittingName !== null ? ['material' => '/^материал(?: корпуса| изделия)?$/u', 'type' => '/^(?:вид фитинга|тип фитинга|тип товара)$/u'] : ($roomHeaterName !== null ? [
+        $replacedSpecificationAttributes = $pumpName !== null ? ['voltage' => '/напряжение|параметры электросети/u', 'length' => '/монтажная длина/u', 'diameter' => '/диаметр насоса|ø насоса/u'] : ($fittingName !== null ? ['material' => '/^материал(?: корпуса| изделия)?$/u', 'type' => '/^(?:вид фитинга|тип фитинга|тип товара)$/u'] : ($roomHeaterName !== null ? [
             'power' => '/мощност/u', 'area' => '/площад|эффективен для/u',
             'mount' => '/установ|монтаж|размещен/u',
         ] : ($heaterName !== null ? [
@@ -1607,7 +1630,7 @@ class CatalogController extends Controller
             'fuel' => '/^(?:топливо|тип топлива|вид топлива)/u',
             'firebox' => '/^материал топки/u',
             'voltage' => '/^напряжение/u',
-        ]));
+        ])));
         $specificationFilterAttributes = $filterAttributes;
         if ($specificationCatalog !== null && ! $isBoilerHub) {
             $replaced = $roomHeaterName !== null ? $replacedSpecificationAttributes : array_intersect_key($replacedSpecificationAttributes, $specificationFacets + ($specificationLanding['filters'] ?? []));
@@ -1700,6 +1723,7 @@ class CatalogController extends Controller
             'citySeoContent',
             'catalogSpotlight',
             'catalogNavigationGroups', 'cityStorefrontBranch', 'isCityStorefront',
+            'pumpName', 'pumpHead', 'pumpFlow', 'pumpHeadTo', 'pumpFlowTo',
             'specificationHeading', 'specificationSearch', 'specificationFacets', 'specificationFilterAttributes', 'specificationLanding', 'specificationCollections', 'robots',
             'isWaterHeaterHub', 'waterHeaterNavigation', 'waterHeaterRelated', 'heaterName', 'categorySchemaName',
             'isRoomHeaterCatalog', 'roomArea', 'roomAreaInvalid',
