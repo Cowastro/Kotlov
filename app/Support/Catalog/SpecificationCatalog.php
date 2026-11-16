@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Cache;
 
 abstract class SpecificationCatalog
 {
+    protected const FACTS_VERSION = 1;
+
     abstract protected function dimensions(string $slug): array;
 
     abstract public function productFacts(Product $product, string $slug, array $dimensions): array;
@@ -83,7 +85,7 @@ abstract class SpecificationCatalog
         // Refresh after the response while the previous facts are still within
         // the existing five-minute freshness limit. Prices/stock stay live.
         return Cache::flexible(
-            static::class.':specs-v1:'.$slug.':'.implode('-', $categoryIds->sort()->all()),
+            static::class.':specs-v'.static::FACTS_VERSION.':'.$slug.':'.implode('-', $categoryIds->sort()->all()),
             [240, 300],
             function () use ($slug, $categoryIds, $dimensions) {
                 $facts = [];

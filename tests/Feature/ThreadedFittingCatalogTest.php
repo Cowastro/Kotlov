@@ -28,6 +28,60 @@ class ThreadedFittingCatalogTest extends TestCase
         ]);
     }
 
+    public function test_type_picker_combines_with_material_search_and_price_without_moving_products(): void
+    {
+        $elbow = $this->fitting('Угольник латунный переходной');
+        $this->fitting('Угольник чугунный');
+        $this->fitting('Тройник латунный переходной');
+        $this->fitting('Ниппель латунный переходной');
+        foreach (['/rezbovye-fitingi/latunnye?fitting[type]=ugolki', '/rezbovye-fitingi?fitting[material]=latunnye&fitting[type]=ugolki&price_max=150'] as $url) {
+            $this->get($url)->assertOk()
+                ->assertSee('Подбор по типу фитинга')->assertSee('Уголки и угольники')
+                ->assertViewHas('products', fn ($products) => $products->modelKeys() === [$elbow->id]);
+        }
+        $this->get('/rezbovye-fitingi/latunnye?q=уголок')->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->modelKeys() === [$elbow->id]);
+        $this->get('/rezbovye-fitingi?fitting[type]=nippeli')->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->total() === 1)
+            ->assertSee('/rezbovye-fitingi/latunnye?fitting%5Btype%5D=nippeli', false);
+    }
+
+    public function test_types_use_explicit_data_and_unambiguous_name_heads(): void
+    {
+        $catalog = new ThreadedFittingCatalog;
+        foreach ([
+            ['Угол переходной', [], 'ugolki'],
+            ['Тройник переходной', [], 'troiniki'],
+            ['Ниппель переходной', [], 'nippeli'],
+            ['Муфта с ниппелем', [], 'mufty'],
+            ['Соединитель латунный (американка) угловой', [], 'amerikanki'],
+            ['Фитинг', ['Вид фитинга' => 'отвод (колено, угольник)'], 'ugolki'],
+            ['Фитинг', ['Вид фитинга' => 'Сдвоенный', 'Тип фитинга' => 'Ниппель'], 'nippeli'],
+            ['Муфта', ['Вид фитинга' => 'тройник', 'Тип фитинга' => 'ниппель'], 'unknown'],
+            ['Комплект заглушек', [], 'zaglushki'],
+            ['Латунный запирающий колпачок', [], 'zaglushki'],
+            ['Переходник', ['Вид фитинга' => 'фитинг'], 'perehodniki'],
+            ['Набор с угольником и ниппелем', [], 'unknown'],
+        ] as [$name, $specs, $expected]) {
+            $fact = $catalog->productFacts(new Product(compact('name', 'specs')), $catalog::ROOT, []);
+            $this->assertSame([$expected], $fact['options']['type'], $name);
+        }
+    }
+
+    public function test_type_can_come_from_an_attribute_and_bad_filter_values_are_ignored(): void
+    {
+        $product = $this->fitting('Фитинг латунный');
+        $attribute = Attribute::create(['category_id' => $product->category_id, 'name' => 'Вид фитинга', 'type' => 'select', 'in_filter' => true]);
+        $option = AttributeOption::create(['attribute_id' => $attribute->id, 'name' => 'тройник']);
+        ProductAttributeValue::create(['product_id' => $product->id, 'attribute_id' => $attribute->id, 'option_id' => $option->id]);
+        $this->get('/rezbovye-fitingi?fitting[type]=troiniki')->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->modelKeys() === [$product->id]);
+        $this->get('/rezbovye-fitingi?fitting[type][]=troiniki')->assertOk();
+        $this->get('/rezbovye-fitingi?fitting[type]=invalid')->assertOk();
+        $this->get('/rezbovye-fitingi?fitting[type]=nippeli')->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->total() === 0);
+    }
+
     public function test_material_landings_do_not_mix_metals_or_change_product_urls(): void
     {
         $brass = $this->fitting('Муфта латунная');

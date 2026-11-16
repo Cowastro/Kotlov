@@ -31,6 +31,9 @@
             @endforeach
         @endif
     </div>
+    @if ($category->slug === \App\Support\Catalog\ThreadedFittingCatalog::ROOT && isset($specificationFacets['type']))
+        @include('partials.threaded-fitting-type-picker')
+    @endif
     @if ($isRoomHeaterCatalog ?? false)
         @include('partials.catalog-heater-room-picker')
     @endif
