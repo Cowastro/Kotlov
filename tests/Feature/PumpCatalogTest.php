@@ -57,6 +57,29 @@ class PumpCatalogTest extends TestCase
             ->assertSee('noindex, follow')->assertSee('<link rel="canonical" href="https://kotlov.by/mnogostupenchatye-nasosy">', false);
     }
 
+    public function test_hub_exposes_multistage_picker_without_moving_industrial_products(): void
+    {
+        $pump = $this->pump('mnogostupenchatye-nasosy', 'Насос высокого давления');
+        $this->get('https://kotlov.by/vodosnabzhenie?in_stock=1')->assertOk()
+            ->assertSee('Повысить давление')
+            ->assertSee('https://kotlov.by/mnogostupenchatye-nasosy?in_stock=1#pump-picker', false);
+        $this->assertSame('promyshlennye-nasosy', $pump->category->parent->slug);
+        $pump->category->update(['is_active' => false]);
+        $this->get('https://kotlov.by/vodosnabzhenie')->assertOk()->assertDontSee('Повысить давление');
+    }
+
+    public function test_replacement_model_search_keeps_parameter_filters_and_offers_full_reset(): void
+    {
+        $match = $this->pump('tsirkulyatsionnyie', 'Wilo Model 180', ['Максимальный напор, м' => 6, 'Монтажная длина, мм' => 180]);
+        $this->pump('tsirkulyatsionnyie', 'Other 180', ['Максимальный напор, м' => 6, 'Монтажная длина, мм' => 180]);
+        $this->get('https://kotlov.by/tsirkulyatsionnyie?q=Wilo&pump_head=6&pump[length]=180')
+            ->assertOk()->assertSee('Заменить насос')->assertSee('Подобрать по параметрам')
+            ->assertSee('name="pump[length]" value="180"', false)
+            ->assertSee('href="https://kotlov.by/tsirkulyatsionnyie#pump-picker"', false)
+            ->assertSee('id="pump-picker"', false)->assertSee('id="pump-parameters"', false)
+            ->assertViewHas('products', fn ($products) => $products->modelKeys() === [$match->id]);
+    }
+
     public function test_units_are_converted_but_missing_conflicting_and_nominal_data_are_not_maxima(): void
     {
         $catalog = new PumpCatalog;

@@ -202,6 +202,19 @@ class CatalogController extends Controller
             ->filter(fn ($subcategory) => $subcategory->products_count > 0)
             ->values();
 
+        // Offer the detailed multistage picker directly from the pump hub, while
+        // retaining its existing industrial category and product URLs.
+        $pumpTaskCategories = $subcategories;
+        if ($category->slug === PumpCatalog::ROOT) {
+            $multistage = Category::active()->whereIn('id', $allCategoryIds)
+                ->where('slug', 'mnogostupenchatye-nasosy')->first();
+            if ($multistage) {
+                $multistage->products_count = $this->collectCategoryAndDescendantIds($multistage->id)
+                    ->sum(fn ($id) => (int) $subcategoryCounts->get($id, 0));
+                if ($multistage->products_count > 0) $pumpTaskCategories = $subcategories->concat([$multistage]);
+            }
+        }
+
         $boilerCategories = $boilerTypes->keys()
             ->map(fn (string $slug) => $subcategories->firstWhere('slug', $slug))
             ->filter();
@@ -1723,7 +1736,7 @@ class CatalogController extends Controller
             'citySeoContent',
             'catalogSpotlight',
             'catalogNavigationGroups', 'cityStorefrontBranch', 'isCityStorefront',
-            'pumpName', 'pumpHead', 'pumpFlow', 'pumpHeadTo', 'pumpFlowTo',
+            'pumpName', 'pumpHead', 'pumpFlow', 'pumpHeadTo', 'pumpFlowTo', 'pumpTaskCategories',
             'specificationHeading', 'specificationSearch', 'specificationFacets', 'specificationFilterAttributes', 'specificationLanding', 'specificationCollections', 'robots',
             'isWaterHeaterHub', 'waterHeaterNavigation', 'waterHeaterRelated', 'heaterName', 'categorySchemaName',
             'isRoomHeaterCatalog', 'roomArea', 'roomAreaInvalid',

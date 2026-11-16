@@ -176,9 +176,10 @@
         @include('partials.electric-sauna-heater-quick-filters')
     @endif
 
-    @include('partials.catalog-specification-search')
     @if ($pumpName !== null)
         @include('partials.pump-catalog-picker')
+    @else
+        @include('partials.catalog-specification-search')
     @endif
 
     @if (! $isMinskFireplaceCatalog && ! $isStoveHeatingCatalog)
