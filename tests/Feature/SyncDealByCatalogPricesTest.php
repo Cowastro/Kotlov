@@ -8,13 +8,46 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Services\Marketplaces\DealByClient;
+use App\Services\Marketplaces\DealByPricePlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
 
 class SyncDealByCatalogPricesTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_supplier_override_cannot_replace_the_catalog_as_price_source(): void
+    {
+        Storage::fake('local');
+        $card = $this->card();
+        $card->update(['is_archived' => true]);
+        Supplier::updateOrCreate(['code' => 'bania'], ['name' => 'Банька', 'is_active' => true]);
+        $remote = $this->remote(1494);
+        Storage::disk('local')->put('deal-by/bania-reviewed-retail-links.json', json_encode([100 => [
+            'local_id' => $card->id, 'fingerprint' => app(DealByPricePlan::class)->fingerprint($remote['products'][0]),
+            'retail_article' => 'CATALOG-18M', 'retail_name' => 'Печь ДТ-3',
+        ]]));
+        $file = storage_path('app/supplier-cache/bania-retail-pricelist.xlsx');
+        if (! is_dir(dirname($file))) {
+            mkdir(dirname($file), 0775, true);
+        }
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([['Печь ДТ-3', 'CATALOG-18M', 'шт', 1900]], null, 'A4');
+        (new Xlsx($sheet))->save($file);
+        try {
+            $this->mock(DealByClient::class, function ($mock) use ($remote): void {
+                $mock->shouldReceive('listProducts')->once()->andReturn($remote);
+                $mock->shouldNotReceive('editProducts');
+            });
+            $this->artisan('deal:sync-catalog-prices', ['--apply' => true])->assertFailed();
+            Storage::disk('local')->assertMissing('deal-by/product-links.json');
+        } finally {
+            unlink($file);
+        }
+    }
 
     public function test_bania_imported_article_is_synced_in_supplier_scope_with_expired_discount(): void
     {
