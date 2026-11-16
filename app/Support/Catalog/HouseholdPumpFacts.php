@@ -79,4 +79,13 @@ class HouseholdPumpFacts
         $source = $record['source'] ?? self::records()['source'];
         return ['url' => $source['url'].'#page='.$record['pages'][0], 'title' => $source['title']];
     }
+
+    public static function summary(Product $product): ?string
+    {
+        $slug = $product->category?->slug;
+        if (! in_array($slug, PumpCatalog::MANUFACTURER_CATEGORIES, true)) return null;
+        $facts = self::facts($product, $slug, (new PumpCatalog)->dimensions($slug));
+        return collect($facts['card'])->except('Данные')->map(fn ($value, $label) => $label.': '.$value)->implode('; ')
+            ?: 'Паспортные параметры этого исполнения уточняются.';
+    }
 }

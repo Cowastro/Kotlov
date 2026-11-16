@@ -93,7 +93,7 @@
                                             data-name="{{ $product->name }}"
                                             data-price="{{ $price }}"
                                             data-category="{{ $product->category->name ?? '' }}"
-                                            data-description="{{ Str::limit(strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.'), 240) }}"
+                                            data-description="{{ Str::limit(\App\Support\Catalog\HouseholdPumpFacts::summary($product) ?? strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.'), 240) }}"
                                             data-image="{{ $product->image_url }}"
                                             data-images='@json($quickViewImages ?: [$product->image_url])'
                                             data-url="{{ $productUrl }}"
