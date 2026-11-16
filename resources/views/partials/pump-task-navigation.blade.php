@@ -22,7 +22,7 @@
             'count' => $child->products_count, 'url' => url('/'.$child->slug).$suffix];
     }
 @endphp
-<nav class="container mt-3 mb-4" aria-label="Насосы по задаче">
+<nav class="container mt-3 mb-4" id="pump-tasks" aria-label="Насосы по задаче">
     @include('partials.catalog-type-cards', ['heading' => 'Для какой задачи нужен насос?', 'entries' => $entries, 'showStockToggle' => true])
     <div class="d-flex flex-wrap gap-3 mt-3">
         @foreach ($subcategories as $child)

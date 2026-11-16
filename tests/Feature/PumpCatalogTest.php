@@ -41,6 +41,7 @@ class PumpCatalogTest extends TestCase
             ->assertSee('Для отопления')->assertSee('Вода из скважины')->assertSee('Промышленные системы')
             ->assertSee('href="https://kotlov.by/komplektuyushchie-dlya-nasosov"', false);
         $this->get('https://kotlov.by/promyshlennye-nasosy')->assertOk()->assertSee('Многоступенчатые');
+        $this->get('https://kotlov.by/skvajinnye-nasosy')->assertOk()->assertDontSee('Быстрый подбор насоса');
     }
 
     public function test_head_flow_and_voltage_combine_with_search_price_and_existing_urls(): void

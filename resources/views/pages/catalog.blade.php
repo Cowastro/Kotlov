@@ -96,7 +96,7 @@
 
     @include('partials.catalog-city-storefront')
 
-    @if ($pumpName !== null && in_array($category->slug, ['vodosnabzhenie', 'promyshlennye-nasosy'], true))
+    @if (in_array($category->slug, ['vodosnabzhenie', 'promyshlennye-nasosy'], true))
         @include('partials.pump-task-navigation')
     @elseif ($isBoilerHub)
         @include('partials.boiler-catalog-navigation')

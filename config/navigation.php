@@ -309,7 +309,7 @@ return [
                 'title' => 'Монтаж и сервис',
                 'links' => [
                     ['name' => 'Монтаж насосов',     'url' => '/installers'],
-                    ['name' => 'Подбор насоса',      'url' => '/vodosnabzhenie#pump-picker'],
+                    ['name' => 'Подбор насоса',      'url' => '/vodosnabzhenie#pump-tasks'],
                 ],
             ],
         ],

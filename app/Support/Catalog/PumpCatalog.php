@@ -10,6 +10,8 @@ class PumpCatalog extends SpecificationCatalog
 {
     public const ROOT = 'vodosnabzhenie';
 
+    public const PICKER_CATEGORIES = ['tsirkulyatsionnyie', 'mnogostupenchatye-nasosy'];
+
     public const NAMES = [
         self::ROOT => 'Насосы и водоснабжение',
         'promyshlennye-nasosy' => 'Промышленные насосы',

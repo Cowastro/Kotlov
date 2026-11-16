@@ -126,7 +126,7 @@ class CatalogController extends Controller
         $heaterName = WaterHeaterCatalog::name($category->slug);
         $roomHeaterName = HeaterCatalog::NAMES[$category->slug] ?? null;
         $radiatorName = RadiatorCatalog::NAMES[$category->slug] ?? null;
-        $pumpName = PumpCatalog::NAMES[$category->slug] ?? null;
+        $pumpName = in_array($category->slug, PumpCatalog::PICKER_CATEGORIES, true) ? PumpCatalog::NAMES[$category->slug] : null;
         $pumpHead = $pumpName !== null ? PumpCatalog::bound(request('pump_head'), 2000) : null;
         $pumpFlow = $pumpName !== null ? PumpCatalog::bound(request('pump_flow'), 10000) : null;
         $fittingName = $category->slug === ThreadedFittingCatalog::ROOT ? 'Резьбовые фитинги' : null;
