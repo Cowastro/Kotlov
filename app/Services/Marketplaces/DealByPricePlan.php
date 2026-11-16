@@ -8,41 +8,6 @@ use Illuminate\Support\Collection;
 /** Exact identities only: no fuzzy model names or removal of model/size suffixes. */
 class DealByPricePlan
 {
-    /** Explicitly reviewed legacy listings use fresh supplier RRP, never procurement cost. */
-    public function withReviewedBaniaRetail(Collection $plan, Collection $remote, array $reviewed, array $retailRows): Collection
-    {
-        $remoteById = $remote->keyBy('id');
-        $remoteCounts = $remote->countBy('id');
-        $retail = collect($retailRows)->groupBy(fn (array $row) => $this->normalize($row['article'] ?? ''));
-
-        return $plan->map(function (array $row) use ($remoteById, $remoteCounts, $retail, $reviewed): array {
-            $approval = $reviewed[$row['deal_id']] ?? null;
-            if (! is_array($approval) || ! in_array($row['reason'], ['ineligible_local_product', 'duplicate_mapping'], true)) {
-                return $row;
-            }
-            $item = $remoteById->get($row['deal_id']);
-            $article = $this->normalize($approval['retail_article'] ?? '');
-            $matches = $article !== '' ? $retail->get($article, collect()) : collect();
-            if (! $item || ($remoteCounts[$row['deal_id']] ?? 0) !== 1 || $matches->count() !== 1
-                || (int) ($approval['local_id'] ?? 0) !== $row['local_id']
-                || ($approval['fingerprint'] ?? '') !== $this->fingerprint($item)
-                || $this->normalize($item['sku'] ?? '') !== $article
-                || $this->normalize($matches->first()['name'] ?? '') !== $this->normalize($approval['retail_name'] ?? '')
-                || ($item['currency'] ?? '') !== 'BYN' || $this->hasBlockingDiscount($item)
-                || ! is_numeric($item['price'] ?? null) || ! is_finite((float) $item['price'])
-                || ! is_numeric($matches->first()['price'] ?? null)) {
-                return $row;
-            }
-            $price = round((float) $matches->first()['price'], 2);
-            if (! is_finite($price) || $price <= 0) {
-                return $row;
-            }
-
-            return array_replace($row, ['new_price' => $price, 'method' => 'reviewed_bania_rrp',
-                'reason' => abs((float) $item['price'] - $price) < 0.005 ? 'unchanged' : 'update']);
-        });
-    }
-
     public function hasBlockingDiscount(array $remote): bool
     {
         $discount = $remote['discount'] ?? null;

@@ -11,48 +11,6 @@ use PHPUnit\Framework\TestCase;
 
 class DealByPricePlanTest extends TestCase
 {
-    public function test_reviewed_legacy_offer_uses_current_rrp_but_never_changes_its_identity(): void
-    {
-        $planner = new DealByPricePlan;
-        $card = $this->product(1, 'A', 'Печь')->forceFill(['is_archived' => true]);
-        $item = $this->remote(10, 'A', 'Старая карточка');
-        $plan = $planner->build(collect([$card]), collect([$item]));
-        $approval = [10 => ['local_id' => 1, 'fingerprint' => $planner->fingerprint($item), 'retail_article' => 'A', 'retail_name' => 'Печь ДТ-3']];
-        $retail = [['article' => 'A', 'name' => 'Печь ДТ-3', 'price' => 1900]];
-        $row = $planner->withReviewedBaniaRetail($plan, collect([$item]), $approval, $retail)[0];
-        $this->assertSame('update', $row['reason']);
-        $this->assertSame(1900.0, $row['new_price']);
-        $this->assertSame('reviewed_bania_rrp', $row['method']);
-        foreach ([[], [$retail[0], $retail[0]], [array_replace($retail[0], ['name' => 'Печь ДТ-3С'])],
-            [array_replace($retail[0], ['price' => 0])]] as $unsafe) {
-            $this->assertSame('ineligible_local_product', $planner->withReviewedBaniaRetail($plan, collect([$item]), $approval, $unsafe)[0]['reason']);
-        }
-        foreach ([['sku' => 'B'], ['name' => 'Другая печь'], ['currency' => 'EUR'], ['discount' => ['value' => 10]]] as $change) {
-            $changed = array_replace($item, $change);
-            $this->assertSame('ineligible_local_product', $planner->withReviewedBaniaRetail($plan, collect([$changed]), $approval, $retail)[0]['reason']);
-        }
-        $approval[10]['local_id'] = 2;
-        $this->assertSame('ineligible_local_product', $planner->withReviewedBaniaRetail($plan, collect([$item]), $approval, $retail)[0]['reason']);
-    }
-
-    public function test_reviewed_duplicate_models_keep_separate_rrps_and_duplicate_remote_ids_still_block(): void
-    {
-        $planner = new DealByPricePlan;
-        $card = $this->product(1, 'CRM', 'Печь');
-        $card->setRelation('supplierProducts', collect([new SupplierProduct(['supplier_article' => 'A']), new SupplierProduct(['supplier_article' => 'B'])]));
-        $remote = collect([$this->remote(10, 'A', 'Печь ДТ-3'), $this->remote(11, 'B', 'Печь ДТ-3С')]);
-        $approvals = [];
-        foreach ($remote as $item) {
-            $approvals[$item['id']] = ['local_id' => 1, 'fingerprint' => $planner->fingerprint($item), 'retail_article' => $item['sku'], 'retail_name' => $item['name']];
-        }
-        $retail = [['article' => 'A', 'name' => 'Печь ДТ-3', 'price' => 914], ['article' => 'B', 'name' => 'Печь ДТ-3С', 'price' => 953]];
-        $rows = $planner->withReviewedBaniaRetail($planner->build(collect([$card]), $remote), $remote, $approvals, $retail);
-        $this->assertSame([914.0, 953.0], $rows->pluck('new_price')->all());
-        $duplicates = collect([$remote[0], $remote[0]]);
-        $rows = $planner->withReviewedBaniaRetail($planner->build(collect([$card]), $duplicates), $duplicates, $approvals, $retail);
-        $this->assertSame(['duplicate_mapping', 'duplicate_mapping'], $rows->pluck('reason')->all());
-    }
-
     public function test_only_strictly_expired_promotions_allow_price_sync(): void
     {
         CarbonImmutable::setTestNow('2026-11-16 12:00:00');

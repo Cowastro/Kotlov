@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
-use App\Models\SupplierProduct;
 use App\Models\SupplierReviewDecision;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -789,7 +788,7 @@ class SyncBaniaPricelistCommand extends Command
         return $this->removeDuplicateArticleRows($rows, 'price');
     }
 
-    public function readRetailRows(string $path): array
+    private function readRetailRows(string $path): array
     {
         $reader = IOFactory::createReaderForFile($path);
         $reader->setReadDataOnly(true);
@@ -1252,7 +1251,7 @@ class SyncBaniaPricelistCommand extends Command
 
     private function createRetailOnlyRow(int $supplierId, object $product, array $retail): void
     {
-        SupplierProduct::query()->updateOrCreate([
+        \App\Models\SupplierProduct::query()->updateOrCreate([
             'supplier_id' => $supplierId,
             'supplier_article_normalized' => (string) $retail['norm_article'],
         ], [
