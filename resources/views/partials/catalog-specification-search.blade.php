@@ -15,7 +15,7 @@
                    placeholder="Модель, артикул или бренд" class="form-control" style="min-width: 0">
             <button class="tf-btn btn-primary small flex-shrink-0" type="submit">Найти</button>
         </form>
-        @unless ($isBoilerHub || $isWaterHeaterHub || $isMinskFireplaceCatalog || $isStoveHeatingCatalog || $showElectricFireplaceNavigation || $isChimneySection || $isSaunaStoveCatalog || $category->slug === 'elektrokamenki' || $catalogNavigationGroups->isNotEmpty())
+        @unless ((($pumpName ?? null) !== null && in_array($category->slug, ['vodosnabzhenie', 'promyshlennye-nasosy'], true)) || $isBoilerHub || $isWaterHeaterHub || $isMinskFireplaceCatalog || $isStoveHeatingCatalog || $showElectricFireplaceNavigation || $isChimneySection || $isSaunaStoveCatalog || $category->slug === 'elektrokamenki' || $catalogNavigationGroups->isNotEmpty())
             @include('partials.catalog-stock-toggle')
         @endunless
         @if ($category->slug === \App\Support\Catalog\ThreadedFittingCatalog::ROOT)

@@ -96,7 +96,9 @@
 
     @include('partials.catalog-city-storefront')
 
-    @if ($isBoilerHub)
+    @if ($pumpName !== null && in_array($category->slug, ['vodosnabzhenie', 'promyshlennye-nasosy'], true))
+        @include('partials.pump-task-navigation')
+    @elseif ($isBoilerHub)
         @include('partials.boiler-catalog-navigation')
     @elseif ($isWaterHeaterHub)
         @include('partials.water-heater-navigation')
@@ -175,6 +177,9 @@
     @endif
 
     @include('partials.catalog-specification-search')
+    @if ($pumpName !== null)
+        @include('partials.pump-catalog-picker')
+    @endif
 
     @if (! $isMinskFireplaceCatalog && ! $isStoveHeatingCatalog)
         @include('partials.catalog-ecokamin-promo')
