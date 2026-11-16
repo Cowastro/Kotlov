@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Console\Commands\SyncDealByCatalogPricesCommand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Services\Marketplaces\DealByClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +15,48 @@ use Tests\TestCase;
 class SyncDealByCatalogPricesTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_bania_imported_article_is_synced_in_supplier_scope_with_expired_discount(): void
+    {
+        Storage::fake('local');
+        $card = $this->card();
+        $supplier = Supplier::updateOrCreate(['code' => 'bania'], ['name' => 'Банька', 'is_active' => true]);
+        SupplierProduct::create(['supplier_id' => $supplier->id, 'product_id' => $card->id,
+            'supplier_article' => 'FACTORY-18M', 'match_status' => 'created_from_price_list',
+            'raw' => ['source' => 'bania_google_wholesale_price_list']]);
+        $before = $this->remote(1494);
+        $before['products'][0]['sku'] = 'FACTORY-18M';
+        $before['products'][0]['name'] = 'Supplier title';
+        $before['products'][0]['discount'] = ['value' => 10, 'date_end' => '30.04.2025'];
+        $after = $before;
+        $after['products'][0]['price'] = 1852;
+        $this->mock(DealByClient::class, function ($mock) use ($before, $after): void {
+            $mock->shouldReceive('listProducts')->twice()->andReturn($before, $after);
+            $mock->shouldReceive('editProducts')->once()->with([['id' => 100, 'price' => 1852.0]])->andReturn([]);
+        });
+        $this->artisan('deal:sync-catalog-prices', ['--apply' => true, '--supplier' => 'bania'])
+            ->expectsOutputToContain('metric.deal_catalog_prices.linked=1')->assertSuccessful();
+    }
+
+    public function test_untrusted_import_and_supplier_scope_cannot_bypass_identity_checks(): void
+    {
+        Storage::fake('local');
+        $card = $this->card();
+        $supplier = Supplier::updateOrCreate(['code' => 'bania'], ['name' => 'Банька', 'is_active' => true]);
+        SupplierProduct::create(['supplier_id' => $supplier->id, 'product_id' => $card->id,
+            'supplier_article' => 'UNTRUSTED', 'match_status' => 'created_from_price_list', 'raw' => ['source' => 'unknown']]);
+        $other = $card->replicate()->forceFill(['sku' => 'OTHER', 'slug' => 'other-card', 'name' => 'Other model']);
+        $other->save();
+        $remote = $this->remote(1494);
+        $remote['products'][0]['name'] = 'Other model';
+        $remote['products'][] = ['id' => 99, 'sku' => 'UNTRUSTED', 'name' => 'Unknown', 'price' => 100, 'currency' => 'BYN'];
+        $this->mock(DealByClient::class, function ($mock) use ($remote): void {
+            $mock->shouldReceive('listProducts')->once()->andReturn($remote);
+            $mock->shouldNotReceive('editProducts');
+        });
+        $this->artisan('deal:sync-catalog-prices', ['--apply' => true, '--supplier' => 'bania'])->assertFailed();
+        Storage::disk('local')->assertMissing('deal-by/product-links.json');
+    }
 
     private function card(): Product
     {
