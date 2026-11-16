@@ -95,6 +95,16 @@ class PumpCatalogTest extends TestCase
         }
     }
 
+    public function test_legacy_upc_head_outliers_are_not_used_as_real_capacity(): void
+    {
+        $p = $this->pump('tsirkulyatsionnyie', 'Насос Unipump UPC 32-80 180', ['Максимальный напор, м' => 76]);
+        $this->get('https://kotlov.by/tsirkulyatsionnyie')->assertOk()->assertSee('Требует проверки');
+        $this->get('https://kotlov.by/tsirkulyatsionnyie?pump_head=40')->assertOk()
+            ->assertViewHas('products', fn ($products) => ! $products->contains('id', $p->id));
+        $facts = (new PumpCatalog)->productFacts(new Product(['name' => 'UNIPUMP UPC 32-80 180', 'specs' => ['Максимальный напор, м' => 7.6]]), 'tsirkulyatsionnyie', []);
+        $this->assertSame(7.6, $facts['numbers']['head']);
+    }
+
     public function test_brand_choices_and_empty_results_follow_selected_pump_parameters(): void
     {
         $first = $this->pump('tsirkulyatsionnyie', 'Большой насос', ['Максимальный напор, м' => 10]);

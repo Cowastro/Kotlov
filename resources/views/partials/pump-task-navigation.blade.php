@@ -15,9 +15,9 @@
     if (is_string(request('pump.voltage'))) $params['pump']['voltage'] = request('pump.voltage');
     $suffix = $params ? '?'.http_build_query($params) : '';
     $entries = [];
-    foreach ($subcategories as $child) {
-        if (! isset($tasks[$child->slug])) continue;
-        [$name, $description, $icon] = $tasks[$child->slug];
+    foreach ($tasks as $slug => [$name, $description, $icon]) {
+        $child = $subcategories->firstWhere('slug', $slug);
+        if (! $child) continue;
         $entries[$child->slug] = ['name' => $name, 'description' => $description, 'icon' => $icon,
             'count' => $child->products_count, 'url' => url('/'.$child->slug).$suffix];
     }

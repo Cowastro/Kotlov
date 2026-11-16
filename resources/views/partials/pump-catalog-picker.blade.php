@@ -7,7 +7,7 @@
 @endphp
 @push('styles')
 <style>
-.pump-picker{border:1px solid var(--line);border-radius:16px;padding:16px}.pump-picker summary{font-weight:600;cursor:pointer}.pump-picker__fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px}.pump-picker label{display:block;font-size:13px;margin-bottom:6px}.pump-picker .form-control,.pump-picker .form-select{width:100%;min-width:0}.pump-picker__actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}@media(max-width:575px){.pump-picker__fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pump-picker{padding:12px}.pump-picker label{font-size:12px}.pump-picker .form-select{font-size:13px}.pump-picker__note{font-size:12px}}
+.pump-picker{border:1px solid var(--line);border-radius:16px;padding:16px}.pump-picker summary{font-weight:600;cursor:pointer}.pump-picker__fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px;align-items:end}.pump-picker label{display:block;font-size:13px;margin-bottom:6px}.pump-picker .form-control,.pump-picker .form-select{width:100%;min-width:0}.pump-picker__actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}@media(max-width:575px){.pump-picker__fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pump-picker{padding:12px}.pump-picker label{font-size:12px}.pump-picker .form-select{font-size:13px}.pump-picker__note{font-size:12px}}
 </style>
 @endpush
 <section class="container pb-3" id="pump-picker" aria-label="Быстрый подбор насоса">
@@ -41,6 +41,6 @@
                 @if (! in_array($category->slug, ['vodosnabzhenie', 'promyshlennye-nasosy'], true))<a class="link text-caption-01" href="{{ url('/vodosnabzhenie') }}">Другой тип насоса →</a>@endif
             </div>
         </form>
-        <p class="pump-picker__note text-caption-01 cl-text-2 mt-3">Фильтр сравнивает указанные в каталоге предельные характеристики. Максимальный напор и максимальный расход достигаются в разных точках. Рабочую точку Q/H проверяют по кривой производителя. Неуказанные параметры не подставляем.</p>
+        <p class="pump-picker__note text-caption-01 cl-text-2 mt-3">Фильтр сравнивает указанные в каталоге предельные характеристики. Максимальный напор и максимальный расход достигаются в разных точках. Рабочую точку Q/H проверяют по кривой производителя. Товары без указанных значений не попадают в отбор.</p>
     </details>
 </section>

@@ -88,6 +88,13 @@ class PumpCatalog extends SpecificationCatalog
                 $numbers[$key] = round(min($candidates), 3);
             }
         }
+        // The manufacturer's UPC 25/32-40/60/80 table tops out at 8 m:
+        // https://unipump.ru/upload/iblock/da2/x7rbbfd0ljt5oi9s9spzrcj7lladq5ab/circularnye_leaflet_2025_V2411-_1_.pdf
+        // Legacy imports contain 36/55/76 m. Reject those readings; do not
+        // infer a replacement or a production revision from the model name.
+        $headNeedsReview = isset($numbers['head']) && $numbers['head'] > 8
+            && preg_match('/unipump.*\bupc\s+(?:25|32)\s*[-–]\s*(?:40|60|80)\b/iu', (string) $product->name);
+        if ($headNeedsReview) unset($numbers['head']);
         $options = [];
         $card = [];
         if (isset($numbers['head'])) $card['Макс. напор'] = $this->format($numbers['head']).' м';
@@ -106,6 +113,7 @@ class PumpCatalog extends SpecificationCatalog
             $options['diameter'] = [$numbers['diameter'] <= 76 ? 'to-76' : ($numbers['diameter'] <= 102 ? 'to-102' : 'over')];
             $card['Ø насоса'] = $this->format($numbers['diameter']).' мм';
         }
+        if ($headNeedsReview) $card['Напор'] = 'Требует проверки';
         return ['options' => $options, 'card' => $card, 'numbers' => $numbers];
     }
 
