@@ -94,8 +94,65 @@ class HouseholdPumpPickerTest extends TestCase
         foreach ($records['products'] as $binding) {
             $model = $records['models'][$binding['model']];
             $this->assertNotEmpty($model['pages']);
-            $this->assertStringStartsWith('https://unipump.ru/', ($model['source'] ?? $records['source'])['url']);
+            $source = $model['source'] ?? $records['source'];
+            $this->assertContains(parse_url($source['url'], PHP_URL_HOST), ['unipump.ru', 'wellmix-pump.ru', 'imp-pumps.com', 'jeelex.ru', 'www.puritypumps.com', 'www.dabpumps.com', 'www.koshin-ltd.jp']);
+            $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $source['sha256']);
+            foreach ($model['numbers'] as $field => $value) {
+                $this->assertGreaterThan(0, $value, $binding['model'].' '.$field);
+                $this->assertArrayNotHasKey($field, $model['conflicts'] ?? []);
+            }
             $this->assertContains($binding['category'], PumpCatalog::MANUFACTURER_CATEGORIES);
         }
+    }
+
+    public function test_nominal_working_point_and_free_passage_do_not_supply_maximum_filters(): void
+    {
+        $p = $this->verified('WELLMIX 80WQ2-50-25-7.5/2_380V');
+        $catalog = new PumpCatalog;
+        $facts = $catalog->productFacts($p, 'drenajnyie', $catalog->dimensions('drenajnyie'));
+        $this->assertSame(50.0, $facts['numbers']['rated_flow']);
+        $this->assertSame(25.0, $facts['numbers']['rated_head']);
+        $this->assertArrayNotHasKey('head', $facts['numbers']);
+        $this->assertArrayNotHasKey('flow', $facts['numbers']);
+        $this->assertArrayNotHasKey('solids', $facts['options']);
+        $this->get('https://kotlov.by/drenajnyie?q=WELLMIX')->assertOk()
+            ->assertSee('Номин. напор')->assertSee('Номин. расход')->assertSee('Свободный проход');
+        foreach (['pump_head=1', 'pump_flow=1', 'pump[solids]=5'] as $query) {
+            $this->get('https://kotlov.by/drenajnyie?'.$query)->assertOk()
+                ->assertViewHas('products', fn ($products) => $products->isEmpty());
+        }
+    }
+
+    public function test_product_details_use_the_same_evidence_as_the_picker_instead_of_imported_claims(): void
+    {
+        $p = $this->verified('JET 60 S');
+        $this->get('https://kotlov.by/poverhnostnyie/'.$p->slug)->assertOk()
+            ->assertViewHas('fireplaceSpecs', fn ($rows) => $rows['Макс. напор'] === '33 м')
+            ->assertSee('Номинальные и табличные значения показаны отдельно')
+            ->assertSee('Katalog-2026', false)->assertDontSee('999 м');
+    }
+
+    public function test_conflicting_immersion_does_not_enter_filters_and_is_explained_in_details(): void
+    {
+        $p = $this->verified('MINI ECO 1-35');
+        $catalog = new PumpCatalog;
+        $facts = $catalog->productFacts($p, 'skvajinnye-nasosy', $catalog->dimensions('skvajinnye-nasosy'));
+        $this->assertArrayNotHasKey('immersion', $facts['numbers']);
+        $this->assertArrayNotHasKey('immersion', $facts['options']);
+        $this->assertStringContainsString('документов производителя различаются', $facts['details']['Макс. погружение']);
+    }
+
+    public function test_new_passport_maxima_are_not_taken_from_the_model_designation(): void
+    {
+        $pump = $this->verified('UNIPUMP USP 12-30-3.7');
+        $catalog = new PumpCatalog;
+        $facts = $catalog->productFacts($pump, 'drenajnyie', $catalog->dimensions('drenajnyie'));
+        // USP passport physical page 5: model digits describe nominal Q/H;
+        // the separate maximum rows state 33 m³/h and 34 m.
+        $this->assertSame(33, $facts['numbers']['flow']);
+        $this->assertSame(34, $facts['numbers']['head']);
+        $station = $this->verified('DAB AQUAJET 82 M - G');
+        $this->get('https://kotlov.by/nasosnyie-stantsii?pump[tank]=20')->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->modelKeys() === [$station->id]);
     }
 }

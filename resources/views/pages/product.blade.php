@@ -1006,6 +1006,14 @@
                 @if ($hasSpecs)
                     <div class="tab-pane" id="specifications" role="tabpanel">
                         <div class="tab-content_desc site-prose">
+                            @if (in_array($product->category->slug, \App\Support\Catalog\PumpCatalog::MANUFACTURER_CATEGORIES, true))
+                                <div class="border rounded-3 p-3 mb-3 text-secondary">
+                                    <p class="mb-2">Указаны подтверждённые параметры этого исполнения. Максимальные напор и расход достигаются в разных точках. Номинальные и табличные значения показаны отдельно; рабочую точку проверяют по кривой производителя.</p>
+                                    @if ($pumpManufacturerDocument)
+                                        <a href="{{ $pumpManufacturerDocument['url'] }}" target="_blank" rel="noopener">{{ $pumpManufacturerDocument['title'] }} ↗</a>
+                                    @endif
+                                </div>
+                            @endif
                             @if (isset(\App\Support\Catalog\RadiatorCatalog::NAMES[$product->category->slug]))
                                 <div class="border rounded-3 p-3 mb-3 text-secondary">
                                     <p class="mb-2">Теплоотдача зависит от температурного напора ΔT. Для подбора учитывайте режим отопления и теплопотери комнаты. Неподтверждённые значения не указаны.</p>

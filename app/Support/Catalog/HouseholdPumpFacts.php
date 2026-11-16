@@ -27,14 +27,20 @@ class HouseholdPumpFacts
     public static function facts(Product $product, string $slug, array $dimensions): array
     {
         $record = self::verified($product, $slug);
-        if (! $record) return ['numbers' => [], 'options' => ['verified' => ['no']], 'card' => ['Данные' => 'Уточняются']];
+        if (! $record) return ['numbers' => [], 'options' => ['verified' => ['no']], 'card' => ['Данные' => 'Уточняются'], 'details' => ['Данные производителя' => 'Уточняются для этого исполнения']];
         $numbers = array_filter($record['numbers'], fn ($value) => is_numeric($value) && $value > 0);
+        // A conflict invalidates that field even if an older registry value remains.
+        $numbers = array_diff_key($numbers, $record['conflicts'] ?? []);
         $options = ['verified' => ['yes']];
         $card = [];
         foreach (['head' => ['Макс. напор', ' м'], 'flow' => ['Макс. расход', ' м³/ч'],
             'diameter' => ['Ø насоса', ' мм'], 'bore' => ['Скважина от', ' мм'],
             'suction' => ['Макс. всасывание', ' м'], 'immersion' => ['Макс. погружение', ' м'],
-            'solids' => ['Твёрдые частицы до', ' мм'], 'tank' => ['Гидроаккумулятор', ' л']] as $key => [$label, $unit]) {
+            'solids' => ['Твёрдые частицы до', ' мм'], 'tank' => ['Гидроаккумулятор', ' л'],
+            'rated_head' => ['Номин. напор', ' м'], 'rated_flow' => ['Номин. расход', ' м³/ч'],
+            'tabulated_head' => ['Напор по таблице', ' м'], 'tabulated_flow' => ['Расход по таблице', ' м³/ч'],
+            'power_kw' => ['Мощность двигателя', ' кВт'], 'input_power_kw' => ['Потребляемая мощность', ' кВт'],
+            'free_passage' => ['Свободный проход', ' мм'], 'connection_dn' => ['Подключение DN', '']] as $key => [$label, $unit]) {
             if (isset($numbers[$key])) $card[$label] = str_replace('.', ',', (string) $numbers[$key]).$unit;
         }
         if (isset($dimensions['voltage'][1][$record['voltage'] ?? ''])) {
@@ -55,7 +61,15 @@ class HouseholdPumpFacts
                 if ($matches) $options[$field][] = (string) $limit;
             }
         }
-        return ['numbers' => $numbers, 'options' => $options, 'card' => $card];
+        $details = $card;
+        foreach (['weight_kg' => ['Масса', ' кг'], 'cable' => ['Длина кабеля', ' м']] as $key => [$label, $unit]) {
+            if (isset($numbers[$key])) $details[$label] = str_replace('.', ',', (string) $numbers[$key]).$unit;
+        }
+        foreach ($record['conflicts'] ?? [] as $key => $conflict) {
+            $label = ['immersion' => 'Макс. погружение', 'flow' => 'Макс. расход', 'head' => 'Макс. напор'][$key] ?? $key;
+            $details[$label] = 'Требует уточнения: данные документов производителя различаются';
+        }
+        return ['numbers' => $numbers, 'options' => $options, 'card' => $card, 'details' => $details];
     }
 
     public static function document(Product $product, string $slug): ?array
