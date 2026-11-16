@@ -131,7 +131,9 @@ class CatalogController extends Controller
         $roomAreaInvalid = $isRoomHeaterCatalog && request()->has('room_area') && request('room_area') !== '' && $roomArea === null;
         $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName ?? $roomHeaterName ?? $radiatorName ?? $fittingName;
         $specificationSearch = CatalogSearch::term(request()->query('q'));
-        $scopeCatalogSearch = fn ($query) => CatalogSearch::apply($query, $specificationSearch);
+        $scopeCatalogSearch = $fittingName !== null
+            ? fn ($query) => app(ThreadedFittingCatalog::class)->search($query, $specificationSearch)
+            : fn ($query) => CatalogSearch::apply($query, $specificationSearch);
         $specificationCatalog = match (true) {
             $fittingName !== null => app(ThreadedFittingCatalog::class),
             $radiatorName !== null => app(RadiatorCatalog::class),
@@ -462,7 +464,7 @@ class CatalogController extends Controller
             ->when($fireplaceSelectionIds !== null, $scopeFireplaceType)
             ->with(['category', 'brand']);
 
-        CatalogSearch::apply($query, $specificationSearch);
+        $scopeCatalogSearch($query);
 
         // Фильтр по цене
         if (request('price_min')) {
@@ -815,13 +817,22 @@ class CatalogController extends Controller
                 $specificationCards = $specificationFacts['cards'];
                 $specificationMatchingIds = $specificationFacts['matched'];
                 if ($fittingName !== null) {
-                    $material = $specificationLanding['filters']['material'] ?? $specificationSelection['material'] ?? null;
-                    if (is_string($material) && isset($specificationCatalog->dimensions($category->slug)['material'][1][$material])) {
-                        $materialIds = collect($specificationCatalog->facts($category->slug, $activeCategoryIds))
-                            ->filter(fn ($fact) => in_array($material, $fact['options']['material'] ?? [], true))->keys();
-                        $materialBrandCounts = Product::query()->orderable()->whereIntegerInRaw('products.id', $materialIds)
+                    $fittingSelection = [];
+                    foreach ($specificationCatalog->dimensions($category->slug) as $key => [, $options]) {
+                        $value = $specificationLanding['filters'][$key] ?? $specificationSelection[$key] ?? null;
+                        if (is_string($value) && isset($options[$value])) $fittingSelection[$key] = $value;
+                    }
+                    if ($fittingSelection !== []) {
+                        $fittingIds = collect($specificationCatalog->facts($category->slug, $activeCategoryIds))
+                            ->filter(function ($fact) use ($fittingSelection) {
+                                foreach ($fittingSelection as $key => $value) {
+                                    if (! in_array($value, $fact['options'][$key] ?? [], true)) return false;
+                                }
+                                return true;
+                            })->keys();
+                        $fittingBrandCounts = Product::query()->orderable()->whereIntegerInRaw('products.id', $fittingIds)
                             ->selectRaw('brand_id, COUNT(*) as total')->groupBy('brand_id')->pluck('total', 'brand_id');
-                        $brands = $brands->each(fn ($brand) => $brand->products_count = (int) $materialBrandCounts->get($brand->id, 0))
+                        $brands = $brands->each(fn ($brand) => $brand->products_count = (int) $fittingBrandCounts->get($brand->id, 0))
                             ->filter(fn ($brand) => $brand->products_count > 0)->values();
                     }
                 }
@@ -1563,7 +1574,7 @@ class CatalogController extends Controller
                 : ($specificationLanding['description'] ?? $catalogIntro);
         }
         $specificationCollections = match ($category->slug) {
-            ThreadedFittingCatalog::ROOT => app(ThreadedFittingCatalog::class)->links($activeCategoryIds),
+            ThreadedFittingCatalog::ROOT => app(ThreadedFittingCatalog::class)->links($activeCategoryIds, is_string(request('fitting.type')) && isset(ThreadedFittingCatalog::TYPES[request('fitting.type')]) ? request('fitting.type') : null),
             'kotly' => [
                 ['path' => '/gazovye/nastennye-dvuhkonturnye', 'short' => 'Настенные двухконтурные газовые котлы'],
                 ['path' => '/tverdotoplivnye/na-drovah', 'short' => 'Твердотопливные котлы на дровах'],
@@ -1577,7 +1588,7 @@ class CatalogController extends Controller
                 'short' => BoilerCatalog::LANDINGS[$category->slug]['short'],
             ]] : [],
         };
-        $replacedSpecificationAttributes = $fittingName !== null ? ['material' => '/^материал(?: корпуса| изделия)?$/u'] : ($roomHeaterName !== null ? [
+        $replacedSpecificationAttributes = $fittingName !== null ? ['material' => '/^материал(?: корпуса| изделия)?$/u', 'type' => '/^(?:вид фитинга|тип фитинга|тип товара)$/u'] : ($roomHeaterName !== null ? [
             'power' => '/мощност/u', 'area' => '/площад|эффективен для/u',
             'mount' => '/установ|монтаж|размещен/u',
         ] : ($heaterName !== null ? [
