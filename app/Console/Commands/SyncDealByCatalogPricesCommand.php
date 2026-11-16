@@ -49,7 +49,7 @@ class SyncDealByCatalogPricesCommand extends Command
             $plan = $planner->build($products, $remote, $links);
             if ($supplierCode = trim((string) $this->option('supplier'))) {
                 $supplier = Supplier::query()->where('code', $supplierCode)->where('is_active', true)->firstOrFail();
-                $supplierProductIds = SupplierProduct::query()->where('supplier_id', $supplier->id)->pluck('product_id');
+                $supplierProductIds = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->pluck('product_id');
                 // Filter only after matching the complete catalog: duplicate and conflicting
                 // identities belonging to another supplier must still prevent a write.
                 $plan = $plan->whereIn('local_id', $supplierProductIds)->values();
