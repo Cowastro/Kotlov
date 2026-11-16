@@ -10,9 +10,10 @@
 .pump-picker{border:1px solid var(--line);border-radius:16px;padding:16px}.pump-picker summary{font-weight:600;cursor:pointer}.pump-picker__fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px;align-items:end}.pump-picker label{display:block;font-size:13px;margin-bottom:6px}.pump-picker fieldset{min-width:0}.pump-picker .form-control,.pump-picker .form-select{width:100%;min-width:0}.pump-picker__actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}@media(max-width:575px){.pump-picker__fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pump-picker{padding:12px}.pump-picker label{font-size:12px}.pump-picker .form-select{font-size:13px}.pump-picker__note{font-size:12px}}
 </style>
 @endpush
-<section class="container pb-3" id="pump-picker" aria-label="Быстрый подбор насоса">
+@include('partials.pump-selection-start')
+<section class="container pb-3" id="pump-parameters" style="scroll-margin-top:100px" aria-label="Быстрый подбор насоса">
     <details class="pump-picker" @if ($category->slug !== 'vodosnabzhenie' || request()->hasAny(['pump', 'pump_head', 'pump_flow', 'pump_head_to', 'pump_flow_to'])) open @endif>
-        <summary>Знаете параметры? Сузьте список насосов</summary>
+        <summary>Параметры для отбора</summary>
         <form method="get" action="{{ url()->current() }}#catalog-products">
             @foreach ($hiddenParameters as $key => $value)
                 @if (is_scalar($value))<input type="hidden" name="{{ preg_replace('/\.([^.]+)/', '[$1]', $key) }}" value="{{ $value }}">@endif
