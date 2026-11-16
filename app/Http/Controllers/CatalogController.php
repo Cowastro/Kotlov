@@ -129,6 +129,8 @@ class CatalogController extends Controller
         $pumpName = in_array($category->slug, PumpCatalog::PICKER_CATEGORIES, true) ? PumpCatalog::NAMES[$category->slug] : null;
         $pumpHead = $pumpName !== null ? PumpCatalog::bound(request('pump_head'), 2000) : null;
         $pumpFlow = $pumpName !== null ? PumpCatalog::bound(request('pump_flow'), 10000) : null;
+        $pumpHeadTo = $pumpName !== null ? PumpCatalog::bound(request('pump_head_to'), 2000) : null;
+        $pumpFlowTo = $pumpName !== null ? PumpCatalog::bound(request('pump_flow_to'), 10000) : null;
         $fittingName = $category->slug === ThreadedFittingCatalog::ROOT ? 'Резьбовые фитинги' : null;
         $isRoomHeaterCatalog = $roomHeaterName !== null;
         $roomArea = $isRoomHeaterCatalog ? HeaterCatalog::roomArea(request()->query('room_area')) : null;
@@ -813,7 +815,7 @@ class CatalogController extends Controller
         if ($specificationCatalog !== null) {
             if ($roomArea !== null) HeaterCatalog::forRoom($query, $roomArea);
             if (! $isBoilerHub) {
-                if ($pumpName !== null) $specificationCatalog->applyBounds($query, $category->slug, $activeCategoryIds, $pumpHead, $pumpFlow);
+                if ($pumpName !== null) $specificationCatalog->applyBounds($query, $category->slug, $activeCategoryIds, $pumpHead, $pumpFlow, $pumpHeadTo, $pumpFlowTo);
                 $specificationSelection = (array) request()->query($specificationParameter, []);
                 if ($category->slug === 'kotly-na-pelletah' && is_string(request('power'))) {
                     $specificationSelection['power'] ??= request('power');
@@ -823,7 +825,7 @@ class CatalogController extends Controller
                 $specificationCards = $specificationFacts['cards'];
                 $specificationMatchingIds = $specificationFacts['matched'];
                 if ($pumpName !== null) {
-                    $pumpIds = $specificationCatalog->selectedIds($category->slug, $activeCategoryIds, $pumpHead, $pumpFlow, $specificationSelection);
+                    $pumpIds = $specificationCatalog->selectedIds($category->slug, $activeCategoryIds, $pumpHead, $pumpFlow, $specificationSelection, $pumpHeadTo, $pumpFlowTo);
                     $pumpBrandCounts = Product::query()->orderable()->whereIntegerInRaw('products.id', $pumpIds)
                         ->when($specificationSearch !== '', $scopeCatalogSearch)
                         ->selectRaw('brand_id, COUNT(*) as total')->groupBy('brand_id')->pluck('total', 'brand_id');
@@ -1558,7 +1560,7 @@ class CatalogController extends Controller
         }
 
         if ($specificationName !== null) {
-            foreach (['pump_head' => [$pumpHead, 'Макс. напор от', 'м'], 'pump_flow' => [$pumpFlow, 'Макс. расход от', 'м³/ч']] as $parameter => [$value, $label, $unit]) {
+            foreach (['pump_head' => [$pumpHead, 'Макс. напор от', 'м'], 'pump_flow' => [$pumpFlow, 'Макс. расход от', 'м³/ч'], 'pump_head_to' => [$pumpHeadTo, 'Макс. напор до', 'м'], 'pump_flow_to' => [$pumpFlowTo, 'Макс. расход до', 'м³/ч']] as $parameter => [$value, $label, $unit]) {
                 if ($value !== null) $electricFilterChips[] = ['label' => $label.' '.str_replace('.', ',', (string) $value).' '.$unit,
                     'url' => request()->fullUrlWithoutQuery([$parameter, 'page']).'#catalog-products'];
             }
@@ -1721,7 +1723,7 @@ class CatalogController extends Controller
             'citySeoContent',
             'catalogSpotlight',
             'catalogNavigationGroups', 'cityStorefrontBranch', 'isCityStorefront',
-            'pumpName', 'pumpHead', 'pumpFlow',
+            'pumpName', 'pumpHead', 'pumpFlow', 'pumpHeadTo', 'pumpFlowTo',
             'specificationHeading', 'specificationSearch', 'specificationFacets', 'specificationFilterAttributes', 'specificationLanding', 'specificationCollections', 'robots',
             'isWaterHeaterHub', 'waterHeaterNavigation', 'waterHeaterRelated', 'heaterName', 'categorySchemaName',
             'isRoomHeaterCatalog', 'roomArea', 'roomAreaInvalid',

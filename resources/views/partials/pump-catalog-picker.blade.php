@@ -1,28 +1,34 @@
 @php
-    $hiddenParameters = \Illuminate\Support\Arr::dot(request()->except('page', 'pump_head', 'pump_flow'));
+    $hiddenParameters = \Illuminate\Support\Arr::dot(request()->except('page', 'pump_head', 'pump_flow', 'pump_head_to', 'pump_flow_to'));
     foreach (['voltage', 'length', 'diameter'] as $field) unset($hiddenParameters['pump.'.$field]);
     $hasHead = collect($fireplaceSpecsByProduct)->contains(fn ($card) => isset($card['Макс. напор']));
     $hasFlow = collect($fireplaceSpecsByProduct)->contains(fn ($card) => isset($card['Макс. расход']));
-    $resetParameters = request()->except('page', 'pump', 'pump_head', 'pump_flow');
+    $resetParameters = request()->except('page', 'pump', 'pump_head', 'pump_flow', 'pump_head_to', 'pump_flow_to');
 @endphp
 @push('styles')
 <style>
-.pump-picker{border:1px solid var(--line);border-radius:16px;padding:16px}.pump-picker summary{font-weight:600;cursor:pointer}.pump-picker__fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px;align-items:end}.pump-picker label{display:block;font-size:13px;margin-bottom:6px}.pump-picker .form-control,.pump-picker .form-select{width:100%;min-width:0}.pump-picker__actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}@media(max-width:575px){.pump-picker__fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pump-picker{padding:12px}.pump-picker label{font-size:12px}.pump-picker .form-select{font-size:13px}.pump-picker__note{font-size:12px}}
+.pump-picker{border:1px solid var(--line);border-radius:16px;padding:16px}.pump-picker summary{font-weight:600;cursor:pointer}.pump-picker__fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:16px;align-items:end}.pump-picker label{display:block;font-size:13px;margin-bottom:6px}.pump-picker fieldset{min-width:0}.pump-picker .form-control,.pump-picker .form-select{width:100%;min-width:0}.pump-picker__actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}@media(max-width:575px){.pump-picker__fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.pump-picker{padding:12px}.pump-picker label{font-size:12px}.pump-picker .form-select{font-size:13px}.pump-picker__note{font-size:12px}}
 </style>
 @endpush
 <section class="container pb-3" id="pump-picker" aria-label="Быстрый подбор насоса">
-    <details class="pump-picker" @if ($category->slug !== 'vodosnabzhenie' || request()->hasAny(['pump', 'pump_head', 'pump_flow'])) open @endif>
+    <details class="pump-picker" @if ($category->slug !== 'vodosnabzhenie' || request()->hasAny(['pump', 'pump_head', 'pump_flow', 'pump_head_to', 'pump_flow_to'])) open @endif>
         <summary>Знаете параметры? Сузьте список насосов</summary>
         <form method="get" action="{{ url()->current() }}#catalog-products">
             @foreach ($hiddenParameters as $key => $value)
                 @if (is_scalar($value))<input type="hidden" name="{{ preg_replace('/\.([^.]+)/', '[$1]', $key) }}" value="{{ $value }}">@endif
             @endforeach
             <div class="pump-picker__fields">
-                @if ($hasHead || $pumpHead !== null)
-                    <div><label for="pump-head">Макс. напор от, м</label><input class="form-control" id="pump-head" name="pump_head" inputmode="decimal" value="{{ $pumpHead }}" placeholder="Не важно" maxlength="10"></div>
+                @if ($hasHead || $pumpHead !== null || $pumpHeadTo !== null)
+                    <fieldset><legend class="h6" style="font-size:13px">Макс. напор, м</legend><div class="d-flex gap-2">
+                        <label for="pump-head" class="visually-hidden">Макс. напор от, м</label><input class="form-control" id="pump-head" name="pump_head" inputmode="decimal" value="{{ $pumpHead }}" placeholder="От" maxlength="10">
+                        <label for="pump-head-to" class="visually-hidden">Макс. напор до, м</label><input class="form-control" id="pump-head-to" name="pump_head_to" inputmode="decimal" value="{{ $pumpHeadTo }}" placeholder="До" maxlength="10">
+                    </div></fieldset>
                 @endif
-                @if ($hasFlow || $pumpFlow !== null)
-                    <div><label for="pump-flow">Макс. расход от, м³/ч</label><input class="form-control" id="pump-flow" name="pump_flow" inputmode="decimal" value="{{ $pumpFlow }}" placeholder="Не важно" maxlength="10"></div>
+                @if ($hasFlow || $pumpFlow !== null || $pumpFlowTo !== null)
+                    <fieldset><legend class="h6" style="font-size:13px">Макс. расход, м³/ч</legend><div class="d-flex gap-2">
+                        <label for="pump-flow" class="visually-hidden">Макс. расход от, м³/ч</label><input class="form-control" id="pump-flow" name="pump_flow" inputmode="decimal" value="{{ $pumpFlow }}" placeholder="От" maxlength="10">
+                        <label for="pump-flow-to" class="visually-hidden">Макс. расход до, м³/ч</label><input class="form-control" id="pump-flow-to" name="pump_flow_to" inputmode="decimal" value="{{ $pumpFlowTo }}" placeholder="До" maxlength="10">
+                    </div></fieldset>
                 @endif
                 @foreach (['voltage', 'length', 'diameter'] as $key)
                     @if (isset($specificationFacets[$key]))

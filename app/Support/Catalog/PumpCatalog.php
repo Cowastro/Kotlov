@@ -126,18 +126,20 @@ class PumpCatalog extends SpecificationCatalog
         return $number > 0 && $number <= $max ? $number : null;
     }
 
-    public function applyBounds(Builder $query, string $slug, Collection $ids, ?float $head, ?float $flow): void
+    public function applyBounds(Builder $query, string $slug, Collection $ids, ?float $head, ?float $flow, ?float $headTo = null, ?float $flowTo = null): void
     {
-        if ($head === null && $flow === null) return;
-        $query->whereIntegerInRaw('products.id', $this->selectedIds($slug, $ids, $head, $flow));
+        if ($head === null && $flow === null && $headTo === null && $flowTo === null) return;
+        $query->whereIntegerInRaw('products.id', $this->selectedIds($slug, $ids, $head, $flow, [], $headTo, $flowTo));
     }
 
-    public function selectedIds(string $slug, Collection $ids, ?float $head, ?float $flow, array $selection = []): array
+    public function selectedIds(string $slug, Collection $ids, ?float $head, ?float $flow, array $selection = [], ?float $headTo = null, ?float $flowTo = null): array
     {
         $dimensions = $this->dimensions($slug);
-        return collect($this->facts($slug, $ids))->filter(function ($fact) use ($head, $flow, $selection, $dimensions) {
+        return collect($this->facts($slug, $ids))->filter(function ($fact) use ($head, $flow, $headTo, $flowTo, $selection, $dimensions) {
             if ($head !== null && (! isset($fact['numbers']['head']) || $fact['numbers']['head'] < $head)) return false;
             if ($flow !== null && (! isset($fact['numbers']['flow']) || $fact['numbers']['flow'] < $flow)) return false;
+            if ($headTo !== null && (! isset($fact['numbers']['head']) || $fact['numbers']['head'] > $headTo)) return false;
+            if ($flowTo !== null && (! isset($fact['numbers']['flow']) || $fact['numbers']['flow'] > $flowTo)) return false;
             foreach ($selection as $key => $value) {
                 if (is_scalar($value) && isset($dimensions[$key][1][$value]) && ! in_array((string) $value, $fact['options'][$key] ?? [], true)) return false;
             }

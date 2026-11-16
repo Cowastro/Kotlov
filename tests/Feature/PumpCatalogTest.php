@@ -48,8 +48,9 @@ class PumpCatalogTest extends TestCase
     {
         $match = $this->pump('mnogostupenchatye-nasosy', 'Wilo Test 40', ['Максимальный напор, м' => '50', 'Максимальный расход, м³/ч' => '4', 'Напряжение, В' => '230']);
         $this->pump('mnogostupenchatye-nasosy', 'Wilo Small', ['Максимальный напор, м' => '10', 'Максимальный расход, м³/ч' => '8']);
+        $this->pump('mnogostupenchatye-nasosy', 'Wilo Large', ['Максимальный напор, м' => '100', 'Максимальный расход, м³/ч' => '20', 'Напряжение, В' => '230']);
         $this->pump('mnogostupenchatye-nasosy', 'Wilo Unknown', ['Максимальный напор, м' => '100', 'Максимальная производительность' => '400']);
-        $this->get('https://kotlov.by/mnogostupenchatye-nasosy?pump_head=40&pump_flow=3,5&pump[voltage]=220&q=Wilo&price_max=120')
+        $this->get('https://kotlov.by/mnogostupenchatye-nasosy?pump_head=40&pump_head_to=60&pump_flow=3,5&pump_flow_to=5&pump[voltage]=220&q=Wilo&price_max=120')
             ->assertOk()->assertViewHas('products', fn ($products) => $products->modelKeys() === [$match->id])
             ->assertSee('Макс. напор от 40 м')->assertSee('Макс. расход от 3,5 м³/ч')
             ->assertSee('/mnogostupenchatye-nasosy/'.$match->slug, false)

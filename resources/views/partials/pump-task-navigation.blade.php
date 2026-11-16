@@ -11,7 +11,7 @@
         'in-lain-nasosy' => ['Ин-лайн', 'Отопление и холодоснабжение', 'icon-ArrowClockwise'],
         'kanalizatsionnye-nasosy-sukhoy-ustanovki' => ['Канализационные сухой установки', 'Насосные станции и водоотведение', 'icon-filter'],
     ];
-    $params = request()->only('q', 'brand', 'in_stock', 'pump_head', 'pump_flow');
+    $params = request()->only('q', 'brand', 'in_stock', 'pump_head', 'pump_flow', 'pump_head_to', 'pump_flow_to');
     if (is_string(request('pump.voltage'))) $params['pump']['voltage'] = request('pump.voltage');
     $suffix = $params ? '?'.http_build_query($params) : '';
     $entries = [];
