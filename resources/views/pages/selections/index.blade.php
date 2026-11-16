@@ -1,4 +1,5 @@
 @extends('layouts.amerce')
+@section('title', 'Мои подборы | KOTLOV')
 @php $robots = 'noindex, nofollow'; @endphp
 @section('content')
 <main class="container py-4">

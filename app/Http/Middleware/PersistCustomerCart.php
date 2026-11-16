@@ -6,6 +6,7 @@ use App\Services\CustomerCartStore;
 use App\Models\CustomerSelection;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 
 class PersistCustomerCart
@@ -29,6 +30,7 @@ class PersistCustomerCart
         if (! $cartRequest && (int) $request->session()->get('cart_owner_id') === (int) $userId) return $next($request);
 
         // Hydrate inside the lock so concurrent adds use the latest account cart.
+        try {
         return Cache::lock('customer-cart:'.$userId, 120)->block(10, function () use ($request, $next, $store, $userId) {
             $store->hydrate($request, $userId);
             $before = [$request->session()->get('cart', []), $store->meta($request)];
@@ -49,5 +51,12 @@ class PersistCustomerCart
             }
             return $response;
         });
+        } catch (LockTimeoutException $exception) {
+            $message = 'Корзина сейчас сохраняется в другой вкладке. Повторите действие через несколько секунд.';
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 409)
+                : to_route('cart')->with('error', $message);
+        }
     }
 }
+
