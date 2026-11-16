@@ -35,6 +35,8 @@
                 <div class="alert alert-danger mb-20">{{ session('error') }}</div>
             @endif
 
+            @include('partials.cart-selection-tools')
+
             @if (count($items) > 0)
                 <div class="row">
 
