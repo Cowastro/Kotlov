@@ -22,6 +22,8 @@ use App\Support\Catalog\WaterHeaterCatalog;
 use App\Support\Catalog\HeaterCatalog;
 use App\Support\Catalog\RadiatorCatalog;
 use App\Support\Catalog\HeaterEquipment;
+use App\Support\Catalog\HouseholdPumpFacts;
+use App\Support\Catalog\PumpCatalog;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
@@ -98,6 +100,14 @@ class ProductController extends Controller
         };
 
         $productCardSpecs = [];
+        $pumpManufacturerDocument = null;
+        if (in_array($productCategory->slug, PumpCatalog::MANUFACTURER_CATEGORIES, true)) {
+            $catalog = app(PumpCatalog::class);
+            $pumpFacts = $catalog->productFacts($product, $productCategory->slug, $catalog->dimensions($productCategory->slug));
+            $productCardSpecs = $pumpFacts['card'];
+            $fireplaceSpecs = $pumpFacts['details'];
+            $pumpManufacturerDocument = HouseholdPumpFacts::document($product, $productCategory->slug);
+        }
         $heaterEquipment = HeaterEquipment::details($product);
         $heaterEquipmentGroups = HeaterEquipment::relatedGroups($product, $heaterEquipment);
         if (isset(HeaterCatalog::NAMES[$productCategory->slug])) {
@@ -214,6 +224,9 @@ class ProductController extends Controller
 
         if (isset(RadiatorCatalog::NAMES[$productCategory->slug])) {
             $seoHighlights = collect($fireplaceSpecs)->map(fn ($value, $label) => $label.': '.$value)->values();
+        }
+        if (in_array($productCategory->slug, PumpCatalog::MANUFACTURER_CATEGORIES, true)) {
+            $seoHighlights = collect($productCardSpecs)->except('Данные')->map(fn ($value, $label) => $label.': '.$value)->values();
         }
         $description = $verifiedGasMeter['description'] ?? $seo->productDescription($product, $cityIn, $seoHighlights);
 
@@ -441,7 +454,7 @@ class ProductController extends Controller
         return view('pages.product', compact(
             'product',
             'attributeValues',
-            'fireplaceSpecs', 'productCardSpecs',
+            'fireplaceSpecs', 'productCardSpecs', 'pumpManufacturerDocument',
             'compatibleElectricProducts',
             'heaterEquipment', 'heaterEquipmentGroups',
             'showCompatibleInserts',

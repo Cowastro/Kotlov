@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 
 class PumpCatalog extends SpecificationCatalog
 {
-    protected const FACTS_VERSION = 2;
+    protected const FACTS_VERSION = 3;
     public const ROOT = 'vodosnabzhenie';
 
     public const MANUFACTURER_CATEGORIES = ['skvajinnye-nasosy', 'poverhnostnyie', 'drenajnyie', 'nasosnyie-stantsii'];
@@ -55,7 +55,7 @@ class PumpCatalog extends SpecificationCatalog
                 $dimensions['suction'] = ['Максимальная высота всасывания', ['5' => 'Не менее 5 м', '8' => 'Не менее 8 м', '15' => 'Не менее 15 м']];
             }
             if ($slug === 'nasosnyie-stantsii') {
-                $dimensions['tank'] = ['Объём гидроаккумулятора', ['2' => '2 л', '5' => '5 л', '24' => '24 л', '50' => '50 л']];
+                $dimensions['tank'] = ['Объём гидроаккумулятора', ['2' => '2 л', '5' => '5 л', '6' => '6 л', '18' => '18 л', '20' => '20 л', '24' => '24 л', '50' => '50 л']];
             }
             if ($slug === 'drenajnyie') {
                 $dimensions['solids'] = ['Допустимый размер твёрдых частиц', ['5' => 'Не менее 5 мм', '10' => 'Не менее 10 мм', '20' => 'Не менее 20 мм', '35' => 'Не менее 35 мм', '50' => 'Не менее 50 мм']];
