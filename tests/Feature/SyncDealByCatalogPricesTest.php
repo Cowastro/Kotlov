@@ -19,18 +19,15 @@ class SyncDealByCatalogPricesTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_reviewed_legacy_prices_require_a_fresh_rrp_file_and_active_supplier(): void
+    public function test_supplier_override_cannot_replace_the_catalog_as_price_source(): void
     {
         Storage::fake('local');
         $card = $this->card();
         $card->update(['is_archived' => true]);
-        $supplier = Supplier::updateOrCreate(['code' => 'bania'], ['name' => 'Банька', 'is_active' => true]);
-        SupplierProduct::create(['supplier_id' => $supplier->id, 'product_id' => $card->id,
-            'supplier_article' => 'CATALOG-18M', 'match_status' => 'matched']);
-        $before = $this->remote(1494);
-        $after = $this->remote(1900);
+        Supplier::updateOrCreate(['code' => 'bania'], ['name' => 'Банька', 'is_active' => true]);
+        $remote = $this->remote(1494);
         Storage::disk('local')->put('deal-by/bania-reviewed-retail-links.json', json_encode([100 => [
-            'local_id' => $card->id, 'fingerprint' => app(DealByPricePlan::class)->fingerprint($before['products'][0]),
+            'local_id' => $card->id, 'fingerprint' => app(DealByPricePlan::class)->fingerprint($remote['products'][0]),
             'retail_article' => 'CATALOG-18M', 'retail_name' => 'Печь ДТ-3',
         ]]));
         $file = storage_path('app/supplier-cache/bania-retail-pricelist.xlsx');
@@ -41,26 +38,12 @@ class SyncDealByCatalogPricesTest extends TestCase
         $sheet->getActiveSheet()->fromArray([['Печь ДТ-3', 'CATALOG-18M', 'шт', 1900]], null, 'A4');
         (new Xlsx($sheet))->save($file);
         try {
-            touch($file, now()->subDays(2)->timestamp);
-            clearstatcache();
-            $this->mock(DealByClient::class, function ($mock) use ($before): void {
-                $mock->shouldReceive('listProducts')->twice()->andReturn($before);
+            $this->mock(DealByClient::class, function ($mock) use ($remote): void {
+                $mock->shouldReceive('listProducts')->once()->andReturn($remote);
                 $mock->shouldNotReceive('editProducts');
             });
-            $this->artisan('deal:sync-catalog-prices', ['--apply' => true, '--supplier' => 'bania'])
-                ->expectsOutputToContain('metric.deal_catalog_prices.reviewed_bania_source_stale=1')->assertFailed();
-            touch($file, now()->timestamp);
-            clearstatcache();
-            $supplier->update(['is_active' => false]);
             $this->artisan('deal:sync-catalog-prices', ['--apply' => true])->assertFailed();
-            $supplier->update(['is_active' => true]);
-            $this->mock(DealByClient::class, function ($mock) use ($before, $after): void {
-                $mock->shouldReceive('listProducts')->twice()->andReturn($before, $after);
-                $mock->shouldReceive('editProducts')->once()->with([['id' => 100, 'price' => 1900.0]])->andReturn([]);
-            });
-            $this->artisan('deal:sync-catalog-prices', ['--apply' => true, '--supplier' => 'bania'])
-                ->expectsOutputToContain('metric.deal_catalog_prices.linked=1')->assertSuccessful();
-            $this->assertTrue($card->fresh()->is_archived);
+            Storage::disk('local')->assertMissing('deal-by/product-links.json');
         } finally {
             unlink($file);
         }
