@@ -127,6 +127,11 @@ class CatalogController extends Controller
         $roomHeaterName = HeaterCatalog::NAMES[$category->slug] ?? null;
         $radiatorName = RadiatorCatalog::NAMES[$category->slug] ?? null;
         $pumpName = in_array($category->slug, PumpCatalog::PICKER_CATEGORIES, true) ? PumpCatalog::NAMES[$category->slug] : null;
+        $manufacturerPump = in_array($category->slug, PumpCatalog::MANUFACTURER_CATEGORIES, true);
+        if ($manufacturerPump && request()->has('attr')) {
+            $params = request()->except('attr', 'page');
+            return redirect(url()->current().($params ? '?'.http_build_query($params) : '').'#pump-picker');
+        }
         $pumpHead = $pumpName !== null ? PumpCatalog::bound(request('pump_head'), 2000) : null;
         $pumpFlow = $pumpName !== null ? PumpCatalog::bound(request('pump_flow'), 10000) : null;
         $pumpHeadTo = $pumpName !== null ? PumpCatalog::bound(request('pump_head_to'), 2000) : null;
@@ -1608,7 +1613,7 @@ class CatalogController extends Controller
                 ? 'Сравните мощность, площадь обогрева и тип установки. Площадь указана производителем: результат зависит от теплоизоляции и условий помещения.'
                 : ($specificationLanding['description'] ?? $catalogIntro);
         }
-        if ($pumpName !== null) $catalogIntro = 'Выберите задачу и сравните напор, расход и питание. Если меняете циркуляционный насос, проверьте также монтажную длину и присоединения.';
+        if ($pumpName !== null) $catalogIntro = 'Найдите модель для замены или сузьте список по параметрам, цене и наличию.';
         $specificationCollections = match ($category->slug) {
             ThreadedFittingCatalog::ROOT => app(ThreadedFittingCatalog::class)->links($activeCategoryIds, is_string(request('fitting.type')) && isset(ThreadedFittingCatalog::TYPES[request('fitting.type')]) ? request('fitting.type') : null),
             'kotly' => [
@@ -1645,7 +1650,8 @@ class CatalogController extends Controller
             'voltage' => '/^напряжение/u',
         ])));
         $specificationFilterAttributes = $filterAttributes;
-        if ($specificationCatalog !== null && ! $isBoilerHub) {
+        if ($manufacturerPump) $specificationFilterAttributes = collect();
+        if ($specificationCatalog !== null && ! $isBoilerHub && ! $manufacturerPump) {
             $replaced = $roomHeaterName !== null ? $replacedSpecificationAttributes : array_intersect_key($replacedSpecificationAttributes, $specificationFacets + ($specificationLanding['filters'] ?? []));
             $specificationFilterAttributes = $filterAttributes->reject(function ($attribute) use ($replaced) {
                 if (request()->filled('attr.'.$attribute->id)) {

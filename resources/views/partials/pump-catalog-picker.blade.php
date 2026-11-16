@@ -1,6 +1,7 @@
 @php
     $hiddenParameters = \Illuminate\Support\Arr::dot(request()->except('page', 'pump_head', 'pump_flow', 'pump_head_to', 'pump_flow_to'));
-    foreach (['voltage', 'length', 'diameter'] as $field) unset($hiddenParameters['pump.'.$field]);
+    $pumpFields = array_keys(app(\App\Support\Catalog\PumpCatalog::class)->dimensions($category->slug));
+    foreach ($pumpFields as $field) unset($hiddenParameters['pump.'.$field]);
     $hasHead = collect($fireplaceSpecsByProduct)->contains(fn ($card) => isset($card['Макс. напор']));
     $hasFlow = collect($fireplaceSpecsByProduct)->contains(fn ($card) => isset($card['Макс. расход']));
     $resetParameters = request()->except('page', 'pump', 'pump_head', 'pump_flow', 'pump_head_to', 'pump_flow_to');
@@ -31,7 +32,7 @@
                         <label for="pump-flow-to" class="visually-hidden">Макс. расход до, м³/ч</label><input class="form-control" id="pump-flow-to" name="pump_flow_to" inputmode="decimal" value="{{ $pumpFlowTo }}" placeholder="До" maxlength="10">
                     </div></fieldset>
                 @endif
-                @foreach (['voltage', 'length', 'diameter'] as $key)
+                @foreach ($pumpFields as $key)
                     @if (isset($specificationFacets[$key]))
                         <div><label for="pump-{{ $key }}">{{ $specificationFacets[$key]['label'] }}</label>
                             <select id="pump-{{ $key }}" name="pump[{{ $key }}]" class="form-select"><option value="">Не важно</option>
@@ -49,5 +50,23 @@
             </div>
         </form>
         <p class="pump-picker__note text-caption-01 cl-text-2 mt-3">Фильтр сравнивает указанные в каталоге предельные характеристики. Максимальный напор и максимальный расход достигаются в разных точках. Рабочую точку Q/H проверяют по кривой производителя. Товары без указанных значений не попадают в отбор.</p>
+        @if (in_array($category->slug, \App\Support\Catalog\PumpCatalog::MANUFACTURER_CATEGORIES, true))
+            @php
+                $verifiedCount = collect($fireplaceSpecsByProduct)->filter(fn ($card) => ($card['Данные'] ?? null) !== 'Уточняются')->count();
+                $evidence = \App\Support\Catalog\HouseholdPumpFacts::records();
+                $evidenceSources = collect($evidence['products'])->where('category', $category->slug)
+                    ->map(fn ($binding) => $evidence['models'][$binding['model']]['source'] ?? $evidence['source'])->unique('url');
+            @endphp
+            <details class="pump-start__help">
+                <summary>Данные производителей · {{ $verifiedCount }} из {{ count($fireplaceSpecsByProduct) }} товаров</summary>
+                <p>Параметры для отбора сверены с документами производителей для указанных моделей. Старые неподтверждённые значения импорта здесь не используются. Остальные товары доступны через поиск по названию, бренду и артикулу. У подтверждённой модели могут быть заполнены не все параметры.</p>
+                @foreach ($evidenceSources as $source)
+                    <a class="link d-block" href="{{ $source['url'] }}" target="_blank" rel="noopener">{{ $source['title'] }} ↗</a>
+                @endforeach
+                @if ($category->slug === 'skvajinnye-nasosy')<p>Диаметр насоса и минимальный внутренний диаметр скважины — разные размеры. Погружение измеряется под зеркалом воды; глубина скважины не равна требуемому напору. Проверьте также дебит, динамический уровень и длину кабеля.</p>@endif
+                @if (in_array($category->slug, ['poverhnostnyie', 'nasosnyie-stantsii'], true))<p>Высота всасывания не равна напору на выходе. На возможность всасывания также влияют потери во входной трубе и условия установки. Объём гидроаккумулятора не равен запасу воды в нём.</p>@endif
+                @if ($category->slug === 'drenajnyie')<p>Размер допустимых твёрдых частиц не определяет пригодность для волокон, песка или горячих стоков. Эти условия проверяют отдельно по паспорту.</p>@endif
+            </details>
+        @endif
     </details>
 </section>
