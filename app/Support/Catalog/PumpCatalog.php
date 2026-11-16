@@ -8,9 +8,12 @@ use Illuminate\Support\Collection;
 
 class PumpCatalog extends SpecificationCatalog
 {
+    protected const FACTS_VERSION = 2;
     public const ROOT = 'vodosnabzhenie';
 
-    public const PICKER_CATEGORIES = ['tsirkulyatsionnyie', 'mnogostupenchatye-nasosy'];
+    public const MANUFACTURER_CATEGORIES = ['skvajinnye-nasosy', 'poverhnostnyie', 'drenajnyie', 'nasosnyie-stantsii'];
+
+    public const PICKER_CATEGORIES = ['tsirkulyatsionnyie', 'mnogostupenchatye-nasosy', ...self::MANUFACTURER_CATEGORIES];
 
     public const NAMES = [
         self::ROOT => 'Насосы и водоснабжение',
@@ -40,11 +43,32 @@ class PumpCatalog extends SpecificationCatalog
         if (in_array($slug, [self::ROOT, 'skvajinnye-nasosy'], true)) {
             $dimensions['diameter'] = ['Наружный диаметр насоса', ['to-76' => 'до 76 мм', 'to-102' => 'свыше 76 до 102 мм', 'over' => 'свыше 102 мм']];
         }
+        if (in_array($slug, self::MANUFACTURER_CATEGORIES, true)) {
+            $dimensions['verified'] = ['Данные производителя', ['yes' => 'Подтверждены', 'no' => 'Пока не подтверждены']];
+            if ($slug === 'skvajinnye-nasosy') {
+                $dimensions['bore'] = ['Минимальный диаметр скважины', ['75' => 'Для скважины 75 мм', '85' => 'Для скважины 85 мм', '98' => 'Для скважины 98 мм', '110' => 'Для скважины 110 мм']];
+            }
+            if (in_array($slug, ['skvajinnye-nasosy', 'drenajnyie'], true)) {
+                $dimensions['immersion'] = ['Допустимое погружение под воду', ['5' => 'Не менее 5 м', '7' => 'Не менее 7 м', '20' => 'Не менее 20 м', '40' => 'Не менее 40 м', '80' => 'Не менее 80 м', '100' => 'Не менее 100 м']];
+            }
+            if (in_array($slug, ['poverhnostnyie', 'nasosnyie-stantsii'], true)) {
+                $dimensions['suction'] = ['Максимальная высота всасывания', ['5' => 'Не менее 5 м', '8' => 'Не менее 8 м', '15' => 'Не менее 15 м']];
+            }
+            if ($slug === 'nasosnyie-stantsii') {
+                $dimensions['tank'] = ['Объём гидроаккумулятора', ['2' => '2 л', '5' => '5 л', '24' => '24 л', '50' => '50 л']];
+            }
+            if ($slug === 'drenajnyie') {
+                $dimensions['solids'] = ['Допустимый размер твёрдых частиц', ['5' => 'Не менее 5 мм', '10' => 'Не менее 10 мм', '20' => 'Не менее 20 мм', '35' => 'Не менее 35 мм', '50' => 'Не менее 50 мм']];
+            }
+        }
         return $dimensions;
     }
 
     public function productFacts(Product $product, string $slug, array $dimensions): array
     {
+        if (in_array($slug, self::MANUFACTURER_CATEGORIES, true)) {
+            return HouseholdPumpFacts::facts($product, $slug, $dimensions);
+        }
         if (! isset(self::NAMES[$product->category?->slug ?? $slug])) return ['options' => [], 'card' => [], 'numbers' => []];
         $rows = [];
         foreach (($product->specs ?? []) as $key => $spec) {

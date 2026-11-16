@@ -1,0 +1,4128 @@
+{
+  "checked_on": "2026-11-16",
+  "source": {
+    "url": "https://unipump.ru/upload/iblock/7be/p1izanxps39qv3nnd6gjzxyiq3i2sao2/Katalog-2026.-Bytovoe-oborudovanie.pdf",
+    "title": "UNIPUMP. Каталог бытового оборудования, 2026",
+    "page_numbering": "PDF, starts at 1",
+    "sha256": "2b12f5142e7a5640d13ce260b422be88029e6e153880f987db9109bc1855658f"
+  },
+  "models": {
+    "JET 40 S": {
+      "numbers": {
+        "head": 30,
+        "flow": 1.8,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14
+      ]
+    },
+    "JET 60 S": {
+      "numbers": {
+        "head": 33,
+        "flow": 2.4,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14
+      ]
+    },
+    "JET 100 S": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14
+      ]
+    },
+    "DP 750": {
+      "numbers": {
+        "head": 40,
+        "flow": 2.4,
+        "suction": 15
+      },
+      "voltage": "220",
+      "pages": [
+        21,
+        22
+      ]
+    },
+    "QB 60": {
+      "numbers": {
+        "head": 33,
+        "flow": 1.8,
+        "suction": 5
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24
+      ]
+    },
+    "QB 70": {
+      "numbers": {
+        "head": 40,
+        "flow": 2.4,
+        "suction": 5
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24
+      ]
+    },
+    "QB 80": {
+      "numbers": {
+        "head": 50,
+        "flow": 2.7,
+        "suction": 5
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24
+      ]
+    },
+    "CPM 130": {
+      "numbers": {
+        "head": 16,
+        "flow": 4.5
+      },
+      "voltage": "220",
+      "pages": [
+        25,
+        26
+      ]
+    },
+    "CPM 146": {
+      "numbers": {
+        "head": 25,
+        "flow": 5.4
+      },
+      "voltage": "220",
+      "pages": [
+        25,
+        26
+      ]
+    },
+    "CPM 158": {
+      "numbers": {
+        "head": 28,
+        "flow": 5.7
+      },
+      "voltage": "220",
+      "pages": [
+        25,
+        26
+      ]
+    },
+    "CPM 180": {
+      "numbers": {
+        "head": 35,
+        "flow": 6.6
+      },
+      "voltage": "220",
+      "pages": [
+        25,
+        26
+      ]
+    },
+    "CPM 200": {
+      "numbers": {
+        "head": 40,
+        "flow": 6.6
+      },
+      "voltage": "220",
+      "pages": [
+        25,
+        26
+      ]
+    },
+    "CPM 750H": {
+      "numbers": {
+        "head": 16,
+        "flow": 16.2
+      },
+      "voltage": "220",
+      "pages": [
+        27,
+        28
+      ]
+    },
+    "CPM 1100H": {
+      "numbers": {
+        "head": 20,
+        "flow": 19.8
+      },
+      "voltage": "220",
+      "pages": [
+        27,
+        28
+      ]
+    },
+    "CPM 1500H": {
+      "numbers": {
+        "head": 27,
+        "flow": 27
+      },
+      "voltage": "220",
+      "pages": [
+        27,
+        28
+      ]
+    },
+    "CPM 1100D": {
+      "numbers": {
+        "head": 35,
+        "flow": 5.76
+      },
+      "voltage": "220",
+      "pages": [
+        27,
+        28
+      ]
+    },
+    "CPM 1500D": {
+      "numbers": {
+        "head": 48,
+        "flow": 6.3
+      },
+      "voltage": "220",
+      "pages": [
+        27,
+        28
+      ]
+    },
+    "CPM 2200D": {
+      "numbers": {
+        "head": 50,
+        "flow": 6.72
+      },
+      "voltage": "220",
+      "pages": [
+        27,
+        28
+      ]
+    },
+    "CPM 750": {
+      "numbers": {
+        "head": 11,
+        "flow": 21
+      },
+      "voltage": "220",
+      "pages": [
+        29,
+        30
+      ]
+    },
+    "CPM 1100": {
+      "numbers": {
+        "head": 14,
+        "flow": 24
+      },
+      "voltage": "220",
+      "pages": [
+        29,
+        30
+      ]
+    },
+    "CPM 1100Q": {
+      "numbers": {
+        "head": 10,
+        "flow": 40.2
+      },
+      "voltage": "220",
+      "pages": [
+        29,
+        30
+      ]
+    },
+    "CPM 1500Q": {
+      "numbers": {
+        "head": 11,
+        "flow": 42
+      },
+      "voltage": "220",
+      "pages": [
+        29,
+        30
+      ]
+    },
+    "CPM 2200Q": {
+      "numbers": {
+        "head": 13,
+        "flow": 45
+      },
+      "voltage": "220",
+      "pages": [
+        29,
+        30
+      ]
+    },
+    "CPM 3000Q": {
+      "numbers": {
+        "head": 16,
+        "flow": 57
+      },
+      "voltage": "220",
+      "pages": [
+        29,
+        30
+      ]
+    },
+    "MH 200 A": {
+      "numbers": {
+        "head": 20,
+        "flow": 5.1,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32
+      ]
+    },
+    "MH 300 A": {
+      "numbers": {
+        "head": 30,
+        "flow": 5.1,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32
+      ]
+    },
+    "MH 400 A": {
+      "numbers": {
+        "head": 45,
+        "flow": 5.4,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32
+      ]
+    },
+    "MH 500 A": {
+      "numbers": {
+        "head": 55,
+        "flow": 5.4,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32
+      ]
+    },
+    "MH 300 C": {
+      "numbers": {
+        "head": 36,
+        "flow": 9,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32
+      ]
+    },
+    "MH 400 C": {
+      "numbers": {
+        "head": 48,
+        "flow": 9,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32
+      ]
+    },
+    "MH 800 C": {
+      "numbers": {
+        "head": 85,
+        "flow": 5.5,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32
+      ]
+    },
+    "MH 1000 C": {
+      "numbers": {
+        "head": 105,
+        "flow": 5.5,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32
+      ]
+    },
+    "ECO 2-34": {
+      "numbers": {
+        "head": 41,
+        "flow": 4.5,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 2-56": {
+      "numbers": {
+        "head": 68,
+        "flow": 4.5,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 2-73": {
+      "numbers": {
+        "head": 87,
+        "flow": 4.5,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 2-89": {
+      "numbers": {
+        "head": 109,
+        "flow": 4.5,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 2-100": {
+      "numbers": {
+        "head": 123,
+        "flow": 4.5,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 2-112": {
+      "numbers": {
+        "head": 135,
+        "flow": 4.5,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 2-157": {
+      "numbers": {
+        "head": 189,
+        "flow": 4.5,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 3-40": {
+      "numbers": {
+        "head": 61,
+        "flow": 5.8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 3-55": {
+      "numbers": {
+        "head": 83,
+        "flow": 5.8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 3-70": {
+      "numbers": {
+        "head": 105,
+        "flow": 5.8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 3-80": {
+      "numbers": {
+        "head": 120,
+        "flow": 5.8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 3-90": {
+      "numbers": {
+        "head": 135,
+        "flow": 5.8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 3-115": {
+      "numbers": {
+        "head": 173,
+        "flow": 5.8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 3-150": {
+      "numbers": {
+        "head": 215,
+        "flow": 5.8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 4-76": {
+      "numbers": {
+        "head": 100,
+        "flow": 8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 4-104": {
+      "numbers": {
+        "head": 133,
+        "flow": 8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 4-132": {
+      "numbers": {
+        "head": 173,
+        "flow": 8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 4-142": {
+      "numbers": {
+        "head": 183,
+        "flow": 8,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 5-60": {
+      "numbers": {
+        "head": 76,
+        "flow": 9,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 5-75": {
+      "numbers": {
+        "head": 96,
+        "flow": 9,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "ECO 5-105": {
+      "numbers": {
+        "head": 134,
+        "flow": 9,
+        "diameter": 98,
+        "bore": 110,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        85,
+        86
+      ]
+    },
+    "MINI ECO 1-35": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 1-49": {
+      "numbers": {
+        "head": 55,
+        "flow": 3,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 1-70": {
+      "numbers": {
+        "head": 80,
+        "flow": 3,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 1-98": {
+      "numbers": {
+        "head": 108,
+        "flow": 3,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 1-127": {
+      "numbers": {
+        "head": 144,
+        "flow": 3,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 1-154": {
+      "numbers": {
+        "head": 175,
+        "flow": 3,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 2-32": {
+      "numbers": {
+        "head": 40,
+        "flow": 4,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 2-49": {
+      "numbers": {
+        "head": 62,
+        "flow": 4,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 2-68": {
+      "numbers": {
+        "head": 89,
+        "flow": 4,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 2-87": {
+      "numbers": {
+        "head": 110,
+        "flow": 4,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 2-108": {
+      "numbers": {
+        "head": 143,
+        "flow": 4,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 3-46": {
+      "numbers": {
+        "head": 66,
+        "flow": 5,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 3-62": {
+      "numbers": {
+        "head": 86,
+        "flow": 5,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 3-71": {
+      "numbers": {
+        "head": 102,
+        "flow": 5,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 3-100": {
+      "numbers": {
+        "head": 142,
+        "flow": 5,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 4-35": {
+      "numbers": {
+        "head": 53,
+        "flow": 6,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 4-50": {
+      "numbers": {
+        "head": 74,
+        "flow": 6,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 4-60": {
+      "numbers": {
+        "head": 92,
+        "flow": 6,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "MINI ECO 4-72": {
+      "numbers": {
+        "head": 110,
+        "flow": 6,
+        "diameter": 75,
+        "bore": 85,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        107,
+        108
+      ]
+    },
+    "ECO SLIM 1-28": {
+      "numbers": {
+        "head": 33,
+        "flow": 2.7,
+        "diameter": 70,
+        "bore": 75,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        113,
+        114
+      ]
+    },
+    "ECO SLIM 1-36": {
+      "numbers": {
+        "head": 43,
+        "flow": 2.7,
+        "diameter": 70,
+        "bore": 75,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        113,
+        114
+      ]
+    },
+    "ECO SLIM 1-49": {
+      "numbers": {
+        "head": 59,
+        "flow": 2.7,
+        "diameter": 70,
+        "bore": 75,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        113,
+        114
+      ]
+    },
+    "ECO SLIM 1-66": {
+      "numbers": {
+        "head": 82,
+        "flow": 2.7,
+        "diameter": 70,
+        "bore": 75,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        113,
+        114
+      ]
+    },
+    "ECO SLIM 1-85": {
+      "numbers": {
+        "head": 104,
+        "flow": 2.7,
+        "diameter": 70,
+        "bore": 75,
+        "immersion": 80
+      },
+      "voltage": "220",
+      "pages": [
+        113,
+        114
+      ]
+    },
+    "ECO MIDI 0": {
+      "numbers": {
+        "head": 44,
+        "flow": 3,
+        "diameter": 91,
+        "bore": 98,
+        "immersion": 100
+      },
+      "voltage": "220",
+      "pages": [
+        105,
+        106
+      ]
+    },
+    "ECO MIDI 1": {
+      "numbers": {
+        "head": 63,
+        "flow": 3,
+        "diameter": 91,
+        "bore": 98,
+        "immersion": 100
+      },
+      "voltage": "220",
+      "pages": [
+        105,
+        106
+      ]
+    },
+    "ECO MIDI 2": {
+      "numbers": {
+        "head": 73,
+        "flow": 3,
+        "diameter": 91,
+        "bore": 98,
+        "immersion": 100
+      },
+      "voltage": "220",
+      "pages": [
+        105,
+        106
+      ]
+    },
+    "ECO MIDI 3": {
+      "numbers": {
+        "head": 92,
+        "flow": 3,
+        "diameter": 91,
+        "bore": 98,
+        "immersion": 100
+      },
+      "voltage": "220",
+      "pages": [
+        105,
+        106
+      ]
+    },
+    "ECO MIDI 4": {
+      "numbers": {
+        "head": 113,
+        "flow": 3,
+        "diameter": 91,
+        "bore": 98,
+        "immersion": 100
+      },
+      "voltage": "220",
+      "pages": [
+        105,
+        106
+      ]
+    },
+    "ECO MIDI 5": {
+      "numbers": {
+        "head": 136,
+        "flow": 3,
+        "diameter": 91,
+        "bore": 98,
+        "immersion": 100
+      },
+      "voltage": "220",
+      "pages": [
+        105,
+        106
+      ]
+    },
+    "ECO VINT 1": {
+      "numbers": {
+        "head": 77,
+        "flow": 1.7,
+        "diameter": 75,
+        "bore": 85
+      },
+      "voltage": "220",
+      "pages": [
+        111,
+        112
+      ]
+    },
+    "ECO VINT 2": {
+      "numbers": {
+        "head": 100,
+        "flow": 1.8,
+        "diameter": 75,
+        "bore": 85
+      },
+      "voltage": "220",
+      "pages": [
+        111,
+        112
+      ]
+    },
+    "ECO VINT 3": {
+      "numbers": {
+        "head": 105,
+        "flow": 2,
+        "diameter": 75,
+        "bore": 85
+      },
+      "voltage": "220",
+      "pages": [
+        111,
+        112
+      ]
+    },
+    "ECO VINT 0": {
+      "numbers": {
+        "head": 52,
+        "flow": 1.4,
+        "diameter": 51,
+        "bore": 65,
+        "immersion": 40
+      },
+      "voltage": "220",
+      "pages": [
+        115,
+        116
+      ]
+    },
+    "FEKAPUMP V250 F": {
+      "numbers": {
+        "head": 7.5,
+        "flow": 9,
+        "immersion": 5,
+        "solids": 15
+      },
+      "voltage": "220",
+      "pages": [
+        141,
+        142
+      ]
+    },
+    "FEKAPUMP V450 F": {
+      "numbers": {
+        "head": 8.5,
+        "flow": 12,
+        "immersion": 5,
+        "solids": 25
+      },
+      "voltage": "220",
+      "pages": [
+        141,
+        142
+      ]
+    },
+    "FEKAPUMP V750 F": {
+      "numbers": {
+        "head": 10,
+        "flow": 18,
+        "immersion": 5,
+        "solids": 25
+      },
+      "voltage": "220",
+      "pages": [
+        141,
+        142
+      ]
+    },
+    "FEKAPUMP V1100 F": {
+      "numbers": {
+        "head": 9,
+        "flow": 20,
+        "immersion": 5,
+        "solids": 35
+      },
+      "voltage": "220",
+      "pages": [
+        141,
+        142
+      ]
+    },
+    "FEKAPUMP V1500 F": {
+      "numbers": {
+        "head": 22,
+        "flow": 16.2,
+        "immersion": 5,
+        "solids": 10
+      },
+      "voltage": "220",
+      "pages": [
+        141,
+        142
+      ]
+    },
+    "FEKAPUMP V2200 F": {
+      "numbers": {
+        "head": 17,
+        "flow": 42,
+        "immersion": 5,
+        "solids": 20
+      },
+      "voltage": "220",
+      "pages": [
+        141,
+        142
+      ]
+    },
+    "FEKACUT V750DF": {
+      "numbers": {
+        "head": 7.5,
+        "flow": 15,
+        "immersion": 5,
+        "solids": 9
+      },
+      "voltage": "220",
+      "pages": [
+        145,
+        146
+      ]
+    },
+    "FEKACUT V1100DF": {
+      "numbers": {
+        "head": 10,
+        "flow": 16.2,
+        "immersion": 5,
+        "solids": 9
+      },
+      "voltage": "220",
+      "pages": [
+        145,
+        146
+      ]
+    },
+    "FEKACUT V1300DF": {
+      "numbers": {
+        "head": 12,
+        "flow": 18,
+        "immersion": 5,
+        "solids": 9
+      },
+      "voltage": "220",
+      "pages": [
+        145,
+        146
+      ]
+    },
+    "FEKACUT V1800DF": {
+      "numbers": {
+        "head": 12,
+        "flow": 28,
+        "immersion": 5,
+        "solids": 9
+      },
+      "voltage": "220",
+      "pages": [
+        145,
+        146
+      ]
+    },
+    "FEKACUT V2200DF": {
+      "numbers": {
+        "head": 11,
+        "flow": 36,
+        "immersion": 5,
+        "solids": 9
+      },
+      "voltage": "220",
+      "pages": [
+        145,
+        146
+      ]
+    },
+    "AUTO JET 40 S": {
+      "numbers": {
+        "head": 30,
+        "flow": 1.8,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 40 S-5": {
+      "numbers": {
+        "head": 30,
+        "flow": 1.8,
+        "suction": 8,
+        "tank": 5
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "АКВАРОБОТ JET 40 S (2Л)": {
+      "numbers": {
+        "head": 30,
+        "flow": 1.8,
+        "suction": 8,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        59
+      ]
+    },
+    "AUTO JET 60 S": {
+      "numbers": {
+        "head": 33,
+        "flow": 2.4,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 60 S-5": {
+      "numbers": {
+        "head": 33,
+        "flow": 2.4,
+        "suction": 8,
+        "tank": 5
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 60 S-50": {
+      "numbers": {
+        "head": 33,
+        "flow": 2.4,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 60 S-50-S": {
+      "numbers": {
+        "head": 33,
+        "flow": 2.4,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 60 S-S": {
+      "numbers": {
+        "head": 33,
+        "flow": 2.4,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "АКВАРОБОТ JET 60 S (2Л)": {
+      "numbers": {
+        "head": 33,
+        "flow": 2.4,
+        "suction": 8,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        59
+      ]
+    },
+    "АКВАРОБОТ JET 60 S-24": {
+      "numbers": {
+        "head": 33,
+        "flow": 2.4,
+        "suction": 8,
+        "tank": 24
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        66
+      ]
+    },
+    "AUTO JET 80 S": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 80 S-5": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 5
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 80 S-50": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 80 S-50-S": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 80 S-S": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "АКВАРОБОТ JET 80 S (2Л)": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        59
+      ]
+    },
+    "АКВАРОБОТ JET 80 S-24": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 24
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        66
+      ]
+    },
+    "AUTO JET 100 S": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 100 S-5": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8,
+        "tank": 5
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 100 S-50": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 100 S-50-S": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "AUTO JET 100 S-S": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        43
+      ]
+    },
+    "АКВАРОБОТ JET 100 S (2Л)": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        59
+      ]
+    },
+    "АКВАРОБОТ JET 100 S-24": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8,
+        "tank": 24
+      },
+      "voltage": "220",
+      "pages": [
+        13,
+        14,
+        66
+      ]
+    },
+    "AUTO JET 80 L": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 80 L-5": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 5
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 80 L-50": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 80 L-50-S": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 80 L-S": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "АКВАРОБОТ JET 80 L (2Л)": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        57
+      ]
+    },
+    "АКВАРОБОТ JET 80 L-24": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 24
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        65
+      ]
+    },
+    "AUTO JET 100 L": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 100 L-5": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8,
+        "tank": 5
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 100 L-50": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 100 L-50-S": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 100 L-S": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "АКВАРОБОТ JET 100 L (2Л)": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        57
+      ]
+    },
+    "АКВАРОБОТ JET 100 L-24": {
+      "numbers": {
+        "head": 43,
+        "flow": 3.6,
+        "suction": 8,
+        "tank": 24
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        65
+      ]
+    },
+    "AUTO JET 110 L": {
+      "numbers": {
+        "head": 53,
+        "flow": 3,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 110 L-50": {
+      "numbers": {
+        "head": 53,
+        "flow": 3,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 110 L-50-S": {
+      "numbers": {
+        "head": 53,
+        "flow": 3,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "AUTO JET 110 L-S": {
+      "numbers": {
+        "head": 53,
+        "flow": 3,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        42
+      ]
+    },
+    "АКВАРОБОТ JET 110 L (2Л)": {
+      "numbers": {
+        "head": 53,
+        "flow": 3,
+        "suction": 8,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        57
+      ]
+    },
+    "АКВАРОБОТ JET 110 L-24": {
+      "numbers": {
+        "head": 53,
+        "flow": 3,
+        "suction": 8,
+        "tank": 24
+      },
+      "voltage": "220",
+      "pages": [
+        11,
+        12,
+        65
+      ]
+    },
+    "AUTO ECO JET 80 LA": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        9,
+        10,
+        41
+      ]
+    },
+    "AUTO ECO JET 80 LA-50": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        9,
+        10,
+        41
+      ]
+    },
+    "AUTO ECO JET 80 LA-S": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        9,
+        10,
+        41
+      ]
+    },
+    "АКВАРОБОТ ECO JET 80 LA (2Л)": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        9,
+        10,
+        58
+      ]
+    },
+    "АКВАРОБОТ ECO JET 80 LA-24": {
+      "numbers": {
+        "head": 38,
+        "flow": 3,
+        "suction": 8,
+        "tank": 24
+      },
+      "voltage": "220",
+      "pages": [
+        9,
+        10,
+        69
+      ]
+    },
+    "AUTO ECO JET 100 LA": {
+      "numbers": {
+        "head": 45,
+        "flow": 3,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        9,
+        10,
+        41
+      ]
+    },
+    "AUTO ECO JET 100 LA-50": {
+      "numbers": {
+        "head": 45,
+        "flow": 3,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        9,
+        10,
+        41
+      ]
+    },
+    "AUTO ECO JET 100 LA-S": {
+      "numbers": {
+        "head": 45,
+        "flow": 3,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        9,
+        10,
+        41
+      ]
+    },
+    "АКВАРОБОТ ECO JET 100 LA (2Л)": {
+      "numbers": {
+        "head": 45,
+        "flow": 3,
+        "suction": 8,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        9,
+        10,
+        58
+      ]
+    },
+    "АКВАРОБОТ ECO JET 100 LA-24": {
+      "numbers": {
+        "head": 45,
+        "flow": 3,
+        "suction": 8,
+        "tank": 24
+      },
+      "voltage": "220",
+      "pages": [
+        9,
+        10,
+        69
+      ]
+    },
+    "AUTO JSW 55": {
+      "numbers": {
+        "head": 40,
+        "flow": 4.2,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        19,
+        20,
+        44
+      ]
+    },
+    "AUTO JSW 55-50": {
+      "numbers": {
+        "head": 40,
+        "flow": 4.2,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        19,
+        20,
+        44
+      ]
+    },
+    "AUTO JSW 55-50-S": {
+      "numbers": {
+        "head": 40,
+        "flow": 4.2,
+        "suction": 8,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        19,
+        20,
+        44
+      ]
+    },
+    "AUTO JSW 55-S": {
+      "numbers": {
+        "head": 40,
+        "flow": 4.2,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        19,
+        20,
+        44
+      ]
+    },
+    "АКВАРОБОТ JSW 55 (2Л)": {
+      "numbers": {
+        "head": 40,
+        "flow": 4.2,
+        "suction": 8,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        19,
+        20,
+        60
+      ]
+    },
+    "АКВАРОБОТ JSW 55-24": {
+      "numbers": {
+        "head": 40,
+        "flow": 4.2,
+        "suction": 8,
+        "tank": 24
+      },
+      "voltage": "220",
+      "pages": [
+        19,
+        20,
+        67
+      ]
+    },
+    "AUTO DP 750": {
+      "numbers": {
+        "head": 40,
+        "flow": 2.4,
+        "suction": 15
+      },
+      "voltage": "220",
+      "pages": [
+        21,
+        22,
+        47
+      ]
+    },
+    "AUTO DP 750-50": {
+      "numbers": {
+        "head": 40,
+        "flow": 2.4,
+        "suction": 15,
+        "tank": 50
+      },
+      "voltage": "220",
+      "pages": [
+        21,
+        22,
+        47
+      ]
+    },
+    "AUTO QB 60": {
+      "numbers": {
+        "head": 33,
+        "flow": 1.8,
+        "suction": 5
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24,
+        46
+      ]
+    },
+    "AUTO QB 60-5": {
+      "numbers": {
+        "head": 33,
+        "flow": 1.8,
+        "suction": 5,
+        "tank": 5
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24,
+        46
+      ]
+    },
+    "АКВАРОБОТ QB 60 (2Л)": {
+      "numbers": {
+        "head": 33,
+        "flow": 1.8,
+        "suction": 5,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24,
+        62
+      ]
+    },
+    "AUTO QB 70": {
+      "numbers": {
+        "head": 40,
+        "flow": 2.4,
+        "suction": 5
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24,
+        46
+      ]
+    },
+    "AUTO QB 70-5": {
+      "numbers": {
+        "head": 40,
+        "flow": 2.4,
+        "suction": 5,
+        "tank": 5
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24,
+        46
+      ]
+    },
+    "АКВАРОБОТ QB 70 (2Л)": {
+      "numbers": {
+        "head": 40,
+        "flow": 2.4,
+        "suction": 5,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24,
+        62
+      ]
+    },
+    "AUTO QB 80": {
+      "numbers": {
+        "head": 50,
+        "flow": 2.7,
+        "suction": 5
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24,
+        46
+      ]
+    },
+    "AUTO QB 80-5": {
+      "numbers": {
+        "head": 50,
+        "flow": 2.7,
+        "suction": 5,
+        "tank": 5
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24,
+        46
+      ]
+    },
+    "АКВАРОБОТ QB 80 (2Л)": {
+      "numbers": {
+        "head": 50,
+        "flow": 2.7,
+        "suction": 5,
+        "tank": 2
+      },
+      "voltage": "220",
+      "pages": [
+        23,
+        24,
+        62
+      ]
+    },
+    "AUTO MH 300 A": {
+      "numbers": {
+        "head": 30,
+        "flow": 5.1,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32,
+        48
+      ]
+    },
+    "AUTO MH 400 A": {
+      "numbers": {
+        "head": 45,
+        "flow": 5.4,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32,
+        48
+      ]
+    },
+    "AUTO MH 500 A": {
+      "numbers": {
+        "head": 55,
+        "flow": 5.4,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32,
+        48
+      ]
+    },
+    "AUTO MH 300 C": {
+      "numbers": {
+        "head": 36,
+        "flow": 9,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32,
+        48
+      ]
+    },
+    "AUTO MH 400 C": {
+      "numbers": {
+        "head": 48,
+        "flow": 9,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32,
+        48
+      ]
+    },
+    "AUTO MH 800 C": {
+      "numbers": {
+        "head": 85,
+        "flow": 5.5,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32,
+        48
+      ]
+    },
+    "AUTO MH 1000 C": {
+      "numbers": {
+        "head": 105,
+        "flow": 5.5,
+        "suction": 8
+      },
+      "voltage": "220",
+      "pages": [
+        31,
+        32,
+        48
+      ]
+    },
+    "FEKAMAX 10-10-0,75": {
+      "numbers": {
+        "head": 14,
+        "flow": 18,
+        "immersion": 5,
+        "solids": 6
+      },
+      "voltage": "220",
+      "pages": [
+        148
+      ]
+    },
+    "FEKAMAX 12-10-1,1": {
+      "numbers": {
+        "head": 14,
+        "flow": 19,
+        "immersion": 5,
+        "solids": 6
+      },
+      "voltage": "220",
+      "pages": [
+        148
+      ]
+    },
+    "FEKAMAX 15-13-1,5": {
+      "numbers": {
+        "head": 17,
+        "flow": 27,
+        "immersion": 5,
+        "solids": 6
+      },
+      "voltage": "220",
+      "pages": [
+        148
+      ]
+    },
+    "FEKAMAX 25-15-2,2": {
+      "numbers": {
+        "head": 20,
+        "flow": 45,
+        "immersion": 5,
+        "solids": 8
+      },
+      "voltage": "380",
+      "pages": [
+        148
+      ]
+    },
+    "FEKAMAX 35-13-3": {
+      "numbers": {
+        "head": 20,
+        "flow": 60,
+        "immersion": 5,
+        "solids": 8
+      },
+      "voltage": "380",
+      "pages": [
+        148
+      ]
+    },
+    "FEKAMAX 45-17-4": {
+      "numbers": {
+        "head": 25,
+        "flow": 76,
+        "immersion": 5,
+        "solids": 8
+      },
+      "voltage": "380",
+      "pages": [
+        148
+      ]
+    },
+    "FEKAMAX 65-15-5,5": {
+      "numbers": {
+        "head": 26,
+        "flow": 85,
+        "immersion": 5,
+        "solids": 10
+      },
+      "voltage": "380",
+      "pages": [
+        148
+      ]
+    },
+    "FEKAMAX 100-15-7,5": {
+      "numbers": {
+        "head": 32,
+        "flow": 106,
+        "immersion": 5,
+        "solids": 10
+      },
+      "voltage": "380",
+      "pages": [
+        148
+      ]
+    },
+    "50WQR10-10-0.75D": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 35.0
+      },
+      "voltage": "220",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "50WQR15-15-1.5D": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 40.0
+      },
+      "voltage": "220",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "50WQR10-10-0.75": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 35.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "50WQR15-15-1.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 40.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "65WQR25-15-2.2": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 40.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "65WQR37-13-3": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 43.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "80WQR40-15-4": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 56.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "80WQR30-30-5.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 45.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "80WQR65-25-7.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 58.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "100WQR65-18-5.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 58.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "100WQR80-15-7.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 58.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "100WQR110-10-5.5/4": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 88.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "100WQR100-25-11/4": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 84.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "50WQ10-10-0.75": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 35.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "50WQ15-15-1.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 40.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "50WQ15-20-2.2": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 40.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "50WQ15-30-3": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 38.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "50WQ15-35-4": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 43.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "50WQ20-40-5.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 45.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "50WQ9-15-1.1": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 35.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "65WQ15-9-1.1": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 35.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "65WQ20-25-4": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 43.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "65WQ25-15-2.2": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 40.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "65WQ25-35-5.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 45.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "65WQ30-40-7.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 45.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "65WQ37-13-3": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 43.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "65WQ40-30-7.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 45.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "80WQ30-30-5.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 45.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "80WQ40-10-2.2": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 62.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "80WQ40-15-4": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 56.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "80WQ40-8-1.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 62.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "80WQ65-25-7.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 58.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "100WQ100-25-11/4": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 84.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "100WQ100-30-15/4": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 92.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "100WQ60-9-3": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 56.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "100WQ65-18-5.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 58.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "100WQ80-25-11": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 78.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    },
+    "150WQ100-10-5.5": {
+      "numbers": {
+        "immersion": 20,
+        "solids": 76.0
+      },
+      "voltage": "380",
+      "pages": [
+        2
+      ],
+      "source": {
+        "url": "https://unipump.ru/upload/iblock/214/mkryzn2yu7vagw1sst4w039ierr5igkc/Listovka-A4.pdf",
+        "title": "UNIPUMP. Канализационные насосы WQ и WQR",
+        "page_numbering": "PDF, starts at 1"
+      }
+    }
+  },
+  "products": {
+    "8461": {
+      "name": "Насос центробежный Unipump JET 40S",
+      "category": "poverhnostnyie",
+      "model": "JET 40 S"
+    },
+    "8465": {
+      "name": "Насосная станция Unipump AUTO JET 40 S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 40 S"
+    },
+    "8555": {
+      "name": "Насос поверхностный UNIPUMP JET 60 S",
+      "category": "poverhnostnyie",
+      "model": "JET 60 S"
+    },
+    "8556": {
+      "name": "Насос поверхностный UNIPUMP JET 100 S",
+      "category": "poverhnostnyie",
+      "model": "JET 100 S"
+    },
+    "8561": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JET 40 S (r/a 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 40 S (2Л)"
+    },
+    "8562": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JET 60 S (r/a 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 60 S (2Л)"
+    },
+    "8564": {
+      "name": "Насосная станция UNIPUMP AUTO JET 60 S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 60 S"
+    },
+    "8569": {
+      "name": "Насосная станция UNIPUMP AUTO JET 100 S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 100 S"
+    },
+    "8611": {
+      "name": "Насосная станция UNIPUMP AUTO QB 60",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO QB 60"
+    },
+    "8612": {
+      "name": "Насосная станция UNIPUMP AUTO QB 80",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO QB 80"
+    },
+    "8613": {
+      "name": "Насосная станция UNIPUMP AUTO MH 300 A",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO MH 300 A"
+    },
+    "8614": {
+      "name": "Насосная станция UNIPUMP AUTO MH 400 A",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO MH 400 A"
+    },
+    "8615": {
+      "name": "Насосная станция UNIPUMP AUTO MH 500 A",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO MH 500 A"
+    },
+    "8618": {
+      "name": "Насосная станция UNIPUMP AUTO MH 800 C",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO MH 800 C"
+    },
+    "8619": {
+      "name": "Насосная станция UNIPUMP AUTO MH 1000 C",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO MH 1000 C"
+    },
+    "8620": {
+      "name": "Насосная станция UNIPUMP AUTO MH 300 C",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO MH 300 C"
+    },
+    "8621": {
+      "name": "Насосная станция UNIPUMP AUTO MH 400 C",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO MH 400 C"
+    },
+    "8623": {
+      "name": "Насосная станция UNIPUMP AUTO JET 40 S-5",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 40 S-5"
+    },
+    "8624": {
+      "name": "Насосная станция UNIPUMP AUTO JET 60 S-5",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 60 S-5"
+    },
+    "8625": {
+      "name": "Насосная станция UNIPUMP AUTO JET 80 L-5",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 80 L-5"
+    },
+    "8626": {
+      "name": "Насосная станция UNIPUMP AUTO JET 100 S-5",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 100 S-5"
+    },
+    "8627": {
+      "name": "Насосная станция UNIPUMP AUTO JET 100 L-5",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 100 L-5"
+    },
+    "8633": {
+      "name": "Насос поверхностный UNIPUMP DP-750",
+      "category": "poverhnostnyie",
+      "model": "DP 750"
+    },
+    "8636": {
+      "name": "Насос поверхностный UNIPUMP QB-60",
+      "category": "poverhnostnyie",
+      "model": "QB 60"
+    },
+    "8638": {
+      "name": "Насос поверхностный UNIPUMP QB-70",
+      "category": "poverhnostnyie",
+      "model": "QB 70"
+    },
+    "8640": {
+      "name": "Насос поверхностный UNIPUMP QB-80",
+      "category": "poverhnostnyie",
+      "model": "QB 80"
+    },
+    "8642": {
+      "name": "Насос поверхностный консольный UNIPUMP CPM-130",
+      "category": "poverhnostnyie",
+      "model": "CPM 130"
+    },
+    "8643": {
+      "name": "Насос поверхностный консольный UNIPUMP CPM-146",
+      "category": "poverhnostnyie",
+      "model": "CPM 146"
+    },
+    "8655": {
+      "name": "Насос поверхностный многоступенчатый UNIPUMP MH-200 A",
+      "category": "poverhnostnyie",
+      "model": "MH 200 A"
+    },
+    "8656": {
+      "name": "Насос поверхностный многоступенчатый UNIPUMP MH-300 A",
+      "category": "poverhnostnyie",
+      "model": "MH 300 A"
+    },
+    "8657": {
+      "name": "Насос поверхностный многоступенчатый UNIPUMP MH-400 A",
+      "category": "poverhnostnyie",
+      "model": "MH 400 A"
+    },
+    "8658": {
+      "name": "Насос поверхностный многоступенчатый UNIPUMP MH-500 A",
+      "category": "poverhnostnyie",
+      "model": "MH 500 A"
+    },
+    "8660": {
+      "name": "Насос поверхностный многоступенчатый UNIPUMP MH-800 C",
+      "category": "poverhnostnyie",
+      "model": "MH 800 C"
+    },
+    "8661": {
+      "name": "Насос поверхностный многоступенчатый UNIPUMP MH-1000 C",
+      "category": "poverhnostnyie",
+      "model": "MH 1000 C"
+    },
+    "8662": {
+      "name": "Насос поверхностный многоступенчатый UNIPUMP MH-300 C",
+      "category": "poverhnostnyie",
+      "model": "MH 300 C"
+    },
+    "8663": {
+      "name": "Насос поверхностный многоступенчатый UNIPUMP MH-400 C",
+      "category": "poverhnostnyie",
+      "model": "MH 400 C"
+    },
+    "8671": {
+      "name": "Насосная станция UNIPUMP AUTO QB 60-5",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO QB 60-5"
+    },
+    "8672": {
+      "name": "Насосная станция UNIPUMP AUTO QB 70-5",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO QB 70-5"
+    },
+    "8673": {
+      "name": "Насосная станция UNIPUMP AUTO QB 80-5",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO QB 80-5"
+    },
+    "8674": {
+      "name": "Насосная станция UNIPUMP AUTO JET 60 S-50",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 60 S-50"
+    },
+    "8676": {
+      "name": "Насосная станция UNIPUMP AUTO JET 100 S-50",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 100 S-50"
+    },
+    "8683": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JET 100 S (r/a 2 л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 100 S (2Л)"
+    },
+    "8684": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JET 100 L (r/a 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 100 L (2Л)"
+    },
+    "8689": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ QB 60 (r/a 2 л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ QB 60 (2Л)"
+    },
+    "8690": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ QB 80 (r/a 2 л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ QB 80 (2Л)"
+    },
+    "8691": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JET 60 S-24",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 60 S-24"
+    },
+    "8692": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JET 80 L-24",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 80 L-24"
+    },
+    "8693": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JET 100 S-24",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 100 S-24"
+    },
+    "8696": {
+      "name": "Насосная станция UNIPUMP AUTO JET 60 S-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 60 S-S"
+    },
+    "8697": {
+      "name": "Насосная станция UNIPUMP AUTO JET 100 S-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 100 S-S"
+    },
+    "8701": {
+      "name": "Насосная станция UNIPUMP AUTO JET 60 S-50-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 60 S-50-S"
+    },
+    "8702": {
+      "name": "Насосная станция UNIPUMP AUTO JET 100 S-50-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 100 S-50-S"
+    },
+    "25974": {
+      "name": "UNIPUMP ECO VINT 0 (кабель-20м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO VINT 0"
+    },
+    "25975": {
+      "name": "UNIPUMP ECO VINT 1 (кабель-15м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO VINT 1"
+    },
+    "25976": {
+      "name": "UNIPUMP ECO VINT 2 (кабель-20м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO VINT 2"
+    },
+    "25977": {
+      "name": "UNIPUMP ECO VINT 3 (кабель-30м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO VINT 3"
+    },
+    "25984": {
+      "name": "UNIPUMP ECO SLIM 1-28 (кабель-15 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO SLIM 1-28"
+    },
+    "25985": {
+      "name": "UNIPUMP ECO SLIM 1-36 (кабель-20 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO SLIM 1-36"
+    },
+    "25986": {
+      "name": "UNIPUMP ECO SLIM 1-49 (кабель-30 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO SLIM 1-49"
+    },
+    "25987": {
+      "name": "UNIPUMP ECO SLIM 1-66 (кабель-40 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO SLIM 1-66"
+    },
+    "25988": {
+      "name": "UNIPUMP ECO SLIM 1-85 (кабель-40 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO SLIM 1-85"
+    },
+    "25989": {
+      "name": "UNIPUMP MINI ECO 1-35 (кабель-20м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 1-35"
+    },
+    "25990": {
+      "name": "UNIPUMP MINI ECO 1-49 (кабель-30 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 1-49"
+    },
+    "25991": {
+      "name": "UNIPUMP MINI ECO 1-70 (кабель-30м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 1-70"
+    },
+    "25992": {
+      "name": "UNIPUMP MINI ECO 1-98 (кабель-40м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 1-98"
+    },
+    "25993": {
+      "name": "UNIPUMP MINI ECO 1-127 (кабель-50м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 1-127"
+    },
+    "25995": {
+      "name": "UNIPUMP MINI ECO 1-154 (кабель-50 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 1-154"
+    },
+    "25996": {
+      "name": "UNIPUMP MINI ECO 2-32 (кабель-30м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 2-32"
+    },
+    "25997": {
+      "name": "UNIPUMP MINI ECO 2-49 (кабель-30м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 2-49"
+    },
+    "25998": {
+      "name": "UNIPUMP MINI ECO 2-68 (кабель-40 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 2-68"
+    },
+    "25999": {
+      "name": "UNIPUMP MINI ECO 2-87 (кабель-50м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 2-87"
+    },
+    "26000": {
+      "name": "UNIPUMP MINI ECO 2-108 (кабель-50 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 2-108"
+    },
+    "26002": {
+      "name": "UNIPUMP MINI ECO 3-46 (кабель-40м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 3-46"
+    },
+    "26003": {
+      "name": "UNIPUMP MINI ECO 3-62 (кабель-50 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 3-62"
+    },
+    "26004": {
+      "name": "UNIPUMP MINI ECO 3-71 (кабель-50м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 3-71"
+    },
+    "26005": {
+      "name": "UNIPUMP MINI ECO 3-100 (кабель-50 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 3-100"
+    },
+    "26006": {
+      "name": "UNIPUMP MINI ECO 4-35 (кабель-40 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 4-35"
+    },
+    "26007": {
+      "name": "UNIPUMP MINI ECO 4-50 (кабель-50 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 4-50"
+    },
+    "26008": {
+      "name": "UNIPUMP MINI ECO 4-60 (кабель-50 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 4-60"
+    },
+    "26009": {
+      "name": "UNIPUMP MINI ECO 4-72 (кабель-50 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "MINI ECO 4-72"
+    },
+    "26045": {
+      "name": "UNIPUMP ECO MIDI-0 (кабель-20м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO MIDI 0"
+    },
+    "26046": {
+      "name": "UNIPUMP ECO MIDI-1 (кабель-30м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO MIDI 1"
+    },
+    "26047": {
+      "name": "UNIPUMP ECO MIDI-2 (кабель-40м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO MIDI 2"
+    },
+    "26048": {
+      "name": "UNIPUMP ECO MIDI-3 (кабель-2м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO MIDI 3"
+    },
+    "26049": {
+      "name": "UNIPUMP ECO MIDI-4 (кабель-2м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO MIDI 4"
+    },
+    "26050": {
+      "name": "UNIPUMP ECO MIDI-5 (кабель-2м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO MIDI 5"
+    },
+    "26051": {
+      "name": "UNIPUMP ECO 2-34 (кабель - 10 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 2-34"
+    },
+    "26052": {
+      "name": "UNIPUMP ECO 2-56 (кабель - 30 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 2-56"
+    },
+    "26053": {
+      "name": "UNIPUMP ECO 2-73 (кабель - 40 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 2-73"
+    },
+    "26054": {
+      "name": "UNIPUMP ECO 2-89 (кабель - 50 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 2-89"
+    },
+    "26055": {
+      "name": "UNIPUMP ECO 2-100 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 2-100"
+    },
+    "26056": {
+      "name": "UNIPUMP ECO 2-112 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 2-112"
+    },
+    "26057": {
+      "name": "UNIPUMP ECO 2-157 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 2-157"
+    },
+    "26058": {
+      "name": "UNIPUMP ECO 3-40 (кабель - 20 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 3-40"
+    },
+    "26059": {
+      "name": "UNIPUMP ECO 3-55 (кабель - 30 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 3-55"
+    },
+    "26060": {
+      "name": "UNIPUMP ECO 3-70 (кабель - 40 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 3-70"
+    },
+    "26061": {
+      "name": "UNIPUMP ECO 3-80 (кабель - 50 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 3-80"
+    },
+    "26062": {
+      "name": "UNIPUMP ECO 3-90 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 3-90"
+    },
+    "26063": {
+      "name": "UNIPUMP ECO 3-115 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 3-115"
+    },
+    "26064": {
+      "name": "UNIPUMP ECO 3-150 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 3-150"
+    },
+    "26065": {
+      "name": "UNIPUMP ECO 4-76 (кабель - 50 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 4-76"
+    },
+    "26066": {
+      "name": "UNIPUMP ECO 4-104 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 4-104"
+    },
+    "26067": {
+      "name": "UNIPUMP ECO 4-132 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 4-132"
+    },
+    "26068": {
+      "name": "UNIPUMP ECO 4-142 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 4-142"
+    },
+    "26069": {
+      "name": "UNIPUMP ECO 5-60 (кабель - 30 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 5-60"
+    },
+    "26070": {
+      "name": "UNIPUMP ECO 5-75 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 5-75"
+    },
+    "26071": {
+      "name": "UNIPUMP ECO 5-105 (кабель - 1 м)",
+      "category": "skvajinnye-nasosy",
+      "model": "ECO 5-105"
+    },
+    "26110": {
+      "name": "UNIPUMP FEKAPUMP V 250F",
+      "category": "drenajnyie",
+      "model": "FEKAPUMP V250 F"
+    },
+    "26111": {
+      "name": "UNIPUMP FEKAPUMP V 450F",
+      "category": "drenajnyie",
+      "model": "FEKAPUMP V450 F"
+    },
+    "26112": {
+      "name": "UNIPUMP FEKAPUMP V 750F",
+      "category": "drenajnyie",
+      "model": "FEKAPUMP V750 F"
+    },
+    "26113": {
+      "name": "UNIPUMP FEKAPUMP V 1100F",
+      "category": "drenajnyie",
+      "model": "FEKAPUMP V1100 F"
+    },
+    "26114": {
+      "name": "UNIPUMP FEKAPUMP V 1500F",
+      "category": "drenajnyie",
+      "model": "FEKAPUMP V1500 F"
+    },
+    "26115": {
+      "name": "UNIPUMP FEKAPUMP V 2200F",
+      "category": "drenajnyie",
+      "model": "FEKAPUMP V2200 F"
+    },
+    "26116": {
+      "name": "UNIPUMP FEKACUT V750DF",
+      "category": "drenajnyie",
+      "model": "FEKACUT V750DF"
+    },
+    "26117": {
+      "name": "UNIPUMP FEKACUT V1100DF",
+      "category": "drenajnyie",
+      "model": "FEKACUT V1100DF"
+    },
+    "26118": {
+      "name": "UNIPUMP FEKACUT V1300DF",
+      "category": "drenajnyie",
+      "model": "FEKACUT V1300DF"
+    },
+    "26119": {
+      "name": "UNIPUMP FEKACUT V1800DF",
+      "category": "drenajnyie",
+      "model": "FEKACUT V1800DF"
+    },
+    "26120": {
+      "name": "UNIPUMP FEKACUT V2200DF",
+      "category": "drenajnyie",
+      "model": "FEKACUT V2200DF"
+    },
+    "26144": {
+      "name": "UNIPUMP CPM-158",
+      "category": "poverhnostnyie",
+      "model": "CPM 158"
+    },
+    "26145": {
+      "name": "UNIPUMP CPM-180",
+      "category": "poverhnostnyie",
+      "model": "CPM 180"
+    },
+    "26146": {
+      "name": "UNIPUMP CPM-200",
+      "category": "poverhnostnyie",
+      "model": "CPM 200"
+    },
+    "26147": {
+      "name": "UNIPUMP CPM 1100D",
+      "category": "poverhnostnyie",
+      "model": "CPM 1100D"
+    },
+    "26148": {
+      "name": "UNIPUMP CPM 1500D",
+      "category": "poverhnostnyie",
+      "model": "CPM 1500D"
+    },
+    "26149": {
+      "name": "UNIPUMP CPM 2200D",
+      "category": "poverhnostnyie",
+      "model": "CPM 2200D"
+    },
+    "26150": {
+      "name": "UNIPUMP CPM 750H",
+      "category": "poverhnostnyie",
+      "model": "CPM 750H"
+    },
+    "26151": {
+      "name": "UNIPUMP CPM 1100H",
+      "category": "poverhnostnyie",
+      "model": "CPM 1100H"
+    },
+    "26152": {
+      "name": "UNIPUMP CPM 1500H",
+      "category": "poverhnostnyie",
+      "model": "CPM 1500H"
+    },
+    "26153": {
+      "name": "UNIPUMP CPM 750",
+      "category": "poverhnostnyie",
+      "model": "CPM 750"
+    },
+    "26154": {
+      "name": "UNIPUMP CPM 1100",
+      "category": "poverhnostnyie",
+      "model": "CPM 1100"
+    },
+    "26155": {
+      "name": "UNIPUMP CPM 1100Q",
+      "category": "poverhnostnyie",
+      "model": "CPM 1100Q"
+    },
+    "26156": {
+      "name": "UNIPUMP CPM 1500Q",
+      "category": "poverhnostnyie",
+      "model": "CPM 1500Q"
+    },
+    "26157": {
+      "name": "UNIPUMP CPM 2200Q",
+      "category": "poverhnostnyie",
+      "model": "CPM 2200Q"
+    },
+    "26158": {
+      "name": "UNIPUMP CPM 3000Q",
+      "category": "poverhnostnyie",
+      "model": "CPM 3000Q"
+    },
+    "26163": {
+      "name": "UNIPUMP AUTO ECO JET 80 LA",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO ECO JET 80 LA"
+    },
+    "26164": {
+      "name": "UNIPUMP AUTO ECO JET 100 LA",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO ECO JET 100 LA"
+    },
+    "26165": {
+      "name": "UNIPUMP AUTO JET 80 L",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 80 L"
+    },
+    "26166": {
+      "name": "UNIPUMP AUTO JET 100 L",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 100 L"
+    },
+    "26167": {
+      "name": "UNIPUMP AUTO JET 110 L",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 110 L"
+    },
+    "26168": {
+      "name": "UNIPUMP AUTO JSW 55",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JSW 55"
+    },
+    "26169": {
+      "name": "UNIPUMP AUTO DP-750",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO DP 750"
+    },
+    "26171": {
+      "name": "UNIPUMP AUTO ECO JET 80 LA-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO ECO JET 80 LA-S"
+    },
+    "26172": {
+      "name": "UNIPUMP AUTO ECO JET 100 LA-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO ECO JET 100 LA-S"
+    },
+    "26173": {
+      "name": "UNIPUMP AUTO ECO JET 80 LA-50",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO ECO JET 80 LA-50"
+    },
+    "26174": {
+      "name": "UNIPUMP AUTO ECO JET 100 LA-50",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO ECO JET 100 LA-50"
+    },
+    "26175": {
+      "name": "UNIPUMP AUTO JET 100 L-50",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 100 L-50"
+    },
+    "26176": {
+      "name": "UNIPUMP AUTO JET 110 L-50",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 110 L-50"
+    },
+    "26177": {
+      "name": "UNIPUMP AUTO JSW-55-50",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JSW 55-50"
+    },
+    "26178": {
+      "name": "UNIPUMP AUTO DP 750-50",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO DP 750-50"
+    },
+    "26185": {
+      "name": "UNIPUMP АКВАРОБОТ ECO JET 80 LA (г/а 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ ECO JET 80 LA (2Л)"
+    },
+    "26186": {
+      "name": "UNIPUMP АКВАРОБОТ ECO JET 100 LA (г/а 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ ECO JET 100 LA (2Л)"
+    },
+    "26187": {
+      "name": "UNIPUMP АКВАРОБОТ ECO JET 80 LA-24",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ ECO JET 80 LA-24"
+    },
+    "26188": {
+      "name": "UNIPUMP АКВАРОБОТ ECO JET 100 LA-24",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ ECO JET 100 LA-24"
+    },
+    "26189": {
+      "name": "UNIPUMP АКВАРОБОТ JET 110 L-24",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 110 L-24"
+    },
+    "26616": {
+      "name": "UNIPUMP Адапт. станция АКВАРОБОТ JET 110 L (г/а 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 110 L (2Л)"
+    },
+    "26617": {
+      "name": "UNIPUMP Адапт. станция АКВАРОБОТ QB 70 (г/а 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ QB 70 (2Л)"
+    },
+    "26618": {
+      "name": "UNIPUMP Адапт. станция АКВАРОБОТ JSW 55 (г/а 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JSW 55 (2Л)"
+    },
+    "26619": {
+      "name": "UNIPUMP Адапт.станция АКВАРОБОТ JET 80 L (г/а 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 80 L (2Л)"
+    },
+    "26620": {
+      "name": "UNIPUMP Адапт.станция АКВАРОБОТ JET 80 S (г/а 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 80 S (2Л)"
+    },
+    "27614": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 100 L-50-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 100 L-50-S"
+    },
+    "27615": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 100 L-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 100 L-S"
+    },
+    "27616": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 110 L-50-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 110 L-50-S"
+    },
+    "27617": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 110 L-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 110 L-S"
+    },
+    "27618": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 80 L-50",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 80 L-50"
+    },
+    "27619": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 80 L-50-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 80 L-50-S"
+    },
+    "27620": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 80 L-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 80 L-S"
+    },
+    "27621": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 80 S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 80 S"
+    },
+    "27622": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 80 S-5",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 80 S-5"
+    },
+    "27623": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 80 S-50",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 80 S-50"
+    },
+    "27624": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 80 S-50-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 80 S-50-S"
+    },
+    "27625": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JET 80 S-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JET 80 S-S"
+    },
+    "27631": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JSW 55 - S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JSW 55-S"
+    },
+    "27632": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JSW-55-50-S",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO JSW 55-50-S"
+    },
+    "27633": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO QB 70",
+      "category": "nasosnyie-stantsii",
+      "model": "AUTO QB 70"
+    },
+    "27635": {
+      "name": "UNIPUMP Универсальная станция АКВАРОБОТ JET 100 L-24",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 100 L-24"
+    },
+    "27636": {
+      "name": "UNIPUMP Универсальная станция АКВАРОБОТ JET 80 S-24",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JET 80 S-24"
+    },
+    "27638": {
+      "name": "UNIPUMP Универсальная станция АКВАРОБОТ JSW 55-24",
+      "category": "nasosnyie-stantsii",
+      "model": "АКВАРОБОТ JSW 55-24"
+    },
+    "16218": {
+      "name": "UNIPUMP FEKAMAX 10-10-0,75",
+      "category": "drenajnyie",
+      "model": "FEKAMAX 10-10-0,75"
+    },
+    "16219": {
+      "name": "UNIPUMP FEKAMAX 12-10-1,1",
+      "category": "drenajnyie",
+      "model": "FEKAMAX 12-10-1,1"
+    },
+    "16220": {
+      "name": "UNIPUMP FEKAMAX 25-15-2,2",
+      "category": "drenajnyie",
+      "model": "FEKAMAX 25-15-2,2"
+    },
+    "16221": {
+      "name": "UNIPUMP FEKAMAX 45-17-4",
+      "category": "drenajnyie",
+      "model": "FEKAMAX 45-17-4"
+    },
+    "16222": {
+      "name": "UNIPUMP FEKAMAX 65-15-5,5",
+      "category": "drenajnyie",
+      "model": "FEKAMAX 65-15-5,5"
+    },
+    "16223": {
+      "name": "UNIPUMP FEKAMAX 100-15-7,5",
+      "category": "drenajnyie",
+      "model": "FEKAMAX 100-15-7,5"
+    },
+    "16323": {
+      "name": "UNIPUMP 50WQ10-10-0.75",
+      "category": "drenajnyie",
+      "model": "50WQ10-10-0.75"
+    },
+    "16324": {
+      "name": "UNIPUMP 50WQ15-15-1.5",
+      "category": "drenajnyie",
+      "model": "50WQ15-15-1.5"
+    },
+    "16325": {
+      "name": "UNIPUMP 50WQ15-30-3",
+      "category": "drenajnyie",
+      "model": "50WQ15-30-3"
+    },
+    "16326": {
+      "name": "UNIPUMP 50WQ20-40-5.5",
+      "category": "drenajnyie",
+      "model": "50WQ20-40-5.5"
+    },
+    "16327": {
+      "name": "UNIPUMP 50WQR10-10-0.75 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "50WQR10-10-0.75"
+    },
+    "16328": {
+      "name": "UNIPUMP 50WQR15-15-1.5 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "50WQR15-15-1.5"
+    },
+    "16329": {
+      "name": "UNIPUMP 65WQ37-13-3",
+      "category": "drenajnyie",
+      "model": "65WQ37-13-3"
+    },
+    "16330": {
+      "name": "UNIPUMP 65WQ30-40-7.5",
+      "category": "drenajnyie",
+      "model": "65WQ30-40-7.5"
+    },
+    "16331": {
+      "name": "UNIPUMP 65WQR25-15-2.2 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "65WQR25-15-2.2"
+    },
+    "16332": {
+      "name": "UNIPUMP 80WQ40-10-2.2",
+      "category": "drenajnyie",
+      "model": "80WQ40-10-2.2"
+    },
+    "16333": {
+      "name": "UNIPUMP 80WQ30-30-5.5",
+      "category": "drenajnyie",
+      "model": "80WQ30-30-5.5"
+    },
+    "16334": {
+      "name": "UNIPUMP 80WQR30-30-5.5 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "80WQR30-30-5.5"
+    },
+    "16335": {
+      "name": "UNIPUMP 100WQ100-25-11/4",
+      "category": "drenajnyie",
+      "model": "100WQ100-25-11/4"
+    },
+    "16336": {
+      "name": "UNIPUMP 100WQ100-30-15/4",
+      "category": "drenajnyie",
+      "model": "100WQ100-30-15/4"
+    },
+    "16337": {
+      "name": "UNIPUMP 100WQR65-18-5.5 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "100WQR65-18-5.5"
+    },
+    "26121": {
+      "name": "UNIPUMP FEKAMAX 15-13-1,5",
+      "category": "drenajnyie",
+      "model": "FEKAMAX 15-13-1,5"
+    },
+    "26122": {
+      "name": "UNIPUMP FEKAMAX 35-13-3",
+      "category": "drenajnyie",
+      "model": "FEKAMAX 35-13-3"
+    },
+    "26931": {
+      "name": "UNIPUMP Канализационный насос 100WQ60-9-3",
+      "category": "drenajnyie",
+      "model": "100WQ60-9-3"
+    },
+    "26932": {
+      "name": "UNIPUMP Канализационный насос 100WQ65-18-5.5",
+      "category": "drenajnyie",
+      "model": "100WQ65-18-5.5"
+    },
+    "26933": {
+      "name": "UNIPUMP Канализационный насос 100WQ80-25-11",
+      "category": "drenajnyie",
+      "model": "100WQ80-25-11"
+    },
+    "26934": {
+      "name": "UNIPUMP Канализационный насос 100WQR100-25-11/4 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "100WQR100-25-11/4"
+    },
+    "26935": {
+      "name": "UNIPUMP Канализационный насос 100WQR110-10-5.5/4 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "100WQR110-10-5.5/4"
+    },
+    "26936": {
+      "name": "UNIPUMP Канализационный насос 100WQR80-15-7.5 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "100WQR80-15-7.5"
+    },
+    "26937": {
+      "name": "UNIPUMP Канализационный насос 150WQ100-10-5.5",
+      "category": "drenajnyie",
+      "model": "150WQ100-10-5.5"
+    },
+    "26938": {
+      "name": "UNIPUMP Канализационный насос 50WQ15-20-2.2",
+      "category": "drenajnyie",
+      "model": "50WQ15-20-2.2"
+    },
+    "26939": {
+      "name": "UNIPUMP Канализационный насос 50WQ15-35-4",
+      "category": "drenajnyie",
+      "model": "50WQ15-35-4"
+    },
+    "26940": {
+      "name": "UNIPUMP Канализационный насос 50WQ9-15-1.1",
+      "category": "drenajnyie",
+      "model": "50WQ9-15-1.1"
+    },
+    "26941": {
+      "name": "UNIPUMP Канализационный насос 50WQR10-10-0.75D (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "50WQR10-10-0.75D"
+    },
+    "26942": {
+      "name": "UNIPUMP Канализационный насос 50WQR15-15-1.5D (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "50WQR15-15-1.5D"
+    },
+    "26943": {
+      "name": "UNIPUMP Канализационный насос 65WQ15-9-1.1",
+      "category": "drenajnyie",
+      "model": "65WQ15-9-1.1"
+    },
+    "26944": {
+      "name": "UNIPUMP Канализационный насос 65WQ20-25-4",
+      "category": "drenajnyie",
+      "model": "65WQ20-25-4"
+    },
+    "26945": {
+      "name": "UNIPUMP Канализационный насос 65WQ25-15-2.2",
+      "category": "drenajnyie",
+      "model": "65WQ25-15-2.2"
+    },
+    "26946": {
+      "name": "UNIPUMP Канализационный насос 65WQ25-35-5.5",
+      "category": "drenajnyie",
+      "model": "65WQ25-35-5.5"
+    },
+    "26947": {
+      "name": "UNIPUMP Канализационный насос 65WQ40-30-7.5",
+      "category": "drenajnyie",
+      "model": "65WQ40-30-7.5"
+    },
+    "26948": {
+      "name": "UNIPUMP Канализационный насос 65WQR37-13-3 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "65WQR37-13-3"
+    },
+    "26949": {
+      "name": "UNIPUMP Канализационный насос 80WQ40-15-4",
+      "category": "drenajnyie",
+      "model": "80WQ40-15-4"
+    },
+    "26950": {
+      "name": "UNIPUMP Канализационный насос 80WQ40-8-1.5",
+      "category": "drenajnyie",
+      "model": "80WQ40-8-1.5"
+    },
+    "26951": {
+      "name": "UNIPUMP Канализационный насос 80WQ65-25-7.5",
+      "category": "drenajnyie",
+      "model": "80WQ65-25-7.5"
+    },
+    "26952": {
+      "name": "UNIPUMP Канализационный насос 80WQR40-15-4 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "80WQR40-15-4"
+    },
+    "26953": {
+      "name": "UNIPUMP Канализационный насос 80WQR65-25-7.5 (высокотемп.)",
+      "category": "drenajnyie",
+      "model": "80WQR65-25-7.5"
+    }
+  }
+}

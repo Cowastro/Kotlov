@@ -178,6 +178,9 @@
         @if (! empty($fireplaceCardSpecs))
             @include('partials.fireplace-card-specs')
         @endif
+        @if (! empty($pumpManufacturerDocument))
+            <a class="link text-caption-01 cl-text-2" href="{{ $pumpManufacturerDocument['url'] }}" title="{{ $pumpManufacturerDocument['title'] }}" target="_blank" rel="noopener">Данные производителя ↗</a>
+        @endif
 
         @if ($heatPumpMeta)
             <div class="heat-pump-card-meta" aria-label="Основные характеристики модели">
