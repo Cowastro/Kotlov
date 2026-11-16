@@ -616,6 +616,14 @@ Route::view('/faq', 'pages.faq');
 Route::view('/privacy', 'pages.privacy');
 // ===== Корзина =====
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
+Route::middleware('auth')->group(function () {
+    Route::get('/cart/print', [\App\Http\Controllers\CustomerSelectionController::class, 'printCurrent'])->name('cart.print');
+    Route::get('/account/selections', [\App\Http\Controllers\CustomerSelectionController::class, 'index'])->name('selections.index');
+    Route::post('/account/selections', [\App\Http\Controllers\CustomerSelectionController::class, 'store'])->name('selections.store');
+    Route::get('/account/selections/{selection}', [\App\Http\Controllers\CustomerSelectionController::class, 'show'])->name('selections.show');
+    Route::put('/account/selections/{selection}', [\App\Http\Controllers\CustomerSelectionController::class, 'update'])->name('selections.update');
+    Route::post('/account/selections/{selection}/restore', [\App\Http\Controllers\CustomerSelectionController::class, 'restore'])->name('selections.restore');
+});
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
 Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');

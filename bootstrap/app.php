@@ -32,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\ProtectStorefrontPagination::class,
             \App\Http\Middleware\ProtectCitySelection::class,
         ]);
-        $middleware->web(append: [\App\Http\Middleware\CapturePartnerAttribution::class]);
+        $middleware->web(append: [\App\Http\Middleware\CapturePartnerAttribution::class, \App\Http\Middleware\PersistCustomerCart::class]);
         // The preference contains only a validated public city slug. Keeping
         // it plain lets global middleware read it before the web stack runs.
         $middleware->encryptCookies(except: ['selected_city', 'selected_city_source']);

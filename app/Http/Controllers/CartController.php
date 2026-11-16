@@ -32,8 +32,10 @@ class CartController extends Controller
         $b2bClient = auth()->user()?->activeB2bClient();
         // The partner stays in the B2B interface: no retail header, menu or footer.
         $minimalLayout = $b2bClient !== null;
+        $editingSelection = auth()->check() && session('cart_selection_id')
+            ? \App\Models\CustomerSelection::where('user_id', auth()->id())->find(session('cart_selection_id')) : null;
 
-        return view('pages.cart', compact('items', 'subtotal', 'coupon', 'b2bClient', 'minimalLayout'));
+        return view('pages.cart', compact('items', 'subtotal', 'coupon', 'b2bClient', 'minimalLayout', 'editingSelection'));
     }
 
     // ─────────────────────────────────────────
@@ -464,6 +466,8 @@ class CartController extends Controller
             'cart_coupon',
             'cart_delivery_region',
             'cart_delivery_city',
+            'cart_selection_id',
+            'cart_selection_revision',
         ]);
     }
 
