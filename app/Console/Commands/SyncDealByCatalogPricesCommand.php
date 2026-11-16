@@ -47,6 +47,18 @@ class SyncDealByCatalogPricesCommand extends Command
             $links = $disk->exists(self::LINKS) ? json_decode($disk->get(self::LINKS), true, 512, JSON_THROW_ON_ERROR) : [];
             $remote = $this->loadProducts($client);
             $plan = $planner->build($products, $remote, $links);
+            if ($disk->exists('deal-by/bania-reviewed-retail-links.json')
+                && Supplier::query()->where('code', 'bania')->where('is_active', true)->exists()) {
+                $reviewed = json_decode($disk->get('deal-by/bania-reviewed-retail-links.json'), true, 512, JSON_THROW_ON_ERROR);
+                $retailFile = storage_path('app/supplier-cache/bania-retail-pricelist.xlsx');
+                if (is_file($retailFile) && filemtime($retailFile) >= now()->subHours(24)->timestamp) {
+                    $source = new SyncBaniaPricelistCommand;
+                    $source->setOutput($this->output);
+                    $plan = $planner->withReviewedBaniaRetail($plan, $remote, $reviewed, $source->readRetailRows($retailFile));
+                } else {
+                    $this->metric('reviewed_bania_source_stale', count($reviewed));
+                }
+            }
             if ($supplierCode = trim((string) $this->option('supplier'))) {
                 $supplier = Supplier::query()->where('code', $supplierCode)->where('is_active', true)->firstOrFail();
                 $supplierProductIds = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->pluck('product_id');
