@@ -26,7 +26,11 @@ Legacy imported attributes/specifications do not fill missing technical fields o
 replace verified data on product pages. Other categories' normalizers are unchanged.
 Unknown models remain searchable by name/SKU/brand, price and stock. The interface
 states partial coverage and offers a verification facet. Source links lead to the PDF
-page containing that model's evidence. Product descriptions are not rewritten by this registry.
+page containing that model's evidence. Stored descriptions are preserved in the database;
+unreviewed imported short/body/meta descriptions are not shown for these four categories.
+The public page uses a selection note and the verified technical table; metadata and
+structured-data descriptions use the reviewed highlights. A main product's evidence link
+must not be inherited by unrelated recommendation cards.
 
 Bindings require the exact product ID, stored title and category. Renaming, moving or
 repurposing a product invalidates the binding. There is no runtime model-name inference.

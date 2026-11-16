@@ -100,13 +100,14 @@ class ProductController extends Controller
         };
 
         $productCardSpecs = [];
-        $pumpManufacturerDocument = null;
-        if (in_array($productCategory->slug, PumpCatalog::MANUFACTURER_CATEGORIES, true)) {
+        $manufacturerPump = in_array($productCategory->slug, PumpCatalog::MANUFACTURER_CATEGORIES, true);
+        $pumpDetailDocument = null;
+        if ($manufacturerPump) {
             $catalog = app(PumpCatalog::class);
             $pumpFacts = $catalog->productFacts($product, $productCategory->slug, $catalog->dimensions($productCategory->slug));
             $productCardSpecs = $pumpFacts['card'];
             $fireplaceSpecs = $pumpFacts['details'];
-            $pumpManufacturerDocument = HouseholdPumpFacts::document($product, $productCategory->slug);
+            $pumpDetailDocument = HouseholdPumpFacts::document($product, $productCategory->slug);
         }
         $heaterEquipment = HeaterEquipment::details($product);
         $heaterEquipmentGroups = HeaterEquipment::relatedGroups($product, $heaterEquipment);
@@ -228,7 +229,13 @@ class ProductController extends Controller
         if (in_array($productCategory->slug, PumpCatalog::MANUFACTURER_CATEGORIES, true)) {
             $seoHighlights = collect($productCardSpecs)->except('Данные')->map(fn ($value, $label) => $label.': '.$value)->values();
         }
-        $description = $verifiedGasMeter['description'] ?? $seo->productDescription($product, $cityIn, $seoHighlights);
+        $seoProduct = $product;
+        if ($manufacturerPump) {
+            // Generate metadata from the reviewed fields, not an older imported claim.
+            $seoProduct = clone $product;
+            $seoProduct->meta_description = null;
+        }
+        $description = $verifiedGasMeter['description'] ?? $seo->productDescription($seoProduct, $cityIn, $seoHighlights);
 
         $keywords = $replaceCityIn($product->meta_keywords)
             ?: ($nameFull.', купить '.mb_strtolower($nameFull).', цена, '.$cityIn);
@@ -261,7 +268,7 @@ class ProductController extends Controller
             $schema['mpn'] = (string) $product->sku;
         }
 
-        $schemaDescription = trim(strip_tags((string) (
+        $schemaDescription = $manufacturerPump ? $description : trim(strip_tags((string) (
             $product->short_description
                 ?: $product->content
                 ?: $description
@@ -454,7 +461,7 @@ class ProductController extends Controller
         return view('pages.product', compact(
             'product',
             'attributeValues',
-            'fireplaceSpecs', 'productCardSpecs', 'pumpManufacturerDocument',
+            'fireplaceSpecs', 'productCardSpecs', 'pumpDetailDocument', 'manufacturerPump',
             'compatibleElectricProducts',
             'heaterEquipment', 'heaterEquipmentGroups',
             'showCompatibleInserts',

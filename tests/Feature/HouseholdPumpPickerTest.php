@@ -126,10 +126,18 @@ class HouseholdPumpPickerTest extends TestCase
     public function test_product_details_use_the_same_evidence_as_the_picker_instead_of_imported_claims(): void
     {
         $p = $this->verified('JET 60 S');
-        $this->get('https://kotlov.by/poverhnostnyie/'.$p->slug)->assertOk()
+        $p->update(['content' => '<p>Неподтверждённый напор 999 м</p>', 'short_description' => 'Неподтверждённый напор 999 м',
+            'meta_description' => 'Неподтверждённый напор 999 м. Купить насос для дома, сада и дачи в Минске. Доставка по всей Беларуси и консультация по выбору.']);
+        $related = $p->replicate();
+        $related->fill(['name' => 'Unverified related pump', 'slug' => 'unverified-related-pump', 'sku' => 'UNVERIFIED-RELATED'])->save();
+        $response = $this->get('https://kotlov.by/poverhnostnyie/'.$p->slug)->assertOk()
             ->assertViewHas('fireplaceSpecs', fn ($rows) => $rows['Макс. напор'] === '33 м')
             ->assertSee('Номинальные и табличные значения показаны отдельно')
             ->assertSee('Katalog-2026', false)->assertDontSee('999 м');
+        // Only description and specifications link the main pump's PDF. Related
+        // unverified products must not inherit the parent's document variable.
+        $this->assertSame(2, substr_count($response->getContent(), 'Katalog-2026'));
+        $this->assertSame('<p>Неподтверждённый напор 999 м</p>', $p->fresh()->content);
     }
 
     public function test_conflicting_immersion_does_not_enter_filters_and_is_explained_in_details(): void

@@ -399,7 +399,9 @@
                                 @endif
 
                                 {{-- Краткое описание --}}
-                                @if ($product->short_description)
+                                @if ($manufacturerPump)
+                                    <p class="product-infor-desc cl-text-2 mb-12">{{ $pumpDetailDocument ? 'Параметры этого исполнения и документ производителя — во вкладке «Технические характеристики».' : 'Паспортные параметры этого исполнения уточняются. Для подбора сообщите менеджеру точный артикул или данные с шильдика.' }}</p>
+                                @elseif ($product->short_description)
                                     <p class="product-infor-desc cl-text-2 mb-12">
                                         {!! $product->short_description !!}
                                     </p>
@@ -971,7 +973,15 @@
                 {{-- Описание --}}
                 <div class="tab-pane active show" id="description" role="tabpanel">
                     <div class="tab-content_desc site-prose">
-                        @if ($product->content)
+                        @if ($manufacturerPump)
+                            <p>{{ $product->name }}</p>
+                            @if ($pumpDetailDocument)
+                                <p>Подтверждённые параметры указаны в технических характеристиках. Максимальные напор и расход достигаются в разных точках; для подбора проверьте рабочую точку по кривой производителя и условия установки.</p>
+                                <a class="link" href="{{ $pumpDetailDocument['url'] }}" target="_blank" rel="noopener">{{ $pumpDetailDocument['title'] }} ↗</a>
+                            @else
+                                <p>Для этого исполнения требуется документация производителя. Уточните артикул, год выпуска и параметры на шильдике — менеджер поможет проверить подходящую модель.</p>
+                            @endif
+                        @elseif ($product->content)
                             <div class="box-desc">
                                 <div class="desc_info cl-text-2">
                                     @if ($isXoCeramicPro100 && !$contentHasXoControllerManual)
@@ -1009,8 +1019,8 @@
                             @if (in_array($product->category->slug, \App\Support\Catalog\PumpCatalog::MANUFACTURER_CATEGORIES, true))
                                 <div class="border rounded-3 p-3 mb-3 text-secondary">
                                     <p class="mb-2">Указаны подтверждённые параметры этого исполнения. Максимальные напор и расход достигаются в разных точках. Номинальные и табличные значения показаны отдельно; рабочую точку проверяют по кривой производителя.</p>
-                                    @if ($pumpManufacturerDocument)
-                                        <a href="{{ $pumpManufacturerDocument['url'] }}" target="_blank" rel="noopener">{{ $pumpManufacturerDocument['title'] }} ↗</a>
+                                    @if ($pumpDetailDocument)
+                                        <a href="{{ $pumpDetailDocument['url'] }}" target="_blank" rel="noopener">{{ $pumpDetailDocument['title'] }} ↗</a>
                                     @endif
                                 </div>
                             @endif

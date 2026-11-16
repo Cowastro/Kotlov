@@ -10,6 +10,9 @@
 @endonce
 
 @php
+    if (in_array($product->category?->slug, \App\Support\Catalog\PumpCatalog::MANUFACTURER_CATEGORIES, true)) {
+        $pumpManufacturerDocument = \App\Support\Catalog\HouseholdPumpFacts::document($product, $product->category->slug);
+    }
     if (isset(\App\Support\Catalog\RadiatorCatalog::NAMES[$product->category?->slug ?? ''])) {
         $radiatorCatalog = app(\App\Support\Catalog\RadiatorCatalog::class);
         $product = $radiatorCatalog->forDisplay($product);
@@ -118,7 +121,7 @@
                     data-online-price="{{ $onlinePrice !== null ? number_format($onlinePrice, 2, '.', ' ').' BYN' : '' }}"
                     data-online-saving="{{ $onlineSaving !== null ? number_format($onlineSaving, 2, '.', ' ').' BYN' : '' }}"
                     data-category="{{ $product->category->name ?? '' }}"
-                    data-description="{{ Str::limit($verifiedGasMeter['description'] ?? ($gasMeterMeta ? ($gasMeterMeta['size'].' — '.$gasMeterMeta['purpose'].'. '.implode('. ', $gasMeterMeta['facts'])) : strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.')), 240) }}"
+                    data-description="{{ Str::limit(\App\Support\Catalog\HouseholdPumpFacts::summary($product) ?? $verifiedGasMeter['description'] ?? ($gasMeterMeta ? ($gasMeterMeta['size'].' — '.$gasMeterMeta['purpose'].'. '.implode('. ', $gasMeterMeta['facts'])) : strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.')), 240) }}"
                     data-image="{{ $product->image_url }}"
                     data-images='@json($quickViewImages)'
                     data-url="{{ $productUrl }}"
