@@ -121,6 +121,47 @@ class TdKomplektSyncTest extends TestCase
         Category::firstOrCreate(['slug' => 'rezbovye-fitingi'], ['name' => 'Резьбовые фитинги', 'parent_id' => 0, 'is_active' => true]);
     }
 
+    public function test_rebranded_alca_articles_match_but_model_suffixes_remain_separate(): void
+    {
+        $brand = Brand::create(['name' => 'ALCA', 'slug' => 'alca-test']);
+        $category = Category::where('slug', 'rezbovye-fitingi')->firstOrFail();
+        $canonical = Product::create(['brand_id' => $brand->id, 'category_id' => $category->id, 'name' => 'Водослив A391 ALCA',
+            'sku' => 'A391', 'slug' => 'alca-a391-test', 'price' => 100, 'is_active' => true]);
+        $variant = Product::create(['brand_id' => $brand->id, 'category_id' => $category->id, 'name' => 'Трап APV1-BL-01 ALCA',
+            'sku' => 'APV1', 'slug' => 'alca-apv1-test', 'price' => 100, 'is_active' => true]);
+        $matcher = new TdKomplektMatcher;
+        $this->assertSame($canonical->id, $matcher->match($this->row(['brand' => 'Alcaplast', 'vendor_code' => 'A391']))['product_id']);
+        $result = $matcher->match($this->row(['brand' => 'Alcaplast', 'vendor_code' => 'APV1']));
+        $this->assertNull($result['product_id']);
+        $this->assertSame('variant_unconfirmed', $result['reason']);
+        $this->assertFalse($variant->fresh()->is_archived);
+    }
+
+    public function test_distinct_brand_articles_create_independent_cards_and_missing_photos_can_be_kept_hidden(): void
+    {
+        $brand = Brand::create(['name' => 'UNIPUMP', 'slug' => 'unipump-collision-test']);
+        $category = Category::firstOrCreate(['slug' => 'pump-collision'], ['name' => 'Насосы', 'parent_id' => 0]);
+        $foreign = Product::create(['brand_id' => $brand->id, 'category_id' => $category->id, 'name' => 'Насос UNIPUMP',
+            'sku' => 'AV-12345', 'slug' => 'foreign-pump-collision', 'price' => 700, 'is_active' => true]);
+        $this->artisan('supplier:sync-td-komplekt', ['--file' => $this->csv([$this->row()]), '--apply' => true, '--create-new' => true])->assertSuccessful();
+        $offer = SupplierProduct::whereHas('supplier', fn ($q) => $q->where('code', 'td_komplekt'))->firstOrFail();
+        $this->assertNotSame($foreign->id, $offer->product_id);
+        $this->assertSame('AV Engineering', $offer->product->brand->name);
+        $this->assertEquals(700, $foreign->fresh()->price);
+        $row = $this->row(['vendor_code' => '', 'media_img' => '', 'id' => '54321', 'okdp' => 'ЦБ-54321', 'barcode' => '4620755641356', 'name' => 'Тройник AV Engineering без фото']);
+        // Keep a full source snapshot so old stock cannot be withdrawn by a partial test file.
+        $file = $this->csv([$this->row(), $row]);
+        $args = ['--file' => $file, '--apply' => true, '--create-new' => true, '--create-drafts' => true];
+        $this->artisan('supplier:sync-td-komplekt', $args)->assertSuccessful();
+        $draft = SupplierProduct::where('supplier_id', $offer->supplier_id)->where('source_wp_id', 54321)->firstOrFail()->product;
+        $this->assertFalse($draft->is_active);
+        $this->assertSame(Product::CREATED_VIA_AWAITING_PHOTOS, $draft->created_via);
+        $this->assertNotContains('Артикул производителя', array_column($draft->specs, 'key'));
+        $this->artisan('supplier:sync-td-komplekt', $args)->assertSuccessful();
+        $this->assertSame($draft->id, SupplierProduct::where('supplier_id', $offer->supplier_id)->where('source_wp_id', 54321)->value('product_id'));
+        $this->assertFalse($draft->fresh()->is_active);
+    }
+
     public function test_parser_preserves_multiline_csv_and_never_turns_days_into_stock(): void
     {
         $parser = new TdKomplektFeed;

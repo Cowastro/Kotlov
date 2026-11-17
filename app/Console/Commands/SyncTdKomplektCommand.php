@@ -22,7 +22,7 @@ use RuntimeException;
 
 class SyncTdKomplektCommand extends Command
 {
-    protected $signature = 'supplier:sync-td-komplekt {--file= : Local CSV snapshot} {--apply : Save offers and exact matches} {--dry-run : Preview only} {--create-new : Create confidently classified, unambiguous new products} {--report= : Private JSON report path}';
+    protected $signature = 'supplier:sync-td-komplekt {--file= : Local CSV snapshot} {--apply : Save offers and exact matches} {--dry-run : Preview only} {--create-new : Create confidently classified, unambiguous new products} {--create-drafts : Keep classified products without a source photo as hidden drafts} {--report= : Private JSON report path}';
 
     protected $description = 'ТД Комплект: CSV tools.by, exact article matching, wholesale/retail and stock synchronization.';
 
@@ -40,6 +40,7 @@ class SyncTdKomplektCommand extends Command
             $rows = $feed->load($this->option('file'));
             $names = array_count_values(array_map(fn ($r) => TdKomplektFeed::key($r['name']), $rows));
             $barcodes = array_count_values(array_filter(array_column($rows, 'barcode')));
+            $articles = array_count_values(array_map(fn ($r) => TdKomplektMatcher::brandKey($r['brand']).'|'.TdKomplektFeed::key($r['vendor_code']), $rows));
             $matcher = new TdKomplektMatcher;
             $supplier = Supplier::where('code', 'td_komplekt')->first();
             $old = $supplier ? SupplierProduct::where('supplier_id', $supplier->id)->get()->keyBy('source_wp_id') : collect();
@@ -49,30 +50,33 @@ class SyncTdKomplektCommand extends Command
             }
             $categories = Category::pluck('id', 'slug');
             $report = [];
-            $stats = ['rows' => count($rows), 'matched' => 0, 'ambiguous' => 0, 'created' => 0, 'offers' => 0, 'retail_updated' => 0, 'retail_review' => 0, 'missing' => 0];
+            $stats = ['rows' => count($rows), 'matched' => 0, 'ambiguous' => 0, 'created' => 0, 'drafts' => 0, 'offers' => 0, 'retail_updated' => 0, 'retail_review' => 0, 'missing' => 0];
             foreach ($rows as $id => $row) {
                 $row['_duplicate_name'] = ($names[TdKomplektFeed::key($row['name'])] ?? 0) > 1;
+                $row['_duplicate_barcode'] = ($barcodes[$row['barcode'] ?? ''] ?? 0) > 1;
+                $row['_unique_article'] = $row['vendor_code'] !== '' && ($articles[TdKomplektMatcher::brandKey($row['brand']).'|'.TdKomplektFeed::key($row['vendor_code'])] ?? 0) === 1;
+                $rows[$id] = $row;
                 $link = $old->get($id);
                 $match = $matcher->match($row);
-                if (($barcodes[$row['barcode'] ?? ''] ?? 0) > 1) {
+                if ($row['_duplicate_barcode']) {
                     $match = ['product_id' => null, 'candidates' => $match['candidates'], 'reason' => 'duplicate_feed_barcode'];
                 }
                 if ($link?->product_id) {
                     // Stable supplier ID is authoritative; never remap it automatically.
                     $p = Product::find($link->product_id);
                     $changedArticle = ($link->raw['identity_vendor_code'] ?? $link->raw['vendor_code'] ?? '') !== $row['vendor_code']
-                        || TdKomplektFeed::key($link->raw['identity_brand'] ?? $link->raw['brand'] ?? '') !== TdKomplektFeed::key($row['brand']);
+                        || TdKomplektMatcher::brandKey($link->raw['identity_brand'] ?? $link->raw['brand'] ?? '') !== TdKomplektMatcher::brandKey($row['brand']);
                     $match = ($p && ! $p->is_archived && ! $changedArticle)
                         ? ['product_id' => $p->id, 'candidates' => [$p->id], 'reason' => 'existing_supplier_id']
                         : ['product_id' => null, 'candidates' => [], 'reason' => 'linked_identity_changed'];
                 }
                 $slug = $feed->category($row);
                 $category = $slug ? ($categories[$slug] ?? null) : null;
-                $report[$id] = ['id' => (string) $id, 'article' => $row['vendor_code'], 'name' => $row['name'], 'category' => $slug, 'category_id' => $category] + $match;
+                $report[$id] = ['id' => (string) $id, 'article' => $row['vendor_code'], 'name' => $row['name'], 'category' => $slug, 'category_id' => $category, 'duplicate_barcode' => $row['_duplicate_barcode']] + $match;
                 if ($match['product_id']) {
                     $stats['matched']++;
                 }
-                if (in_array($match['reason'], ['ambiguous', 'conflicting_identifiers', 'linked_identity_changed', 'duplicate_feed_barcode', 'brand_unconfirmed'])) {
+                if (in_array($match['reason'], ['ambiguous', 'conflicting_identifiers', 'linked_identity_changed', 'duplicate_feed_barcode', 'brand_unconfirmed', 'variant_unconfirmed'])) {
                     $stats['ambiguous']++;
                 }
             }
@@ -88,12 +92,16 @@ class SyncTdKomplektCommand extends Command
                     $data = $row['_data'];
                     $p = $result['product_id'] ? Product::find($result['product_id']) : null;
                     $previous = $old->get($id);
-                    $canCreate = $this->option('create-new') && ! $p && $result['reason'] === 'unmatched' && $result['category_id'] && $row['vendor_code'] !== '' && $row['brand'] !== '' && $data['retail'] > 0 && $data['retail'] >= $data['wholesale'] && TdKomplektFeed::image($row['media_img']);
+                    $uniqueBarcode = preg_match('/^\d{8,14}$/D', $row['barcode'] ?? '') && ! $row['_duplicate_barcode'];
+                    $identity = $row['_unique_article'] || ($row['okdp'] !== '' && $uniqueBarcode && ! $row['_duplicate_name']);
+                    $draft = ! TdKomplektFeed::image($row['media_img']);
+                    $canCreate = $this->option('create-new') && ! $p && in_array($result['reason'], ['unmatched', 'foreign_brand_article'], true) && $result['category_id'] && $identity && $row['brand'] !== '' && $data['retail'] > 0 && $data['retail'] >= $data['wholesale'] && (! $draft || $this->option('create-drafts'));
                     if ($canCreate) {
-                        $p = $this->createProduct($row, $result['category_id'], $supplier, $feed);
+                        $p = $this->createProduct($row, $result['category_id'], $supplier, $feed, $draft);
                         app(ProductSourceEnricher::class)->syncSpecsToAttributeValues($p);
                         $report[$id]['product_id'] = $p->id;
-                        $report[$id]['reason'] = 'created';
+                        $report[$id]['reason'] = $draft ? 'created_draft' : 'created';
+                        $stats['drafts'] += (int) $draft;
                         $stats['created']++;
                     }
                     // Keep old links pending review on identifier changes, but withdraw their stock.
@@ -208,7 +216,7 @@ class SyncTdKomplektCommand extends Command
         return $e instanceof RuntimeException && ! str_contains($e->getMessage(), 'http') ? $e->getMessage() : 'Проверьте приватный источник и журнал ошибок.';
     }
 
-    private function createProduct(array $row, int $categoryId, Supplier $supplier, TdKomplektFeed $feed): Product
+    private function createProduct(array $row, int $categoryId, Supplier $supplier, TdKomplektFeed $feed, bool $draft = false): Product
     {
         $brand = Brand::whereRaw('LOWER(name) = ?', [mb_strtolower($row['brand'])])->first();
         if (! $brand && $row['brand'] !== '') {
@@ -224,6 +232,6 @@ class SyncTdKomplektCommand extends Command
             'price' => $row['_data']['retail'], 'currency' => 'BYN', 'unit' => $row['prop_unit'] ?: 'шт.',
             'content_source_url' => 'https://tools.by',
             'meta_title' => Str::limit($row['name'], 120, '').' — купить в %city% | KOTLOV', 'meta_description' => Str::limit($row['name'].'. Цена, наличие и условия поставки — KOTLOV. Заказ и доставка по Беларуси.', 175, ''),
-            'is_active' => true, 'is_archived' => false, 'in_stock' => false, 'availability_status' => Product::AVAILABILITY_CHECK, 'requires_price_confirmation' => false] + $feed->catalogFields($row));
+            'is_active' => ! $draft, 'created_via' => $draft ? Product::CREATED_VIA_AWAITING_PHOTOS : null, 'is_archived' => false, 'in_stock' => false, 'availability_status' => Product::AVAILABILITY_CHECK, 'requires_price_confirmation' => false] + $feed->catalogFields($row));
     }
 }

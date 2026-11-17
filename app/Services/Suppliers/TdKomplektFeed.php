@@ -140,6 +140,9 @@ class TdKomplektFeed
         if (TdKomplektPumpCategories::applies($row)) {
             return TdKomplektPumpCategories::category($row);
         }
+        if ($category = TdKomplektPlumbingCategories::category($row)) {
+            return $category;
+        }
         $group = mb_strtolower(($row['parentid_name3'] ?? '').' '.($row['parentid_name4'] ?? ''));
         $name = mb_strtolower($row['name']);
         if (str_contains($group, 'распродажа')) {
