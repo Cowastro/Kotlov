@@ -1,5 +1,14 @@
 <?php
 
+// tools.by allows at most 10 exports/hour. One full CSV per hour, with a private cache and request spacing.
+\Illuminate\Support\Facades\Schedule::command('supplier:sync-td-komplekt --apply --create-new')
+    ->hourlyAt(30)
+    ->when(fn () => \Illuminate\Support\Facades\Storage::disk('local')->exists(\App\Services\Suppliers\TdKomplektFeed::DIRECTORY.'/config.json')
+        && \App\Models\SupplierSync::where('key','td_komplekt_csv')->where('is_active',true)->exists())
+    ->withoutOverlapping(45)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/td-komplekt-sync.log'));
+
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
