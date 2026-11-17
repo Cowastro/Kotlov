@@ -4,7 +4,7 @@
     var filterForm = document.getElementById('b2b-filter-form');
     var searchInput = document.getElementById('b2b-search-input');
     var suggest = document.getElementById('b2b-search-suggest');
-    var suggestUrl = searchInput.closest('.b2b-search').dataset.suggestUrl;
+    var searchRoot = searchInput.closest('.b2b-search');
     var timer = null;
     var request = null;
     var activeIndex = -1;
@@ -82,6 +82,7 @@
         if (query.length < 2) return closeSuggest();
         timer = setTimeout(function () {
             request = new AbortController();
+            var suggestUrl = searchRoot.dataset.suggestUrl;
             fetch(suggestUrl + (suggestUrl.includes('?') ? '&' : '?') + 'q=' + encodeURIComponent(query), {
                 headers: { 'Accept': 'application/json' }, signal: request.signal,
             }).then(function (response) { return response.json(); })

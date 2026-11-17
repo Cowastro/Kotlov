@@ -6,10 +6,12 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\ContactRequest;
 use App\Models\Product;
-use App\Services\StorefrontProductSearch;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bCompanyAccess;
 use App\Services\B2bSupplyOptionResolver;
+use App\Services\StaffCatalogWorkspace;
+use App\Services\StorefrontProductSearch;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -24,13 +26,15 @@ class B2bMarketplaceController extends Controller
         B2bCompanyAccess $access,
     ) {
         $user = $request->user();
-        $staffPreview = $request->boolean('b2b-preview')
+        $staffWorkspace = $request->boolean('workspace');
+        abort_if($staffWorkspace && ! StaffCatalogWorkspace::allowed($user), 403);
+        $staffPreview = ! $staffWorkspace && $request->boolean('b2b-preview')
             && ! $resolver->canViewPartnerPrices($user)
             && $resolver->canPreviewPartnerPrices($user);
-        abort_unless($resolver->canViewPartnerPrices($user) || $staffPreview, 403);
-        abort_unless($staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog.view')), 403);
+        abort_unless($staffWorkspace || $resolver->canViewPartnerPrices($user) || $staffPreview, 403);
+        abort_unless($staffWorkspace || $staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog.view')), 403);
 
-        $mode = $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
+        $mode = $staffWorkspace || $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
         $categoryId = max(0, $request->integer('category'));
         // The main search is global. A category remains selected only while the
@@ -39,15 +43,16 @@ class B2bMarketplaceController extends Controller
             $categoryId = 0;
         }
         $brandId = max(0, $request->integer('brand'));
+        $perPage = in_array($request->integer('per_page'), [30, 60, 100], true) ? $request->integer('per_page') : 30;
         $sourceKey = mb_substr(trim($request->string('source')->toString()), 0, 40);
         $sort = in_array($request->string('sort')->toString(), ['name', 'price_asc', 'price_desc', 'stock'], true)
             ? $request->string('sort')->toString()
             : 'name';
 
-        $allOffers = $staffPreview
+        $allOffers = $staffWorkspace ? collect() : ($staffPreview
             ? $resolver->offersForStaffPreview($user)
-            : $resolver->offersForUser($user);
-        $allOptions = $staffPreview
+            : $resolver->offersForUser($user));
+        $allOptions = $staffWorkspace ? collect() : ($staffPreview
             ? $allOffers->map(function ($offer) use ($resolver): array {
                 $availability = $resolver->availabilityFor($offer);
 
@@ -64,7 +69,7 @@ class B2bMarketplaceController extends Controller
                     'delivery_label' => 'Срок уточняется',
                 ];
             })
-            : $supplyOptions->optionsForUser($user);
+            : $supplyOptions->optionsForUser($user));
         $orderableProductIds = $allOptions->pluck('product_id')->unique()->map(fn ($id): int => (int) $id);
         $sourceGroups = $allOptions
             ->groupBy(fn (array $option): string => mb_strtolower(trim((string) $option['source_label'])))
@@ -107,7 +112,10 @@ class B2bMarketplaceController extends Controller
             $productsQuery = $referenceBaseQuery->with(['category', 'brand']);
 
             $this->applyProductFilters($productsQuery, $query, $categoryId, $categoryFilterIds, $brandId);
-            $products = $productsQuery->orderBy('name')->paginate(30)->withQueryString();
+            if ($sort === 'price_asc' || $sort === 'price_desc') {
+                $productsQuery->orderBy('price', $sort === 'price_asc' ? 'asc' : 'desc');
+            }
+            $products = $productsQuery->orderBy('name')->paginate($perPage)->withQueryString();
         } else {
             $availableCategoryIds = $listingOptions
                 ->unique('product_id')
@@ -142,7 +150,7 @@ class B2bMarketplaceController extends Controller
                 default => $rows->sortBy(fn (array $row): string => mb_strtolower($row['product']->name)),
             })->values();
 
-            $products = $this->paginate($rows, $request, 30);
+            $products = $this->paginate($rows, $request, $perPage);
         }
 
         $representativeProducts = $mode === 'reference'
@@ -154,7 +162,7 @@ class B2bMarketplaceController extends Controller
         $visibleProductIds = $mode === 'reference'
             ? $products->getCollection()->pluck('id')
             : $products->getCollection()->pluck('product.id');
-        $priceRequests = $staffPreview
+        $priceRequests = $staffPreview || $staffWorkspace
             ? collect()
             : ContactRequest::query()
                 ->where('user_id', $user->id)
@@ -165,10 +173,28 @@ class B2bMarketplaceController extends Controller
                 ->unique('product_id')
                 ->keyBy('product_id');
 
-        return view('pages.b2b.marketplace', compact(
-            'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceKey', 'sort',
+        $workspace = app(StaffCatalogWorkspace::class);
+        $showProcurement = $staffWorkspace && $user->isAdmin();
+        $workspaceOffers = collect();
+        if ($showProcurement) {
+            $products->getCollection()->loadMissing([
+                'supplierProducts.supplier.latestChannelTransition',
+                'supplierProducts.supplier.crmCounterparty.contactPoints',
+                'integrationProducts.source.supplier.crmCounterparty.contactPoints',
+                'integrationProducts.source.latestSuccessfulCatalogExchangeRun',
+                'warehouseStocks.supplier.crmCounterparty.contactPoints',
+                'purchasePriceSources.supplier',
+            ]);
+            $workspaceOffers = $products->getCollection()->mapWithKeys(fn ($product) => [$product->id => $workspace->offers($product, $user)]);
+        }
+        $workspaceSelection = $staffWorkspace ? $workspace->current($request) : null;
+        $workspaceState = $workspace->state($workspaceSelection, $user);
+        $workspaceSelections = $staffWorkspace ? $workspace->selections($request)->latest('updated_at')->limit(100)->get(['id', 'name']) : collect();
+
+        return response()->view('pages.b2b.marketplace', compact(
+            'showProcurement', 'workspaceOffers', 'staffWorkspace', 'workspaceState', 'workspaceSelections', 'perPage', 'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceKey', 'sort',
             'categoryTree', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests', 'minimalLayout', 'staffPreview',
-        ));
+        ))->header('Cache-Control', 'private, no-store');
     }
 
     public function suggest(
@@ -178,11 +204,13 @@ class B2bMarketplaceController extends Controller
         B2bCompanyAccess $access,
     ): JsonResponse {
         $user = $request->user();
-        $staffPreview = $request->boolean('b2b-preview')
+        $staffWorkspace = $request->boolean('workspace');
+        abort_if($staffWorkspace && ! StaffCatalogWorkspace::allowed($user), 403);
+        $staffPreview = ! $staffWorkspace && $request->boolean('b2b-preview')
             && ! $resolver->canViewPartnerPrices($user)
             && $resolver->canPreviewPartnerPrices($user);
-        abort_unless($resolver->canViewPartnerPrices($user) || $staffPreview, 403);
-        abort_unless($staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog.view')), 403);
+        abort_unless($staffWorkspace || $resolver->canViewPartnerPrices($user) || $staffPreview, 403);
+        abort_unless($staffWorkspace || $staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog.view')), 403);
 
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
         if (mb_strlen($query) < 2) {
@@ -191,10 +219,10 @@ class B2bMarketplaceController extends Controller
 
         $needle = mb_strtolower($query);
         $preview = $request->boolean('b2b-preview') ? 1 : null;
-        $mode = $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
+        $mode = $staffWorkspace || $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
 
         if ($mode === 'reference') {
-            $orderableProductIds = ($staffPreview
+            $orderableProductIds = $staffWorkspace ? collect() : ($staffPreview
                 ? $resolver->offersForStaffPreview($user)->pluck('product_id')
                 : $supplyOptions->optionsForUser($user)->pluck('product_id'))
                 ->unique();
@@ -215,11 +243,13 @@ class B2bMarketplaceController extends Controller
                     'brand' => (string) ($product->brand?->name ?: ''),
                     'image' => (string) $product->image_url,
                     'price' => (float) $product->price,
-                    'stock' => 'Запросить оптовую цену',
+                    'stock' => $staffWorkspace ? 'Цена сайта · условия уточняются' : 'Запросить оптовую цену',
                     'url' => route('b2b.catalog', array_filter([
                         'mode' => 'reference',
                         'q' => $product->sku ?: $product->name,
                         'b2b-preview' => $preview,
+                        'workspace' => $staffWorkspace ? 1 : null,
+                        'selection_id' => $staffWorkspace ? $request->integer('selection_id') ?: null : null,
                     ])),
                 ]);
 
@@ -285,10 +315,10 @@ class B2bMarketplaceController extends Controller
      * keyboard layout, best match for a long copied title) over the given
      * products, exactly as the site search and its suggestions run it.
      *
-     * @param list<int>|\Illuminate\Database\Eloquent\Builder $candidates
+     * @param  list<int>|Builder  $candidates
      * @return list<int>
      */
-    private function smartMatches(string $query, array|\Illuminate\Database\Eloquent\Builder $candidates, bool $suggestions): array
+    private function smartMatches(string $query, array|Builder $candidates, bool $suggestions): array
     {
         if ($candidates === []) {
             return [];
