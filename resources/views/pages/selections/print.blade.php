@@ -9,6 +9,6 @@ body{font:14px/1.45 Arial,sans-serif;color:#202020;margin:32px auto;padding:0 20
 @if ($note)<p class="note">{{ $note }}</p>@endif
 <p><button type="button" onclick="window.print()">Распечатать / сохранить PDF</button></p>
 <table><thead><tr><th>№</th><th>Наименование / артикул</th><th class="number">Цена</th><th class="number">Кол-во</th><th class="number">Сумма</th></tr></thead><tbody>
-@foreach ($items as $item)<tr><td>{{ $loop->iteration }}</td><td>{{ $item['name'] }}<br><small>{{ $item['sku'] ?? '' }}</small></td><td class="number">{{ number_format((float) $item['price'], 2, ',', ' ') }}</td><td class="number">{{ $item['quantity'] }}</td><td class="number">{{ number_format($item['price'] * $item['quantity'], 2, ',', ' ') }}</td></tr>@endforeach
+@foreach ($items as $item)<tr><td>{{ $loop->iteration }}</td><td>{{ $item['name'] }}<br><small>{{ $item['sku'] ?? '' }}</small>@if (! empty($item['selection_note']))<br><small>{{ $item['selection_note'] }}</small>@endif</td><td class="number">{{ number_format((float) $item['price'], 2, ',', ' ') }}</td><td class="number">{{ $item['quantity'] }}</td><td class="number">{{ number_format($item['price'] * $item['quantity'], 2, ',', ' ') }}</td></tr>@endforeach
 </tbody><tfoot><tr><td colspan="4">Итого, BYN</td><td class="number">{{ number_format(collect($items)->sum(fn ($item) => $item['price'] * $item['quantity']), 2, ',', ' ') }}</td></tr></tfoot></table>
 </body></html>

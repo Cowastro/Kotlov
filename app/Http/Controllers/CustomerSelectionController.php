@@ -95,6 +95,43 @@ class CustomerSelectionController extends Controller
         return $this->printView('Подбор оборудования', $request->session()->get('cart', []), $request->session()->get('cart_note'), now());
     }
 
+    public function duplicate(Request $request, CustomerSelection $selection)
+    {
+        $this->own($request, $selection);
+        $copy = CustomerSelection::create([
+            'user_id' => $request->user()->id, 'name' => mb_substr($selection->name, 0, 145).' · копия',
+            'items' => $selection->items, 'meta' => $selection->meta, 'note' => $selection->note,
+        ]);
+        return to_route('selections.show', $copy)->with('success', 'Копия подбора сохранена.');
+    }
+
+    public function moveLine(Request $request)
+    {
+        $data = $request->validate([
+            'product_id' => ['required', 'integer'], 'target_selection_id' => ['nullable', 'integer'],
+            'name' => ['required_without:target_selection_id', 'nullable', 'string', 'max:160'],
+        ]);
+        $items = $request->session()->get('cart', []);
+        abort_unless(isset($items[$data['product_id']]), 409, 'Позиция уже удалена из корзины.');
+        $line = $items[$data['product_id']];
+        $target = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $data, $line) {
+            if (! empty($data['target_selection_id'])) {
+                $target = CustomerSelection::where('user_id', $request->user()->id)->lockForUpdate()->findOrFail($data['target_selection_id']);
+                $saved = $target->items;
+                if (isset($saved[$data['product_id']])) return null;
+                $saved[$data['product_id']] = $line;
+                $target->update(['items' => $saved, 'revision' => $target->revision + 1]);
+                return $target;
+            }
+            return CustomerSelection::create(['user_id' => $request->user()->id, 'name' => $data['name'], 'items' => [$data['product_id'] => $line]]);
+        });
+        if (! $target) return back()->with('error', 'В выбранном подборе уже есть этот товар. Выберите другой подбор или создайте новый.');
+        unset($items[$data['product_id']]);
+        $request->session()->put('cart', $items);
+        $request->session()->put(\App\Services\CartSelection::KEY, array_values(array_intersect($request->session()->get(\App\Services\CartSelection::KEY, []), array_keys($items))));
+        return to_route('cart')->with('success', 'Позиция перенесена в подбор «'.$target->name.'».');
+    }
+
     private function printView(string $name, array $items, ?string $note, $date)
     {
         return response()->view('pages.selections.print', compact('name', 'items', 'note', 'date'))

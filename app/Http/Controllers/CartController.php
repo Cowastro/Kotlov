@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Services\B2bSupplyOptionResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
+use App\Services\CartSelection;
 use App\Services\ChimneyBundlePromotion;
 use Illuminate\Http\Request;
 
@@ -27,7 +28,19 @@ class CartController extends Controller
     {
         $items = $this->getAvailableItems($availabilityGuard);
         $subtotal = $this->calcSubtotal($items);
-        $coupon = $this->couponQuote($subtotal);
+        $this->couponQuote($subtotal);
+        $selectedItems = CartSelection::items($items);
+        $subtotal = $this->calcSubtotal($selectedItems);
+        $coupon = $this->couponService->quoteForCart(session('cart_coupon'), $selectedItems);
+        $cartSelection = $this->selectionSummary($coupon, $selectedItems);
+        $cartSelections = auth()->check() ? \App\Models\CustomerSelection::where('user_id', auth()->id())->latest('updated_at')->limit(100)->get(['id', 'name']) : collect();
+        $cartHighlights = Product::query()->with('category:id,slug')->whereIn('id', array_keys($items))->get(['id', 'name', 'category_id'])
+            ->mapWithKeys(function (Product $product) {
+                $slug = $product->category?->slug;
+                $facts = in_array($slug, \App\Support\Catalog\PumpCatalog::MANUFACTURER_CATEGORIES, true)
+                    ? \App\Support\Catalog\HouseholdPumpFacts::facts($product, $slug, []) : null;
+                return [$product->id => collect($facts['card'] ?? [])->except('Данные')->take(3)->map(fn ($v, $k) => $k.': '.$v)->implode(' · ')];
+            });
         // A B2B partner sees B2B terms: no promo code, no retail delivery zones.
         $b2bClient = auth()->user()?->activeB2bClient();
         // The partner stays in the B2B interface: no retail header, menu or footer.
@@ -35,7 +48,7 @@ class CartController extends Controller
         $editingSelection = auth()->check() && session('cart_selection_id')
             ? \App\Models\CustomerSelection::where('user_id', auth()->id())->find(session('cart_selection_id')) : null;
 
-        return view('pages.cart', compact('items', 'subtotal', 'coupon', 'b2bClient', 'minimalLayout', 'editingSelection'));
+        return view('pages.cart', compact('items', 'subtotal', 'coupon', 'b2bClient', 'minimalLayout', 'editingSelection', 'cartSelection', 'cartSelections', 'cartHighlights'));
     }
 
     // ─────────────────────────────────────────
@@ -167,6 +180,7 @@ class CartController extends Controller
             $cart[$id]['chimney_selector_selected'] = ($cart[$id]['chimney_selector_selected'] ?? false)
                 || $selectedInChimneyCalculator;
         } else {
+            session([CartSelection::KEY => array_values(array_diff(session(CartSelection::KEY, []), [$id]))]);
             $imgUrl = $product->image_url;
 
             $cart[$id] = [
@@ -191,6 +205,7 @@ class CartController extends Controller
             return response()->json([
                 'message' => 'added',
                 'count' => $this->totalQty($cart),
+                'selection' => $this->selectionSummary(),
                 'positions' => count($cart),
                 'item_quantity' => (int) $cart[$id]['quantity'],
                 'item_name' => (string) $cart[$id]['name'],
@@ -271,6 +286,7 @@ class CartController extends Controller
 
             return response()->json([
                 'count' => $this->totalQty($cart),
+                'selection' => $this->selectionSummary(),
                 'subtotal' => $subtotal,
                 'discount' => $coupon['discount'],
                 'coupon_discount' => $coupon['coupon_discount'],
@@ -283,6 +299,7 @@ class CartController extends Controller
                     : 0,
                 'positions' => count($cart),
                 'item_quantity' => (int) ($cart[$id]['quantity'] ?? 0),
+                'item_price' => (float) ($cart[$id]['price'] ?? 0),
             ]);
         }
 
@@ -298,6 +315,7 @@ class CartController extends Controller
 
         $cart = session(self::KEY, []);
         unset($cart[(int) $request->product_id]);
+        session([CartSelection::KEY => array_values(array_diff(session(CartSelection::KEY, []), [(int) $request->product_id]))]);
         session([self::KEY => $cart]);
 
         // Если корзина опустела — очищаем все связанные данные
@@ -312,6 +330,7 @@ class CartController extends Controller
             return response()->json([
                 'message' => 'removed',
                 'count' => $this->totalQty($cart),
+                'selection' => $this->selectionSummary(),
                 'positions' => count($cart),
                 'item_quantity' => 0,
                 'subtotal' => $subtotal,
@@ -357,6 +376,7 @@ class CartController extends Controller
         return response()->json([
             'items' => array_values($items),
             'count' => $this->totalQty($items),
+            'selection' => $this->selectionSummary(),
             'subtotal' => $subtotal,
             'discount' => $coupon['discount'],
             'coupon_discount' => $coupon['coupon_discount'],
@@ -454,6 +474,39 @@ class CartController extends Controller
         return back()->with('success', 'Промокод применён.');
     }
 
+    public function selectLines(Request $request)
+    {
+        $data = $request->validate(['ids' => ['required', 'array', 'max:2000'], 'ids.*' => ['integer'], 'selected' => ['required', 'boolean']]);
+        $cart = $this->getItems();
+        $ids = array_values(array_intersect(array_map('intval', $data['ids']), array_keys($cart)));
+        $excluded = array_values(array_intersect(session(CartSelection::KEY, []), array_keys($cart)));
+        session([CartSelection::KEY => $data['selected']
+            ? array_values(array_diff($excluded, $ids)) : array_values(array_unique(array_merge($excluded, $ids)))]);
+        return response()->json(['selection' => $this->selectionSummary()]);
+    }
+
+    public function lineNote(Request $request)
+    {
+        $data = $request->validate(['product_id' => ['required', 'integer'], 'note' => ['nullable', 'string', 'max:500']]);
+        $cart = $this->getItems();
+        abort_unless(isset($cart[$data['product_id']]), 409, 'Позиция уже удалена из корзины. Обновите страницу.');
+        $cart[$data['product_id']]['selection_note'] = $data['note'] ?? '';
+        session(['cart' => $cart]);
+        return response()->json(['message' => 'Комментарий сохранён']);
+    }
+
+    private function selectionSummary(?array $coupon = null, ?array $items = null): array
+    {
+        $items ??= CartSelection::items($this->getItems());
+        $coupon ??= $this->couponService->quoteForCart(session('cart_coupon'), $items);
+        return [
+            'positions' => count($items), 'count' => $this->totalQty($items), 'subtotal' => $this->calcSubtotal($items),
+            'total' => $coupon['total'], 'discount' => $coupon['discount'],
+            'coupon_discount' => $coupon['coupon_discount'], 'bundle_discount' => $coupon['bundle_discount'],
+            'bundle_percent' => $coupon['bundle']['percent'], 'bundle_mode' => $coupon['bundle']['mode'],
+        ];
+    }
+
     // ─────────────────────────────────────────
     // Хелперы
     // ─────────────────────────────────────────
@@ -468,6 +521,7 @@ class CartController extends Controller
             'cart_delivery_city',
             'cart_selection_id',
             'cart_selection_revision',
+            CartSelection::KEY,
         ]);
     }
 

@@ -1,7 +1,7 @@
 @extends('layouts.amerce')
 
 @section('content')
-<main id="wrapper">
+<main id="wrapper" class="cart-page {{ $b2bClient ? 'cart-page--b2b' : '' }}" data-cart-workspace data-initial-selection='@json($cartSelection)'>
 
     @if ($b2bClient)
         @include('partials.b2b-page-head')
@@ -42,117 +42,7 @@
 
                     {{-- Таблица товаров --}}
                     <div class="col-lg-8">
-                        <div class="overflow-auto">
-                            <table class="tf-table-page-cart">
-                                <thead>
-                                    <tr>
-                                        <th><p class="h6 fw-medium">Товар</p></th>
-                                        <th><p class="h6 fw-medium">Цена</p></th>
-                                        <th><p class="h6 fw-medium">Количество</p></th>
-                                        <th class="text-end"><p class="h6 fw-medium">Сумма</p></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($items as $item)
-                                        @php
-                                            $productUrl = '/' . $item['category_slug'] . '/' . $item['slug'];
-                                            $itemTotal  = round($item['price'] * $item['quantity'], 2);
-                                            $bundleLineDiscount = (float) ($coupon['bundle']['line_discounts'][$item['id']] ?? 0);
-                                        @endphp
-                                        {{-- НЕТ each-prd — иначе Amerce перезапишет цену в USD --}}
-                                        <tr class="tf-cart_item kotlov-cart-row"
-                                            data-product-id="{{ $item['id'] }}">
-
-                                            <td class="cart_product">
-                                                <a href="{{ $productUrl }}" class="img-prd">
-                                                    <img loading="lazy" width="100" height="100"
-                                                        src="{{ $item['image'] ?? asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="{{ $item['name'] }}"
-                                                        onerror="this.src='{{ asset('img/products/product-placeholder.jpg') }}'">
-                                                </a>
-                                                <div class="infor-prd">
-                                                    <a href="{{ $productUrl }}"
-                                                        class="prd_name fw-medium link lh-24">
-                                                        {{ $item['name'] }}
-                                                    </a>
-                                                    @if ($item['sku'])
-                                                        <p class="text-caption-01 cl-text-3 mb-4">
-                                                            Арт: {{ $item['sku'] }}
-                                                        </p>
-                                                    @endif
-                                                    @if ($item['requires_availability_confirmation'] ?? false)
-                                                        <p class="text-caption-01 mb-4" style="color:#b45309;">
-                                                            Наличие и срок поставки подтвердит менеджер
-                                                        </p>
-                                                    @endif
-                                                    @if (($item['pricing_type'] ?? null) === 'b2b' && !empty($item['warehouse_name']))
-                                                        <p class="text-caption-01 mb-4">
-                                                            {{ $item['warehouse_name'] }}
-                                                            @if (!empty($item['warehouse_delivery_days']))
-                                                                · доставка до {{ $item['warehouse_delivery_days'] }} дней
-                                                            @endif
-                                                        </p>
-                                                    @endif
-                                                    @if ($bundleLineDiscount > 0)
-                                                        <p class="text-caption-01 mb-4" style="color:#c63c32;font-weight:700;">
-                                                            Дымоход в комплекте −{{ number_format($coupon['bundle']['percent'], 0) }}%
-                                                        </p>
-                                                    @endif
-                                                    <form action="{{ route('cart.remove') }}" method="POST"
-                                                        class="d-inline">
-                                                        @csrf
-                                                        <input type="hidden" name="product_id"
-                                                            value="{{ $item['id'] }}">
-                                                        <button type="submit"
-                                                            class="tf-btn-line-3 type-primary border-0 bg-transparent p-0 cursor-pointer">
-                                                            <span class="text-caption-01 fw-semibold">Удалить</span>
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </td>
-
-                                            <td class="cart_price fw-semibold text-primary"
-                                                data-price="{{ $item['price'] }}">
-                                                {{ number_format($item['price'], 2, '.', ' ') }} BYN
-                                                @if ($bundleLineDiscount > 0)
-                                                    <small class="d-block fw-semibold" style="color:#c63c32;">
-                                                        {{ number_format(($itemTotal - $bundleLineDiscount) / max(1, $item['quantity']), 2, '.', ' ') }} BYN со скидкой
-                                                    </small>
-                                                @endif
-                                                @if (($item['pricing_type'] ?? null) === 'b2b')
-                                                    <small class="d-block cl-text-2 fw-normal">
-                                                        Партнёрская цена
-                                                    </small>
-                                                @endif
-                                            </td>
-
-                                            <td class="cart_quantity">
-                                                <div class="wg-quantity">
-                                                    <button type="button" class="btn-quantity minus-quantity">
-                                                        <i class="icon icon-minus"></i>
-                                                    </button>
-                                                    <input class="quantity-product cart-qty-input"
-                                                        type="text"
-                                                        value="{{ $item['quantity'] }}"
-                                                        data-product-id="{{ $item['id'] }}"
-                                                        min="1" max="999">
-                                                    <button type="button" class="btn-quantity plus-quantity">
-                                                        <i class="icon icon-plus"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-
-                                            <td class="text-end">
-                                                <div class="cart_total fw-semibold text-primary kotlov-row-total">
-                                                    {{ number_format($itemTotal, 2, '.', ' ') }} BYN
-                                                </div>
-                                            </td>
-
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                        @include('partials.cart-workspace-items')
 
                         <div class="d-flex justify-content-between align-items-center mt-16">
                             <a href="{{ $b2bClient ? route('b2b.catalog') : '/catalog' }}" class="tf-btn-line-3 type-primary">
@@ -171,13 +61,13 @@
                     {{-- Итого + согласие + кнопка --}}
                     <div class="col-lg-4">
                         <div class="fl-sidebar-cart mt-lg-0 sticky-top">
-                            <div class="box-order-summary">
-                                <h5 class="title mb-20">Итого по заказу</h5>
+                            <div class="box-order-summary" id="cart-order-summary" tabindex="-1">
+                                <h5 class="title mb-20">Итого по выбранным товарам</h5>
 
                                 <div class="subtotal d-flex justify-content-between align-items-center mb-12">
                                     <p class="fw-medium lh-24 mb-0">Товаров:</p>
                                     <span class="fw-medium lh-24" id="cart-items-count">
-                                        {{ array_sum(array_column($items, 'quantity')) }} шт.
+                                        {{ $cartSelection['count'] }} шт.
                                     </span>
                                 </div>
 
@@ -205,7 +95,7 @@
 
                                 @unless ($b2bClient)
                                 @if ($coupon['code'] === config('shop.online_order_discount.code', 'ONLINE3') && \App\Services\CartCouponService::onlineDiscountIsPublic())
-                                    <div class="online-order-cart-note mb-20">
+                                    <div class="online-order-cart-note mb-20" id="cart-online-note">
                                         <strong>Онлайн-скидка применена автоматически</strong>
                                         <p class="text-caption-01 cl-text-2 mt-4 mb-0">Онлайн-скидка применяется к участвующим в предложении товарам. Тепловые насосы не участвуют. Ничего вводить не нужно.</p>
                                     </div>
@@ -220,7 +110,7 @@
                                 </form>
 
                                 @if ($coupon['bundle']['active'])
-                                    <div class="online-order-cart-note mb-20">
+                                    <div class="online-order-cart-note mb-20" id="cart-bundle-note">
                                         <strong>Скидка на дымоход применена</strong>
                                         <p class="text-caption-01 cl-text-2 mt-4 mb-0">Печь, камин или котёл и участвующие комплектующие находятся в одной корзине. На дымоход действует −{{ number_format($coupon['bundle']['percent'], 0) }}%.</p>
                                     </div>
@@ -259,12 +149,12 @@
                                 <div class="d-flex justify-content-between align-items-center mb-20">
                                     <p class="fw-medium lh-24 mb-0">Доставка:</p>
                                     @if ($subtotal >= $threshold)
-                                        <span class="text-caption-01 text-end">
+                                        <span class="text-caption-01 text-end" id="cart-delivery-estimate" data-threshold="{{ $threshold }}">
                                             <strong class="text-primary">В пределах МКАД-2 — бесплатно</strong><br>
                                             по городам графика — согласно тарифу
                                         </span>
                                     @else
-                                        <span class="text-caption-01 cl-text-3 text-end">от 10 BYN, точная цена при оформлении</span>
+                                        <span class="text-caption-01 cl-text-3 text-end" id="cart-delivery-estimate" data-threshold="{{ $threshold }}">от 10 BYN, точная цена при оформлении</span>
                                     @endif
                                 </div>
 
@@ -296,6 +186,10 @@
 
                 </div>
 
+                <aside class="cart-mobile-total" aria-label="Итог выбранных товаров">
+                    <div><small><span data-selected-positions>{{ $cartSelection['positions'] }}</span> поз. · <span data-selected-count>{{ $cartSelection['count'] }}</span> шт.</small><strong data-selected-total>{{ number_format($cartSelection['total'], 2, ',', ' ') }} BYN</strong></div>
+                    <button type="button" id="cart-mobile-checkout">К оформлению <span aria-hidden="true">→</span></button>
+                </aside>
             @else
                 <div class="text-center py-80">
                     <i class="icon icon-Handbag fs-60 cl-text-3 mb-20"
@@ -315,141 +209,11 @@
 @endsection
 
 @push('scripts')
-<script>
-(function () {
-    var csrf = document.querySelector('meta[name="csrf-token"]').content;
-
-    function formatBYN(num) {
-        return parseFloat(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' BYN';
-    }
-
-    function updateHeaderCount(count) {
-        document.querySelectorAll('.shop-cart .count, .cart-count').forEach(function (el) {
-            el.textContent = count;
-        });
-    }
-
-    // ── Обновление количества ──────────────────────────────
-    function recalcRow(input) {
-        var qty   = parseInt(input.value, 10) || 1;
-        var row   = input.closest('tr.kotlov-cart-row');
-        var price = parseFloat(row.querySelector('[data-price]').dataset.price);
-
-        // Немедленно обновляем строку (без ожидания AJAX)
-        row.querySelector('.kotlov-row-total').textContent = formatBYN(price * qty);
-
-        return { qty: qty, productId: input.dataset.productId };
-    }
-
-    function sendUpdate(input) {
-        var d   = recalcRow(input);
-        var qty = d.qty;
-
-        fetch('{{ route("cart.update") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrf,
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({ product_id: d.productId, quantity: qty }),
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-            document.getElementById('cart-subtotal').textContent  = formatBYN(data.subtotal);
-            document.getElementById('cart-items-count').textContent = data.count + ' шт.';
-            var couponSummary = document.getElementById('cart-coupon-summary');
-            if (couponSummary) couponSummary.style.display = parseFloat(data.discount) > 0 ? '' : 'none';
-            var discount = document.getElementById('cart-discount');
-            if (discount) discount.textContent = '−' + formatBYN(data.discount);
-            var onlineRow = document.getElementById('cart-online-discount-row');
-            if (onlineRow) onlineRow.style.display = parseFloat(data.coupon_discount) > 0 ? '' : 'none';
-            var onlineDiscount = document.getElementById('cart-online-discount');
-            if (onlineDiscount) onlineDiscount.textContent = '−' + formatBYN(data.coupon_discount);
-            var bundleRow = document.getElementById('cart-bundle-discount-row');
-            if (bundleRow) bundleRow.style.display = parseFloat(data.bundle_discount) > 0 ? '' : 'none';
-            var bundleDiscount = document.getElementById('cart-bundle-discount');
-            if (bundleDiscount) bundleDiscount.textContent = '−' + formatBYN(data.bundle_discount);
-            var bundleLabel = document.getElementById('cart-bundle-discount-label');
-            if (bundleLabel && data.bundle_mode) bundleLabel.textContent = (data.bundle_mode === 'self_selection' ? 'Самостоятельный подбор' : 'Дымоход с оборудованием') + ' −' + Number(data.bundle_percent).toLocaleString('ru-RU') + '%:';
-            var total = document.getElementById('cart-total');
-            if (total) total.textContent = formatBYN(data.total);
-            updateHeaderCount(data.count);
-        });
-    }
-
-    // Кнопки +/- (Amerce меняет value, потом триггерит input или change)
-    document.querySelectorAll('.btn-quantity').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var input = this.closest('.wg-quantity').querySelector('.cart-qty-input');
-            if (!input) return;
-            // Даём Amerce обновить value, потом берём актуальное
-            setTimeout(function () { sendUpdate(input); }, 50);
-        });
-    });
-
-    // Прямой ввод числа
-    document.querySelectorAll('.cart-qty-input').forEach(function (input) {
-        var timer = null;
-        input.addEventListener('change', function () {
-            clearTimeout(timer);
-            timer = setTimeout(function () { sendUpdate(input); }, 300);
-        });
-    });
-
-    // ── Чекбокс согласия → активация кнопки ──────────────
-    var checkoutBtn = document.getElementById('checkout-btn');
-    var agreeBox    = document.getElementById('cart-agree');
-
-    function syncCheckoutBtn() {
-        if (!checkoutBtn || !agreeBox) return;
-        if (agreeBox.checked) {
-            checkoutBtn.disabled = false;
-            checkoutBtn.style.opacity = '1';
-            checkoutBtn.style.cursor  = 'pointer';
-        } else {
-            checkoutBtn.disabled = true;
-            checkoutBtn.style.opacity = '0.45';
-            checkoutBtn.style.cursor  = 'not-allowed';
-        }
-    }
-
-    if (agreeBox) {
-        agreeBox.addEventListener('change', syncCheckoutBtn);
-        syncCheckoutBtn(); // начальное состояние
-    }
-
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', function () {
-            if (!this.disabled) {
-                window.location.href = '{{ route("checkout") }}';
-            }
-        });
-    }
-
-    // B2B note: saved as the cart note, prefilled in the checkout form.
-    var b2bNote = document.getElementById('cart-b2b-note');
-    if (b2bNote) {
-        var noteState = document.getElementById('cart-b2b-note-state');
-        var noteTimer = null;
-        b2bNote.addEventListener('input', function () {
-            clearTimeout(noteTimer);
-            noteTimer = setTimeout(function () {
-                fetch('{{ route("cart.note") }}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
-                    body: JSON.stringify({ note: b2bNote.value }),
-                }).then(function (response) {
-                    if (noteState && response.ok) noteState.textContent = 'Сохранено — попадёт в заказ.';
-                });
-            }, 600);
-        });
-    }
-})();
-</script>
+<script src="{{ asset('assets/js/cart-workspace.js') }}?v=20261117" defer></script>
 @endpush
 
 @push('styles')
+<link rel="stylesheet" href="{{ asset('assets/css/cart-workspace.css') }}?v=20261117">
 <style>
 .b2b-cart-title { margin: 22px 0 0; font-size: 28px; letter-spacing: -.02em; }
 .b2b-cart-title span { display: block; margin-top: 4px; color: #78889b; font-size: 14px; font-weight: 500; letter-spacing: 0; }
