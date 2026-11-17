@@ -916,6 +916,12 @@ class SyncRusklimatCommand extends Command
         }
         $combined = mb_strtolower($catRaw . ' ' . $name);
 
+        // BONECO consumables (the sheet spells the group «Акcессуары к BONECO» with a Latin «c»)
+        // belong next to the BONECO humidifiers and air washers.
+        if (preg_match('/ак[cс]ессуары к boneco/u', $combined)) {
+            return \App\Models\Category::where('slug', 'uvlazhniteli-vozdukha')->value('id');
+        }
+
         // A category removed from the catalog must not break product creation (FK error) — the row then
         // shows up as category_missing instead.
         static $existing = null;
@@ -1012,6 +1018,13 @@ class SyncRusklimatCommand extends Command
                 $this->line(sprintf('audit.rusklimat_sync.new=%s:%s:%d:%d:%s',
                     Str::slug((string) $row['article']) ?: 'none', Str::slug((string) ($row['brand'] ?? '')) ?: 'none',
                     (int) ($row['quantity'] ?? 0), (int) round((float) ($row['retail_price'] ?? 0)), $row['action']));
+            }
+            // Low-confidence guesses: the sheet row and the card the sync would attach it to.
+            if (($row['confidence'] ?? '') === 'manual_review') {
+                $this->line(sprintf('audit.rusklimat_sync.review=%s:%s:%d:%d:%d',
+                    Str::slug((string) $row['article']) ?: 'none', Str::slug((string) ($row['brand'] ?? '')) ?: 'none',
+                    (int) ($row['matched_product_id'] ?? 0), (int) ($row['quantity'] ?? 0),
+                    (int) round((float) ($row['retail_price'] ?? 0))));
             }
         }
         $this->line('Run with <fg=green>--apply</> to write changes to the database.');
