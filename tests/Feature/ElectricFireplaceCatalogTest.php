@@ -47,7 +47,9 @@ class ElectricFireplaceCatalogTest extends TestCase
             ->assertSeeText('Электрокамины в Минске')->assertSeeText('33″')
             ->assertSeeText('до 25 м²')->assertSeeText('Водяной пар')->assertSeeText('Биокамин')
             ->assertDontSeeText('20 м²');
-        $this->assertSame(3, substr_count($page->getContent(), 'class="fireplace-card-specs '));
+        // Unknown data gets the same compact slot without inventing heater facts.
+        $this->assertSame(4, substr_count($page->getContent(), 'class="fireplace-card-specs '));
+        $page->assertSeeText('Параметры пока не подтверждены');
 
         $this->get($url.'?electric_mode=heat')->assertOk()
             ->assertViewHas('products', fn ($page) => $page->pluck('id')->all() === [$heater->id]);

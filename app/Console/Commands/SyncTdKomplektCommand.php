@@ -118,7 +118,7 @@ class SyncTdKomplektCommand extends Command
                         'stock_text' => $quarantined ? 'Изменился артикул — требуется проверка' : $row['warehouse_all'], 'warehouse_name' => 'ТД Комплект — все склады (без суммирования дублей)',
                         'delivery_days' => $data['delivery_days'], 'last_stock_synced_at' => now(), 'last_synced_at' => now(),
                         'match_status' => $quarantined ? 'review' : ($p ? 'matched' : 'unmatched'), 'match_confidence' => $report[$id]['reason'],
-                        'raw' => array_diff_key($row, ['_data' => true]) + ['catalog_version' => 3, 'retail' => $data['retail'], 'wholesale' => $data['wholesale'], 'source' => 'tools.by CSV', 'identity_review' => $quarantined, 'identity_vendor_code' => $previous?->raw['identity_vendor_code'] ?? ($previous?->product_id ? ($previous->raw['vendor_code'] ?? $row['vendor_code']) : $row['vendor_code']), 'identity_brand' => $previous?->raw['identity_brand'] ?? ($previous?->product_id ? ($previous->raw['brand'] ?? $row['brand']) : $row['brand'])],
+                        'raw' => array_diff_key($row, ['_data' => true]) + ['catalog_version' => 4, 'retail' => $data['retail'], 'wholesale' => $data['wholesale'], 'source' => 'tools.by CSV', 'identity_review' => $quarantined, 'identity_vendor_code' => $previous?->raw['identity_vendor_code'] ?? ($previous?->product_id ? ($previous->raw['vendor_code'] ?? $row['vendor_code']) : $row['vendor_code']), 'identity_brand' => $previous?->raw['identity_brand'] ?? ($previous?->product_id ? ($previous->raw['brand'] ?? $row['brand']) : $row['brand'])],
                     ]);
                     $stats['offers']++;
                     if ($productId) {

@@ -1,4 +1,6 @@
 .catalog-list-details { display: none; }
+#gridLayout:not(.catalog-products--list) .name-product{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-height:22px!important;min-height:66px;max-height:66px;overflow:hidden}
+@media(max-width:767px){#gridLayout:not(.catalog-products--list) .name-product{font-size:13px;line-height:19px!important;min-height:76px;max-height:76px;-webkit-line-clamp:4}}
 #gridLayout.catalog-products--list { grid-template-columns: minmax(0, 1fr) !important; }
 #gridLayout.catalog-products--list > .card-product {
     display: grid;
