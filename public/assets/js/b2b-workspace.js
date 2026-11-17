@@ -71,6 +71,21 @@
     }
 
     function render() {
+        if (state.id) {
+            // Keep category links, pagination and search on the newly created selection.
+            var currentUrl = new URL(location.href);
+            currentUrl.searchParams.set('selection_id', state.id);
+            history.replaceState(null, '', currentUrl.toString());
+            document.querySelectorAll('a[href]').forEach(function (link) {
+                var url = new URL(link.href, location.href);
+                if (url.origin === location.origin && url.pathname === currentUrl.pathname && url.searchParams.get('workspace') === '1') {
+                    url.searchParams.set('selection_id', state.id); link.href = url.toString();
+                }
+            });
+            var suggest = document.querySelector('.b2b-search');
+            var suggestUrl = new URL(suggest.dataset.suggestUrl, location.href);
+            suggestUrl.searchParams.set('selection_id', state.id); suggest.dataset.suggestUrl = suggestUrl.toString();
+        }
         document.querySelector('[data-workspace-count]').textContent = state.items.length + ' поз. · ' + state.items.reduce(function (sum, item) { return sum + item.quantity; }, 0) + ' шт.';
         var unpriced = state.items.some(function (item) { return !(item.price > 0); });
         document.querySelectorAll('[data-workspace-total]').forEach(function (node) { node.textContent = money(state.total) + (unpriced ? ' + уточнение' : ''); });
