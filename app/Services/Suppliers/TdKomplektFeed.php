@@ -294,7 +294,36 @@ class TdKomplektFeed
         return collect($specs)->filter(fn ($v) => $v !== '')->map(fn ($v, $k) => ['key' => $k, 'value' => $v])->values()->all();
     }
 
-    public function catalogFields(array $row, int $version = 2): array
+    /** warehouse_all remains the total: never add these breakdowns to it. */
+    public function fulfillmentDetails(array $row): array
+    {
+        $warehouses = [];
+        foreach (['warehouse_main' => 'Основной склад', 'warehouse_add' => 'Дополнительный склад', 'warehouse_add2' => 'Дополнительный склад 2', 'warehouse_rb' => 'Склад РБ'] as $field => $label) {
+            $value = trim((string) ($row[$field] ?? ''));
+            if ($value !== '') {
+                $warehouses[] = ['code' => $field, 'name' => $label, 'text' => $value] + $this->stock($value);
+            }
+        }
+        $date = trim((string) ($row['delivery'] ?? ''));
+        $validDate = preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $date, $m)
+            && checkdate((int) $m[2], (int) $m[3], (int) $m[1]);
+
+        $total = $this->stock($row['warehouse_all'] ?? '')['quantity'];
+        $known = array_column($warehouses, 'quantity');
+        $sum = array_sum($known);
+        $conflict = $total !== null && $warehouses !== []
+            && ($sum > $total || (! in_array(null, $known, true) && $sum !== $total));
+
+        return ['warehouses' => $warehouses, 'delivery_date' => $validDate ? $date : null,
+            'unit' => trim($row['prop_unit'] ?? '') ?: 'шт.', 'quantity_conflict' => $conflict];
+    }
+
+    public static function video(string $url): ?string
+    {
+        return preg_match('~^https://(?:www\.)?youtube\.com/embed/[A-Za-z0-9_-]{6,}(?:\?[^\s<>"\x00]*)?$~D', $url) ? $url : null;
+    }
+
+    public function catalogFields(array $row, int $version = 3): array
     {
         $service = [];
         foreach (['Минимальный заказ' => 'prop_quantity_min', 'Кратность заказа' => 'prop_multiplicity', 'В коробке' => 'prop_multiplicity_box', 'Единица продажи' => 'prop_unit', 'Производитель' => 'prop_manufacturer', 'Импортёр' => 'prop_importer'] as $key => $field) {
@@ -302,9 +331,27 @@ class TdKomplektFeed
                 $service[] = ['key' => $key, 'value' => $row[$field]];
             }
         }
-        $description = trim(strip_tags($row['description'] ?? ''));
+        if ($version >= 3) {
+            foreach (['Назначение' => 'prop_purpose', 'Срок годности / хранения' => 'prop_shelf_life', 'Гарантия' => 'prop_warranty'] as $key => $field) {
+                $value = trim((string) ($row[$field] ?? ''));
+                // Numeric warranty units are unspecified in CSV; keep them in the manager's source data.
+                if ($value !== '' && ($field !== 'prop_warranty' || preg_match('/[\pL]/u', $value))) {
+                    $service[] = ['key' => $key, 'value' => $value];
+                }
+            }
+        }
+        $description = $row['description'] ?? '';
+        if ($version >= 3) {
+            $description = preg_replace('/<br\s*\/?\s*>/iu', "\n", $description);
+        }
+        $description = trim(strip_tags($description));
 
-        return ['images' => array_values(array_filter([self::image($row['media_img'] ?? '')])), 'specs' => $this->specs($row, $version), 'service_info' => $service,
+        $fields = ['images' => array_values(array_filter([self::image($row['media_img'] ?? '')])), 'specs' => $this->specs($row, $version), 'service_info' => $service,
             'content' => $description !== '' ? '<p>'.nl2br(e($description)).'</p>' : null, 'short_description' => Str::limit(strip_tags($row['description_short'] ?? ''), 300, ''), 'unit' => ($row['prop_unit'] ?? '') ?: 'шт.'];
+        if ($version >= 3) {
+            $fields['video_url'] = self::video($row['media_video'] ?? '');
+        }
+
+        return $fields;
     }
 }

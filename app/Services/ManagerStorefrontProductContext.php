@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Pricing\B2bBrandRetailPricing;
+use App\Support\Suppliers\EcokaminChannel;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -56,9 +58,9 @@ class ManagerStorefrontProductContext
         // СанБизнесГруп sells ЭкоКамин to СБГ бай at the retail price less the dealer discount (−20%, the same
         // fixed discount as the partner price), so this is our purchase price for every СанБизнесГруп channel.
         $ecokaminPurchase = $isEcokamin && $retailPrice !== null
-            ? app(\App\Services\Pricing\B2bBrandRetailPricing::class)->priceFor($product)
+            ? app(B2bBrandRetailPricing::class)->priceFor($product)
             : null;
-        $isSbg = fn ($supplier): bool => $supplier?->code === \App\Support\Suppliers\EcokaminChannel::SUPPLIER_CODE;
+        $isSbg = fn ($supplier): bool => $supplier?->code === EcokaminChannel::SUPPLIER_CODE;
 
         $supplierOffers = $product->supplierProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->supplier?->name))
@@ -82,6 +84,10 @@ class ManagerStorefrontProductContext
                     'emails' => $offer->supplier?->contactEmailAddresses() ?? [],
                     'contact' => $offer->supplier?->contact,
                     'article' => $offer->supplier_article,
+                    'catalog_code' => $offer->supplier_catalog_code,
+                    'warehouse_breakdown' => $offer->warehouseLines(),
+                    'source_delivery_date' => $offer->fulfillment_details['delivery_date'] ?? null,
+                    'warehouse_quantity_conflict' => $offer->fulfillment_details['quantity_conflict'] ?? false,
                     'supplier_product_name' => $offer->supplier_name,
                     'purchase_price' => $purchasePrice,
                     'retail_price' => $retailPrice,

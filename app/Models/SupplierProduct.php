@@ -20,6 +20,7 @@ class SupplierProduct extends Model
         'product_sku',
         'supplier_article',
         'supplier_catalog_code',
+        'fulfillment_details',
         'supplier_article_normalized',
         'supplier_article_compact',
         'supplier_name',
@@ -45,6 +46,7 @@ class SupplierProduct extends Model
     ];
 
     protected $casts = [
+        'fulfillment_details' => 'array',
         'price' => 'decimal:2',
         'currency_rate' => 'float',
         'price_byn' => 'decimal:2',
@@ -56,6 +58,18 @@ class SupplierProduct extends Model
         'last_synced_at' => 'datetime',
         'last_stock_synced_at' => 'datetime',
     ];
+
+    /** Informational warehouse breakdown; never used to sum availability again. */
+    public function warehouseLines(): array
+    {
+        return collect($this->fulfillment_details['warehouses'] ?? [])->map(function (array $warehouse): string {
+            $value = $warehouse['quantity'] !== null
+                ? $warehouse['quantity'].' '.($this->fulfillment_details['unit'] ?? 'шт.')
+                : $warehouse['text'];
+
+            return $warehouse['name'].': '.$value;
+        })->all();
+    }
 
     public function supplier(): BelongsTo
     {

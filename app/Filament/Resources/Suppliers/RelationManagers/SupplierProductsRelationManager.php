@@ -40,13 +40,19 @@ class SupplierProductsRelationManager extends RelationManager
                     ])->filter()->implode(' · '))
                     ->searchable(['supplier_name', 'supplier_article', 'supplier_article_normalized', 'supplier_catalog_code', 'raw->maker_code'])
                     ->wrap(),
+                TextColumn::make('source_warehouses')
+                    ->label('Склады поставщика')
+                    ->state(fn (SupplierProduct $record): array => $record->warehouseLines())
+                    ->listWithLineBreaks()
+                    ->description(fn (SupplierProduct $record): ?string => ($date = $record->fulfillment_details['delivery_date'] ?? null) ? 'Дата поставки в выгрузке: '.$date : null)
+                    ->placeholder('—')->wrap(),
                 TextColumn::make('price_byn')
                     ->label('Опт')
                     ->money('BYN')
                     ->sortable()
                     ->placeholder('—'),
                 TextColumn::make('raw.retail')
-                    ->label('РРЦ')
+                    ->label('Розница поставщика')
                     ->money('BYN')
                     ->sortable()
                     ->placeholder('—'),
@@ -95,7 +101,7 @@ class SupplierProductsRelationManager extends RelationManager
                         'suggested' => 'Предложена карточка',
                         'matched' => 'Привязано',
                     ])
-                    ->default('unmatched'),
+                    ->default(fn (): ?string => $this->getOwnerRecord()->code === 'td_komplekt' ? null : 'unmatched'),
                 SelectFilter::make('stock_status')
                     ->label('Поставка')
                     ->options([
@@ -104,6 +110,7 @@ class SupplierProductsRelationManager extends RelationManager
                     ]),
             ])
             ->recordActions([
+                \App\Filament\Actions\TdKomplektSourceData::make(),
                 Action::make('confirmSuggestion')
                     ->label('Подтвердить')
                     ->icon('heroicon-o-check')

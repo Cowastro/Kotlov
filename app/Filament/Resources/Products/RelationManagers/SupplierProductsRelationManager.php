@@ -43,6 +43,14 @@ class SupplierProductsRelationManager extends RelationManager
                     ->searchable()
                     ->copyable(),
 
+                TextColumn::make('source_warehouses')
+                    ->label('Склады поставщика')
+                    ->state(fn ($record): array => $record->warehouseLines())
+                    ->listWithLineBreaks()
+                    ->description(fn ($record): ?string => ($date = $record->fulfillment_details['delivery_date'] ?? null) ? 'Дата поставки в выгрузке: '.$date : null)
+                    ->placeholder('—')
+                    ->wrap(),
+
                 TextColumn::make('product_sku')
                     ->label('SKU KOTLOV')
                     ->searchable()
@@ -196,6 +204,7 @@ class SupplierProductsRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
+                \App\Filament\Actions\TdKomplektSourceData::make(),
                 Action::make('source')
                     ->label('Открыть источник')
                     ->icon('heroicon-m-arrow-top-right-on-square')

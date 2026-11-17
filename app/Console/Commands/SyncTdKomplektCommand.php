@@ -103,13 +103,14 @@ class SyncTdKomplektCommand extends Command
                         'supplier_sync_id' => $sync->id, 'product_id' => $productId, 'product_sku' => $p?->sku ?? $previous?->product_sku,
                         'supplier_article' => $row['vendor_code'] ?: $row['okdp'], 'supplier_article_normalized' => TdKomplektFeed::key($row['vendor_code'] ?: $row['okdp']),
                         'supplier_catalog_code' => TdKomplektFeed::key($row['okdp']) ?: null,
+                        'fulfillment_details' => $quarantined ? null : $feed->fulfillmentDetails($row),
                         'supplier_article_compact' => TdKomplektFeed::key($row['vendor_code'] ?: $row['okdp']), 'supplier_name' => $row['name'],
                         'source_url' => 'https://tools.by', 'price' => $data['wholesale'], 'price_byn' => $data['wholesale'], 'currency' => 'BYN', 'currency_rate' => 1,
                         'in_stock' => ! $quarantined && $data['in_stock'], 'stock_quantity' => $quarantined ? 0 : $data['quantity'], 'stock_status' => $quarantined ? 'unknown' : $data['stock_status'],
                         'stock_text' => $quarantined ? 'Изменился артикул — требуется проверка' : $row['warehouse_all'], 'warehouse_name' => 'ТД Комплект — все склады (без суммирования дублей)',
                         'delivery_days' => $data['delivery_days'], 'last_stock_synced_at' => now(), 'last_synced_at' => now(),
                         'match_status' => $quarantined ? 'review' : ($p ? 'matched' : 'unmatched'), 'match_confidence' => $report[$id]['reason'],
-                        'raw' => array_diff_key($row, ['_data' => true]) + ['catalog_version' => 2, 'retail' => $data['retail'], 'wholesale' => $data['wholesale'], 'source' => 'tools.by CSV', 'identity_review' => $quarantined, 'identity_vendor_code' => $previous?->raw['identity_vendor_code'] ?? ($previous?->product_id ? ($previous->raw['vendor_code'] ?? $row['vendor_code']) : $row['vendor_code']), 'identity_brand' => $previous?->raw['identity_brand'] ?? ($previous?->product_id ? ($previous->raw['brand'] ?? $row['brand']) : $row['brand'])],
+                        'raw' => array_diff_key($row, ['_data' => true]) + ['catalog_version' => 3, 'retail' => $data['retail'], 'wholesale' => $data['wholesale'], 'source' => 'tools.by CSV', 'identity_review' => $quarantined, 'identity_vendor_code' => $previous?->raw['identity_vendor_code'] ?? ($previous?->product_id ? ($previous->raw['vendor_code'] ?? $row['vendor_code']) : $row['vendor_code']), 'identity_brand' => $previous?->raw['identity_brand'] ?? ($previous?->product_id ? ($previous->raw['brand'] ?? $row['brand']) : $row['brand'])],
                     ]);
                     $stats['offers']++;
                     if ($productId) {
@@ -123,7 +124,7 @@ class SyncTdKomplektCommand extends Command
                         $after = $feed->catalogFields($row);
                         $updates = [];
                         foreach ($after as $key => $value) {
-                            if ($before[$key] === $p->$key && $value !== $p->$key) {
+                            if (($before[$key] ?? null) === $p->$key && $value !== $p->$key) {
                                 $updates[$key] = $value;
                             }
                         }
@@ -149,7 +150,7 @@ class SyncTdKomplektCommand extends Command
                 }
                 $missing = SupplierProduct::where('supplier_id', $supplier->id)->where('supplier_sync_id', $sync->id)->whereNotIn('source_wp_id', array_keys($rows))->get();
                 foreach ($missing as $offer) {
-                    $offer->update(['in_stock' => false, 'stock_quantity' => 0, 'stock_status' => 'out_of_stock', 'stock_text' => 'Отсутствует в последней полной выгрузке', 'last_stock_synced_at' => now()]);
+                    $offer->update(['in_stock' => false, 'stock_quantity' => 0, 'stock_status' => 'out_of_stock', 'fulfillment_details' => null, 'stock_text' => 'Отсутствует в последней полной выгрузке', 'last_stock_synced_at' => now()]);
                     if ($offer->product_id) {
                         $touched[] = $offer->product_id;
                     }
@@ -162,7 +163,18 @@ class SyncTdKomplektCommand extends Command
                 DB::commit();
                 $transaction = false;
             }
-            $output = ['generated_at' => now()->toIso8601String(), 'stats' => $stats, 'items' => array_values($report)];
+            $coverage = [];
+            $conflicts = 0;
+            foreach ($rows as $row) {
+                foreach ($row as $field => $value) {
+                    if (! str_starts_with($field, '_') && is_string($value)) {
+                        $coverage[$field] = ($coverage[$field] ?? 0) + (int) ($value !== '');
+                    }
+                }
+                $conflicts += (int) $feed->fulfillmentDetails($row)['quantity_conflict'];
+            }
+            $output = ['generated_at' => now()->toIso8601String(), 'stats' => $stats,
+                'field_coverage' => $coverage, 'warehouse_quantity_conflicts' => $conflicts, 'items' => array_values($report)];
             $path = $this->option('report') ?: Storage::disk('local')->path(TdKomplektFeed::DIRECTORY.'/report.json');
             if (! is_dir(dirname($path))) {
                 mkdir(dirname($path), 0775, true);

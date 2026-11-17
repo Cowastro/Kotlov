@@ -54,7 +54,7 @@ class ProductResource extends Resource
                 // products.supplier_id is the legacy supplier user account,
                 // not a row from the suppliers table.
                 'supplier:id,name',
-                'supplierProducts:id,product_id,supplier_id,supplier_article,price_byn,in_stock,stock_quantity,stock_status,match_confidence,last_stock_synced_at,last_synced_at,updated_at',
+                'supplierProducts:id,product_id,supplier_id,supplier_article,supplier_catalog_code,fulfillment_details,price_byn,in_stock,stock_quantity,stock_status,match_confidence,last_stock_synced_at,last_synced_at,updated_at',
                 'supplierProducts.supplier:id,crm_counterparty_id,code,name,contact,is_active',
                 'supplierProducts.supplier.crmCounterparty.contactPoints',
                 'supplierProducts.supplier.latestChannelTransition',
