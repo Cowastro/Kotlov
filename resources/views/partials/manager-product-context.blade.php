@@ -25,6 +25,18 @@
                     </div>
             @endif
                 <div class="manager-product-context__meta">
+                    @foreach (($offer['warehouse_breakdown'] ?? []) as $warehouseLine)
+                        <span class="manager-product-context__wide">{{ $warehouseLine }}</span>
+                    @endforeach
+                    @if (! empty($offer['source_delivery_date']))
+                        <span class="manager-product-context__wide">Дата поставки в выгрузке: {{ \Carbon\Carbon::parse($offer['source_delivery_date'])->format('d.m.Y') }} · подтвердить у поставщика</span>
+                    @endif
+                    @if (! empty($offer['catalog_code']))
+                        <span>Код каталога: {{ $offer['catalog_code'] }}</span>
+                    @endif
+                    @if (! empty($offer['warehouse_quantity_conflict']))
+                        <span class="manager-product-context__wide">Остатки складов расходятся с общим — уточнить у поставщика.</span>
+                    @endif
                     @if (count($offer['locations'] ?? []) > 1)
                         @foreach ($offer['locations'] as $location)
                             <span class="manager-product-context__wide">

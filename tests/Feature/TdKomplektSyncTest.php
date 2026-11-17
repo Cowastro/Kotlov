@@ -2,16 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Actions\TdKomplektSourceData;
+use App\Filament\Resources\Suppliers\Pages\ViewSupplier;
+use App\Filament\Resources\Suppliers\RelationManagers\SupplierProductsRelationManager;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\SupplierProduct;
+use App\Models\User;
+use App\Services\ManagerStorefrontProductContext;
 use App\Services\Suppliers\TdKomplektFeed;
 use App\Services\Suppliers\TdKomplektMatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class TdKomplektSyncTest extends TestCase
@@ -34,6 +40,78 @@ class TdKomplektSyncTest extends TestCase
         } fclose($h);
 
         return $file;
+    }
+
+    public function test_warehouses_dates_and_all_source_fields_are_preserved_without_double_counting(): void
+    {
+        $row = $this->row(['warehouse_all' => '7', 'warehouse_main' => '2', 'warehouse_rb' => '5',
+            'warehouse_add' => '10 дней', 'delivery' => '2027-02-05', 'prop_tnved' => '12345678',
+            'prop_weight_gross' => '12,34', 'prop_warranty' => '12', 'barcode_old' => '9876543210123']);
+        $file = $this->csv([$row]);
+        $args = ['--file' => $file, '--apply' => true, '--create-new' => true];
+        $this->artisan('supplier:sync-td-komplekt', $args)->assertSuccessful();
+        $offer = SupplierProduct::whereHas('supplier', fn ($q) => $q->where('code', 'td_komplekt'))->firstOrFail();
+        $this->assertSame(7, $offer->stock_quantity);
+        $this->assertSame(7, $offer->product->stock_qty);
+        $this->assertSame([2, null, 5], array_column($offer->fulfillment_details['warehouses'], 'quantity'));
+        $this->assertSame('2027-02-05', $offer->fulfillment_details['delivery_date']);
+        $this->assertFalse($offer->fulfillment_details['quantity_conflict']);
+        foreach ($row as $field => $value) {
+            $this->assertSame($value, $offer->raw[$field]);
+        }
+        $this->artisan('supplier:sync-td-komplekt', $args)->assertSuccessful();
+        $this->assertSame($offer->fulfillment_details, $offer->fresh()->fulfillment_details);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $product = Product::withSupplierChannels()->findOrFail($offer->product_id);
+        $context = app(ManagerStorefrontProductContext::class)->offers($product, $manager)->first();
+        $this->assertSame('7 шт.', $context['stock']);
+        $this->assertContains('Основной склад: 2 шт.', $context['warehouse_breakdown']);
+        $this->assertContains('Дополнительный склад: 10 дней', $context['warehouse_breakdown']);
+        $this->assertSame('ЦБ-12345', $context['catalog_code']);
+        $this->assertCount(count($row), TdKomplektSourceData::fields($offer->raw));
+        $this->actingAs($manager)->view('partials.manager-product-context', ['product' => $product])
+            ->assertSee('Основной склад: 2 шт.')->assertSee('05.02.2027');
+        auth()->logout();
+        $this->view('partials.manager-product-context', ['product' => $product])->assertDontSee('Основной склад');
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $component = Livewire::actingAs($admin)->test(SupplierProductsRelationManager::class, [
+            'ownerRecord' => $offer->supplier,
+            'pageClass' => ViewSupplier::class,
+        ]);
+        $component->call('mountAction', 'tdKomplektSourceData', [], ['table' => true, 'recordKey' => (string) $offer->id])
+            ->assertSet('mountedActions.0.name', 'tdKomplektSourceData');
+        $content = $component->instance()->getMountedAction()->getModalContent()->render();
+        $this->assertStringContainsString('Код ТН ВЭД', $content);
+        $this->assertStringContainsString('12345678', $content);
+    }
+
+    public function test_catalog_upgrade_adds_video_and_service_facts_but_preserves_manual_fields(): void
+    {
+        $row = $this->row(['media_video' => 'https://www.youtube.com/embed/hXsyODluA-g', 'prop_purpose' => 'Для дома',
+            'prop_shelf_life' => 'Не ограничен', 'prop_warranty' => '12']);
+        $file = $this->csv([$row]);
+        $args = ['--file' => $file, '--apply' => true, '--create-new' => true];
+        $this->artisan('supplier:sync-td-komplekt', $args)->assertSuccessful();
+        $offer = SupplierProduct::whereHas('supplier', fn ($q) => $q->where('code', 'td_komplekt'))->firstOrFail();
+        $feed = new TdKomplektFeed;
+        $offer->product->update($feed->catalogFields($row, 2) + ['video_url' => null]);
+        $offer->update(['raw' => $row + ['catalog_version' => 2]]);
+        $this->artisan('supplier:sync-td-komplekt', $args)->assertSuccessful();
+        $p = $offer->product->fresh();
+        $this->assertSame($row['media_video'], $p->video_url);
+        $service = collect($p->service_info)->pluck('value', 'key');
+        $this->assertSame('Для дома', $service['Назначение']);
+        $this->assertArrayNotHasKey('Гарантия', $service->all());
+        $p->update(['video_url' => 'https://youtu.be/manual-video', 'service_info' => [['key' => 'Примечание', 'value' => 'Ручное']]]);
+        $this->artisan('supplier:sync-td-komplekt', $args)->assertSuccessful();
+        $this->assertSame('https://youtu.be/manual-video', $p->fresh()->video_url);
+        $this->assertSame('Ручное', $p->fresh()->service_info[0]['value']);
+        $this->assertNull(TdKomplektFeed::video('https://evil.example/embed/hXsyODluA-g'));
+        $this->assertNull($feed->fulfillmentDetails(['delivery' => '2026-02-30'])['delivery_date']);
+        $this->assertTrue($feed->fulfillmentDetails(['warehouse_all' => '3', 'warehouse_main' => '5'])['quantity_conflict']);
+        $fields = TdKomplektSourceData::fields(['name' => '<script>secret()</script>', 'prop_713' => '0']);
+        $this->view('filament.td-komplekt-source-data', ['record' => $offer, 'fields' => $fields])
+            ->assertDontSee('<script>secret()</script>', false)->assertSee('&lt;script&gt;secret()&lt;/script&gt;', false)->assertSee('Признак 713');
     }
 
     protected function setUp(): void
@@ -127,6 +205,7 @@ class TdKomplektSyncTest extends TestCase
         $this->assertSame($id, $offer->product_id);
         $this->assertFalse($offer->in_stock);
         $this->assertSame('review', $offer->match_status);
+        $this->assertNull($offer->fulfillment_details);
     }
 
     public function test_remote_fetch_is_cached_and_errors_do_not_expose_the_access_url(): void
