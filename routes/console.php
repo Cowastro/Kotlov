@@ -284,6 +284,13 @@ Schedule::command('deal:sync-brand-prices --supplier=kaminproff --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/deal-fireway-prices.log'));
 
+// sbg.by (deal.by) keeps the Мета-Бел prices of kotlov.by: shop items found by the model of the name.
+Schedule::command('deal:sync-brand-prices --supplier=metabel --apply')
+    ->dailyAt('07:55')
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/deal-metabel-prices.log'));
+
 // sbg.by (deal.by) keeps the ProMetall prices of kotlov.by: shop items found by the manufacturer article.
 Schedule::command('deal:sync-brand-prices --supplier=prometall --apply')
     ->dailyAt('07:40')
