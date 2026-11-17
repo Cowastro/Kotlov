@@ -137,6 +137,7 @@ class SupplierOfferCards
 
         if ($offer->supplier?->code === 'td_komplekt') {
             $product->update((new TdKomplektFeed)->catalogFields($offer->raw)+['supplier_id'=>$offer->supplier_id,'content_source_url'=>'https://tools.by']);
+            app(ProductSourceEnricher::class)->syncSpecsToAttributeValues($product);
             app(SupplierProductAvailabilityService::class)->refreshMany([$product->id]);
             return $product->fresh();
         }

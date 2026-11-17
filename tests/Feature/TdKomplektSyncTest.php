@@ -78,6 +78,7 @@ class TdKomplektSyncTest extends TestCase
         $this->assertSame('3', $offer->raw['prop_quantity_min']);
         $this->assertStringNotContainsString('<script>', $offer->product->content);
         $this->assertNotEmpty($offer->product->specs);
+        $this->assertGreaterThan(0, $offer->product->allAttributeValues()->count());
         $file = $this->csv([$this->row(['price' => '13,00', 'warehouse_all' => '10 дней'])]);
         $this->artisan('supplier:sync-td-komplekt', ['--file' => $file, '--apply' => true, '--create-new' => true])->assertSuccessful();
         $this->assertSame(1, SupplierProduct::whereHas('supplier', fn ($q) => $q->where('code', 'td_komplekt'))->count());

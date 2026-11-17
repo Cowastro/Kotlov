@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\SupplierSource;
 use App\Models\SupplierSync;
+use App\Services\ProductSourceEnricher;
 use App\Services\SupplierProductAvailabilityService;
 use App\Services\Suppliers\TdKomplektFeed;
 use App\Services\Suppliers\TdKomplektMatcher;
@@ -90,6 +91,7 @@ class SyncTdKomplektCommand extends Command
                     $canCreate = $this->option('create-new') && ! $p && $result['reason'] === 'unmatched' && $result['category_id'] && $row['vendor_code'] !== '' && $row['brand'] !== '' && $data['retail'] > 0 && $data['retail'] >= $data['wholesale'] && TdKomplektFeed::image($row['media_img']);
                     if ($canCreate) {
                         $p = $this->createProduct($row, $result['category_id'], $supplier, $feed);
+                        app(ProductSourceEnricher::class)->syncSpecsToAttributeValues($p);
                         $report[$id]['product_id'] = $p->id;
                         $report[$id]['reason'] = 'created';
                         $stats['created']++;
@@ -126,6 +128,9 @@ class SyncTdKomplektCommand extends Command
                         }
                         if ($updates !== []) {
                             $p->update($updates);
+                            if (array_key_exists('specs', $updates)) {
+                                app(ProductSourceEnricher::class)->syncSpecsToAttributeValues($p);
+                            }
                         } // Preserve manual editorial changes.
                     }
                     if ((int) $p->supplier_id === (int) $supplier->id && $data['retail'] > 0 && $data['retail'] >= $data['wholesale'] && abs((float) $p->price - $data['retail']) > .005) {
