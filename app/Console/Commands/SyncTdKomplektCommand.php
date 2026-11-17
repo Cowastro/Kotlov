@@ -102,6 +102,7 @@ class SyncTdKomplektCommand extends Command
                     SupplierProduct::updateOrCreate(['supplier_id' => $supplier->id, 'source_wp_id' => (int) $id], [
                         'supplier_sync_id' => $sync->id, 'product_id' => $productId, 'product_sku' => $p?->sku ?? $previous?->product_sku,
                         'supplier_article' => $row['vendor_code'] ?: $row['okdp'], 'supplier_article_normalized' => TdKomplektFeed::key($row['vendor_code'] ?: $row['okdp']),
+                        'supplier_catalog_code' => TdKomplektFeed::key($row['okdp']) ?: null,
                         'supplier_article_compact' => TdKomplektFeed::key($row['vendor_code'] ?: $row['okdp']), 'supplier_name' => $row['name'],
                         'source_url' => 'https://tools.by', 'price' => $data['wholesale'], 'price_byn' => $data['wholesale'], 'currency' => 'BYN', 'currency_rate' => 1,
                         'in_stock' => ! $quarantined && $data['in_stock'], 'stock_quantity' => $quarantined ? 0 : $data['quantity'], 'stock_status' => $quarantined ? 'unknown' : $data['stock_status'],

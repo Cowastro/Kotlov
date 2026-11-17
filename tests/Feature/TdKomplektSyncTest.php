@@ -73,6 +73,7 @@ class TdKomplektSyncTest extends TestCase
         $offer = SupplierProduct::whereHas('supplier', fn ($q) => $q->where('code', 'td_komplekt'))->where('source_wp_id', 12345)->firstOrFail();
         $id = $offer->product_id;
         $this->assertEquals(8.1, $offer->price_byn);
+        $this->assertSame(TdKomplektFeed::key($this->row()['okdp']), $offer->supplier_catalog_code);
         $this->assertEquals(12.5, $offer->product->price);
         $this->assertSame(7, $offer->stock_quantity);
         $this->assertTrue($offer->product->in_stock);

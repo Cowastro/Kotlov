@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\SupplierProduct;
+use App\Services\Suppliers\TdKomplektFeed;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class StorefrontProductSearch
 {
@@ -77,6 +80,10 @@ class StorefrontProductSearch
             return $this->withSupplierMatches($query, $search, fn (Builder $public) => $this->apply($public, $search));
         }
 
+        if (($ids = $this->exactSupplierArticleIds($search)) !== []) {
+            return $query->whereIn('products.id', $ids);
+        }
+
         $tokens = array_slice($this->tokens($search), 0, self::MAX_TOKENS);
         $heatingElementQuery = $this->isHeatingElementQuery($search);
 
@@ -143,6 +150,10 @@ class StorefrontProductSearch
                 fn (Builder $public) => $this->applyForSuggestions($public, $search, false, $includeCategoryMatches));
         }
 
+        if (($ids = $this->exactSupplierArticleIds($search)) !== []) {
+            return $query->whereIn('products.id', $ids);
+        }
+
         $tokens = array_slice($this->directTokens($search), 0, self::MAX_TOKENS);
         $heatingElementQuery = $this->isHeatingElementQuery($search);
 
@@ -194,6 +205,10 @@ class StorefrontProductSearch
      */
     public function applyForResults(Builder $query, string $search, bool $includeInternal = false): Builder
     {
+        if (! $includeInternal && ($ids = $this->exactSupplierArticleIds($search)) !== []) {
+            return $query->whereIn('products.id', $ids);
+        }
+
         $fastQuery = clone $query;
         $this->applyForSuggestions($fastQuery, $search, $includeInternal, false);
 
@@ -363,20 +378,30 @@ class StorefrontProductSearch
         };
 
         return array_values(array_unique(array_map('intval', array_merge(
-            $filter(\Illuminate\Support\Facades\DB::table('supplier_products')->leftJoin('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id'),
-                ['supplier_products.supplier_article', 'supplier_products.supplier_name', 'suppliers.name'], 'supplier_products.product_id'),
-            $filter(\Illuminate\Support\Facades\DB::table('integration_products'), ['external_sku', 'name'], 'product_id'),
+            $filter(DB::table('supplier_products')->leftJoin('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id'),
+                ['supplier_products.supplier_article', 'supplier_products.supplier_catalog_code', 'supplier_products.supplier_name', 'suppliers.name'], 'supplier_products.product_id'),
+            $filter(DB::table('integration_products'), ['external_sku', 'name'], 'product_id'),
         ))));
     }
 
-    /**
-     * MySQL can use the catalogue FULLTEXT index to reduce a large catalogue to
-     * a small candidate set before the precise LIKE/relationship rules run.
-     * SQLite remains on the portable search path used by the test suite.
-     *
-     * Internal searches also include supplier-only fields which are not part of
-     * the public index, so they deliberately retain the exhaustive behaviour.
-     */
+    /** @return list<int> Exact supplier identifiers, without exposing supplier prices. */
+    private function exactSupplierArticleIds(string $search): array
+    {
+        $key = TdKomplektFeed::key($search);
+        // Exact model/article lookups only. Ordinary words retain catalogue search.
+        if (mb_strlen($key) < 4 || mb_strlen($key) > 100 || ! preg_match('/\d/u', $key)) {
+            return [];
+        }
+
+        return SupplierProduct::query()->whereNotNull('product_id')
+            ->where('match_status', 'matched')
+            ->whereHas('supplier', fn (Builder $supplier) => $supplier->where('is_active', true))
+            ->where(fn (Builder $offer) => $offer->where('supplier_article_normalized', $key)
+                ->orWhere('supplier_catalog_code', $key))
+            ->distinct()->limit(300)->pluck('product_id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    /** Use MySQL FULLTEXT for public catalogue text; internal aliases are resolved separately. */
     private function applyIndexedCandidateFilter(Builder $query, string $search, bool $includeInternal): void
     {
         $connection = $query->getModel()->getConnection();
