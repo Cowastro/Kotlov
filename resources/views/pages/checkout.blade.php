@@ -2,6 +2,9 @@
 
 @push('styles')
 <style>
+.section-checkout .payment_check input[type="radio"] { flex: 0 0 22px; min-width: 22px; height: 22px; }
+.section-checkout .payment_check .pay-title { min-width: 0; }
+.section-checkout .payment_check { align-items: flex-start; }
 .payment-info-accordion .accordion-button::after { margin-left: auto; flex-shrink: 0; }
 .payment-info-accordion .accordion-button:not(.collapsed) { color: inherit; }
 .payment-info-list { padding-left: 20px; margin: 0; }
@@ -62,8 +65,14 @@
                 </div>
             @endif
 
+            @if (session('error'))
+                <div class="alert alert-danger mb-20" role="alert">{{ session('error') }}</div>
+            @endif
+            @if (session('info'))
+                <div class="alert alert-info mb-20" role="status">{{ session('info') }}</div>
+            @endif
             @if ($errors->any())
-                <div class="alert alert-danger mb-20">
+                <div class="alert alert-danger mb-20" role="alert">
                     @foreach ($errors->all() as $error)
                         <div>{{ $error }}</div>
                     @endforeach
@@ -169,7 +178,7 @@
                                     </div>
 
                                     <fieldset class="tf-field">
-                                        <label class="tf-lable fw-medium">
+                                        <label class="tf-lable fw-medium" for="delivery-type">
                                             Способ доставки <span class="text-primary">*</span>
                                             <span class="text-caption-01 cl-text-2 fw-normal d-block" id="delivery-type-hint">{{ ($isB2bCheckout ?? false) ? 'Стоимость и срок доставки менеджер согласует отдельно' : 'Доступные способы для указанного города' }}</span>
                                         </label>
@@ -279,7 +288,7 @@
                                         <div class="text-caption-01 cl-text-2 mb-12">Данные загружены из карточки вашей компании. Изменения в этом заказе не затронут профиль.</div>
                                     @endif
                                     <fieldset class="tf-field">
-                                        <label class="tf-lable fw-medium">
+                                        <label class="tf-lable fw-medium" for="company-unp">
                                             УНП <span class="text-primary">*</span>
                                         </label>
                                         <div class="d-flex gap-8 align-items-stretch">
@@ -299,7 +308,7 @@
                                     </fieldset>
                                     <div class="tf-grid-layout sm-col-2">
                                         <fieldset class="tf-field">
-                                            <label class="tf-lable fw-medium">
+                                            <label class="tf-lable fw-medium" for="company-name">
                                                 Организация / ИП <span class="text-primary">*</span>
                                             </label>
                                             <input type="text" name="company_name" id="company-name"
@@ -308,7 +317,7 @@
                                             @error('company_name') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                         </fieldset>
                                         <fieldset class="tf-field">
-                                            <label class="tf-lable fw-medium">
+                                            <label class="tf-lable fw-medium" for="company-email">
                                                 Email для счёта <span class="text-primary">*</span>
                                             </label>
                                             <input type="email" name="company_email" id="company-email"
@@ -318,7 +327,7 @@
                                         </fieldset>
                                     </div>
                                     <fieldset class="tf-field">
-                                        <label class="tf-lable fw-medium">
+                                        <label class="tf-lable fw-medium" for="company-address">
                                             Юридический адрес <span class="text-primary">*</span>
                                         </label>
                                         <input type="text" name="company_address" id="company-address"
@@ -367,7 +376,7 @@
                                 <x-order-confirmation-notice class="mt-20" />
                             @endif
 
-                            <button type="submit" class="tf-btn animate-btn w-100 mt-20">
+                            <button type="submit" class="tf-btn animate-btn w-100 mt-20" data-checkout-submit>
                                 {{ ($isB2bCheckout ?? false) ? 'Отправить заказ на согласование' : 'Оформить заказ' }}
                             </button>
 
@@ -570,7 +579,7 @@
 
     // ── Гость: контакты и адрес прошлого заказа хранятся в браузере и подставляются в пустые поля ──
     var checkoutForm = document.querySelector('form.tf-checkout-cart-main');
-    var rememberKey = 'kotlov-checkout-contact';
+    var rememberKey = @json($user ? 'kotlov-checkout-contact:user:'.$user->id : 'kotlov-checkout-contact:guest');
     var rememberIds = ['customer-name', 'customer-phone', 'delivery-city', 'delivery-address'];
     try {
         var remembered = JSON.parse(localStorage.getItem(rememberKey) || '{}');
@@ -579,8 +588,15 @@
             if (el && !el.value && remembered[id]) el.value = remembered[id];
         });
     } catch (e) {}
+    if (cityInput && deliverySelect && cityInput.value) applyCity();
     if (checkoutForm) {
+        var submitButton = checkoutForm.querySelector('[data-checkout-submit]');
+        var submitLabel = submitButton ? submitButton.textContent : '';
+        window.addEventListener('pageshow', function () {
+            if (submitButton) { submitButton.disabled = false; submitButton.textContent = submitLabel; }
+        });
         checkoutForm.addEventListener('submit', function () {
+            if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Отправляем заказ…'; }
             try {
                 var data = {};
                 rememberIds.forEach(function (id) { var el = document.getElementById(id); if (el) data[id] = el.value; });
