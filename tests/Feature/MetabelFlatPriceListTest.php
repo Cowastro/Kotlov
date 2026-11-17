@@ -66,4 +66,17 @@ class MetabelFlatPriceListTest extends TestCase
         $this->assertNull($link->price_byn);
         $this->assertSame(1890.0, (float) json_decode($link->raw, true)['retail_byn']);
     }
+
+    public function test_a_row_linked_by_hand_updates_its_card(): void
+    {
+        $ok = $this->card('Печь-камин Мета-Бел Ока с варочной панелью', 'meta-oka-plate-test', 1680);
+        $file = $this->priceFile();
+
+        $this->artisan('supplier:sync-metabel', ['--price-file' => $file, '--only-existing' => true, '--apply' => true, '--no-scrape' => true,
+            '--no-images' => true, '--link' => ["oka-s-plitoi:{$ok}"]])
+            ->expectsOutputToContain("audit.metabel_sync.row=oka-s-plitoi:{$ok}:1680:1755:update:none")
+            ->assertSuccessful();
+        $this->assertSame(1755.0, (float) DB::table('products')->where('id', $ok)->value('price'));
+        $this->assertTrue(DB::table('supplier_products')->where('product_id', $ok)->where('supplier_article', 'ОКА С ПЛИТОЙ')->exists());
+    }
 }
