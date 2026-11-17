@@ -18,7 +18,8 @@ class SyncMetabelCommand extends Command
         {--no-scrape : Skip website scraping — update prices only}
         {--enrich : Generate unique SEO descriptions via Claude API (requires ANTHROPIC_API_KEY)}
         {--sleep=200 : Delay between website requests in milliseconds}
-        {--price-file= : Path to Excel price file (default: storage/prices/meta_2025.xlsx)}';
+        {--price-file= : Path to Excel price file (default: storage/prices/meta_2025.xlsx)}
+        {--only-existing : Update prices of cards already found; never create new cards}';
 
     protected $description = 'Sync MetaBel prices from Excel МРЦ and enrich product cards from metabel.by.';
 
@@ -155,6 +156,12 @@ class SyncMetabelCommand extends Command
 
                 $product = $this->findProduct($item, $supplierId);
 
+                if (! $product && $this->option('only-existing')) {
+                    $stats['skipped_no_card'] = ($stats['skipped_no_card'] ?? 0) + 1;
+                    $this->auditRow($item, null, 'no_card');
+                    continue;
+                }
+
                 if (! $product) {
                     if ($enrichContent) {
                         $aiText = $enricher->enrich($item['price_name'], 'Мета-Бел', $webData['content'] ?? null, $webData['attributes'] ?? []);
@@ -176,6 +183,7 @@ class SyncMetabelCommand extends Command
                     $this->line('[create] ' . $item['price_name']);
                 } else {
                     $prevPrice = (float) ($product->price ?? 0);
+                    $this->auditRow($item, $product, abs($prevPrice - $item['price_byn']) > 0.01 ? 'update' : 'no_change');
                     $this->updateProductPrice($product->id, $item['price_byn'], $now);
                     $this->upsertSupplierProduct($item, $product->id, (string) $product->sku, $supplierId, $syncId, $now);
 
@@ -205,6 +213,9 @@ class SyncMetabelCommand extends Command
         }
 
         $this->showArchiveCandidates($items, $supplierId);
+        foreach ($stats as $key => $count) {
+            $this->line("metric.metabel_sync.{$key}={$count}");
+        }
 
         $this->table(
             ['action', 'count'],
@@ -246,7 +257,9 @@ class SyncMetabelCommand extends Command
             }
 
             $rows[] = [$action, number_format($item['price_byn'], 2), $dbSku, mb_substr($item['price_name'], 0, 52)];
+            $this->auditRow($item, $product, $product ? (abs((float) $product->price - $item['price_byn']) > 0.01 ? 'update' : 'no_change') : 'no_card');
         }
+        $this->auditTotals($rows);
 
         $this->table(['action', 'price_byn', 'db_sku', 'price_name'], $rows);
         $this->showArchiveCandidates($items, $supplierId);
@@ -264,6 +277,13 @@ class SyncMetabelCommand extends Command
         $items      = [];
         $currentCat = null;
         $seen       = [];
+
+        // Since 2026-11 the price list is a flat sheet: «Наименование | Цена продажи».
+        foreach ($rows as $row) {
+            if (mb_strtolower(trim((string) ($row[0] ?? ''))) === 'наименование') {
+                return $this->parseFlatRows($rows);
+            }
+        }
 
         foreach ($rows as $row) {
             $num  = trim((string) ($row[0] ?? ''));
@@ -307,6 +327,80 @@ class SyncMetabelCommand extends Command
         }
 
         return $items;
+    }
+
+    /** @param array<int, array<int, mixed>> $rows */
+    private function parseFlatRows(array $rows): array
+    {
+        $items  = [];
+        $seen   = [];
+        $header = false;
+
+        foreach ($rows as $row) {
+            $name = trim(preg_replace('/\s+/u', ' ', (string) ($row[0] ?? '')) ?? '');
+            if (! $header) {
+                $header = mb_strtolower($name) === 'наименование';
+                continue;
+            }
+            $raw = str_replace([' ', "\u{00A0}", ','], ['', '', '.'], (string) ($row[1] ?? ''));
+            if ($name === '' || ! is_numeric($raw)) {
+                continue;
+            }
+            $article = $this->supplierArticleFromName($name);
+            $item = [
+                'price_name'       => $name,
+                'supplier_article' => $article,
+                'price_byn'        => round((float) $raw, 2),
+                'cat_id'           => $this->categoryFromName($name),
+            ];
+            if (isset($seen[$article])) {
+                $item['action'] = 'skipped_duplicate';
+            }
+            $seen[$article] = true;
+            $items[] = $item;
+        }
+
+        return $items;
+    }
+
+    private function categoryFromName(string $name): ?int
+    {
+        $name = mb_strtolower($name);
+
+        return match (true) {
+            str_starts_with($name, 'печь банная') => 69,
+            str_starts_with($name, 'печь-камин') => 61,
+            str_starts_with($name, 'топка') => 90,
+            str_starts_with($name, 'дверь') => 287,
+            default => null,
+        };
+    }
+
+    /** Safe workflow log line: the row, the card it updates, prices and the suppliers already on that card. */
+    private function auditRow(array $item, ?object $product, string $action): void
+    {
+        $suppliers = $product
+            ? DB::table('supplier_products')->join('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id')
+                ->where('supplier_products.product_id', $product->id)->orderBy('suppliers.code')
+                ->pluck('suppliers.code')->unique()->implode('+')
+            : '';
+        $this->line(sprintf('audit.metabel_sync.row=%s:%d:%d:%d:%s:%s',
+            Str::slug($item['supplier_article']) ?: 'none', $product ? (int) $product->id : 0,
+            $product ? (int) round((float) $product->price) : 0, (int) round((float) $item['price_byn']),
+            $action, preg_replace('/[^a-z0-9_+]/', '', $suppliers) ?: 'none'));
+    }
+
+    /** @param array<int, array<int, string>> $rows */
+    private function auditTotals(array $rows): void
+    {
+        $counts = [];
+        foreach ($rows as $row) {
+            $key = str_starts_with($row[0], 'update_price') ? 'update_price' : $row[0];
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+        foreach ($counts as $key => $count) {
+            $this->line('metric.metabel_sync.'.preg_replace('/[^a-z_]/', '', $key)."={$count}");
+        }
     }
 
     private function supplierArticleFromName(string $name): string
@@ -532,7 +626,7 @@ class SyncMetabelCommand extends Command
     private function normalizeDbName(string $name): string
     {
         $name = mb_strtoupper($name);
-        $name = preg_replace('/\bМЕТА[-\s]*БЕЛ\b/u', '', $name);
+        $name = preg_replace('/\bМЕТА(?:[-\s]*БЕЛ)?\b/u', '', $name);
         $name = preg_replace('/\b(ПЕЧЬ-КАМИН|ПЕЧЬ|ТОПКА|КАМИННАЯ|КАМИННЫЙ|БАННАЯ|КАМЕНКА|ДРОВЯНАЯ|ОТОПИТЕЛЬНАЯ)\b/u', '', $name);
         $name = preg_replace('/\(В\s+МОДИФИКАЦИИ\s+([^)]+)\)/iu', ' $1 ', $name);
         $name = preg_replace('/\([^)]+\)/u', '', $name);
@@ -709,14 +803,15 @@ class SyncMetabelCommand extends Command
                 'supplier_name'               => $item['price_name'],
                 'source_url'                  => self::SOURCE_URL,
                 'source_wp_id'                => null,
-                'price'                       => $item['price_byn'],
+                // The Мета-Бел list carries the selling (retail) price only — no purchase price.
+                'price'                       => null,
                 'currency'                    => 'BYN',
                 'currency_rate'               => 1.0,
-                'price_byn'                   => $item['price_byn'],
+                'price_byn'                   => null,
                 'in_stock'                    => true,
                 'match_status'                => 'matched',
                 'match_confidence'            => 'auto_name',
-                'raw'                         => json_encode(['cat_id' => $item['cat_id']], JSON_UNESCAPED_UNICODE),
+                'raw'                         => json_encode(['cat_id' => $item['cat_id'], 'retail_byn' => $item['price_byn']], JSON_UNESCAPED_UNICODE),
                 'last_synced_at'              => $now,
                 'created_at'                  => $now,
                 'updated_at'                  => $now,
