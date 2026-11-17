@@ -27,7 +27,7 @@
 @endif
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('assets/css/catalog-layout.css') }}?v=1">
+    <link rel="stylesheet" href="{{ asset('assets/css/catalog-layout.css') }}?v={{ filemtime(public_path('assets/css/catalog-layout.css')) }}">
 @endpush
 
 @section('content')
