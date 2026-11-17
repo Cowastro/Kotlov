@@ -173,4 +173,14 @@ class TdKomplektSyncTest extends TestCase
         $this->artisan('supplier:sync-td-komplekt', ['--file' => $file, '--apply' => true])->assertSuccessful();
         $this->assertSame($manual, $p->fresh()->specs);
     }
+
+    public function test_product_service_tab_shows_supplier_rows_and_legacy_maps_with_escaped_values(): void
+    {
+        $this->artisan('supplier:sync-td-komplekt', ['--file' => $this->csv([$this->row()]), '--apply' => true, '--create-new' => true])->assertSuccessful();
+        $p = Product::where('sku', 'TDK-12345')->firstOrFail();
+        $url = '/rezbovye-fitingi/'.$p->slug;
+        $this->get($url)->assertOk()->assertSeeText('Минимальный заказ')->assertSeeText('Кратность заказа')->assertSeeText('Импортёр');
+        $p->update(['service_info' => ['Гарантийное обслуживание' => 'По документам поставщика', 'Безопасный вывод' => '<script>supplier</script>']]);
+        $this->get($url)->assertOk()->assertSeeText('Гарантийное обслуживание')->assertSeeText('По документам поставщика')->assertSee('&lt;script&gt;supplier&lt;/script&gt;', false)->assertDontSee('<script>supplier</script>', false);
+    }
 }
