@@ -593,7 +593,7 @@
                         {{-- Сетка товаров --}}
                         <div class="wrapper-shop tf-grid-layout tf-col-2 md-col-3" id="gridLayout">
                             @forelse ($products as $product)
-                                @include('partials.product-card', ['product' => $product, 'catalogUnified' => true, 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? [], 'pumpManufacturerDocument' => in_array($category->slug, \App\Support\Catalog\PumpCatalog::MANUFACTURER_CATEGORIES, true) ? \App\Support\Catalog\HouseholdPumpFacts::document($product, $category->slug) : null])
+                                @include('partials.product-card', ['product' => $product, 'catalogUnified' => true, 'showCatalogFacts' => !empty($fireplaceSpecsByProduct), 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? []])
                             @empty
                                 <div class="wd-full text-center py-48">
                                     <i class="icon icon-Package fs-48 cl-text-3 mb-16"></i>

@@ -29,6 +29,48 @@ class TdKomplektSyncTest extends TestCase
         return array_replace(['id' => '12345', 'okdp' => 'ЦБ-12345', 'name' => 'Тройник латунный AV Engineering 1/2', 'vendor_code' => 'AV-12345', 'brand' => 'AV Engineering', 'price' => '12,50', 'price_wholesale' => '8,10', 'warehouse_all' => '10 дней', 'warehouse_main' => '0', 'warehouse_add' => '10 дней', 'warehouse_rb' => '0', 'parentid_name3' => 'Резьбовые латунные фитинги и краны. AV Engineering', 'parentid_name4' => '', 'barcode' => '1234567890123', 'country' => 'Китай', 'description_short' => 'Латунный тройник', 'description' => "Размер: 1/2\nТест: <script>alert(1)</script>", 'media_img' => 'https://content.tools.by/images/products/test/photo.jpg', 'prop_unit' => 'шт.', 'prop_quantity_min' => '3', 'prop_multiplicity' => '1', 'prop_multiplicity_box' => '100', 'prop_manufacturer' => 'Завод', 'prop_importer' => 'ТД Комплект', 'vat' => '20'], $changes);
     }
 
+    public function test_source_description_appendix_is_removed_without_overwriting_editorial_content(): void
+    {
+        $feed = new TdKomplektFeed;
+        $row = $this->row(['name'=>'Контргайка 3/4" чугун оцинк. AV Engineering', 'description'=>"Материал изготовления: ковкий чугун,\nПрисоединительные размеры: 34,\nAVE-L-0050 Лен сантехнический 50гр, AV Engineering,\nAVE-FC-0160 Нить сантехническая 160 м, Fantastic Cord, AV Engineering,"]);
+        $file=$this->csv([$row]);
+        $this->artisan('supplier:sync-td-komplekt',['--file'=>$file,'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $offer=SupplierProduct::whereHas('supplier',fn($q)=>$q->where('code','td_komplekt'))->firstOrFail();
+        $product=$offer->product;
+        $product->update(['content'=>$feed->catalogFields($row,3)['content'],'specs'=>$feed->catalogFields($row,3)['specs']]);
+        $offer->update(['raw'=>$row+['catalog_version'=>3]]);
+        $this->artisan('supplier:sync-td-komplekt',['--file'=>$file,'--apply'=>true])->assertSuccessful();
+        $this->assertStringNotContainsString('AVE-L-0050',$product->fresh()->content);
+        $this->assertStringContainsString('3/4″',$product->fresh()->content);
+        $this->assertStringContainsString('ковкий чугун',$product->fresh()->content);
+        $this->assertStringContainsString('AVE-L-0050',$offer->fresh()->raw['description']);
+        $product->update(['content'=>'Редакторское описание контргайки']);
+        $this->artisan('supplier:sync-td-komplekt',['--file'=>$file,'--apply'=>true])->assertSuccessful();
+        $this->assertSame('Редакторское описание контргайки',$product->fresh()->content);
+        $single=$this->row(['description'=>'AVE-L-0050 Лен сантехнический 50гр, AV Engineering,']);
+        $this->assertSame($feed->catalogFields($single,3)['content'],$feed->catalogFields($single)['content']);
+    }
+
+    public function test_description_repair_is_previewable_backed_up_and_idempotent(): void
+    {
+        $row=$this->row(['description'=>"Материал: латунь\nAVE-L-0050 Лен сантехнический 50гр, AV Engineering,\nAVE-FC-0160 Нить сантехническая 160 м, AV Engineering,"]);
+        $this->artisan('supplier:sync-td-komplekt',['--file'=>$this->csv([$row]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $p=Product::where('sku','TDK-12345')->firstOrFail();
+        $old=(new TdKomplektFeed)->catalogFields($row,3)['content'];
+        $p->update(['content'=>$old]);
+        Storage::fake('local');
+        $this->artisan('supplier:repair-td-descriptions')->assertSuccessful();
+        $this->assertSame($old,$p->fresh()->content);
+        $this->artisan('supplier:repair-td-descriptions',['--apply'=>true])->assertSuccessful();
+        $this->assertStringNotContainsString('AVE-L-0050',$p->fresh()->content);
+        $this->assertCount(1,Storage::disk('local')->allFiles(TdKomplektFeed::DIRECTORY.'/description-backups'));
+        $this->artisan('supplier:repair-td-descriptions',['--apply'=>true])->assertSuccessful();
+        $this->assertCount(1,Storage::disk('local')->allFiles(TdKomplektFeed::DIRECTORY.'/description-backups'));
+        $p->update(['content'=>'Описание редактора']);
+        $this->artisan('supplier:repair-td-descriptions',['--apply'=>true])->assertSuccessful();
+        $this->assertSame('Описание редактора',$p->fresh()->content);
+    }
+
     private function csv(array $rows): string
     {
         $file = Storage::disk('local')->path('td-test.csv');

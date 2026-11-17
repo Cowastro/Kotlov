@@ -74,7 +74,7 @@ class HouseholdPumpPickerTest extends TestCase
         $p->update(['name' => 'Unknown replacement']);
         $this->get('https://kotlov.by/poverhnostnyie?q=Unknown')->assertOk()
             ->assertViewHas('products', fn ($products) => $products->modelKeys() === [$p->id])
-            ->assertSee('Уточняются');
+            ->assertSee('Параметры пока не подтверждены');
         $this->get('https://kotlov.by/poverhnostnyie?pump_head=1')->assertOk()
             ->assertViewHas('products', fn ($products) => $products->isEmpty());
         $this->get('https://kotlov.by/poverhnostnyie?pump[verified]=no')->assertOk()

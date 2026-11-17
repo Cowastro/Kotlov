@@ -274,6 +274,9 @@ class TdKomplektFeed
     {
         $specs = ['Артикул производителя' => $row['vendor_code'], 'Штрихкод' => $row['barcode'] ?? '', 'Бренд' => $row['brand'], 'Страна производства' => $row['country'] ?? ''];
         $description = $row['description'] ?? '';
+        if ($version >= 4) {
+            $description = $this->descriptionText($row);
+        }
         if ($version >= 2) {
             $description = preg_replace('/<br\s*\/?\s*>/iu', "\n", $description);
         }
@@ -326,7 +329,30 @@ class TdKomplektFeed
         return preg_match('~^https://(?:www\.)?youtube\.com/embed/[A-Za-z0-9_-]{6,}(?:\?[^\s<>"\x00]*)?$~D', $url) ? $url : null;
     }
 
-    public function catalogFields(array $row, int $version = 3): array
+    /** Remove only the identified supplier appendix, retaining the original in raw. */
+    public function descriptionText(array $row): string
+    {
+        $text = trim(strip_tags(preg_replace('/<br\s*\/?\s*>/iu', "\n", $row['description'] ?? '')));
+        $lines = preg_split('/\R/u', $text) ?: [];
+        $end = count($lines);
+        $matched = 0;
+        while ($end > 0) {
+            $line = trim($lines[$end - 1]);
+            if ($line === '') { $end--; continue; }
+            if (! preg_match('/^(?:AVE-L-(?:0050|0100|0250|0500|1000|0090T)\s+Л[её]н сантехнический|AVE-PL-6520\s+Набор паста|PU250T\s+Паста уплотнительная|5-0036\s+Набор Сантехпаста|6103[345]\s+Гель Сантехмастер|AVE-FC-(?:0020|0050|0080|0160)\s+Нить сантехническая)\b/iu', $line)) break;
+            $end--; $matched++;
+        }
+        if ($matched >= 2 && $end > 0) $text = trim(implode("\n", array_slice($lines, 0, $end)));
+        // Restore a lost fraction only when the product title explicitly states
+        // the same inch size; do not interpret arbitrary numeric dimensions.
+        if (preg_match('/\b(\d+)\s*\/\s*(\d+)\s*["″]/u', $row['name'] ?? '', $size)) {
+            $collapsed = preg_quote($size[1].$size[2], '/');
+            $text = preg_replace_callback('/^(Присоединительные размеры:\s*)'.$collapsed.'\s*[,]?\s*$/mu', fn ($m) => $m[1].$size[1].'/'.$size[2].'″', $text);
+        }
+        return $text;
+    }
+
+    public function catalogFields(array $row, int $version = 4): array
     {
         $service = [];
         foreach (['Минимальный заказ' => 'prop_quantity_min', 'Кратность заказа' => 'prop_multiplicity', 'В коробке' => 'prop_multiplicity_box', 'Единица продажи' => 'prop_unit', 'Производитель' => 'prop_manufacturer', 'Импортёр' => 'prop_importer'] as $key => $field) {
@@ -348,6 +374,7 @@ class TdKomplektFeed
             $description = preg_replace('/<br\s*\/?\s*>/iu', "\n", $description);
         }
         $description = trim(strip_tags($description));
+        if ($version >= 4) $description = $this->descriptionText($row);
 
         $fields = ['images' => array_values(array_filter([self::image($row['media_img'] ?? '')])), 'specs' => $this->specs($row, $version), 'service_info' => $service,
             'content' => $description !== '' ? '<p>'.nl2br(e($description)).'</p>' : null, 'short_description' => Str::limit(strip_tags($row['description_short'] ?? ''), 300, ''), 'unit' => ($row['prop_unit'] ?? '') ?: 'шт.'];

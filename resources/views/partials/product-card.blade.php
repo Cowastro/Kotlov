@@ -10,9 +10,6 @@
 @endonce
 
 @php
-    if (in_array($product->category?->slug, \App\Support\Catalog\PumpCatalog::MANUFACTURER_CATEGORIES, true)) {
-        $pumpManufacturerDocument = \App\Support\Catalog\HouseholdPumpFacts::document($product, $product->category->slug);
-    }
     if (isset(\App\Support\Catalog\RadiatorCatalog::NAMES[$product->category?->slug ?? ''])) {
         $radiatorCatalog = app(\App\Support\Catalog\RadiatorCatalog::class);
         $product = $radiatorCatalog->forDisplay($product);
@@ -174,15 +171,13 @@
 
     <div class="card-product_info">
         <a href="{{ $productUrl }}"
+            title="{{ $product->name }}"
             class="name-product lh-24 fw-medium link-underline-text">
             {{ $product->name }}
         </a>
 
-        @if (! empty($fireplaceCardSpecs))
+        @if (! empty($fireplaceCardSpecs) || ($showCatalogFacts ?? false))
             @include('partials.fireplace-card-specs')
-        @endif
-        @if (! empty($pumpManufacturerDocument))
-            <a class="link text-caption-01 cl-text-2" href="{{ $pumpManufacturerDocument['url'] }}" title="{{ $pumpManufacturerDocument['title'] }}" target="_blank" rel="noopener">Данные производителя ↗</a>
         @endif
 
         @if ($heatPumpMeta)

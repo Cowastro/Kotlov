@@ -4200,3 +4200,8 @@ body.mobile-catalog-menu-is-open .ai-selector__assistance-menu { display: none !
         background: var(--bg);
     }
 }
+
+.catalog-card-specs{display:flex;flex-direction:column;flex-wrap:nowrap;gap:3px;min-height:69px;max-height:69px;width:100%;font-size:12px;line-height:21px;color:#59646e}
+.catalog-card-specs>li{display:block;min-width:0;max-width:100%;height:21px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.catalog-card-specs__pending{color:#78818b;font-size:11px}
+@media(max-width:767px){.catalog-card-specs{font-size:11px;line-height:20px;min-height:66px;max-height:66px}.catalog-card-specs>li{height:20px}.catalog-card-specs>.catalog-card-specs__pending{white-space:normal;line-height:18px;height:auto;max-height:36px}}
