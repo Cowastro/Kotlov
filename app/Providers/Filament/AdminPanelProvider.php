@@ -2,11 +2,13 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\GlobalSearch\ClientPhoneGlobalSearchProvider;
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
+use App\Services\StaffCatalogWorkspace;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -41,14 +43,21 @@ class AdminPanelProvider extends PanelProvider
                 fn () => view('filament.admin.layout-fixes'),
             )
             ->databaseNotifications()
-            ->globalSearch(\App\Filament\GlobalSearch\ClientPhoneGlobalSearchProvider::class)
+            ->globalSearch(ClientPhoneGlobalSearchProvider::class)
             ->renderHook(PanelsRenderHook::GLOBAL_SEARCH_BEFORE, fn () => view('filament.admin.contact-request-indicator'))
+            ->renderHook(PanelsRenderHook::GLOBAL_SEARCH_BEFORE, fn () => view('filament.admin.workspace-switch'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
             ])
             ->navigationItems([
+                NavigationItem::make('B2B-подбор')
+                    ->group('Продажи')
+                    ->icon('heroicon-o-squares-2x2')
+                    ->sort(1)
+                    ->url(fn (): string => route('b2b.workspace'))
+                    ->visible(fn (): bool => StaffCatalogWorkspace::allowed(auth()->user())),
                 NavigationItem::make('Что нового')
                     ->icon('heroicon-o-megaphone')
                     ->sort(100)

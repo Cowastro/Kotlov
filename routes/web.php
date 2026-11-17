@@ -865,6 +865,9 @@ Route::middleware('auth')->group(function () {
 
 // ===== Личный кабинет =====
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/b2b/workspace', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'enter'])->name('b2b.workspace');
+    Route::post('/b2b/workspace/selections', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'store'])->middleware('throttle:30,1')->name('b2b.workspace.store');
+    Route::put('/b2b/workspace/selections/{selection}/items/{product}', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'update'])->whereNumber('product')->middleware('throttle:180,1')->name('b2b.workspace.update');
     Route::get('/b2b/cabinet', [B2bCabinetController::class, 'show'])->name('b2b.cabinet');
     Route::post('/b2b/cabinet/branches', [\App\Http\Controllers\B2bBranchController::class, 'store'])
         ->middleware('throttle:10,1')->name('b2b.branches.store');

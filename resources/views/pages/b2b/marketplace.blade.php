@@ -11,21 +11,22 @@
     $cartQuantities = $cartItems->mapWithKeys(fn ($line) => [(int) ($line['id'] ?? 0) => (int) ($line['quantity'] ?? 0)]);
     $cartSubtotal = $cartItems->sum(fn ($line) => (float) ($line['price'] ?? 0) * (int) ($line['quantity'] ?? 0));
     $preview = request()->boolean('b2b-preview');
-    $resetUrl = route('b2b.catalog', array_filter(['mode' => $mode, 'b2b-preview' => $preview ? 1 : null]));
+    $workspaceLines = collect($workspaceState['items'])->keyBy('id');
+    $resetUrl = route('b2b.catalog', array_filter(['mode' => $mode, 'b2b-preview' => $preview ? 1 : null, 'workspace' => $staffWorkspace ? 1 : null, 'selection_id' => $staffWorkspace ? $workspaceState['id'] : null]));
     $mobileCategoryTiles = $categoryTree
         ->flatMap(fn ($category) => $category['children']->isNotEmpty() ? $category['children'] : collect([$category]))
         ->take(11);
 @endphp
 
-<div class="b2b-portal">
+<div class="b2b-portal {{ $staffWorkspace ? 'b2b-staff-workspace' : '' }} {{ $showProcurement ? 'has-procurement' : '' }}">
     <header class="b2b-topbar">
         <div class="b2b-topbar__inner">
-            <a href="{{ route('b2b.catalog', array_filter(['b2b-preview' => $preview ? 1 : null])) }}" class="b2b-brand" aria-label="B2B KOTLOV">
+            <a href="{{ $staffWorkspace ? $resetUrl : route('b2b.catalog', array_filter(['b2b-preview' => $preview ? 1 : null])) }}" class="b2b-brand" aria-label="B2B KOTLOV">
                 <img src="{{ asset('img/logo-kotlov.png') }}" width="126" height="26" alt="KOTLOV">
                 <span>B2B</span>
             </a>
             <div class="b2b-topbar__company">
-                <small>Оптовый кабинет</small>
+                <small>{{ $staffWorkspace ? 'Рабочее место менеджера' : 'Оптовый кабинет' }}</small>
                 <strong>{{ auth()->user()->company_name ?: auth()->user()->name }}</strong>
             </div>
             <nav class="b2b-topbar__actions" aria-label="B2B-навигация">
@@ -33,7 +34,13 @@
                     <i class="icon icon-Phone" aria-hidden="true"></i>
                     <span><small>Оптовый отдел</small><strong>{{ config('shop.b2b_contact.phone') }}</strong></span>
                 </a>
-                @if ($staffPreview)
+                @if (\App\Services\StaffCatalogWorkspace::allowed(auth()->user()))
+                    <a href="{{ url('/admin') }}" class="b2b-topbar__link">← CRM</a>
+                    @unless($staffWorkspace)<a href="{{ route('b2b.workspace') }}" class="b2b-topbar__link">B2B-подбор</a>@endunless
+                @endif
+                @if ($staffWorkspace)
+                    <a href="{{ route('selections.index') }}" class="b2b-topbar__link">Мои подборы</a>
+                @elseif ($staffPreview)
                     <span class="b2b-topbar__link b2b-topbar__preview"><i class="icon icon-Eye"></i><span>Только просмотр</span></span>
                 @else
                     <a href="{{ route('b2b.cabinet') }}" class="b2b-topbar__link"><i class="icon icon-User"></i><span>Кабинет</span></a>
@@ -57,16 +64,18 @@
             </div>
         @endif
         <section class="b2b-page-heading">
-            <div><p>B2B · рабочий каталог</p><h1>Быстрый заказ товаров</h1></div>
+            <div><p>{{ $staffWorkspace ? 'CRM · большие заявки' : 'B2B · рабочий каталог' }}</p><h1>{{ $staffWorkspace ? 'Подбор для клиента' : 'Быстрый заказ товаров' }}</h1></div>
             <button type="button" class="b2b-mobile-catalog-button" data-catalog-open><span>☰</span> Категории</button>
         </section>
+        @if($staffWorkspace)@include('pages.b2b.workspace-toolbar')@endif
 
         <form method="GET" action="{{ route('b2b.catalog') }}" class="b2b-command-bar" id="b2b-filter-form" autocomplete="off">
             <input type="hidden" name="mode" value="{{ $mode }}">
+            @if($staffWorkspace)<input type="hidden" name="workspace" value="1"><input type="hidden" name="selection_id" data-workspace-selection-id value="{{ $workspaceState['id'] }}">@endif
             @if ($categoryId > 0)<input type="hidden" name="category" value="{{ $categoryId }}">@endif
             @if ($preview)<input type="hidden" name="b2b-preview" value="1">@endif
 
-            <div class="b2b-search" data-suggest-url="{{ route('b2b.catalog.suggest', array_filter(['mode' => $mode, 'b2b-preview' => $preview ? 1 : null])) }}">
+            <div class="b2b-search" data-suggest-url="{{ route('b2b.catalog.suggest', array_filter(['mode' => $mode, 'b2b-preview' => $preview ? 1 : null, 'workspace' => $staffWorkspace ? 1 : null, 'selection_id' => $staffWorkspace ? $workspaceState['id'] : null])) }}">
                 <i class="icon icon-MagnifyingGlass" aria-hidden="true"></i>
                 <input id="b2b-search-input" type="search" name="q" value="{{ $query }}"
                     placeholder="Название или артикул" aria-label="Поиск по названию, артикулу, бренду или категории"
@@ -81,10 +90,10 @@
             </div>
 
             <div class="b2b-command-bar__filters">
-                <div class="b2b-mode-switch" aria-label="Режим каталога">
+                @unless($staffWorkspace)<div class="b2b-mode-switch" aria-label="Режим каталога">
                     <a href="{{ request()->fullUrlWithQuery(['mode' => 'orderable', 'page' => null]) }}" class="{{ $mode === 'orderable' ? 'active' : '' }}">В наличии и под заказ</a>
                     <a href="{{ request()->fullUrlWithQuery(['mode' => 'reference', 'page' => null, 'source' => null]) }}" class="{{ $mode === 'reference' ? 'active' : '' }}">Справочный каталог</a>
-                </div>
+                </div>@else<p class="b2b-workspace-price-note">{{ $showProcurement ? 'Внутренний подбор · входные цены и маржа видны только администратору' : 'Все товары · цены сайта · наличие и условия поставки уточняются' }}</p>@endunless
                 <div class="b2b-filter-selects">
                     <label><span>Бренд</span><select name="brand" data-auto-submit>
                         <option value="">Все бренды</option>
@@ -96,14 +105,15 @@
                             @foreach ($sourceGroups as $sourceGroup)<option value="{{ $sourceGroup['key'] }}" @selected($sourceKey === $sourceGroup['key'])>{{ $sourceGroup['label'] }}</option>@endforeach
                         </select></label>
                     @endif
-                    @if ($mode === 'orderable')
+                    @if ($mode === 'orderable' || $staffWorkspace)
                         <label><span>Сортировка</span><select name="sort" data-auto-submit>
                             <option value="name" @selected($sort === 'name')>По названию</option>
-                            <option value="stock" @selected($sort === 'stock')>Сначала в наличии</option>
+                            @unless($staffWorkspace)<option value="stock" @selected($sort === 'stock')>Сначала в наличии</option>@endunless
                             <option value="price_asc" @selected($sort === 'price_asc')>Сначала дешевле</option>
                             <option value="price_desc" @selected($sort === 'price_desc')>Сначала дороже</option>
                         </select></label>
                     @endif
+                    <label><span>На странице</span><select name="per_page" data-auto-submit>@foreach([30,60,100] as $size)<option value="{{ $size }}" @selected($perPage === $size)>{{ $size }}</option>@endforeach</select></label>
                     @if ($query !== '' || $categoryId > 0 || $brandId > 0 || $sourceKey !== '' || $sort !== 'name')<a href="{{ $resetUrl }}" class="b2b-reset-filters">Сбросить</a>@endif
                 </div>
             </div>
@@ -149,7 +159,8 @@
             <section class="b2b-catalog-results">
                 <div class="b2b-results-toolbar">
                     <div><strong>{{ number_format($products->total(), 0, ',', ' ') }}</strong><span>товаров</span>@if ($query !== '')<em>по запросу «{{ $query }}»</em>@endif</div>
-                    @if ($mode === 'reference')
+                    @if($staffWorkspace)<p>Enter — сохранить и перейти к следующей строке</p>
+                    @elseif ($mode === 'reference')
                         <p>Нет оптовой цены? Отправьте запрос менеджеру из строки товара.</p>
                     @else
                         <p><span class="b2b-live-dot"></span> Цены и остатки из разрешённых источников</p>
@@ -160,7 +171,7 @@
                     <div class="b2b-product-table {{ $mode === 'reference' ? 'is-reference' : '' }}">
                         <div class="b2b-product-table__head" aria-hidden="true">
                             <span>Товар</span>
-                            @if ($mode === 'orderable')<span>Цена</span><span>Наличие</span><span>Количество</span>@else<span>Розничная цена</span><span>Запрос оптовой цены</span>@endif
+                            @if ($mode === 'orderable')<span>Цена</span><span>Наличие</span><span>Количество</span>@else @if($showProcurement)<span>Входная / маржа</span>@endif<span>{{ $showProcurement ? 'Розница' : 'Цена сайта' }}</span><span>{{ $staffWorkspace ? 'Количество / сумма' : 'Запрос оптовой цены' }}</span>@endif
                         </div>
                         @foreach ($products as $item)
                             @php
@@ -175,6 +186,7 @@
                                     <div class="b2b-product-copy">
                                         <div class="b2b-product-meta">@if($product->sku)<span class="b2b-sku">{{ $product->sku }}</span>@endif<span>{{ $product->category?->name }}</span>@if($product->brand)<span>{{ $product->brand->name }}</span>@endif</div>
                                         <a href="{{ $productUrl }}" target="_blank" rel="noopener" class="b2b-product-name">{{ $product->name }}</a>
+                                        @if($showProcurement)@include('pages.b2b.workspace-offers', ['offers' => $workspaceOffers->get($product->id, collect()), 'savedLine' => $workspaceLines->get($product->id)])@endif
                                     </div>
                                 </div>
                                 @if ($mode === 'orderable')
@@ -209,9 +221,20 @@
                                         @endif
                                     </div>
                                 @else
-                                    <div class="b2b-price-cell"><strong>{{ (float) $product->price > 0 ? number_format((float) $product->price, 2, ',', ' ') : '—' }} <small>BYN</small></strong><span>Справочная цена</span></div>
+                                    @if($showProcurement)
+                                        @php $selectedOffer = $workspaceOffers->get($product->id, collect())->firstWhere('supplier_key', data_get($workspaceLines->get($product->id), 'workspace_purchase.supplier_key')) ?? $workspaceOffers->get($product->id, collect())->first(); @endphp
+                                        <div class="b2b-workspace-cost"><small>Входная</small><strong data-workspace-cost>{{ isset($selectedOffer['purchase_price']) ? number_format($selectedOffer['purchase_price'], 2, ',', ' ').' BYN' : 'Уточняется' }}</strong><span data-workspace-margin class="{{ ($selectedOffer['margin'] ?? 0) < 0 ? 'is-negative' : '' }}" title="Маржа = розница − входная. Процент рассчитан от розницы.">{{ isset($selectedOffer['margin']) ? 'Маржа '.number_format($selectedOffer['margin'], 2, ',', ' ').' BYN · '.number_format($selectedOffer['margin_percent'], 1, ',', ' ').'%' : 'Маржа не рассчитана' }}</span></div>
+                                    @endif
+                                    <div class="b2b-price-cell"><strong>{{ (float) $product->price > 0 ? number_format((float) $product->price, 2, ',', ' ') : '—' }} <small>BYN</small></strong><span>{{ $showProcurement ? 'Розница' : 'Справочная цена' }}</span></div>
                                     <div class="b2b-request-cell">
-                                        @if ($staffPreview)
+                                        @if($staffWorkspace)
+                                            @php $workspaceLine = $workspaceLines->get($product->id); @endphp
+                                            <div class="b2b-workspace-quantity" data-workspace-product="{{ $product->id }}">
+                                                <div class="b2b-workspace-stepper"><button type="button" data-step="-1" aria-label="Уменьшить количество: {{ $product->name }}">−</button><input type="number" min="0" max="999" step="1" value="{{ $workspaceLine['quantity'] ?? 1 }}" inputmode="numeric" aria-label="Количество: {{ $product->name }}" data-workspace-quantity><button type="button" data-step="1" aria-label="Увеличить количество: {{ $product->name }}">+</button></div>
+                                                <button type="button" data-workspace-save class="b2b-workspace-save">{{ $workspaceLine ? '✓ В подборе' : 'В подбор' }}</button>
+                                                <small data-workspace-line-total>{{ $workspaceLine ? number_format($workspaceLine['price'] * $workspaceLine['quantity'], 2, ',', ' ').' BYN' : '' }}</small>
+                                            </div>
+                                        @elseif ($staffPreview)
                                             <span class="b2b-preview-action">Тестовый просмотр</span>
                                         @else
                                             @if ($priceRequest)<div class="b2b-price-request-state" data-price-request-state="{{ $product->id }}"><strong>{{ \App\Models\ContactRequest::$statuses[$priceRequest->status] ?? $priceRequest->status }}</strong>@if ($priceRequest->client_response)<p>{{ $priceRequest->client_response }}</p>@elseif ($priceRequestIsOpen)<span>Менеджер проверяет цену и срок</span>@endif</div>@endif
@@ -229,7 +252,7 @@
             </section>
         </div>
     </main>
-    @unless ($staffPreview)
+    @unless ($staffPreview || $staffWorkspace)
         <div class="b2b-order-bar" data-order-bar @if ($cartItems->isEmpty())hidden @endif>
             <div class="b2b-order-bar__summary">
                 <span>В заказе</span>
@@ -252,8 +275,10 @@
 
 @push('styles')
     @include('pages.b2b.styles')
+    @if($staffWorkspace)<link rel="stylesheet" href="{{ asset('assets/css/b2b-workspace.css') }}?v={{ filemtime(public_path('assets/css/b2b-workspace.css')) }}">@endif
 @endpush
 @push('scripts')
     @include('pages.b2b.scripts')
+    @if($staffWorkspace)<script src="{{ asset('assets/js/b2b-workspace.js') }}?v={{ filemtime(public_path('assets/js/b2b-workspace.js')) }}" defer></script>@endif
 @endpush
 @endsection
