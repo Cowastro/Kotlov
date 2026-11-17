@@ -9,7 +9,7 @@
     @endphp
     <nav class="b2b-pagination" aria-label="Навигация по страницам">
         <p class="b2b-pagination__summary mb-0">
-            Товары {{ $paginator->firstItem() }}–{{ $paginator->lastItem() }} из {{ $paginator->total() }}
+            {{ $paginationLabel ?? 'Товары' }} {{ $paginator->firstItem() }}–{{ $paginator->lastItem() }} из {{ $paginator->total() }}
         </p>
         <div class="b2b-pagination__pages">
             @if ($paginator->onFirstPage())

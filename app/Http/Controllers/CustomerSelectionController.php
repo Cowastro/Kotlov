@@ -10,11 +10,14 @@ class CustomerSelectionController extends Controller
 {
     public function index(Request $request)
     {
-        $data = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $data = $request->validate(['q' => ['nullable', 'string', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            'reserves_page' => ['nullable', 'integer', 'min:1', 'max:10000']]);
         $search = trim($data['q'] ?? '');
         $selections = CustomerSelection::where('user_id', $request->user()->id)
             ->when($search !== '', fn ($query) => $query->where('name', 'like', '%'.$search.'%'))
-            ->latest('updated_at')->paginate(20)->withQueryString();
+            ->latest('updated_at')->paginate(20, ['*'], 'page', (int) ($data['page'] ?? 1))
+            ->withPath(route('selections.index'))->appends($request->only(['q', 'reserves_page']));
         $user = $request->user();
         $client = $user->activeB2bClient();
         $access = app(\App\Services\B2bCompanyAccess::class);
@@ -30,7 +33,8 @@ class CustomerSelectionController extends Controller
                 if ($client && $access->allows($user, 'orders.view', $client)) $query->where('b2b_client_id', $client->id);
                 else $query->where('created_by', $user->id);
                 $query->whereNotIn('status', ['cancelled', 'completed', 'shipped']);
-            })->latest('id')->paginate(20, ['*'], 'reserves_page');
+            })->latest('id')->paginate(20, ['*'], 'reserves_page', (int) ($data['reserves_page'] ?? 1))
+            ->withPath(route('selections.index'))->appends($request->only(['q', 'page']));
         return response()->view('pages.selections.index', compact('selections', 'legacyCarts', 'reservations', 'search'))->header('Cache-Control', 'private, no-store');
     }
 

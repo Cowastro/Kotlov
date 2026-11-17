@@ -15,6 +15,8 @@ use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\CartSelection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\PaginationState;
+use Illuminate\Pagination\Paginator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
@@ -78,11 +80,20 @@ class MyRequestsTest extends TestCase
         }
         B2bSavedCart::create(['user_id' => $user->id, 'name' => 'Лесная старая корзина', 'items' => [], 'items_count' => 0, 'total' => 0]);
         B2bSavedCart::create(['user_id' => $user->id, 'name' => 'Другая старая корзина', 'items' => [], 'items_count' => 0, 'total' => 0]);
-        $this->actingAs($user)->get(route('selections.index', ['q' => 'Лесная']))->assertOk()
-            ->assertSee('Лесная старая корзина')->assertDontSee('Другая старая корзина')->assertDontSee('Лесная чужой объект')
-            ->assertDontSee('Объект №1')->assertSee('page=2')->assertSee('q=%D0%9B%D0%B5%D1%81%D0%BD%D0%B0%D1%8F');
-        $this->get(route('selections.index', ['q' => 'Нет такого объекта']))->assertOk()->assertSee('По этому названию заявок не найдено.');
-        $this->get(route('selections.index', ['q' => 'Лесная старая']))->assertOk()->assertSee('Лесная старая корзина')->assertDontSee('По этому названию заявок не найдено.');
+        // Livewire/Filament changes these process-wide resolvers. The account
+        // page must use its own request path and page, even after such a component.
+        Paginator::currentPageResolver(fn () => 999);
+        Paginator::currentPathResolver(fn () => '/unrelated-component');
+        try {
+            $this->actingAs($user)->get(route('selections.index', ['q' => 'Лесная']))->assertOk()
+                ->assertSee('Лесная старая корзина')->assertDontSee('Другая старая корзина')->assertDontSee('Лесная чужой объект')
+                ->assertDontSee('Объект №1')->assertViewHas('selections', fn ($paginator) => $paginator->total() === 22 && $paginator->lastPage() === 2)->assertSee('page=2')->assertSee('q=%D0%9B%D0%B5%D1%81%D0%BD%D0%B0%D1%8F');
+            $this->get(route('selections.index', ['q' => 'Лесная', 'page' => 2]))->assertOk()->assertViewHas('selections', fn ($paginator) => $paginator->count() === 2);
+            $this->get(route('selections.index', ['q' => 'Нет такого объекта']))->assertOk()->assertSee('По этому названию заявок не найдено.');
+            $this->get(route('selections.index', ['q' => 'Лесная старая']))->assertOk()->assertSee('Лесная старая корзина')->assertDontSee('По этому названию заявок не найдено.');
+        } finally {
+            PaginationState::resolveUsing($this->app);
+        }
     }
 
     private function fixture(int $stock = 6): array

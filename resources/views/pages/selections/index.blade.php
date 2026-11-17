@@ -1,7 +1,7 @@
 @extends('layouts.amerce')
 @section('title', 'Мои заявки | KOTLOV')
 @php $robots = 'noindex, nofollow'; $canUseDesk = \App\Http\Controllers\B2bSelectionDeskController::canUse(auth()->user()); @endphp
-@push('styles')<link rel="stylesheet" href="{{ asset('assets/css/my-requests.css') }}?v={{ filemtime(public_path('assets/css/my-requests.css')) }}">@endpush
+@push('styles')<link rel="stylesheet" href="{{ asset('assets/css/b2b-pagination.css') }}?v={{ filemtime(public_path('assets/css/b2b-pagination.css')) }}"><link rel="stylesheet" href="{{ asset('assets/css/my-requests.css') }}?v={{ filemtime(public_path('assets/css/my-requests.css')) }}">@endpush
 @section('content')
 <main class="container py-4 request-hub">
     <nav class="request-actions"><a href="{{ route('account') }}">Личный кабинет</a><a href="{{ route('cart') }}">Текущая корзина</a>@if(\App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a href="{{ route('b2b.workspace') }}">B2B-каталог →</a>@endif</nav>
@@ -30,12 +30,12 @@
         </article>
         @endforeach
     </div>
-    <div class="mt-4">{{ $selections->links() }}</div>
+    <div class="mt-4">@include('partials.b2b-pagination', ['paginator' => $selections, 'paginationLabel' => 'Заявки'])</div>
     <section class="request-reserves" aria-labelledby="request-reserves-title"><h2 id="request-reserves-title">Резервы по заказам</h2><p>Отдельно от ожидания: здесь только активные резервы, зарегистрированные менеджером в CRM. Резерв у поставщика подтверждается менеджером.</p>
         @forelse($reservations as $reservation)
         <article><strong>{{ $reservation->order->number }} · {{ $reservation->item?->product_name }}</strong><span>{{ (float)$reservation->quantity }} шт. в резерве</span><small>{{ $reservation->warehouse_name }}</small></article>
         @empty <p>Активных резервов нет.</p> @endforelse
-        {{ $reservations->links() }}
+        @include('partials.b2b-pagination', ['paginator' => $reservations, 'paginationLabel' => 'Резервы'])
     </section>
 </main>
 @endsection

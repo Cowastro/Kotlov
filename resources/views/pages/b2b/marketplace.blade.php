@@ -278,6 +278,7 @@
 </div>
 
 @push('styles')
+<link rel="stylesheet" href="{{ asset('assets/css/b2b-pagination.css') }}?v={{ filemtime(public_path('assets/css/b2b-pagination.css')) }}">
     @include('pages.b2b.styles')
     <link rel="stylesheet" href="{{ asset('assets/css/b2b-catalog-filters.css') }}?v={{ filemtime(public_path('assets/css/b2b-catalog-filters.css')) }}">
     @if($staffWorkspace)<link rel="stylesheet" href="{{ asset('assets/css/b2b-workspace.css') }}?v={{ filemtime(public_path('assets/css/b2b-workspace.css')) }}">@endif
