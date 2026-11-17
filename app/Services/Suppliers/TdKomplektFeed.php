@@ -264,11 +264,16 @@ class TdKomplektFeed
         return null;
     }
 
-    public function specs(array $row): array
+    public function specs(array $row, int $version = 2): array
     {
         $specs = ['Артикул производителя' => $row['vendor_code'], 'Штрихкод' => $row['barcode'] ?? '', 'Бренд' => $row['brand'], 'Страна производства' => $row['country'] ?? ''];
-        foreach (preg_split('/\r?\n/u', strip_tags($row['description'] ?? '')) ?: [] as $line) {
-            if (preg_match('/^\s*([^:]{2,80}):\s*(.{1,300})$/u', trim($line), $m)) {
+        $description = $row['description'] ?? '';
+        if ($version >= 2) {
+            $description = preg_replace('/<br\s*\/?\s*>/iu', "\n", $description);
+        }
+        $pattern = $version >= 2 ? '/^\s*([^:]{2,80}?)(?::|\s+[-–—]\s+)\s*(.{1,300})$/u' : '/^\s*([^:]{2,80}):\s*(.{1,300})$/u';
+        foreach (preg_split('/\r?\n/u', strip_tags($description)) ?: [] as $line) {
+            if (preg_match($pattern, trim($line), $m)) {
                 $specs[trim($m[1])] = rtrim(trim($m[2]), ',');
             }
         }
@@ -286,7 +291,7 @@ class TdKomplektFeed
         return collect($specs)->filter(fn ($v) => $v !== '')->map(fn ($v, $k) => ['key' => $k, 'value' => $v])->values()->all();
     }
 
-    public function catalogFields(array $row): array
+    public function catalogFields(array $row, int $version = 2): array
     {
         $service = [];
         foreach (['Минимальный заказ' => 'prop_quantity_min', 'Кратность заказа' => 'prop_multiplicity', 'В коробке' => 'prop_multiplicity_box', 'Единица продажи' => 'prop_unit', 'Производитель' => 'prop_manufacturer', 'Импортёр' => 'prop_importer'] as $key => $field) {
@@ -296,7 +301,7 @@ class TdKomplektFeed
         }
         $description = trim(strip_tags($row['description'] ?? ''));
 
-        return ['images' => array_values(array_filter([self::image($row['media_img'] ?? '')])), 'specs' => $this->specs($row), 'service_info' => $service,
+        return ['images' => array_values(array_filter([self::image($row['media_img'] ?? '')])), 'specs' => $this->specs($row, $version), 'service_info' => $service,
             'content' => $description !== '' ? '<p>'.nl2br(e($description)).'</p>' : null, 'short_description' => Str::limit(strip_tags($row['description_short'] ?? ''), 300, ''), 'unit' => ($row['prop_unit'] ?? '') ?: 'шт.'];
     }
 }

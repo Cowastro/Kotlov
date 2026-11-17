@@ -149,4 +149,28 @@ class TdKomplektSyncTest extends TestCase
         }
         Http::assertSentCount(1);
     }
+
+    public function test_dash_separated_source_facts_upgrade_old_cards_without_duplicates_or_loss_of_manual_edits(): void
+    {
+        $row = $this->row(['description' => "Тип фитинга - Колено\nДиаметр — 25 мм<br>Цвет: Синий\nТемпература: от -190 до +370"]);
+        $file = $this->csv([$row]);
+        $feed = new TdKomplektFeed;
+        $this->artisan('supplier:sync-td-komplekt', ['--file' => $file, '--apply' => true, '--create-new' => true])->assertSuccessful();
+        $offer = SupplierProduct::whereHas('supplier', fn ($q) => $q->where('code', 'td_komplekt'))->firstOrFail();
+        $p = $offer->product;
+        $p->update(['specs' => $feed->specs($row, 1)]);
+        $offer->update(['raw' => $row + ['catalog_version' => 1]]);
+        $this->artisan('supplier:sync-td-komplekt', ['--file' => $file, '--apply' => true, '--create-new' => true])->assertSuccessful();
+        $facts = collect($p->fresh()->specs)->pluck('value', 'key');
+        $this->assertSame('Колено', $facts['Тип фитинга']);
+        $this->assertSame('25 мм', $facts['Диаметр']);
+        $this->assertSame('Синий', $facts['Цвет']);
+        $this->assertSame('от -190 до +370', $facts['Температура']);
+        $this->assertSame(1, Product::where('supplier_id', $offer->supplier_id)->count());
+        $this->assertDatabaseHas('product_attribute_values', ['product_id' => $p->id, 'value' => 'Колено']);
+        $manual = [...$p->fresh()->specs, ['key' => 'Примечание', 'value' => 'Ручная правка']];
+        $p->update(['specs' => $manual]);
+        $this->artisan('supplier:sync-td-komplekt', ['--file' => $file, '--apply' => true])->assertSuccessful();
+        $this->assertSame($manual, $p->fresh()->specs);
+    }
 }
