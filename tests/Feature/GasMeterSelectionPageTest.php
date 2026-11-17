@@ -23,7 +23,9 @@ class GasMeterSelectionPageTest extends TestCase
             ->assertSeeText('Как подобрать газовый счётчик без сложных терминов')
             ->assertSeeText('всей линейке БелОМО')
             ->assertSeeText('Подобрать счётчик')
-            ->assertSeeText('СГД-3Т-1-1-G4')
+            // Model names are in the picker's JSON, not server-rendered text.
+            // strip_tags() can consume JS comparisons and adjacent JSON strings.
+            ->assertSee('СГД-3Т-1-1-G4', false)
             ->assertSee('belomo-kata-skat-oboznacheniya#variants', false)
             ->assertSee('data-gm-picker', false)
             ->assertSee('/schetchiki-gaza', false);
