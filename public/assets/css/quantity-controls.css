@@ -1,0 +1,6 @@
+/* Draw both signs on the same pixel grid, independent of font baselines. */
+:is(.cart-line__quantity,.b2b-workspace-stepper,.desk-quantity)>button{position:relative!important;display:grid!important;place-items:center;align-self:stretch;box-sizing:border-box;margin:0!important;padding:0!important;line-height:1!important;font-size:0!important;transform:none!important;border-radius:0;min-height:0}
+:is(.cart-line__quantity,.b2b-workspace-stepper,.desk-quantity)>button::before,:is(.cart-line__quantity,.b2b-workspace-stepper,.desk-quantity)>button::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:2px;border-radius:1px;background:currentColor;transform:translate(-50%,-50%);pointer-events:none}
+:is(.cart-line__quantity,.b2b-workspace-stepper,.desk-quantity)>button::after{display:none}
+:is(.cart-line__quantity,.b2b-workspace-stepper,.desk-quantity)>button:is([data-qty-step="1"],[data-step="1"],[data-desk-step="1"])::after{display:block;width:2px;height:12px}
+:is(.cart-line__quantity,.b2b-workspace-stepper,.desk-quantity)>button:focus-visible{outline:2px solid #d93f46;outline-offset:-3px}

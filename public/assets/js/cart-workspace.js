@@ -28,6 +28,7 @@
         row.querySelector('[data-line-quantity]').textContent=Number.isInteger(q)&&q>0?q:'—';
         row.querySelector('[data-line-total]').textContent=Number.isInteger(q)&&q>0?money(price*q)+' BYN':'Укажите количество';
         row.querySelector('[data-unit-price]').textContent=money(price);
+        var discount=row.querySelector('[data-b2b-discount]');if(discount){var retail=Number(discount.dataset.retail);discount.textContent=retail>price&&retail>0?'Выгода '+((retail-price)/retail*100).toLocaleString('ru-RU',{maximumFractionDigits:1})+'%':'';}
     }
     function drawSelection(data) {
         if(!data) return; summary=data;
@@ -64,6 +65,7 @@
         });
     }
     rows.forEach(function(row){
+        drawRow(row);
         var input=row.querySelector('.cart-qty-input');
         row.querySelectorAll('[data-qty-step]').forEach(function(btn){btn.addEventListener('click',function(){input.value=Math.min(999,Math.max(1,(Number(input.value)||1)+Number(btn.dataset.qtyStep)));drawRow(row);schedule(input,function(){saveQuantity(input);});});});
         input.addEventListener('input',function(){drawRow(row);schedule(input,function(){saveQuantity(input);});});

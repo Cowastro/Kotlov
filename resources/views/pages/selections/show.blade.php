@@ -13,6 +13,7 @@
     @endforeach
     @if ($errors->any())<div role="alert" class="alert alert-danger">{{ $errors->first() }}</div>@endif
     <div class="selection-toolbar d-flex flex-wrap gap-2 mb-4">
+        @if(\App\Http\Controllers\B2bSelectionDeskController::canUse(auth()->user()))<a class="tf-btn btn-primary small" href="{{ route('b2b.selections.show', $selection) }}">Открыть рабочую таблицу →</a>@endif
         <button type="submit" form="selection-editor" class="tf-btn btn-primary small">Сохранить изменения</button>
         <form method="post" action="{{ route('selections.restore', $selection) }}">@csrf<button class="tf-btn btn-primary small">Открыть в корзине</button></form>
         <details class="selection-more"><summary>Ещё ⋯</summary><div>

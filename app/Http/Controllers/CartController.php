@@ -34,7 +34,9 @@ class CartController extends Controller
         $coupon = $this->couponService->quoteForCart(session('cart_coupon'), $selectedItems);
         $cartSelection = $this->selectionSummary($coupon, $selectedItems);
         $cartSelections = auth()->check() ? \App\Models\CustomerSelection::where('user_id', auth()->id())->latest('updated_at')->limit(100)->get(['id', 'name']) : collect();
-        $cartHighlights = Product::query()->with('category:id,slug')->whereIn('id', array_keys($items))->get(['id', 'name', 'category_id'])
+        $cartProducts = Product::query()->with('category:id,slug')->whereIn('id', array_keys($items))->get(['id', 'name', 'category_id', 'price']);
+        $cartRetailPrices = $cartProducts->pluck('price', 'id');
+        $cartHighlights = $cartProducts
             ->mapWithKeys(function (Product $product) {
                 $slug = $product->category?->slug;
                 $facts = in_array($slug, \App\Support\Catalog\PumpCatalog::MANUFACTURER_CATEGORIES, true)
@@ -48,7 +50,7 @@ class CartController extends Controller
         $editingSelection = auth()->check() && session('cart_selection_id')
             ? \App\Models\CustomerSelection::where('user_id', auth()->id())->find(session('cart_selection_id')) : null;
 
-        return view('pages.cart', compact('items', 'subtotal', 'coupon', 'b2bClient', 'minimalLayout', 'editingSelection', 'cartSelection', 'cartSelections', 'cartHighlights'));
+        return view('pages.cart', compact('items', 'subtotal', 'coupon', 'b2bClient', 'minimalLayout', 'editingSelection', 'cartSelection', 'cartSelections', 'cartHighlights', 'cartRetailPrices'));
     }
 
     // ─────────────────────────────────────────
@@ -151,6 +153,7 @@ class CartController extends Controller
             'supply_option' => $b2bOption['key'],
             'integration_product_id' => $b2bOption['integration_product_id'],
             'supplier_product_id' => $b2bOption['supplier_product_id'],
+            'order_rules' => $b2bOption['order_rules'] ?? [],
             'source_name' => $b2bOption['source_label'],
             'warehouse_stock_id' => $b2bOption['warehouse_stock_id'],
             'warehouse_name' => $b2bOption['warehouse_name'],

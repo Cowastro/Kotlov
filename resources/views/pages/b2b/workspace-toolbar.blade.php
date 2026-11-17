@@ -12,6 +12,7 @@
 <div class="b2b-workspace-summary" aria-label="Текущий подбор">
     <button type="button" data-workspace-open><span data-workspace-count>0 позиций</span><strong data-workspace-total>0,00 BYN</strong><span>Открыть подбор ↑</span></button>
     <a data-workspace-print @if($workspaceState['print_url'])href="{{ $workspaceState['print_url'] }}"@else hidden @endif target="_blank" rel="noopener">Печать / PDF</a>
+    <a data-workspace-desk @if($workspaceState['desk_url'])href="{{ $workspaceState['desk_url'] }}"@else hidden @endif>Таблица заявки →</a>
     @if($showProcurement)<small data-workspace-procurement></small>@endif
 </div>
 <dialog class="b2b-workspace-dialog" id="workspace-new-dialog" aria-labelledby="workspace-new-title">

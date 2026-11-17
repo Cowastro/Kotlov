@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\StaffCatalogWorkspace;
+use App\Services\Suppliers\SupplierOrderRules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -168,5 +169,32 @@ class StaffCatalogWorkspaceTest extends TestCase
             ->assertOk()->assertJsonPath('procurement.total', 24)->assertJsonPath('procurement.margin', 0)
             ->assertJsonPath('procurement.margin_percent', null)->assertJsonPath('procurement.margin_unconfirmed', 1)->json();
         $this->get($saved['print_url'])->assertOk()->assertSee('Уточняется')->assertSee('В итог не включены позиции с неуточнённой ценой.');
+    }
+
+    public function test_an_existing_own_selection_can_be_reopened_and_extended_from_the_catalogue(): void
+    {
+        $admin = $this->manager(['role' => 'admin']);
+        $product = $this->product();
+        $selection = CustomerSelection::create(['user_id' => $admin->id, 'name' => 'Ранее сохранённый подбор', 'items' => [], 'revision' => 1]);
+        $this->actingAs($admin)->get(route('b2b.catalog', ['workspace' => 1, 'selection_id' => $selection->id]))->assertOk()
+            ->assertViewHas('workspaceState', fn ($state) => $state['id'] === $selection->id);
+        $this->putJson(route('b2b.workspace.update', ['selection' => $selection->id, 'product' => $product->id]), ['revision' => 1, 'quantity' => 2])->assertOk();
+        $this->assertTrue($selection->fresh()->meta['staff_workspace']);
+        $this->assertSame(2, $selection->fresh()->items[$product->id]['quantity']);
+    }
+
+    public function test_supplier_pack_rules_are_confirmed_fields_and_survive_saving(): void
+    {
+        $admin = $this->manager(['role' => 'admin']);
+        $product = $this->product();
+        $supplier = Supplier::create(['code' => 'td_komplekt', 'name' => 'ТД Комплект', 'is_active' => true]);
+        $offer = SupplierProduct::create(['supplier_id' => $supplier->id, 'product_id' => $product->id, 'supplier_article' => 'TEST-MIN', 'price_byn' => 5, 'match_confidence' => 'official_source', 'raw' => ['prop_quantity_min' => '2', 'prop_multiplicity' => '0,5', 'prop_multiplicity_box' => '—', 'prop_unit' => 'шт.']]);
+        $rules = SupplierOrderRules::fromOffer($offer);
+        $this->assertSame(['minimum' => 2.0, 'multiple' => 0.5, 'unit' => 'шт.'], $rules);
+        $draft = $this->actingAs($admin)->postJson(route('b2b.workspace.store'), ['name' => 'С упаковкой'])->json();
+        $this->putJson(route('b2b.workspace.update', ['selection' => $draft['id'], 'product' => $product->id]), ['revision' => 1, 'quantity' => 2])
+            ->assertOk()->assertJsonPath('items.0.order_rules.minimum', 2)->assertJsonPath('items.0.order_rules.multiple', 0.5);
+        $offer->raw = [];
+        $this->assertSame([], SupplierOrderRules::fromOffer($offer));
     }
 }

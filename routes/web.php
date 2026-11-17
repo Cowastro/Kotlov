@@ -866,6 +866,9 @@ Route::middleware('auth')->group(function () {
 // ===== Личный кабинет =====
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/b2b/workspace', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'enter'])->name('b2b.workspace');
+    Route::get('/b2b/selections/{selection}', [\App\Http\Controllers\B2bSelectionDeskController::class, 'show'])->name('b2b.selections.show');
+    Route::patch('/b2b/selections/{selection}', [\App\Http\Controllers\B2bSelectionDeskController::class, 'update'])->middleware('throttle:180,1')->name('b2b.selections.update');
+    Route::get('/b2b/selections/{selection}/export', [\App\Http\Controllers\B2bSelectionDeskController::class, 'export'])->name('b2b.selections.export');
     Route::post('/b2b/workspace/selections', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'store'])->middleware('throttle:30,1')->name('b2b.workspace.store');
     Route::put('/b2b/workspace/selections/{selection}/items/{product}', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'update'])->whereNumber('product')->middleware('throttle:180,1')->name('b2b.workspace.update');
     Route::get('/b2b/cabinet', [B2bCabinetController::class, 'show'])->name('b2b.cabinet');

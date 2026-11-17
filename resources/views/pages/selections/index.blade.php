@@ -1,6 +1,7 @@
 @extends('layouts.amerce')
 @section('title', 'Мои подборы | KOTLOV')
 @php $robots = 'noindex, nofollow'; @endphp
+@php $canUseDesk = \App\Http\Controllers\B2bSelectionDeskController::canUse(auth()->user()); @endphp
 @section('content')
 <main class="container py-4">
     <nav class="d-flex flex-wrap gap-3 mb-3"><a class="link" href="{{ route('account') }}">Личный кабинет</a><a class="link" href="{{ route('cart') }}">Текущая корзина</a>@if(\App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a class="link" href="{{ route('b2b.workspace') }}">B2B-подбор →</a>@endif</nav>
@@ -14,6 +15,7 @@
                 <h2 class="h5 mb-2"><a class="link" href="{{ route('selections.show', $selection) }}">{{ $selection->name }}</a></h2>
                 <p class="mb-3">{{ count($selection->items) }} позиций · {{ number_format($selection->total(), 2, ',', ' ') }} BYN</p>
                 <a class="tf-btn btn-stroke small" href="{{ route('selections.show', $selection) }}">Открыть подбор</a>
+                @if($canUseDesk)<a class="tf-btn btn-stroke small mt-2" href="{{ route('b2b.selections.show', $selection) }}">Таблица заявки →</a>@endif
                 @if(($selection->meta['staff_workspace'] ?? false) && \App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a class="link d-block mt-2" href="{{ route('b2b.catalog', ['workspace' => 1, 'mode' => 'reference', 'selection_id' => $selection->id]) }}">Продолжить в каталоге →</a>@endif
             </div></article>
         @empty

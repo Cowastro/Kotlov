@@ -8,6 +8,7 @@
 <p class="cart-feedback" id="cart-save-state" role="status" aria-live="polite">{{ auth()->check() ? 'Все изменения сохраняются в аккаунте' : 'Изменения сохраняются в этой корзине' }}</p>
 <p class="cart-error" id="cart-error" role="alert" hidden></p>
 <p class="cart-search-empty" hidden>Совпадений нет. Измените запрос — товары остаются в корзине.</p>
+@if($b2bClient)<div class="b2b-cart-table-head" aria-hidden="true"><span></span><span></span><span>Товар / артикул / склад</span><span>Цена сайта</span><span>Ваша цена</span><span>Количество</span><span>Сумма, BYN</span><span></span></div>@endif
 <div class="cart-lines">
 @foreach ($items as $item)
     @php
@@ -22,14 +23,16 @@
             <h2><a href="{{ $productUrl }}">{{ $item['name'] }}</a></h2>
             @if (! empty($cartHighlights[$item['id']]))<p class="cart-line__specs">{{ $cartHighlights[$item['id']] }}</p>@endif
             <p class="cart-line__availability {{ ($item['requires_availability_confirmation'] ?? false) ? 'needs-confirmation' : '' }}">{{ ($item['requires_availability_confirmation'] ?? false) ? 'Наличие уточнит менеджер' : 'Доступен к заказу' }}</p>
-            @if (($item['pricing_type'] ?? null) === 'b2b')<small class="cart-line__warehouse">Партнёрская цена@if (! empty($item['warehouse_name'])) · {{ $item['warehouse_name'] }}@endif</small>@endif
+            @if($b2bClient && !empty($item['order_rules']))<p class="cart-line__specs">{{ \App\Services\Suppliers\SupplierOrderRules::label($item['order_rules']) }}</p>@endif
+            @if (($item['pricing_type'] ?? null) === 'b2b')<small class="cart-line__warehouse">{{ $item['b2b_price_level_name'] ?? 'Партнёрская цена' }}@if(!empty($item['source_name'])) · {{ $item['source_name'] }}@endif @if (! empty($item['warehouse_name'])) · {{ $item['warehouse_name'] }}@endif</small>@endif
         </div>
         <details class="cart-line__menu"><summary aria-label="Действия с {{ $item['name'] }}">⋯</summary><div>
             @if($b2bClient)<button type="button" data-edit-line-note>Комментарий к позиции</button>
             <button type="button" data-move-line>В другой подбор</button>@endif
             <form action="{{ route('cart.remove') }}" method="post">@csrf<input type="hidden" name="product_id" value="{{ $item['id'] }}"><button type="submit" class="cart-line__remove">Удалить</button></form>
         </div></details>
-        <div class="cart-line__price"><span data-unit-price>{{ number_format($item['price'], 2, ',', ' ') }}</span> × <span data-line-quantity>{{ $item['quantity'] }}</span><small>BYN за штуку</small></div>
+        @if($b2bClient)<div class="cart-line__retail">{{ ($cartRetailPrices[$item['id']] ?? 0) > 0 ? number_format((float)$cartRetailPrices[$item['id']], 2, ',', ' ') : '—' }}<small>BYN · цена сайта</small></div>@endif
+        <div class="cart-line__price"><span data-unit-price>{{ number_format($item['price'], 2, ',', ' ') }}</span> × <span data-line-quantity>{{ $item['quantity'] }}</span><small>BYN за штуку</small>@if($b2bClient)<small data-b2b-discount data-retail="{{ $cartRetailPrices[$item['id']] ?? 0 }}"></small>@endif</div>
         <div class="cart-line__quantity"><button type="button" data-qty-step="-1" aria-label="Уменьшить количество {{ $item['name'] }}">−</button><input class="cart-qty-input" type="number" inputmode="numeric" min="1" max="999" step="1" value="{{ $item['quantity'] }}" data-saved="{{ $item['quantity'] }}" aria-label="Количество {{ $item['name'] }}"><button type="button" data-qty-step="1" aria-label="Увеличить количество {{ $item['name'] }}">+</button></div>
         <div class="cart-line__total"><strong data-line-total>{{ number_format(round($item['price'] * $item['quantity'], 2), 2, ',', ' ') }} BYN</strong><small>Сумма позиции</small></div>
         <div class="cart-line__note" @if (empty($item['selection_note'])) hidden @endif><label for="line-note-{{ $item['id'] }}">Комментарий к позиции в подборе</label><textarea id="line-note-{{ $item['id'] }}" class="cart-line-note" rows="2" maxlength="500" data-saved="{{ $item['selection_note'] ?? '' }}" placeholder="Например: для первого этажа">{{ $item['selection_note'] ?? '' }}</textarea></div>
