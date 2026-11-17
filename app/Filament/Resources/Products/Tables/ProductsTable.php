@@ -68,7 +68,7 @@ class ProductsTable
 
                 TextColumn::make('name')
                     ->label('Товар')
-                    ->searchable()
+                    ->searchable(query: fn (Builder $query, string $search): Builder => app(\App\Services\StorefrontProductSearch::class)->applyForResults($query, $search, true))
                     ->sortable()
                     ->weight('bold')
                     ->wrap()

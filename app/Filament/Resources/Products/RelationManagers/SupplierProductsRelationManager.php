@@ -37,6 +37,12 @@ class SupplierProductsRelationManager extends RelationManager
                     ->copyable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                TextColumn::make('supplier_catalog_code')
+                    ->label('Код каталога поставщика')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->copyable(),
+
                 TextColumn::make('product_sku')
                     ->label('SKU KOTLOV')
                     ->searchable()

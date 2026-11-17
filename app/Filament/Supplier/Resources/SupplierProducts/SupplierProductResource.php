@@ -43,11 +43,15 @@ class SupplierProductResource extends Resource
                     ->sortable(),
                 TextColumn::make('supplier_name')
                     ->label('Наименование')
-                    ->searchable()
+                    ->searchable(['supplier_name', 'supplier_article', 'supplier_catalog_code'])
                     ->wrap()
                     ->description(fn (SupplierProduct $record): ?string => $record->supplier_article
                         ? 'Арт. '.$record->supplier_article
                         : null),
+                TextColumn::make('supplier_catalog_code')
+                    ->label('Код каталога поставщика')
+                    ->placeholder('—')
+                    ->copyable(),
                 TextColumn::make('product.name')
                     ->label('Карточка KOTLOV')
                     ->placeholder('Не привязан')

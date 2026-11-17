@@ -35,9 +35,10 @@ class SupplierProductsRelationManager extends RelationManager
                     ->label('Предложение поставщика')
                     ->description(fn (SupplierProduct $record): string => collect([
                         $record->supplier_article ? 'Арт. '.$record->supplier_article : null,
+                        $record->supplier_catalog_code ? 'Код каталога: '.$record->supplier_catalog_code : null,
                         data_get($record->raw, 'model'),
                     ])->filter()->implode(' · '))
-                    ->searchable(['supplier_name', 'supplier_article', 'supplier_article_normalized', 'raw->maker_code'])
+                    ->searchable(['supplier_name', 'supplier_article', 'supplier_article_normalized', 'supplier_catalog_code', 'raw->maker_code'])
                     ->wrap(),
                 TextColumn::make('price_byn')
                     ->label('Опт')

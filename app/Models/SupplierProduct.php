@@ -19,6 +19,7 @@ class SupplierProduct extends Model
         'product_id',
         'product_sku',
         'supplier_article',
+        'supplier_catalog_code',
         'supplier_article_normalized',
         'supplier_article_compact',
         'supplier_name',
