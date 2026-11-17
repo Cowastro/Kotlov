@@ -1116,7 +1116,10 @@
         //         }
         //     });
         // }
-        var footerOffset = $("footer").offset().top;
+        // The B2B cart intentionally omits the retail footer.
+        var footerPosition = $("footer").offset();
+        if (!footerPosition) return;
+        var footerOffset = footerPosition.top;
 
         $(window).on("scroll", function () {
             var addToCart = $(".section-product-single .btn-action-price")[0];
