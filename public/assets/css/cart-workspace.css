@@ -22,6 +22,8 @@
 .cart-page--retail .cart-line__total small,.cart-page--retail .cart-line__specs{display:none}
 .cart-page--b2b .cart-save-tools{background:#f7f9fb;border-color:#dee5eb}
 .cart-page--b2b .cart-lines{border-radius:10px}
+.cart-page--b2b .b2b-cart-title{line-height:1.2}
+.cart-page--b2b .b2b-cart-title span{line-height:1.5}
 .cart-page--b2b .cart-line__quantity{border-radius:6px}
 .cart-page--b2b .cart-line__info h2{font-size:14px}
 @media(min-width:992px){
