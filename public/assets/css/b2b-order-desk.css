@@ -27,3 +27,7 @@
 @media(max-width:760px){.cart-page--b2b .cart-line__warehouse{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.4;font-size:11px}}
 
 .desk-fulfillment summary{font-size:12px;color:#62717d;cursor:pointer;margin-top:5px}.desk-availability-tabs{scrollbar-width:thin}.desk-availability-tabs::-webkit-scrollbar{height:3px}@media(max-width:400px){.b2b-topbar__inner{gap:8px}.b2b-topbar .b2b-brand{flex:0 0 88px;padding-right:0}.b2b-topbar .b2b-brand img{width:88px}.b2b-topbar .b2b-brand>span{display:none}.b2b-topbar__actions{gap:8px}}
+
+.desk-stock-summary{font-size:12px;line-height:1.5;color:#62717d;margin:10px 0}.desk-export-scope{display:grid;gap:6px;width:100%;font-size:12px}.desk-export-scope select{width:100%;min-width:0}.desk-export-scope small{font-size:11px;color:#62717d;line-height:1.5}@media(max-width:760px){.desk-export{width:100%}.desk-command>[data-desk-reset]{grid-column:1/-1;width:100%}}
+
+.desk-export-preview{font-size:12px;font-weight:650;color:#21805d;line-height:1.5;overflow-wrap:anywhere}

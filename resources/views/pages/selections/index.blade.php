@@ -6,6 +6,7 @@
 <main class="container py-4 request-hub">
     <nav class="request-actions"><a href="{{ route('account') }}">Личный кабинет</a><a href="{{ route('cart') }}">Текущая корзина</a>@if(\App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a href="{{ route('b2b.workspace') }}">B2B-каталог →</a>@endif</nav>
     <h1>Мои заявки</h1>
+    <form class="request-search" method="get" action="{{ route('selections.index') }}"><label for="request-search">Найти заявку по названию клиента или объекта</label><div><input id="request-search" type="search" name="q" value="{{ $search }}" maxlength="100" placeholder="Например, котельная на Лесной"><button class="tf-btn btn-primary small">Найти</button>@if($search !== '')<a href="{{ route('selections.index') }}">Сбросить</a>@endif</div></form>
     <p class="request-intro">Корзины и подборы для клиентов и объектов в одном месте. Сохранённая потребность и ожидаемые товары не являются резервом.</p>
     @foreach(['success'=>'success','error'=>'danger'] as $key=>$style) @if(session($key))<p role="status" class="alert alert-{{ $style }}">{{ session($key) }}</p>@endif @endforeach
     <div class="request-grid">
@@ -19,7 +20,7 @@
             <small>Непроверенных позиций: {{ count($selection->items)-$allocation->count() }}. Цены на момент сохранения.</small>
             <a class="tf-btn btn-stroke small" href="{{ route($canUseDesk ? 'b2b.selections.show' : 'selections.show', $selection) }}">Открыть заявку →</a>
         </article>
-        @empty <p>Сохраните товары из корзины или создайте заявку в B2B-каталоге.</p> @endforelse
+        @empty @if($legacyCarts->isEmpty())<p>{{ $search !== '' ? 'По этому названию заявок не найдено.' : 'Сохраните товары из корзины или создайте заявку в B2B-каталоге.' }}</p>@endif @endforelse
         @foreach($legacyCarts as $legacy)
         <article class="request-card">
             <small>Ранее сохранённая корзина · {{ $legacy->updated_at->format('d.m.Y') }}</small><h2>{{ $legacy->name }}</h2>

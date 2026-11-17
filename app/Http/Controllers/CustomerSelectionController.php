@@ -10,13 +10,18 @@ class CustomerSelectionController extends Controller
 {
     public function index(Request $request)
     {
-        $selections = CustomerSelection::where('user_id', $request->user()->id)->latest('updated_at')->paginate(20);
+        $data = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $search = trim($data['q'] ?? '');
+        $selections = CustomerSelection::where('user_id', $request->user()->id)
+            ->when($search !== '', fn ($query) => $query->where('name', 'like', '%'.$search.'%'))
+            ->latest('updated_at')->paginate(20)->withQueryString();
         $user = $request->user();
         $client = $user->activeB2bClient();
         $access = app(\App\Services\B2bCompanyAccess::class);
         $legacyCarts = collect();
         if ($client && $access->allows($user, 'orders.create', $client)) {
             $legacyCarts = \App\Models\B2bSavedCart::whereIn('user_id', $access->allUserIds($client))
+                ->when($search !== '', fn ($query) => $query->where('name', 'like', '%'.$search.'%'))
                 ->whereNotIn('id', CustomerSelection::where('user_id', $user->id)->whereNotNull('legacy_saved_cart_id')->select('legacy_saved_cart_id'))
                 ->latest('updated_at')->get();
         }
@@ -26,7 +31,7 @@ class CustomerSelectionController extends Controller
                 else $query->where('created_by', $user->id);
                 $query->whereNotIn('status', ['cancelled', 'completed', 'shipped']);
             })->latest('id')->paginate(20, ['*'], 'reserves_page');
-        return response()->view('pages.selections.index', compact('selections', 'legacyCarts', 'reservations'))->header('Cache-Control', 'private, no-store');
+        return response()->view('pages.selections.index', compact('selections', 'legacyCarts', 'reservations', 'search'))->header('Cache-Control', 'private, no-store');
     }
 
     public function store(Request $request, CustomerCartStore $store)

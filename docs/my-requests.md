@@ -11,3 +11,9 @@ Waiting is a saved demand, not a reservation. The separate reserve list shows ac
 The migration widens selection metadata from TEXT to LONGTEXT: MySQL's 64 KiB TEXT limit is insufficient for 150-line availability snapshots. Rollback deliberately does not shrink the column, preserving existing large snapshots.
 
 Validation: feature coverage includes legacy conversion, missing products, partial quantities, current prices, stale stock, ownership, selection revisions, excluded lines, preserving an earlier cart, active reservations, and 150-line allocation. Browser checks at 360/390 and 1440 pixels verified search, waiting filters, selection persistence and a 150-line partial cart (650 available of 1,500 requested, 850 waiting) without page overflow. Production orders were not created during testing.
+
+## Finding requests and exporting parts of demand
+
+The hub can filter current and legacy requests by client/object name without widening ownership permissions; pagination retains the search. The working table supports normalized article search, availability counters and a reset that changes only presentation, preserving selected rows and requested quantities.
+
+An explicit export scope selects all demand, ready quantities or waiting quantities from checked, selected lines. Print and Excel use the same projection, retain saved prices and comments, identify the saved check, and never create reservations or change the request. Invalidated/unchecked allocations are omitted from partial exports with a visible warning; an empty partial export returns to the request with an explanation. The screen previews exported positions, units and value independently from the full demand total.

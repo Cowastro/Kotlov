@@ -9,13 +9,31 @@
     var errorBox = root.querySelector('[data-desk-error]');
     function money(value) { return Number(value || 0).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' BYN'; }
     function chosen() { return state.items.filter(function (item) { return !state.excluded.includes(item.id); }); }
+    function normalized(value) { return String(value || '').normalize('NFKC').toLocaleLowerCase('ru').replace(/ё/g, 'е').replace(/[^\p{L}\p{N}]/gu, ''); }
     function status(text) { root.querySelector('[data-desk-status]').textContent = text; }
+    function syncExportScope() {
+        var scope = root.querySelector('[data-desk-export-scope]').value;
+        root.querySelectorAll('[data-desk-export]').forEach(function (link) { var url = new URL(link.href); url.searchParams.set('scope', scope); link.href = url.toString(); });
+        paintExportSummary();
+    }
+    function paintExportSummary() {
+        var scope = root.querySelector('[data-desk-export-scope]').value, positions = 0, quantity = 0, total = 0, unchecked = 0, unpriced = false;
+        chosen().forEach(function (item) {
+            if (scope !== 'all' && !item.allocation) { unchecked++; return; }
+            var units = scope === 'all' ? item.quantity : item.allocation[scope];
+            if (!(units > 0)) return;
+            positions++; quantity += units; total += Number(item.price || 0) * units;
+            if (!(item.price > 0)) unpriced = true;
+        });
+        root.querySelector('[data-desk-export-summary]').textContent = positions ? 'В выгрузке: ' + positions + ' поз. · ' + quantity + ' шт. · ' + money(total) + (unpriced ? ' + уточнение цены' : '') + (unchecked ? ' · Не проверено ' + unchecked + ' поз.' : '') : 'Нет подходящих отмеченных позиций. Проверьте наличие и выбор товаров.';
+    }
     function visibleRows() {
-        var needle = root.querySelector('[data-desk-search]').value.trim().toLocaleLowerCase('ru');
+        var tokens = root.querySelector('[data-desk-search]').value.trim().split(/\s+/).map(normalized).filter(Boolean);
         var visible = 0;
         rows.forEach(function (row) {
             var item = state.items.find(function (line) { return line.id === Number(row.dataset.deskRow); });
-            var match = item && (!selectedOnly || !state.excluded.includes(item.id)) && (item.name + ' ' + (item.sku || '') + ' ' + (item.workspace_purchase ? item.workspace_purchase.supplier : '')).toLocaleLowerCase('ru').includes(needle);
+            var searchable = item ? normalized([item.name, item.sku, item.source_name, item.supplier_article, item.workspace_purchase && item.workspace_purchase.supplier, item.workspace_purchase && item.workspace_purchase.article].filter(Boolean).join(' ')) : '';
+            var match = item && (!selectedOnly || !state.excluded.includes(item.id)) && tokens.every(function (token) { return searchable.includes(token); });
             if (match && availabilityFilter !== 'all') {
                 match = availabilityFilter === 'unchecked' ? !item.allocation : Boolean(item.allocation && item.allocation[availabilityFilter] > 0);
             }
@@ -27,6 +45,7 @@
         var picked = shown.filter(function (row) { return !state.excluded.includes(Number(row.dataset.deskRow)); }).length;
         var all = root.querySelector('[data-desk-check-all]');
         all.checked = shown.length > 0 && picked === shown.length; all.indeterminate = picked > 0 && picked < shown.length;
+        root.querySelector('[data-desk-reset]').hidden = tokens.length === 0 && availabilityFilter === 'all' && !selectedOnly;
     }
     function paint() {
         var items = chosen(), total = 0, cost = 0, margin = 0, marginRetail = 0, unknown = 0;
@@ -42,6 +61,15 @@
         root.querySelector('[data-desk-total]').textContent = money(total) + (items.some(function (item) { return !(item.price > 0); }) ? ' + уточнение' : '');
         root.querySelector('[data-desk-margin]').textContent = state.procurement ? 'Закупка ' + money(cost) + ' · Маржа ' + money(margin) + (marginRetail > 0 ? ' / ' + (margin / marginRetail * 100).toLocaleString('ru-RU', {maximumFractionDigits:1}) + '%' : '') + (unknown ? ' · По подтверждённым ценам; уточнить ' + unknown + ' поз.' : '') : '';
         root.querySelector('[data-desk-title]').textContent = state.name;
+        var totals = {ready:0, waiting:0, checked:0};
+        state.items.forEach(function (item) { if (item.allocation) { totals.checked++; totals.ready += item.allocation.ready; totals.waiting += item.allocation.waiting; } });
+        root.querySelector('[data-desk-stock-summary]').textContent = totals.checked ? 'Проверено ' + totals.checked + ' из ' + state.items.length + ' поз. · Доступно ' + totals.ready + ' шт. · Ожидается ' + totals.waiting + ' шт. По сохранённой проверке.' : 'Наличие ещё не проверено. Нажмите «Проверить наличие», чтобы увидеть доступное и недостающее количество.';
+        var tabLabels = {all:'Все', ready:'Доступное', waiting:'Ожидаемые', unchecked:'Не проверены'};
+        root.querySelectorAll('[data-desk-availability]').forEach(function (button) {
+            var scope = button.dataset.deskAvailability;
+            var count = state.items.filter(function (item) { return scope === 'all' || (scope === 'unchecked' ? !item.allocation : item.allocation && item.allocation[scope] > 0); }).length;
+            button.textContent = tabLabels[scope] + ' (' + count + ')';
+        });
         root.querySelectorAll('[data-desk-revision]').forEach(function (input) { input.value = state.revision; });
         var all = root.querySelector('[data-desk-check-all]'); all.checked = state.items.length > 0 && items.length === state.items.length; all.indeterminate = items.length > 0 && items.length < state.items.length;
         root.querySelector('[data-desk-undo]').hidden = !state.undo_available;
@@ -57,6 +85,7 @@
             if (allocation) allocation.textContent = item.allocation ? 'Доступно ' + item.allocation.ready + ' · Ожидается ' + item.allocation.waiting + (item.allocation.unknown ? ' · остаток уточняется' : '') + ' · не резерв' : 'Наличие ещё не проверено';
         });
         visibleRows();
+        paintExportSummary();
     }
     function lock(value) {
         busy = value;
@@ -118,6 +147,13 @@
     root.addEventListener('keydown', function (event) { if (event.key === 'Enter' && event.target.matches('[data-desk-quantity]')) { event.preventDefault(); saveQuantity(event.target, true); } });
     root.addEventListener('click', function (event) {
         var button = event.target.closest('button'); if (!button || busy) return;
+        if (button.hasAttribute('data-desk-reset')) {
+            root.querySelector('[data-desk-search]').value = ''; selectedOnly = false; availabilityFilter = 'all';
+            root.querySelector('[data-desk-filter-selected]').setAttribute('aria-pressed', 'false');
+            root.querySelectorAll('[data-desk-availability]').forEach(function (entry) { entry.setAttribute('aria-pressed', String(entry.dataset.deskAvailability === 'all')); });
+            root.querySelector('.desk-availability-tabs').scrollLeft = 0;
+            visibleRows();
+        }
         if (button.hasAttribute('data-desk-availability')) {
             availabilityFilter = button.dataset.deskAvailability;
             root.querySelectorAll('[data-desk-availability]').forEach(function (entry) { entry.setAttribute('aria-pressed', String(entry === button)); });
@@ -139,12 +175,13 @@
             .then(function () { dialog.close(); }).catch(function (failure) { error.textContent = failure.message; error.hidden = false; });
     });
     root.querySelectorAll('[data-desk-export]').forEach(function (link) { link.addEventListener('click', function (event) { if (busy) { event.preventDefault(); status('Дождитесь сохранения перед экспортом.'); } }); });
+    root.querySelector('[data-desk-export-scope]').addEventListener('change', syncExportScope);
     root.querySelectorAll('.desk-fulfillment form').forEach(function (form) { form.addEventListener('submit', function (event) {
         if (busy) { event.preventDefault(); status('Дождитесь сохранения перед проверкой или оформлением.'); return; }
         root.querySelectorAll('[data-desk-revision]').forEach(function (input) { input.value = state.revision; });
         status('Проверяем актуальные остатки…'); submitting = true; lock(true);
     }); });
     window.addEventListener('beforeunload', function (event) { if (busy && !submitting) { event.preventDefault(); event.returnValue = ''; } });
-    window.addEventListener('pageshow', function () { if (submitting) { submitting = false; lock(false); } });
-    paint();
+    window.addEventListener('pageshow', function () { if (submitting) { submitting = false; lock(false); } syncExportScope(); });
+    paint(); syncExportScope();
 })();
