@@ -104,17 +104,22 @@ class B2bSelectionDeskController extends Controller
                 case 'move':
                     abort_if($ids === [], 422, 'Отметьте позиции для переноса или копирования.');
                     $chosen = array_intersect_key($items, array_flip($ids));
+                    $calculationKeys = array_filter(array_column($chosen, 'pump_calculation_key'));
+                    $calculations = array_intersect_key($meta['pump_calculations'] ?? [], array_flip($calculationKeys));
                     if (! empty($data['target_id'])) {
                         $target = $locked->get($data['target_id']);
                         abort_unless($target && $target->id !== $source->id, 404);
                         abort_unless($target->revision === (int) $data['target_revision'], 409, 'Подбор назначения изменён. Обновите страницу.');
                         abort_if(array_intersect_key($target->items, $chosen) !== [], 409, 'В выбранном подборе уже есть такой товар. Дубли с разными ценами не объединяются автоматически.');
                         abort_if(count($target->items) + count($chosen) > 2000, 422, 'В подборе назначения не может быть больше 2000 позиций.');
-                        $target->update(['items' => $target->items + $chosen, 'revision' => $target->revision + 1]);
+                        $targetMeta = $target->meta ?? [];
+                        $targetMeta['pump_calculations'] = ($targetMeta['pump_calculations'] ?? []) + $calculations;
+                        abort_if(count($targetMeta['pump_calculations']) > 20,422,'В подборе назначения больше 20 расчётов.');
+                        $target->update(['items' => $target->items + $chosen, 'meta'=>$targetMeta, 'revision' => $target->revision + 1]);
                     } else {
                         abort_if(blank($data['name'] ?? null), 422, 'Укажите название нового подбора.');
                         $target = CustomerSelection::create(['user_id' => $request->user()->id, 'name' => $data['name'], 'items' => $chosen, 'revision' => 1,
-                            'meta' => ($meta['staff_workspace'] ?? false) ? ['staff_workspace' => true] : []]);
+                            'meta' => array_merge(($meta['staff_workspace'] ?? false) ? ['staff_workspace' => true] : [], $calculations ? ['pump_calculations'=>$calculations] : [])]);
                     }
                     if ($data['action'] === 'move') {
                         $items = array_diff_key($items, $chosen);
@@ -135,7 +140,7 @@ class B2bSelectionDeskController extends Controller
         $internal = $request->boolean('internal');
         abort_if($internal && ! $request->user()->isAdmin(), 403);
         if ($request->input('format') === 'print') {
-            return response()->view('pages.selections.print', ['name' => $selection->name, 'note' => $selection->note, 'items' => $items, 'date' => $selection->updated_at])->header('Cache-Control', 'private, no-store');
+            return response()->view('pages.selections.print', ['name' => $selection->name, 'note' => $selection->note, 'items' => $items, 'date' => $selection->updated_at, 'pumpCalculations' => $selection->meta['pump_calculations'] ?? []])->header('Cache-Control', 'private, no-store');
         }
 
         return response()->streamDownload(function () use ($selection, $items, $internal) {
@@ -143,6 +148,7 @@ class B2bSelectionDeskController extends Controller
             $sheet = $book->getActiveSheet();
             $sheet->setTitle('Подбор');
             $sheet->setCellValueExplicit('A1', $selection->name, DataType::TYPE_STRING);
+            if (!empty($selection->meta['pump_calculations'])) $sheet->setCellValueExplicit('A2', collect($selection->meta['pump_calculations'])->pluck('result.summary')->implode(' | '), DataType::TYPE_STRING);
             $headers = ['Артикул', 'Название', 'Цена, BYN', 'Количество', 'Сумма, BYN', 'Комментарий'];
             if ($internal) {
                 $headers = array_merge($headers, ['Поставщик', 'Входная, BYN', 'Маржа, BYN']);

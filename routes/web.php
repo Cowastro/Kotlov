@@ -864,6 +864,9 @@ Route::middleware('auth')->group(function () {
 });
 
 // ===== Личный кабинет =====
+Route::get('/tools/circulation-pump-calculator', [\App\Http\Controllers\CirculationPumpCalculatorController::class, 'show'])->name('pump-calculator');
+Route::get('/tools/circulation-pump-calculator/login', [\App\Http\Controllers\CirculationPumpCalculatorController::class, 'login'])->middleware('throttle:30,1')->name('pump-calculator.login');
+Route::post('/tools/circulation-pump-calculator/selection', [\App\Http\Controllers\CirculationPumpCalculatorController::class, 'save'])->middleware(['auth', 'verified', 'throttle:30,1'])->name('pump-calculator.save');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/b2b/workspace', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'enter'])->name('b2b.workspace');
     Route::get('/b2b/selections/{selection}', [\App\Http\Controllers\B2bSelectionDeskController::class, 'show'])->name('b2b.selections.show');

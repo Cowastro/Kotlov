@@ -25,9 +25,12 @@ class CustomerSelectionController extends Controller
         $values = ['name' => $data['name'], 'items' => $items,
             'meta' => array_diff_key($store->meta($request), array_flip(['cart_selection_id', 'cart_selection_revision'])),
             'note' => $request->session()->get('cart_note')];
+        $sourceSelection = CustomerSelection::where('user_id', $request->user()->id)->find($request->session()->get('cart_selection_id'));
+        if (!empty($sourceSelection?->meta['pump_calculations'])) $values['meta']['pump_calculations'] = $sourceSelection->meta['pump_calculations'];
         if (! empty($data['selection_id'])) {
             $selection = CustomerSelection::findOrFail($data['selection_id']);
             $this->own($request, $selection);
+            $values['meta'] = array_replace($selection->meta ?? [], $values['meta']);
             $updated = CustomerSelection::whereKey($selection->id)->where('revision', $data['revision'])->update([
                 'name' => $values['name'], 'items' => json_encode($items, JSON_UNESCAPED_UNICODE),
                 'meta' => json_encode($values['meta'], JSON_UNESCAPED_UNICODE), 'note' => $values['note'],
@@ -45,7 +48,7 @@ class CustomerSelectionController extends Controller
     public function show(Request $request, CustomerSelection $selection)
     {
         $this->own($request, $selection);
-        if ($request->boolean('print')) return $this->printView($selection->name, $selection->items, $selection->note, $selection->updated_at);
+        if ($request->boolean('print')) return $this->printView($selection->name, $selection->items, $selection->note, $selection->updated_at, $selection->meta['pump_calculations'] ?? []);
         return response()->view('pages.selections.show', compact('selection'))->header('Cache-Control', 'private, no-store');
     }
 
@@ -92,7 +95,8 @@ class CustomerSelectionController extends Controller
 
     public function printCurrent(Request $request)
     {
-        return $this->printView('Подбор оборудования', $request->session()->get('cart', []), $request->session()->get('cart_note'), now());
+        $selection = $request->user() ? CustomerSelection::where('user_id', $request->user()->id)->find($request->session()->get('cart_selection_id')) : null;
+        return $this->printView('Подбор оборудования', $request->session()->get('cart', []), $request->session()->get('cart_note'), now(), $selection?->meta['pump_calculations'] ?? []);
     }
 
     public function duplicate(Request $request, CustomerSelection $selection)
@@ -132,9 +136,9 @@ class CustomerSelectionController extends Controller
         return to_route('cart')->with('success', 'Позиция перенесена в подбор «'.$target->name.'».');
     }
 
-    private function printView(string $name, array $items, ?string $note, $date)
+    private function printView(string $name, array $items, ?string $note, $date, array $pumpCalculations = [])
     {
-        return response()->view('pages.selections.print', compact('name', 'items', 'note', 'date'))
+        return response()->view('pages.selections.print', compact('name', 'items', 'note', 'date', 'pumpCalculations'))
             ->header('Cache-Control', 'private, no-store')->header('X-Robots-Tag', 'noindex, nofollow');
     }
 

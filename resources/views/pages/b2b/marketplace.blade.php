@@ -35,6 +35,7 @@
                     <span><small>Оптовый отдел</small><strong>{{ config('shop.b2b_contact.phone') }}</strong></span>
                 </a>
                 @if (\App\Services\StaffCatalogWorkspace::allowed(auth()->user()))
+                    <a href="{{ route('pump-calculator') }}" class="b2b-topbar__link" aria-label="Калькулятор циркуляционного насоса"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8M8 11h2m4 0h2m-8 4h2m4 0h2m-8 4h2m4 0h2"/></svg><span>Подбор насоса</span></a>
                     <a href="{{ url('/admin') }}" class="b2b-topbar__link">← CRM</a>
                     @unless($staffWorkspace)<a href="{{ route('b2b.workspace') }}" class="b2b-topbar__link">B2B-подбор</a>@endunless
                 @endif
