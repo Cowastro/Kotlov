@@ -26,9 +26,10 @@ class B2bSupplyOptionResolver
     ) {}
 
     /** @return Collection<int, array<string, mixed>> */
-    public function optionsForUser(?User $user): Collection
+    public function optionsForUser(?User $user, ?int $productId = null): Collection
     {
         $cacheKey = $user ? 'user:'.$user->id : 'guest';
+        if ($productId !== null) $cacheKey .= ':product:'.$productId;
         if (isset($this->optionsCache[$cacheKey])) {
             return $this->optionsCache[$cacheKey];
         }
@@ -38,7 +39,7 @@ class B2bSupplyOptionResolver
         }
 
         $priceLevel = $this->priceLevelFor($user);
-        $integration = $this->integrationOffers->offersForUser($user)
+        $integration = $this->integrationOffers->offersForUser($user, $productId)
             ->map(fn (IntegrationProduct $offer): ?array => $this->integrationOption($offer, $user))
             ->filter();
 
@@ -50,6 +51,7 @@ class B2bSupplyOptionResolver
         $external = SupplierProduct::query()
             ->with(['supplier.b2bPricingRules', 'product.brand', 'product.category'])
             ->whereNotNull('product_id')
+            ->when($productId !== null, fn ($query) => $query->where('product_id', $productId))
             ->where('match_status', 'matched')
             ->whereIn('supplier_id', $supplierIds)
             ->whereHas('supplier', fn ($query) => $query
@@ -90,7 +92,9 @@ class B2bSupplyOptionResolver
     /** @return Collection<int, array<string, mixed>> */
     public function optionsForProduct(Product $product, ?User $user): Collection
     {
-        return $this->optionsForUser($user)
+        // Reuse a loaded catalog, but a single-line edit must not load it all.
+        $cacheKey = $user ? 'user:'.$user->id : 'guest';
+        return ($this->optionsCache[$cacheKey] ?? $this->optionsForUser($user, (int) $product->id))
             ->where('product_id', (int) $product->id)
             ->values();
     }

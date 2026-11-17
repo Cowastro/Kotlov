@@ -1,8 +1,9 @@
 @unless($b2bClient)<details class="cart-retail-selection"><summary>Выбрать часть товаров или найти в корзине</summary>@endunless
 <div class="cart-list-tools">
-    <label class="cart-check-all"><input type="checkbox" id="cart-select-all" @checked($cartSelection['positions'] === count($items))> Выбрать всё</label>
+    <label class="cart-check-all"><input type="checkbox" id="cart-select-all" @checked($cartSelection['positions'] === count($items))> <span id="cart-select-label">Выбрать всё</span></label>
     <span class="cart-selection-count">Выбрано <strong data-selected-positions>{{ $cartSelection['positions'] }}</strong> из {{ count($items) }}</span>
-    <label class="cart-find"><span class="visually-hidden">Найти в корзине</span><input type="search" id="cart-find" placeholder="Найти товар или артикул"></label>
+    <div class="cart-find"><label for="cart-find" class="visually-hidden">Найти в корзине</label><input type="search" id="cart-find" placeholder="Найти товар или артикул" autocomplete="off" enterkeyhint="search" aria-describedby="cart-search-result"><button type="button" id="cart-search-clear" aria-label="Сбросить поиск в корзине" hidden>×</button></div>
+    <span class="cart-search-result" id="cart-search-result" role="status" aria-live="polite" hidden></span>
 </div>
 @unless($b2bClient)</details>@endunless
 <p class="cart-feedback" id="cart-save-state" role="status" aria-live="polite">{{ auth()->check() ? 'Все изменения сохраняются в аккаунте' : 'Изменения сохраняются в этой корзине' }}</p>

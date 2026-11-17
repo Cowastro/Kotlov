@@ -2,6 +2,10 @@
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>{{ $name }} | KOTLOV</title>
 <style>
 body{font:14px/1.45 Arial,sans-serif;color:#202020;margin:32px auto;padding:0 20px;max-width:1100px}header{display:flex;gap:20px;justify-content:space-between;border-bottom:2px solid #222;padding-bottom:16px}h1{font-size:24px;margin:24px 0 8px}p{margin:8px 0}small{color:#666}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{padding:10px 6px;text-align:left;border-bottom:1px solid #ddd;vertical-align:top}.number{text-align:right;white-space:nowrap}thead{display:table-header-group}tr{break-inside:avoid}tfoot{font-weight:bold}button{border:0;border-radius:24px;background:#222;color:white;padding:12px 20px;cursor:pointer}.note{white-space:pre-wrap;border-left:3px solid #ddd;padding-left:12px}@media print{body{margin:0;padding:0;font-size:11px}button{display:none}@page{size:A4;margin:14mm}h1{font-size:20px}}
+
+.print-scroll-hint{display:none;font-size:12px;color:#666}@media screen and (max-width:600px){.print-scroll-hint{display:block}}
+.print-table-wrap{overflow-x:auto}table{min-width:580px}td:nth-child(2){overflow-wrap:anywhere}tfoot{display:table-row-group}
+@media print{.print-table-wrap{overflow:visible}table{min-width:0;table-layout:fixed}th:first-child{width:5%}th:nth-child(2){width:47%}th:nth-child(3){width:16%}th:nth-child(4){width:10%}th:nth-child(5){width:22%}th,td{padding:7px 4px}.number{white-space:normal;overflow-wrap:anywhere}}
 </style></head><body>
 <header><strong>KOTLOV.BY<br><small>Подбор оборудования</small></strong><div>kotlov.by<br>+375 (29) 377-70-92</div></header>
 <h1>{{ $name }}</h1><p><small>{{ $date->format('d.m.Y H:i') }} · {{ count($items) }} позиций · BYN</small></p>
@@ -9,7 +13,8 @@ body{font:14px/1.45 Arial,sans-serif;color:#202020;margin:32px auto;padding:0 20
 @if ($note)<p class="note">{{ $note }}</p>@endif
 @include('partials.pump-calculation-summary',['pumpCalculations'=>$pumpCalculations ?? []])
 <p><button type="button" onclick="window.print()">Распечатать / сохранить PDF</button></p>
-<table><thead><tr><th>№</th><th>Наименование / артикул</th><th class="number">Цена</th><th class="number">Кол-во</th><th class="number">Сумма</th></tr></thead><tbody>
+<p class="print-scroll-hint">Прокрутите таблицу вправо, чтобы увидеть цены, количество и суммы.</p>
+<div class="print-table-wrap" role="region" aria-label="Все позиции подбора" tabindex="0"><table><thead><tr><th>№</th><th>Наименование / артикул</th><th class="number">Цена</th><th class="number">Кол-во</th><th class="number">Сумма</th></tr></thead><tbody>
 @foreach ($items as $item)<tr><td>{{ $loop->iteration }}</td><td>{{ $item['name'] }}<br><small>{{ $item['sku'] ?? '' }}</small>@if (! empty($item['selection_note']))<br><small>{{ $item['selection_note'] }}</small>@endif</td><td class="number">{{ (float) $item['price'] > 0 ? number_format((float) $item['price'], 2, ',', ' ') : 'Уточняется' }}</td><td class="number">{{ $item['quantity'] }}</td><td class="number">{{ (float) $item['price'] > 0 ? number_format($item['price'] * $item['quantity'], 2, ',', ' ') : 'Уточняется' }}</td></tr>@endforeach
-</tbody>@if(collect($items)->contains(fn ($item) => (float) $item['price'] <= 0))<caption>В итог не включены позиции с неуточнённой ценой.</caption>@endif<tfoot><tr><td colspan="4">Итого, BYN</td><td class="number">{{ number_format(collect($items)->sum(fn ($item) => $item['price'] * $item['quantity']), 2, ',', ' ') }}</td></tr></tfoot></table>
+</tbody>@if(collect($items)->contains(fn ($item) => (float) $item['price'] <= 0))<caption>В итог не включены позиции с неуточнённой ценой.</caption>@endif<tfoot><tr><td colspan="4">Итого, BYN</td><td class="number">{{ number_format(collect($items)->sum(fn ($item) => $item['price'] * $item['quantity']), 2, ',', ' ') }}</td></tr></tfoot></table></div>
 </body></html>
