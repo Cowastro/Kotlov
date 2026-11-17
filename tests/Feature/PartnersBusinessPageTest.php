@@ -35,11 +35,17 @@ class PartnersBusinessPageTest extends TestCase
             ->assertSeeText('Оптовые условия')->assertDontSeeText('Приоритет для монтажников')
             ->assertDontSeeText('Заявки по региону');
 
-        $this->get('/partners?type=installer')->assertOk()
+        $installer = $this->get('/partners?type=installer')->assertOk()
             ->assertSeeText('Приоритет для монтажников')->assertSeeText('Заявки по региону')
             ->assertSee('aria-current="true" >Монтажник', false)
-            ->assertSee('data-bs-target="#partner-faq-1"', false)
-            ->assertDontSee('<details', false);
+            ->assertSee('data-bs-target="#partner-faq-1"', false);
+        // Only the partner FAQ must use Bootstrap collapse. The shared cart
+        // preview may independently use <details> for its optional promo field.
+        $dom = new \DOMDocument;
+        @$dom->loadHTML($installer->getContent());
+        $xpath = new \DOMXPath($dom);
+        $this->assertSame(1, $xpath->query('//*[@id="partners-faq"]')->length);
+        $this->assertSame(0, $xpath->query('//*[@id="partners-faq"]//details')->length);
 
         $level->update(['is_active' => false]);
         $this->get('/partners')->assertOk()->assertDontSee('id="partner-levels"', false);
