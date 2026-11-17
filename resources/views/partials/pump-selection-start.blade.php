@@ -26,6 +26,7 @@
         <h2>{{ $pumpTitle }}</h2>
         @include('partials.catalog-stock-toggle')
     </div>
+    @if($category->slug === 'tsirkulyatsionnyie')<p class="mb-3"><a class="pump-start__link" href="{{ route('pump-calculator') }}">Калькулятор расхода и напора →</a><span class="text-caption-01 cl-text-2"> · для новой системы или замены насоса</span></p>@endif
     <div class="pump-start__grid">
         <div class="pump-start__card" id="pump-replacement">
             <h3 class="pump-start__title"><span class="pump-start__icon" aria-hidden="true"><i class="icon icon-ArrowClockwise"></i></span>Заменить насос</h3>

@@ -7,6 +7,7 @@ body{font:14px/1.45 Arial,sans-serif;color:#202020;margin:32px auto;padding:0 20
 <h1>{{ $name }}</h1><p><small>{{ $date->format('d.m.Y H:i') }} · {{ count($items) }} позиций · BYN</small></p>
 <p>Цены на момент формирования подбора. Актуальную цену, наличие и срок поставки подтвердит менеджер. Этот документ не является счётом на оплату.</p>
 @if ($note)<p class="note">{{ $note }}</p>@endif
+@include('partials.pump-calculation-summary',['pumpCalculations'=>$pumpCalculations ?? []])
 <p><button type="button" onclick="window.print()">Распечатать / сохранить PDF</button></p>
 <table><thead><tr><th>№</th><th>Наименование / артикул</th><th class="number">Цена</th><th class="number">Кол-во</th><th class="number">Сумма</th></tr></thead><tbody>
 @foreach ($items as $item)<tr><td>{{ $loop->iteration }}</td><td>{{ $item['name'] }}<br><small>{{ $item['sku'] ?? '' }}</small>@if (! empty($item['selection_note']))<br><small>{{ $item['selection_note'] }}</small>@endif</td><td class="number">{{ (float) $item['price'] > 0 ? number_format((float) $item['price'], 2, ',', ' ') : 'Уточняется' }}</td><td class="number">{{ $item['quantity'] }}</td><td class="number">{{ (float) $item['price'] > 0 ? number_format($item['price'] * $item['quantity'], 2, ',', ' ') : 'Уточняется' }}</td></tr>@endforeach

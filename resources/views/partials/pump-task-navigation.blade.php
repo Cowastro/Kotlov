@@ -26,6 +26,7 @@
     <p class="text-caption-01 cl-text-2 mb-2">1. Выберите задачу → 2. Укажите модель или параметры → 3. Сравните насосы</p>
     @include('partials.catalog-type-cards', ['heading' => 'Для какой задачи нужен насос?', 'entries' => $entries, 'showStockToggle' => true])
     <div class="d-flex flex-wrap gap-3 mt-3">
+        <a href="{{ route('pump-calculator') }}" class="link text-caption-01">Калькулятор циркуляционного насоса →</a>
         @foreach ($subcategories as $child)
             @continue(isset($tasks[$child->slug]))
             <a href="{{ url('/'.$child->slug) }}" class="link text-caption-01">{{ $child->name }} →</a>

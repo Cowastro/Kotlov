@@ -23,6 +23,7 @@
         </div></details>
         <span data-share-state role="status" aria-live="polite"></span>
     </div>
+    @include('partials.pump-calculation-summary',['pumpCalculations'=>$selection->meta['pump_calculations'] ?? []])
     <form id="selection-editor" method="post" action="{{ route('selections.update', $selection) }}">
         @csrf @method('PUT')
         <input type="hidden" name="revision" value="{{ $selection->revision }}">
