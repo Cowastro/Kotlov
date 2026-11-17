@@ -12,7 +12,7 @@
 </style>
 @endpush
 @include('partials.pump-selection-start')
-<section class="container pb-3" id="pump-parameters" style="scroll-margin-top:100px" aria-label="Быстрый подбор насоса">
+<section class="container pb-3 catalog-controls" id="pump-parameters" style="scroll-margin-top:100px" aria-label="Быстрый подбор насоса">
     <details class="pump-picker" @if ($category->slug !== 'vodosnabzhenie' || request()->hasAny(['pump', 'pump_head', 'pump_flow', 'pump_head_to', 'pump_flow_to'])) open @endif>
         <summary>Параметры для отбора</summary>
         <form method="get" action="{{ url()->current() }}#catalog-products">

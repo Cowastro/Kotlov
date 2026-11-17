@@ -5,7 +5,7 @@
     $resetVolumeQuery = http_build_query($preservedFilters);
 @endphp
 
-<section class="container my-3" aria-labelledby="sauna-room-filter-title">
+<section class="container my-3 catalog-controls" aria-labelledby="sauna-room-filter-title">
     <div class="border rounded-3 p-3 p-md-4">
         <h2 id="sauna-room-filter-title" class="h5 mb-2">Подбор печи по объёму парной</h2>
         <p id="sauna-room-filter-help" class="text-caption-01 cl-text-2 mb-3">

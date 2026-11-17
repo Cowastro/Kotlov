@@ -61,7 +61,7 @@
                 @include('partials.catalog-stock-toggle')
             @endif
         </div>
-        <div class="catalog-subcategory-nav__search">
+        <div class="catalog-subcategory-nav__search catalog-controls">
             <label for="accessories-nav-search" class="visually-hidden">Поиск подраздела</label>
             <input class="form-control" type="search" id="accessories-nav-search" placeholder="Найти подраздел" autocomplete="off">
         </div>

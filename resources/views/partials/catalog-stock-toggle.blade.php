@@ -5,6 +5,6 @@
     }
     $stockUrl = url()->current().($stockParameters ? '?'.http_build_query($stockParameters) : '').'#catalog-products';
 @endphp
-<a href="{{ $stockUrl }}" rel="nofollow" class="tf-btn s-small {{ $inStockOnly ? 'btn-primary' : 'btn-stroke' }}">
+<a href="{{ $stockUrl }}" rel="nofollow" class="tf-btn s-small catalog-control {{ $inStockOnly ? 'btn-primary' : 'btn-stroke' }}">
     {{ $inStockOnly ? 'В наличии ✓' : 'В наличии' }}
 </a>
