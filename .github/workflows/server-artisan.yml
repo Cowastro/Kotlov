@@ -620,7 +620,7 @@ jobs:
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:enrich-from-url" ]]; then
             echo "safe_enrich_from_url_begin"
-            grep -E '^audit\.enrich_from_url\.(skipped=[0-9]+:[a-z_]+|(found|done)=[0-9]+:images[0-9]+:specs[0-9]+:text[0-9]+)$' "$detail_log" || true
+            grep -E '^audit\.enrich_from_url\.(skipped=[0-9]+:[a-z_]+|shop_text=[0-9]+|(found|done)=[0-9]+:images[0-9]+:specs[0-9]+:text[0-9]+)$' "$detail_log" || true
             echo "safe_enrich_from_url_end"
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:apply-card-content" ]]; then
