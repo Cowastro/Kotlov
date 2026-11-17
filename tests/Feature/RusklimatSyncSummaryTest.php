@@ -75,4 +75,38 @@ class RusklimatSyncSummaryTest extends TestCase
             ->expectsOutputToContain('audit.rusklimat_sync.new=ns-0070577:boneco:11:65:create_candidate')
             ->assertSuccessful();
     }
+
+    public function test_link_option_attaches_a_row_to_the_chosen_card(): void
+    {
+        if (! DB::table('suppliers')->where('code', 'rusklimat')->exists()) {
+            DB::table('suppliers')->insert(['code' => 'rusklimat', 'name' => 'Русклимат', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        }
+        $now = now();
+        $brandId = (int) DB::table('brands')->whereRaw('lower(name) = ?', ['ballu'])->value('id');
+        if ($brandId === 0) {
+            $brandId = (int) DB::table('brands')->insertGetId(['name' => 'Ballu', 'slug' => 'ballu-link-test', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now]);
+        }
+        $categoryId = DB::table('categories')->insertGetId(['name' => 'Водонагреватели', 'slug' => 'vodonagrevateli-link-test', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now]);
+        $productId = DB::table('products')->insertGetId([
+            'category_id' => $categoryId, 'brand_id' => $brandId, 'name' => 'Водонагреватель Ballu BWH/S 50 RODON',
+            'slug' => 'ballu-rodon-50-link-test', 'sku' => 'RODON-LINK-1', 'price' => 499, 'currency' => 'BYN',
+            'is_active' => true, 'is_archived' => false, 'in_stock' => false, 'availability_status' => 'check',
+            'requires_price_confirmation' => false, 'created_at' => $now, 'updated_at' => $now,
+        ]);
+        $file = tempnam(sys_get_temp_dir(), 'rk').'.csv';
+        file_put_contents($file, "Группа,Модель,\"Наличие,шт\",\"Розница, BYN\",\"Дилер, BYN\",НС-код,Бренд
+"
+            ."Водонагреватели,BWH/S 50 RODON SP,2,499,374,НС-1602450,Ballu
+");
+
+        $this->artisan('supplier:sync-rusklimat', ['--dry-run' => true, '--stock-file' => $file, '--no-images' => true, '--link' => ["1602450:{$productId}"]])
+            ->expectsOutputToContain("audit.rusklimat_sync.linked=ns-1602450:{$productId}")
+            ->assertSuccessful();
+        $this->assertDatabaseMissing('supplier_products', ['product_id' => $productId]);
+
+        $this->artisan('supplier:sync-rusklimat', ['--apply' => true, '--stock-file' => $file, '--no-images' => true, '--link' => ["1602450:{$productId}"]])
+            ->expectsOutputToContain("audit.rusklimat_sync.linked=ns-1602450:{$productId}")
+            ->assertSuccessful();
+        $this->assertDatabaseHas('supplier_products', ['product_id' => $productId, 'match_confidence' => 'manual_admin']);
+    }
 }

@@ -33,6 +33,7 @@ class SyncRusklimatCommand extends Command
         {--only-existing : Only update products already linked to Русклимат; never create or infer new links}
         {--only-linked : Alias for --only-existing}
         {--fix-retail-prices : Update products.price from розница column for matched products (fixes existing wrong prices)}
+        {--link=* : Link a sheet row to a card by hand: <НС code digits>:<product id>, e.g. 1420125:12273}
         {--enrich : Generate AI descriptions for new products (requires ANTHROPIC_API_KEY or AI_API_KEY)}';
 
     protected $description = 'Sync Русклимат prices and stock from Google Sheets (auto-download) or a local CSV/XLSX file.';
@@ -205,6 +206,9 @@ class SyncRusklimatCommand extends Command
     /** @var array<string,int>  normalized_sku → product_id */
     private array $indexBySku = [];
 
+    /** @var array<string, int> НС code digits => product id, from --link */
+    private array $manualLinks = [];
+
     /** @var array<string,int>  supplier_article → product_id (already in supplier_products) */
     private array $indexBySupplierArticle = [];
 
@@ -230,6 +234,15 @@ class SyncRusklimatCommand extends Command
         $createNew    = (bool) $this->option('create-new');
         $onlyExisting = (bool) $this->option('only-existing') || (bool) $this->option('only-linked');
         $noImages     = (bool) $this->option('no-images');
+
+        foreach ((array) $this->option('link') as $pair) {
+            if (preg_match('/^\D*(\d+):(\d+)$/u', trim((string) $pair), $m) && DB::table('products')->where('id', (int) $m[2])->exists()) {
+                $this->manualLinks[$m[1]] = (int) $m[2];
+            } else {
+                $this->warn("--link {$pair}: expected <НС code digits>:<existing product id>.");
+                $this->line('audit.rusklimat_sync.link_invalid='.preg_replace('/[^0-9:]/', '', (string) $pair));
+            }
+        }
 
         $this->line($apply && ! $this->option('dry-run')
             ? '<fg=red;options=bold>APPLY: database will be updated.</>'
@@ -756,6 +769,13 @@ class SyncRusklimatCommand extends Command
         $normArticle = $row['norm_article'];
         $brandId     = $this->resolveBrand($row['brand']);
 
+        // L0: linked by hand (--link) — overrides any earlier or guessed link
+        $digits = preg_replace('/\D/', '', $normArticle);
+        if ($digits !== '' && isset($this->manualLinks[$digits])) {
+            $pid = $this->manualLinks[$digits];
+            return ['product_id' => $pid, 'sku' => (string) DB::table('products')->where('id', $pid)->value('sku'), 'confidence' => 'manual_admin'];
+        }
+
         // L1: already mapped in supplier_products
         if (isset($this->indexBySupplierArticle[$normArticle])) {
             $pid = $this->indexBySupplierArticle[$normArticle];
@@ -1019,6 +1039,10 @@ class SyncRusklimatCommand extends Command
                     Str::slug((string) $row['article']) ?: 'none', Str::slug((string) ($row['brand'] ?? '')) ?: 'none',
                     (int) ($row['quantity'] ?? 0), (int) round((float) ($row['retail_price'] ?? 0)), $row['action']));
             }
+            if (($row['confidence'] ?? '') === 'manual_admin') {
+                $this->line(sprintf('audit.rusklimat_sync.linked=%s:%d',
+                    Str::slug((string) $row['article']) ?: 'none', (int) ($row['matched_product_id'] ?? 0)));
+            }
             // Low-confidence guesses: the sheet row and the card the sync would attach it to.
             if (($row['confidence'] ?? '') === 'manual_review') {
                 $this->line(sprintf('audit.rusklimat_sync.review=%s:%s:%d:%d:%d',
@@ -1087,6 +1111,9 @@ class SyncRusklimatCommand extends Command
                     $productId = (int) $row['matched_product_id'];
                     $this->upsertSupplierProduct($row, $productId, (string) ($row['matched_sku'] ?? ''), $supplierId, $syncId, $now);
                     app(SupplierProductAvailabilityService::class)->refresh($productId, $now);
+                    if (($row['confidence'] ?? '') === 'manual_admin') {
+                        $this->line(sprintf('audit.rusklimat_sync.linked=%s:%d', Str::slug((string) $row['article']) ?: 'none', $productId));
+                    }
 
                     // Optionally update retail price on the product itself
                     if ($fixRetailPrices && $row['retail_price'] !== null && (float) $row['retail_price'] > 0) {
