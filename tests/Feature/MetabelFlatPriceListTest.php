@@ -78,5 +78,13 @@ class MetabelFlatPriceListTest extends TestCase
             ->assertSuccessful();
         $this->assertSame(1755.0, (float) DB::table('products')->where('id', $ok)->value('price'));
         $this->assertTrue(DB::table('supplier_products')->where('product_id', $ok)->where('supplier_article', 'ОКА С ПЛИТОЙ')->exists());
+
+        // A later run keeps the sbg.by item linked by hand to the row.
+        DB::table('supplier_products')->where('product_id', $ok)->update(['raw' => json_encode(['deal_by_id' => 5882128, 'cat_id' => 61])]);
+        $this->artisan('supplier:sync-metabel', ['--price-file' => $file, '--only-existing' => true, '--apply' => true, '--no-scrape' => true,
+            '--no-images' => true, '--link' => ["oka-s-plitoi:{$ok}"]])->assertSuccessful();
+        $raw = json_decode(DB::table('supplier_products')->where('product_id', $ok)->value('raw'), true);
+        $this->assertSame(5882128, $raw['deal_by_id']);
+        $this->assertSame(1755.0, (float) $raw['retail_byn']);
     }
 }
