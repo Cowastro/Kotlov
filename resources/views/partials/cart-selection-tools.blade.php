@@ -2,7 +2,7 @@
     @auth
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
             <p class="fw-semibold"><span class="cart-saved-dot" aria-hidden="true"></span> Автосохранение</p>
-            <div class="cart-save-links"><a class="link" href="{{ route('selections.index') }}">Мои подборы</a>@if($b2bClient && count($items))<a class="link" href="{{ route('cart.print') }}" target="_blank" rel="noopener">Печать / PDF</a>@endif</div>
+            <div class="cart-save-links"><a class="link" href="{{ route('selections.index') }}">Мои заявки</a>@if($b2bClient && count($items))<a class="link" href="{{ route('cart.print') }}" target="_blank" rel="noopener">Печать / PDF</a>@endif</div>
         </div>
         <details class="cart-save-details"><summary>{{ $b2bClient ? 'Сохранить подбор для клиента или объекта' : 'Сохранить список или распечатать' }}</summary><p class="text-caption-01 cl-text-2 mb-3">Сохраните отдельный подбор с названием клиента или объекта. К нему можно вернуться после повторного входа.</p>
         @if (session('error'))<p role="alert" class="text-danger mb-2">{{ session('error') }}</p>@endif

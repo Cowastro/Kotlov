@@ -75,7 +75,7 @@ class CustomerCartPersistenceTest extends TestCase
         $selection = CustomerSelection::where('user_id', $user->id)->firstOrFail();
         $this->assertCount(150, $selection->items);
         session()->flush();
-        $this->get('/account/selections/'.$selection->id)->assertOk()->assertSee('FIT-150')->assertSee('Мои подборы');
+        $this->get('/account/selections/'.$selection->id)->assertOk()->assertSee('FIT-150')->assertSee('Мои заявки');
         $this->get('/account/selections/'.$selection->id.'?print=1')->assertOk()
             ->assertHeader('Cache-Control', 'no-store, private')->assertSee('FIT-150')->assertSee('1 500,00');
         $this->put('/account/selections/'.$selection->id, ['name' => 'Новый подбор', 'revision' => 1, 'quantities' => [1 => 0, 2 => 3], 'note' => 'Изменено'])->assertRedirect();

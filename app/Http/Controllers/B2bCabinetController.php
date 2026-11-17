@@ -119,6 +119,7 @@ class B2bCabinetController extends Controller
         if ($sectionPermission && ! $permissions->contains($sectionPermission)) {
             $section = 'overview';
         }
+        if ($section === 'carts' && ! $request->attributes->get('b2b_admin_preview')) return to_route('selections.index');
         $counterparty = $client->counterparty;
         $creditSummary = $checkoutTerms->creditSummary($client);
         $ordersQuery = B2bOrder::query()
@@ -142,6 +143,8 @@ class B2bCabinetController extends Controller
             ->latest('contract_date')
             ->get();
         $savedCarts = B2bSavedCart::query()->whereIn('user_id', $companyUserIds)->with('user:id,name')->latest('updated_at')->get();
+        $ownedRequests = \App\Models\CustomerSelection::where('user_id', $user->id)->get(['legacy_saved_cart_id']);
+        $requestCount = $ownedRequests->count() + $savedCarts->whereNotIn('id', $ownedRequests->pluck('legacy_saved_cart_id')->filter())->count();
         $specifications = $client->specifications()
             ->with([
                 'attachments', 'commercialDocument', 'items.product',
@@ -213,7 +216,7 @@ class B2bCabinetController extends Controller
 
         return view('pages.b2b.cabinet', compact(
             'installerPage', 'installerEditor', 'partnerBranches', 'clientOrders', 'offeredClientOrders',
-            'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
+            'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'requestCount', 'specifications',
             'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers', 'creditSummary',
             'profileCompletion', 'profileMissing',
             'invoiceProfileReady', 'invoiceProfileMissing',
@@ -375,67 +378,16 @@ class B2bCabinetController extends Controller
             return back()->withErrors(['cart' => 'В B2B-корзине нет товаров для сохранения.']);
         }
 
-        $request->user()->b2bSavedCarts()->create([
-            'name' => $data['name'],
-            'items' => $items->all(),
-            'items_count' => $items->sum(fn (array $item): int => (int) ($item['quantity'] ?? 0)),
-            'total' => $items->sum(fn (array $item): float => (float) ($item['price'] ?? 0) * (int) ($item['quantity'] ?? 0)),
+        $selection = \App\Models\CustomerSelection::create([
+            'user_id' => $request->user()->id, 'name' => $data['name'],
+            'items' => $items->keyBy('id')->all(), 'revision' => 1,
         ]);
-
-        return to_route('b2b.cabinet', ['section' => 'carts'])->with('success', 'Корзина сохранена.');
+        return to_route('b2b.selections.show', $selection)->with('success', 'Заявка сохранена.');
     }
 
     public function restoreCart(Request $request, B2bSavedCart $savedCart, B2bCatalogOfferResolver $resolver)
     {
-        $this->authorizeSavedCart($request, $savedCart);
-        $products = Product::query()
-            ->active()
-            ->notArchived()
-            ->with('category')
-            ->whereIn('id', collect($savedCart->items)->pluck('id'))
-            ->get()
-            ->keyBy('id');
-        $cart = [];
-        $skipped = 0;
-
-        foreach ($savedCart->items as $savedItem) {
-            $product = $products->get((int) ($savedItem['id'] ?? 0));
-            $quantity = min(999, max(1, (int) ($savedItem['quantity'] ?? 1)));
-            $offer = $product ? $resolver->forProduct($product, $request->user()) : null;
-            if (! $product || ! $offer || ! $resolver->canOrder($offer, $quantity)) {
-                $skipped++;
-
-                continue;
-            }
-
-            $cart[$product->id] = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'sku' => $product->sku,
-                'price' => $resolver->priceWithTax($offer, $request->user()),
-                'image' => $product->image_url,
-                'category_slug' => $product->category?->slug ?? 'catalog',
-                'quantity' => $quantity,
-                'pricing_type' => 'b2b',
-                'price_tax_mode' => 'inclusive',
-                'integration_product_id' => $offer->id,
-                'source_name' => $offer->source?->name,
-                'chimney_selector_selected' => false,
-            ];
-        }
-
-        if ($cart === []) {
-            return back()->withErrors(['cart' => 'Товары из этой корзины сейчас недоступны.']);
-        }
-
-        $request->session()->put('cart', $cart);
-        $message = 'Корзина восстановлена с актуальными ценами и остатками.';
-        if ($skipped > 0) {
-            $message .= " Недоступных позиций: {$skipped}.";
-        }
-
-        return to_route('cart')->with('success', $message);
+        return app(SelectionFulfillmentController::class)->importCart($request, $savedCart);
     }
 
     public function deleteCart(Request $request, B2bSavedCart $savedCart)

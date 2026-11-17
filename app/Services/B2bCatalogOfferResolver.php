@@ -93,7 +93,7 @@ class B2bCatalogOfferResolver
     }
 
     /** @return Collection<int, IntegrationProduct> */
-    public function offersForUser(?User $user, ?int $productId = null): Collection
+    public function offersForUser(?User $user, int|array|null $productId = null): Collection
     {
         if (! $this->canViewPartnerPrices($user)) {
             return collect();
@@ -101,7 +101,7 @@ class B2bCatalogOfferResolver
 
         $offers = $productId === null
             ? $this->offers()
-            : $this->loadPublishableOffers(IntegrationProduct::query()->where('product_id', $productId));
+            : $this->loadPublishableOffers(IntegrationProduct::query()->whereIn('product_id', (array) $productId));
 
         return $offers
             ->filter(fn (IntegrationProduct $offer): bool => $this->userAllowsSource($user, $offer))

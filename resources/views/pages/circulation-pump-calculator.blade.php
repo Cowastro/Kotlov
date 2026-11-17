@@ -4,7 +4,7 @@
 @section('robots', request()->query() ? 'noindex, follow' : 'index, follow')
 @section('content')
 <main class="container pump-calculator" data-pump-calculator>
-    <nav class="pc-breadcrumb" aria-label="Навигация"><a href="{{ url('/tsirkulyatsionnyie') }}">← Циркуляционные насосы</a>@auth<a href="{{ route('selections.index') }}">Мои подборы</a>@if(\App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a href="{{ route('b2b.workspace') }}">B2B-подбор</a>@endif @endauth</nav>
+    <nav class="pc-breadcrumb" aria-label="Навигация"><a href="{{ url('/tsirkulyatsionnyie') }}">← Циркуляционные насосы</a>@auth<a href="{{ route('selections.index') }}">Мои заявки</a>@if(\App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a href="{{ route('b2b.workspace') }}">B2B-подбор</a>@endif @endauth</nav>
     <header class="pc-heading"><span class="pc-eyebrow">Отопление · помощник по подбору</span><h1>Подберём циркуляционный насос</h1><p>Рассчитайте потребности системы или начните с размеров старого насоса.</p></header>
     <nav class="pc-scenarios" aria-label="Сценарий подбора"><a href="{{ route('pump-calculator', ['scenario'=>'new']) }}" @if($input['scenario']==='new') aria-current="page" @endif><span aria-hidden="true">01</span><strong>Новая система</strong><small>Расход и напор</small></a><a href="{{ route('pump-calculator', ['scenario'=>'replacement']) }}" @if($input['scenario']==='replacement') aria-current="page" @endif><span aria-hidden="true">02</span><strong>Заменить насос</strong><small>Модель и размеры</small></a></nav>
     @if($errors->any())<div class="pc-errors" role="alert"><strong>Проверьте параметры</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif

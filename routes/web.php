@@ -621,6 +621,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/cart/move-to-selection', [\App\Http\Controllers\CustomerSelectionController::class, 'moveLine'])->name('selections.move-line');
     Route::post('/account/selections/{selection}/duplicate', [\App\Http\Controllers\CustomerSelectionController::class, 'duplicate'])->name('selections.duplicate');
     Route::get('/account/selections', [\App\Http\Controllers\CustomerSelectionController::class, 'index'])->name('selections.index');
+    Route::post('/account/requests/import/{savedCart}', [\App\Http\Controllers\SelectionFulfillmentController::class, 'importCart'])->name('requests.import-cart');
+    Route::post('/account/requests/{selection}/check', [\App\Http\Controllers\SelectionFulfillmentController::class, 'check'])->block(30, 10)->name('requests.check');
+    Route::post('/account/requests/{selection}/prepare', [\App\Http\Controllers\SelectionFulfillmentController::class, 'prepare'])->block(30, 10)->name('requests.prepare');
     Route::post('/account/selections', [\App\Http\Controllers\CustomerSelectionController::class, 'store'])->name('selections.store');
     Route::get('/account/selections/{selection}', [\App\Http\Controllers\CustomerSelectionController::class, 'show'])->name('selections.show');
     Route::put('/account/selections/{selection}', [\App\Http\Controllers\CustomerSelectionController::class, 'update'])->name('selections.update');

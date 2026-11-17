@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     var root = document.querySelector('[data-order-desk]'); if (!root) return;
-    var state = JSON.parse(root.dataset.state), busy = false, selectedOnly = false, action = 'copy';
+    var state = JSON.parse(root.dataset.state), busy = false, selectedOnly = false, action = 'copy', availabilityFilter = 'all', submitting = false;
     var csrf = document.querySelector('meta[name="csrf-token"]').content;
     var rows = Array.from(root.querySelectorAll('[data-desk-row]'));
     var dialog = document.getElementById('desk-transfer-dialog');
@@ -16,10 +16,17 @@
         rows.forEach(function (row) {
             var item = state.items.find(function (line) { return line.id === Number(row.dataset.deskRow); });
             var match = item && (!selectedOnly || !state.excluded.includes(item.id)) && (item.name + ' ' + (item.sku || '') + ' ' + (item.workspace_purchase ? item.workspace_purchase.supplier : '')).toLocaleLowerCase('ru').includes(needle);
+            if (match && availabilityFilter !== 'all') {
+                match = availabilityFilter === 'unchecked' ? !item.allocation : Boolean(item.allocation && item.allocation[availabilityFilter] > 0);
+            }
             row.hidden = !match; if (match) visible++;
         });
         root.querySelector('[data-desk-found]').textContent = visible + ' из ' + state.items.length;
         root.querySelector('[data-desk-empty]').hidden = visible > 0;
+        var shown = rows.filter(function (row) { return !row.hidden; });
+        var picked = shown.filter(function (row) { return !state.excluded.includes(Number(row.dataset.deskRow)); }).length;
+        var all = root.querySelector('[data-desk-check-all]');
+        all.checked = shown.length > 0 && picked === shown.length; all.indeterminate = picked > 0 && picked < shown.length;
     }
     function paint() {
         var items = chosen(), total = 0, cost = 0, margin = 0, marginRetail = 0, unknown = 0;
@@ -35,6 +42,7 @@
         root.querySelector('[data-desk-total]').textContent = money(total) + (items.some(function (item) { return !(item.price > 0); }) ? ' + уточнение' : '');
         root.querySelector('[data-desk-margin]').textContent = state.procurement ? 'Закупка ' + money(cost) + ' · Маржа ' + money(margin) + (marginRetail > 0 ? ' / ' + (margin / marginRetail * 100).toLocaleString('ru-RU', {maximumFractionDigits:1}) + '%' : '') + (unknown ? ' · По подтверждённым ценам; уточнить ' + unknown + ' поз.' : '') : '';
         root.querySelector('[data-desk-title]').textContent = state.name;
+        root.querySelectorAll('[data-desk-revision]').forEach(function (input) { input.value = state.revision; });
         var all = root.querySelector('[data-desk-check-all]'); all.checked = state.items.length > 0 && items.length === state.items.length; all.indeterminate = items.length > 0 && items.length < state.items.length;
         root.querySelector('[data-desk-undo]').hidden = !state.undo_available;
         rows.forEach(function (row) {
@@ -45,6 +53,8 @@
             row.querySelector('[data-desk-line-total]').textContent = item.price > 0 ? money(item.price * item.quantity) : 'Уточняется';
             var warning = row.querySelector('[data-desk-stock-warning]');
             if (warning) warning.hidden = item.quantity <= item.workspace_purchase.stock_quantity;
+            var allocation = row.querySelector('[data-desk-allocation]');
+            if (allocation) allocation.textContent = item.allocation ? 'Доступно ' + item.allocation.ready + ' · Ожидается ' + item.allocation.waiting + (item.allocation.unknown ? ' · остаток уточняется' : '') + ' · не резерв' : 'Наличие ещё не проверено';
         });
         visibleRows();
     }
@@ -87,7 +97,12 @@
     root.addEventListener('change', function (event) {
         var input = event.target;
         if (input.matches('[data-desk-check], [data-desk-check-all]')) {
-            var ids = input.hasAttribute('data-desk-check-all') ? (input.checked ? state.items.map(function (item) { return item.id; }) : []) : rows.filter(function (row) { return state.items.some(function (item) { return item.id === Number(row.dataset.deskRow); }) && row.querySelector('[data-desk-check]').checked; }).map(function (row) { return Number(row.dataset.deskRow); });
+            var ids;
+            if (input.hasAttribute('data-desk-check-all')) {
+                var shownIds = rows.filter(function (row) { return !row.hidden; }).map(function (row) { return Number(row.dataset.deskRow); });
+                ids = chosen().map(function (item) { return item.id; }).filter(function (id) { return !shownIds.includes(id); });
+                if (input.checked) ids = ids.concat(shownIds);
+            } else ids = rows.filter(function (row) { return state.items.some(function (item) { return item.id === Number(row.dataset.deskRow); }) && row.querySelector('[data-desk-check]').checked; }).map(function (row) { return Number(row.dataset.deskRow); });
             mutate({action:'select', ids:ids}).catch(function () {});
         }
         if (input.matches('[data-desk-quantity]')) saveQuantity(input);
@@ -103,6 +118,11 @@
     root.addEventListener('keydown', function (event) { if (event.key === 'Enter' && event.target.matches('[data-desk-quantity]')) { event.preventDefault(); saveQuantity(event.target, true); } });
     root.addEventListener('click', function (event) {
         var button = event.target.closest('button'); if (!button || busy) return;
+        if (button.hasAttribute('data-desk-availability')) {
+            availabilityFilter = button.dataset.deskAvailability;
+            root.querySelectorAll('[data-desk-availability]').forEach(function (entry) { entry.setAttribute('aria-pressed', String(entry === button)); });
+            visibleRows();
+        }
         if (button.hasAttribute('data-desk-step')) { var input = button.closest('[data-desk-row]').querySelector('[data-desk-quantity]'); input.value = Math.min(999, Math.max(1, Number(input.value) + Number(button.dataset.deskStep))); saveQuantity(input); }
         if (button.hasAttribute('data-desk-filter-selected')) { selectedOnly = !selectedOnly; button.setAttribute('aria-pressed', String(selectedOnly)); visibleRows(); }
         if (button.hasAttribute('data-desk-select-found')) mutate({action:'select', ids:rows.filter(function (row) { return !row.hidden; }).map(function (row) { return Number(row.dataset.deskRow); })}).catch(function () {});
@@ -119,6 +139,12 @@
             .then(function () { dialog.close(); }).catch(function (failure) { error.textContent = failure.message; error.hidden = false; });
     });
     root.querySelectorAll('[data-desk-export]').forEach(function (link) { link.addEventListener('click', function (event) { if (busy) { event.preventDefault(); status('Дождитесь сохранения перед экспортом.'); } }); });
-    window.addEventListener('beforeunload', function (event) { if (busy) { event.preventDefault(); event.returnValue = ''; } });
+    root.querySelectorAll('.desk-fulfillment form').forEach(function (form) { form.addEventListener('submit', function (event) {
+        if (busy) { event.preventDefault(); status('Дождитесь сохранения перед проверкой или оформлением.'); return; }
+        root.querySelectorAll('[data-desk-revision]').forEach(function (input) { input.value = state.revision; });
+        status('Проверяем актуальные остатки…'); submitting = true; lock(true);
+    }); });
+    window.addEventListener('beforeunload', function (event) { if (busy && !submitting) { event.preventDefault(); event.returnValue = ''; } });
+    window.addEventListener('pageshow', function () { if (submitting) { submitting = false; lock(false); } });
     paint();
 })();

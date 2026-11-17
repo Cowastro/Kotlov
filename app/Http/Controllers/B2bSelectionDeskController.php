@@ -36,6 +36,7 @@ class B2bSelectionDeskController extends Controller
         $state['note'] = $selection->note;
         $state['undo_available'] = ! empty($selection->meta['desk_undo']);
         $state['desk_url'] = route('b2b.selections.show', $selection);
+        $state['items'] = app(\App\Services\SelectionAvailability::class)->annotate($state['items'], $selection->meta['availability'] ?? []);
 
         return $state;
     }

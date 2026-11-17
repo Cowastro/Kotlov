@@ -1,27 +1,40 @@
 @extends('layouts.amerce')
-@section('title', 'Мои подборы | KOTLOV')
-@php $robots = 'noindex, nofollow'; @endphp
-@php $canUseDesk = \App\Http\Controllers\B2bSelectionDeskController::canUse(auth()->user()); @endphp
+@section('title', 'Мои заявки | KOTLOV')
+@php $robots = 'noindex, nofollow'; $canUseDesk = \App\Http\Controllers\B2bSelectionDeskController::canUse(auth()->user()); @endphp
+@push('styles')<link rel="stylesheet" href="{{ asset('assets/css/my-requests.css') }}?v={{ filemtime(public_path('assets/css/my-requests.css')) }}">@endpush
 @section('content')
-<main class="container py-4">
-    <nav class="d-flex flex-wrap gap-3 mb-3"><a class="link" href="{{ route('account') }}">Личный кабинет</a><a class="link" href="{{ route('cart') }}">Текущая корзина</a>@if(\App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a class="link" href="{{ route('b2b.workspace') }}">B2B-подбор →</a>@endif</nav>
-    <h1 class="mb-3">Мои подборы</h1>
-    <p class="cl-text-2 mb-4">Сохранённые списки товаров для клиентов и объектов. Их можно редактировать, печатать и открывать в корзине для оформления заявки.</p>
-    @if (session('success'))<p class="alert alert-success">{{ session('success') }}</p>@endif
-    <div class="row g-3">
-        @forelse ($selections as $selection)
-            <article class="col-md-6 col-xl-4"><div class="border rounded-4 p-3 h-100">
-                <p class="text-caption-01 cl-text-2 mb-2">{{ $selection->updated_at->format('d.m.Y H:i') }}</p>
-                <h2 class="h5 mb-2"><a class="link" href="{{ route('selections.show', $selection) }}">{{ $selection->name }}</a></h2>
-                <p class="mb-3">{{ count($selection->items) }} позиций · {{ number_format($selection->total(), 2, ',', ' ') }} BYN</p>
-                <a class="tf-btn btn-stroke small" href="{{ route('selections.show', $selection) }}">Открыть подбор</a>
-                @if($canUseDesk)<a class="tf-btn btn-stroke small mt-2" href="{{ route('b2b.selections.show', $selection) }}">Таблица заявки →</a>@endif
-                @if(($selection->meta['staff_workspace'] ?? false) && \App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a class="link d-block mt-2" href="{{ route('b2b.catalog', ['workspace' => 1, 'mode' => 'reference', 'selection_id' => $selection->id]) }}">Продолжить в каталоге →</a>@endif
-            </div></article>
-        @empty
-            <div class="col-12 border rounded-4 p-4"><p>Пока нет сохранённых подборов. Добавьте товары в корзину и нажмите «Сохранить подбор».</p><a class="tf-btn btn-primary small mt-3" href="{{ route('cart') }}">Перейти в корзину</a></div>
-        @endforelse
+<main class="container py-4 request-hub">
+    <nav class="request-actions"><a href="{{ route('account') }}">Личный кабинет</a><a href="{{ route('cart') }}">Текущая корзина</a>@if(\App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a href="{{ route('b2b.workspace') }}">B2B-каталог →</a>@endif</nav>
+    <h1>Мои заявки</h1>
+    <p class="request-intro">Корзины и подборы для клиентов и объектов в одном месте. Сохранённая потребность и ожидаемые товары не являются резервом.</p>
+    @foreach(['success'=>'success','error'=>'danger'] as $key=>$style) @if(session($key))<p role="status" class="alert alert-{{ $style }}">{{ session($key) }}</p>@endif @endforeach
+    <div class="request-grid">
+        @forelse($selections as $selection)
+        @php $allocation = collect(app(\App\Services\SelectionAvailability::class)->annotate(array_values($selection->items), $selection->meta['availability'] ?? []))->pluck('allocation')->filter(); @endphp
+        <article class="request-card">
+            <small>{{ $selection->updated_at->format('d.m.Y H:i') }}</small>
+            <h2><a href="{{ route($canUseDesk ? 'b2b.selections.show' : 'selections.show', $selection) }}">{{ $selection->name }}</a></h2>
+            <p>{{ count($selection->items) }} позиций · {{ number_format($selection->total(), 2, ',', ' ') }} BYN</p>
+            @if($allocation->isNotEmpty())<p class="request-availability">По последней проверке: доступно {{ $allocation->sum('ready') }} шт. · ожидается {{ $allocation->sum('waiting') }} шт.</p>@endif
+            <small>Непроверенных позиций: {{ count($selection->items)-$allocation->count() }}. Цены на момент сохранения.</small>
+            <a class="tf-btn btn-stroke small" href="{{ route($canUseDesk ? 'b2b.selections.show' : 'selections.show', $selection) }}">Открыть заявку →</a>
+        </article>
+        @empty <p>Сохраните товары из корзины или создайте заявку в B2B-каталоге.</p> @endforelse
+        @foreach($legacyCarts as $legacy)
+        <article class="request-card">
+            <small>Ранее сохранённая корзина · {{ $legacy->updated_at->format('d.m.Y') }}</small><h2>{{ $legacy->name }}</h2>
+            <p>{{ count($legacy->items) }} позиций · {{ number_format($legacy->total,2,',',' ') }} BYN на момент сохранения</p>
+            <p>Все позиции будут сохранены, включая отсутствующие.</p>
+            <form method="post" action="{{ route('requests.import-cart',$legacy) }}">@csrf<button class="tf-btn btn-stroke small">Открыть как заявку →</button></form>
+        </article>
+        @endforeach
     </div>
     <div class="mt-4">{{ $selections->links() }}</div>
+    <section class="request-reserves" aria-labelledby="request-reserves-title"><h2 id="request-reserves-title">Резервы по заказам</h2><p>Отдельно от ожидания: здесь только активные резервы, зарегистрированные менеджером в CRM. Резерв у поставщика подтверждается менеджером.</p>
+        @forelse($reservations as $reservation)
+        <article><strong>{{ $reservation->order->number }} · {{ $reservation->item?->product_name }}</strong><span>{{ (float)$reservation->quantity }} шт. в резерве</span><small>{{ $reservation->warehouse_name }}</small></article>
+        @empty <p>Активных резервов нет.</p> @endforelse
+        {{ $reservations->links() }}
+    </section>
 </main>
 @endsection
