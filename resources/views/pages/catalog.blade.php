@@ -31,7 +31,7 @@
 @endpush
 
 @section('content')
-<main id="wrapper">
+<main id="wrapper" class="catalog-page">
 
     {{-- Заголовок страницы --}}
     <section class="section-page-title text-center flat-spacing-2 pb-0">
@@ -81,7 +81,7 @@
                     @endphp
                     <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 mt-3">
                         <a href="{{ url()->current() }}{{ $stockFilter ? '?'.http_build_query($stockFilter) : '' }}#catalog-products"
-                            class="tf-btn small {{ $inStock ? 'btn-stroke' : '' }}">
+                            class="tf-btn small catalog-control {{ $inStock ? 'btn-stroke' : '' }}">
                             {{ $inStock ? 'Показать все товары' : 'В наличии' }}
                         </a>
                         <div class="text-caption-01 cl-text-2">
@@ -310,7 +310,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <button type="button" class="tf-btn btn-white btn-stroke w-100 mt-12"
+                                            <button type="button" class="tf-btn btn-white btn-stroke w-100 mt-12 catalog-control"
                                                 onclick="applyPriceFilter()">
                                                 Применить
                                             </button>

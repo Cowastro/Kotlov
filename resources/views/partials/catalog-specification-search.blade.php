@@ -1,7 +1,7 @@
 @php
     $searchParameters = \Illuminate\Support\Arr::dot(request()->except('q', 'page'));
 @endphp
-<section class="container py-3" aria-label="Подбор в каталоге">
+<section class="container py-3 catalog-controls" aria-label="Подбор в каталоге">
     <div class="d-flex flex-wrap align-items-center gap-2">
         <form method="get" action="{{ url()->current() }}#catalog-products" role="search"
               aria-label="Поиск в разделе" class="d-flex align-items-center gap-2 flex-grow-1">

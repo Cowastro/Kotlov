@@ -3,7 +3,7 @@
     unset($typeParameters['fitting.type']);
 @endphp
 <form method="get" action="{{ url()->current() }}#catalog-products" aria-label="Подбор по типу фитинга"
-      class="d-flex flex-wrap align-items-center gap-2 mt-3">
+      class="catalog-fitting-type d-flex flex-wrap align-items-center gap-2 mt-3">
     @foreach ($typeParameters as $key => $value)
         @if (is_scalar($value))
             <input type="hidden" name="{{ preg_replace('/\.([^.]+)/', '[$1]', $key) }}" value="{{ $value }}">
