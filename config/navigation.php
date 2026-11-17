@@ -40,6 +40,20 @@ return [
     // Группы подразделов крупных разделов: заголовки колонок мегаменю и блоки на странице раздела.
     // Подраздел, не попавший ни в одну группу, показывается в группе «Ещё».
     'groups' => [
+        'santehnika' => [
+            ['title' => 'Смесители и душ', 'icon' => 'icon-ArrowsLeftRight', 'description' => 'Смесители для кухни и ванной, душевые стойки и системы.',
+                'slugs' => ['smesiteli', 'dushevye-sistemy']],
+            ['title' => 'Подключение воды и техники', 'icon' => 'icon-GitDiff', 'description' => 'Гибкая и жёсткая подводка, сливные и заливные шланги стиральных машин, соединители.',
+                'slugs' => ['gibkaya-podvodka-dlya-vody', 'zhestkaya-podvodka-dlya-vody', 'shlangi-i-soediniteli']],
+            ['title' => 'Слив и оборудование ванной', 'icon' => 'icon-PuzzlePiece', 'description' => 'Сифоны, трапы, инсталляции, санфаянс и сменные детали.',
+                'slugs' => ['sifony-i-trapy', 'installyatsii-i-armatura-bachkov', 'santekhnicheskaya-posuda', 'polotentsesushiteli', 'komplektuyushchie-dlya-santekhniki']],
+        ],
+        'montazhnye-materialy' => [
+            ['title' => 'Инструмент и прочистка', 'icon' => 'icon-Ruler', 'description' => 'Инструмент для монтажа, сантехнические тросы и вантузы.',
+                'slugs' => ['instrumenty-dlya-montazha', 'instrument-dlya-prochistki-trub']],
+            ['title' => 'Уплотнение и монтаж', 'icon' => 'icon-PuzzlePiece', 'description' => 'Лён, ФУМ, пасты, герметики, смазки и крепёж.',
+                'slugs' => ['uplotnitelnye-materialy', 'peny-germetiki-i-khimiya', 'krepezh-i-metizy']],
+        ],
         'radiatory' => [
             ['title' => 'Радиаторы отопления', 'icon' => 'icon-Layout', 'description' => 'Выберите материал радиатора и перейдите к нужному типу.',
                 'slugs' => ['stalnye-radiatory', 'alyuminievye-radiatory', 'bimetallicheskie-radiatory', 'chugunnye-radiatory']],
@@ -73,7 +87,7 @@ return [
                     'metallicheskie-truby', 'gofrirovannye-truby-iz-nerzhaveyushchej-stali', 'gofrirovanye-truby', 'komplektuyushchie-dlya-gofrirovannoj-truby']],
             ['title' => 'Фитинги', 'icon' => 'icon-PuzzlePiece', 'description' => 'Пресс, резьбовые, компрессионные, для ПП, PEX, ПЭ и металлопластика.',
                 'slugs' => ['press-fitingi', 'rezbovye-fitingi', 'fitingi-dlya-polipropilenovykh-trub', 'fitingi-dlya-trub-pex', 'fitingi-dlya-pe-trub',
-                    'fitingi-dlya-metalloplastikovykh-trub', 'stalnye-detali-truboprovodov', 'flantsy', 'kompressionnye-fitingi', 'fitingi-dlya-gofrirovannoj-truby']],
+                    'fitingi-dlya-metalloplastikovykh-trub', 'fitingi-dlya-mednyh-trub', 'stalnye-detali-truboprovodov', 'flantsy', 'kompressionnye-fitingi', 'fitingi-dlya-gofrirovannoj-truby']],
             ['title' => 'Канализация', 'icon' => 'icon-Leaf', 'description' => 'Внутренняя и наружная канализация, чугун, люки и дождеприёмники.',
                 'slugs' => ['vnutrennyaya-kanalizatsiya', 'naruzhnaya-kanalizatsiya', 'chugunnye-truby-i-fasonnye-chasti', 'lyuki-i-dozhdepriemniki']],
             ['title' => 'Изоляция и крепление', 'icon' => 'icon-Package', 'description' => 'Теплоизоляция и крепления для труб.',
@@ -81,7 +95,7 @@ return [
         ],
         'krany-i-zapornaya-armatura' => [
             ['title' => 'Запорная', 'icon' => 'icon-ShieldCheck', 'description' => 'Шаровые краны, вентили, задвижки, затворы, обратные клапаны и фильтры.',
-                'slugs' => ['sharovye-krany', 'ventili-zapornye', 'zadvizhki', 'zatvory-diskovye', 'obratnye-klapany', 'filtry']],
+                'slugs' => ['sharovye-krany', 'vodorazbornye-krany', 'ventili-zapornye', 'zadvizhki', 'zatvory-diskovye', 'obratnye-klapany', 'filtry']],
             ['title' => 'Регулирующая и защитная', 'icon' => 'icon-GitDiff', 'description' => 'Предохранительные и смесительные клапаны, группы безопасности.',
                 'slugs' => ['predokhranitelnaya-i-reguliruyushchaya-armatura', 'smesitelnye-klapany-i-uzly', 'smesitelnaya-armatura']],
             ['title' => 'Приборы учёта и контроля', 'icon' => 'icon-Devices', 'description' => 'Манометры, термометры, счётчики воды и тепла.',
@@ -89,7 +103,7 @@ return [
         ],
         'komplektuyushhie-dlya-otopleniya' => [
             ['title' => 'Гидравлика котельной', 'icon' => 'icon-GitDiff', 'description' => 'Гребёнки, гидрострелки, группы быстрого монтажа и коллекторные шкафы.',
-                'slugs' => ['grebenki', 'gidravlicheskie-razdeliteli-i-kollektory', 'gruppy-bystrogo-montazha-kotelnyx', 'kollektornye-shkafy', 'komplekty-podklyucheniya', 'montajnyie-komplektyi']],
+                'slugs' => ['grebenki', 'gidravlicheskie-razdeliteli-i-kollektory', 'raspredelitelnye-kollektory', 'komplektuyushchie-kollektorov', 'gruppy-bystrogo-montazha-kotelnyx', 'kollektornye-shkafy', 'komplekty-podklyucheniya', 'montajnyie-komplektyi']],
             ['title' => 'Баки, нагрев, теплоносители', 'icon' => 'icon-Package', 'description' => 'Мембранные баки, ТЭНы и жидкости для систем отопления.',
                 'slugs' => ['membrannye-baki', 'elektricheskie-teny-dlya-otopleniya', 'teplonositeli']],
             ['title' => 'Автоматика и запчасти для котлов', 'icon' => 'icon-Devices', 'description' => 'Терморегуляторы, датчики температуры и запасные части.',
@@ -162,6 +176,13 @@ return [
     // Редакционные блоки мегаменю по slug корневой категории
     // Каждый блок: [ 'title' => '...', 'links' => [ ['name'=>'...', 'url'=>'...'], ... ] ]
     'editorial' => [
+        'santehnika' => [
+            ['title' => 'Для подключения и монтажа', 'links' => [
+                ['name' => 'Трубы и фитинги', 'url' => '/truby-i-fitingi'],
+                ['name' => 'Краны и арматура', 'url' => '/krany-i-zapornaya-armatura'],
+                ['name' => 'Инструмент и уплотнение', 'url' => '/montazhnye-materialy'],
+            ]],
+        ],
 
         'kotly' => [
             [

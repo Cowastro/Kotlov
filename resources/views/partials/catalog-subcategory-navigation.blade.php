@@ -66,7 +66,7 @@
             <input class="form-control" type="search" id="accessories-nav-search" placeholder="Найти подраздел" autocomplete="off">
         </div>
         @foreach ($groups as $group)
-            <details class="catalog-subcategory-group" data-accessories-group @if ($groups->count() === 1) open @endif>
+            <details class="catalog-subcategory-group" data-accessories-group @if ($groups->count() === 1 || ($loop->first && in_array($category->slug, ['santehnika', 'montazhnye-materialy'], true))) open @endif>
                 <summary class="catalog-subcategory-group__heading">
                     <i class="icon {{ $group['icon'] }}" aria-hidden="true"></i>
                     <span>{{ $group['title'] }}</span>

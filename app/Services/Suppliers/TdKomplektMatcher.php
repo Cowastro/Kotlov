@@ -17,11 +17,25 @@ class TdKomplektMatcher
 
     private array $tankModels = [];
 
+    private array $categories = [];
+
+    private array $titles = [];
+
+    /** Manufacturer rebranding: https://www.alcadrain.com/company/news/1578-alcaplast-is-changing-its-logo-and-company-name-after-24-years */
+    public static function brandKey(string $brand): string
+    {
+        $key = TdKomplektFeed::key($brand);
+
+        return in_array($key, ['ALCA', 'ALCAPLAST', 'ALCADRAIN'], true) ? 'ALCA' : $key;
+    }
+
     public function __construct()
     {
-        Product::with('brand:id,name')->where('is_archived', false)->select(['id', 'sku', 'name', 'brand_id', 'specs'])->chunkById(500, function ($products) {
+        Product::with(['brand:id,name', 'category:id,slug'])->where('is_archived', false)->select(['id', 'sku', 'name', 'brand_id', 'category_id', 'specs'])->chunkById(500, function ($products) {
             foreach ($products as $p) {
-                $this->products[$p->id] = TdKomplektFeed::key($p->brand?->name ?? '');
+                $this->products[$p->id] = self::brandKey($p->brand?->name ?? '');
+                $this->categories[$p->id] = $p->category?->slug;
+                $this->titles[$p->id] = $p->name;
                 if ($this->products[$p->id] === 'WESTER' && ($model = TdKomplektPumpCategories::tankModelKey($p->name))) {
                     $this->index($this->tankModels, $model, $p->id);
                 }
@@ -58,8 +72,12 @@ class TdKomplektMatcher
     {
         $matches = [];
         $unconfirmed = [];
+        $variants = [];
         $reason = 'unmatched';
         foreach (['barcode' => 'barcode', 'vendor_code' => 'article', 'name' => 'name'] as $field => $type) {
+            if ($type === 'barcode' && ($row['_duplicate_barcode'] ?? false)) {
+                continue;
+            }
             if ($type === 'name' && ($row['_duplicate_name'] ?? false)) {
                 continue;
             }
@@ -70,9 +88,18 @@ class TdKomplektMatcher
             $index = match ($type) {
                 'barcode' => $this->barcodes,'article' => $this->articles,default => $this->names
             };
-            $ids = array_values(array_filter($index[$key] ?? [], function ($id) use ($row, $type) {
+            $ids = array_values(array_filter($index[$key] ?? [], function ($id) use ($row, $type, &$variants) {
                 $brand = $this->products[$id];
-                $expected = TdKomplektFeed::key($row['brand']);
+                $expected = self::brandKey($row['brand']);
+                if ($brand === 'ALCA' && $expected === 'ALCA' && $type === 'article') {
+                    $article = preg_quote(trim($row['vendor_code']), '/');
+                    if (preg_match('/(?<![\pL\pN-])'.$article.'-[\pL\pN]/iu', $this->titles[$id])
+                        && ! preg_match('/(?<![\pL\pN-])'.$article.'(?![\pL\pN-])/iu', $this->titles[$id])) {
+                        $variants[] = $id;
+
+                        return false;
+                    }
+                }
 
                 // A branded manufacturer's article must not join a different brand.
                 return $expected !== '' && ($brand === $expected || ($brand === '' && $type === 'name' && str_contains(TdKomplektFeed::key($row['name']), $expected)));
@@ -89,6 +116,9 @@ class TdKomplektMatcher
             }
         }
 
+        if (array_intersect($matches, $variants) !== []) {
+            return ['product_id' => null, 'candidates' => $variants, 'reason' => 'variant_unconfirmed'];
+        }
         if ($matches === [] && TdKomplektPumpCategories::applies($row)
             && TdKomplektFeed::key($row['brand']) === 'WESTER'
             && TdKomplektPumpCategories::category($row) === 'membrannye-baki'
@@ -97,6 +127,20 @@ class TdKomplektMatcher
             return ['product_id' => count($ids) === 1 ? $ids[0] : null, 'candidates' => $ids, 'reason' => count($ids) === 1 ? 'exact_manufacturer_model' : 'ambiguous'];
         }
         if ($matches === [] && $unconfirmed !== []) {
+            if ($variants !== []) {
+                return ['product_id' => null, 'candidates' => $variants, 'reason' => 'variant_unconfirmed'];
+            }
+            $expected = self::brandKey($row['brand']);
+            $category = (new TdKomplektFeed)->category($row);
+            $distinct = $expected !== '' && $category !== null;
+            foreach ($unconfirmed as $id) {
+                $distinct = $distinct && ($this->products[$id] ?? '') !== '' && $this->products[$id] !== $expected
+                    && ($this->categories[$id] ?? null) !== null && $this->categories[$id] !== $category;
+            }
+            if ($distinct) {
+                return ['product_id' => null, 'candidates' => $unconfirmed, 'reason' => 'foreign_brand_article'];
+            }
+
             return ['product_id' => null, 'candidates' => $unconfirmed, 'reason' => 'brand_unconfirmed'];
         }
 
