@@ -475,7 +475,13 @@ class CheckoutController extends Controller
         }
 
         session(['order_token_used_'.$token => true]);
-        NewOrderCreated::dispatch($order->load('items'));
+        // The order is committed already. A notification/queue outage must not
+        // show a failed checkout or leave ordered goods ready to order again.
+        try {
+            NewOrderCreated::dispatch($order->load('items'));
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
 
         // Очищаем корзину и вспомогательные данные
         CartSelection::complete(array_keys($cart));

@@ -135,4 +135,22 @@ class CheckoutPersistenceFlowTest extends TestCase
         $this->assertDatabaseCount('orders', 0); $this->assertDatabaseCount('b2b_orders', 0);
         $this->assertSame(5, CustomerCart::where('user_id', $user->id)->sole()->items[$product->id]['quantity']);
     }
+
+    public function test_notification_failure_after_order_commit_does_not_leave_ordered_goods_in_saved_cart(): void
+    {
+        Mail::fake(); Notification::fake();
+        Event::fakeExcept([NewOrderCreated::class]);
+        Event::listen(NewOrderCreated::class, function () { throw new \RuntimeException('Notification transport unavailable'); });
+        $user = $this->customer(false); $product = $this->product('NOTIFY-A');
+        $this->signIn($user);
+        $this->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 3])->assertOk();
+        $this->withHeader('User-Agent', 'Mozilla/5.0')->post('/checkout', [
+            'order_token' => 'notification-failure', 'customer_name' => 'Тест', 'customer_phone' => '+375291112233',
+            'delivery_type' => 'pickup', 'payment_type' => 'cash',
+        ])->assertRedirectContains('/checkout/success/');
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertSame([], CustomerCart::where('user_id', $user->id)->sole()->items);
+        $this->signOut(); $this->signIn($user);
+        $this->getJson('/cart/data')->assertOk()->assertJsonCount(0, 'items');
+    }
 }
