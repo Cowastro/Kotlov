@@ -60,6 +60,7 @@
             .catalog-type-card--indirect { --type-ink: #684694; --type-fill: #f3edfa; }
             .catalog-type-card--combined { --type-ink: #17615c; --type-fill: #e7f5f2; }
             .catalog-type-card--equipment { --type-ink: #48576b; --type-fill: #edf1f6; }
+            .catalog-type-card--water { --type-ink: #0a6c99; --type-fill: #e5f4fb; }
 
             .catalog-type-card__icon .icon { font-size: 21px; }
 
@@ -109,8 +110,17 @@
 
 @php
     $plumbingIcons = [
-        'dushevye-sistemy' => ['combined', 'M5 22V6a4 4 0 0 1 8 0v1m-4 4h12l-2-4h-8l-2 4Zm2 4v2m4-2v3m4-3v2m-8 3v1m4 0v1m4-2v1'],
-        'shlangi-i-soediniteli' => ['lightning', 'M4 3v4m-2 0h4v4H2V7Zm2 4v5a4 4 0 0 0 8 0v-3a4 4 0 0 1 8 0v4m-2 0h4v4h-4v-4Zm2 4v2'],
+        // Сантехника: свой рисунок у каждого подраздела, без повторов.
+        'smesiteli' => ['water', 'M4 21h10M7 21V10a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v2h-3v-1a1 1 0 0 0-1-1h-5v11M11.5 7V4M9 4h5M17.5 15v1m0 3v1'],
+        'dushevye-sistemy' => ['combined', 'M5 22V7a4 4 0 0 1 7.5-2M10 9h9l-1.5-3.5a2 2 0 0 0-1.8-1.2h-2.4a2 2 0 0 0-1.8 1.2L10 9m1 3.5-.5 1.5m4-1.5V14m4-1.5.5 1.5M12 17l-.5 1.5m4-1.5v1.5m3.5-1.5.5 1.5'],
+        'gibkaya-podvodka-dlya-vody' => ['lightning', 'M2 9h3v6H2V9Zm17 0h3v6h-3V9ZM5 11c1.4-1.6 2.6 1.6 4 0s2.6 1.6 4 0 2.6 1.6 4 0l2 .3M5 13c1.4 1.6 2.6-1.6 4 0s2.6-1.6 4 0 2.6-1.6 4 0l2-.3'],
+        'zhestkaya-podvodka-dlya-vody' => ['equipment', 'M3 3h5v3H3V3Zm2.5 3v9a3 3 0 0 0 3 3H17m0-2.5h3v5h-3v-5ZM8 3V2m-5 1V2m17 15h2M8.5 9.5v4'],
+        'shlangi-i-soediniteli' => ['water', 'M4 3v4m-2 0h4v4H2V7Zm2 4v5a4 4 0 0 0 8 0v-3a4 4 0 0 1 8 0v4m-2 0h4v4h-4v-4Zm2 4v2'],
+        'sifony-i-trapy' => ['combined', 'M3 3h12l-1.5 3h-9L3 3Zm6 3v6a4 4 0 0 0 8 0V9h4m0-2.5v5'],
+        'installyatsii-i-armatura-bachkov' => ['indirect', 'M6 2h12v13H6V2Zm3.5 4h5v3.5h-5V6Zm2.5 0v3.5M6 15v7m12-7v7M4 22h4m8 0h4M6 12h12'],
+        'santekhnicheskaya-posuda' => ['lightning', 'M6 3h5v8H6V3Zm-2 8h16a7 7 0 0 1-7 6h-.5l.8 4H8l.7-4.4A7 7 0 0 1 4 11Z'],
+        'polotentsesushiteli' => ['flame', 'M6 2v20M18 2v20M6 6h12M6 10.5h12M6 15h12M6 19.5h12M4 4h2m12 0h2'],
+        'komplektuyushchie-dlya-santekhniki' => ['equipment', 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4 2.6-2.6Z'],
         'vodorazbornye-krany' => ['combined', 'M3 11h12a5 5 0 0 1 5 5v2h-4v-2a1 1 0 0 0-1-1H3m4-4V7h5v4M9.5 7V3M6 4h7M3 9v8m16 4h-2'],
         'raspredelitelnye-kollektory' => ['combined', 'M3 8h18v7H3V8Zm4 7v6m5-6v6m5-6v6M7 8V3m5 5V3m5 5V3M5 4h4m1 0h4m1 0h4'],
         'komplektuyushchie-kollektorov' => ['equipment', 'M4 5h6v14H4V5Zm2-3h2v3m-2 14v3m7-15h7v5h-7V7Zm3-3v3m0 5v8m-3-3h6M6 9h2m-2 4h2'],
