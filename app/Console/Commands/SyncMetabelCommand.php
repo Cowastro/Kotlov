@@ -802,6 +802,11 @@ class SyncMetabelCommand extends Command
 
     private function upsertSupplierProduct(array $item, int $productId, string $productSku, int $supplierId, ?int $syncId, $now): void
     {
+        // Keep what other jobs store on the row (the sbg.by item linked by hand: deal_by_id).
+        $previous = json_decode((string) DB::table('supplier_products')
+            ->where(['supplier_id' => $supplierId, 'supplier_article' => $item['supplier_article']])->value('raw'), true);
+        $raw = array_merge(is_array($previous) ? $previous : [], ['cat_id' => $item['cat_id'], 'retail_byn' => $item['price_byn']]);
+
         DB::table('supplier_products')->updateOrInsert(
             ['supplier_id' => $supplierId, 'supplier_article' => $item['supplier_article']],
             [
@@ -820,7 +825,7 @@ class SyncMetabelCommand extends Command
                 'in_stock'                    => true,
                 'match_status'                => 'matched',
                 'match_confidence'            => 'auto_name',
-                'raw'                         => json_encode(['cat_id' => $item['cat_id'], 'retail_byn' => $item['price_byn']], JSON_UNESCAPED_UNICODE),
+                'raw'                         => json_encode($raw, JSON_UNESCAPED_UNICODE),
                 'last_synced_at'              => $now,
                 'created_at'                  => $now,
                 'updated_at'                  => $now,
