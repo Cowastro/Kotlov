@@ -93,6 +93,7 @@ class TdKomplektSyncTest extends TestCase
         $this->assertSame($p->id, SupplierProduct::whereHas('supplier', fn ($q) => $q->where('code', 'td_komplekt'))->first()->product_id);
         $this->assertEquals(30, $p->fresh()->price);
         $this->assertNull((new TdKomplektMatcher)->match($this->row(['brand' => 'OTHER']))['product_id']);
+        $this->assertSame('brand_unconfirmed', (new TdKomplektMatcher)->match($this->row(['brand' => 'OTHER']))['reason']);
     }
 
     public function test_ambiguous_articles_and_duplicate_feed_barcodes_do_not_create_or_link_cards(): void
@@ -140,7 +141,7 @@ class TdKomplektSyncTest extends TestCase
             $feed->load();
             $this->fail('Request spacing must be enforced');
         } catch (\RuntimeException $e) {
-            $this->assertStringNotContainsString('AAAAAAAA',$e->getMessage());
+            $this->assertStringNotContainsString('AAAAAAAA', $e->getMessage());
         }
         Http::assertSentCount(1);
     }

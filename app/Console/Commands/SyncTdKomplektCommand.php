@@ -71,7 +71,7 @@ class SyncTdKomplektCommand extends Command
                 if ($match['product_id']) {
                     $stats['matched']++;
                 }
-                if (in_array($match['reason'], ['ambiguous', 'conflicting_identifiers', 'linked_identity_changed', 'duplicate_feed_barcode'])) {
+                if (in_array($match['reason'], ['ambiguous', 'conflicting_identifiers', 'linked_identity_changed', 'duplicate_feed_barcode', 'brand_unconfirmed'])) {
                     $stats['ambiguous']++;
                 }
             }
