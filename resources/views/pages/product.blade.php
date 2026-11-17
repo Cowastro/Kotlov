@@ -822,7 +822,15 @@
     <section class="section-product-description flat-spacing flat-animate-tab">
         <div class="container">
             @php
-                $serviceInfo = is_array($product->service_info) ? array_filter($product->service_info) : [];
+                $serviceInfo = collect(is_array($product->service_info) ? $product->service_info : [])
+                    ->mapWithKeys(function ($value, $label): array {
+                        if (is_array($value)) {
+                            $label = $value['key'] ?? $value['name'] ?? '';
+                            $value = $value['value'] ?? '';
+                        }
+                        if (!is_scalar($label) || !is_scalar($value) || trim((string) $label) === '' || trim((string) $value) === '') return [];
+                        return [trim((string) $label) => (string) $value];
+                    })->all();
                 $documents = is_array($product->documents) ? array_filter($product->documents) : [];
                 $xoControllerManualUrl = '/docs/kotlov-xo-controller-1-2os-ru.pdf';
                 $isXoCeramicPro100 = $product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt';
@@ -1059,6 +1067,12 @@
                                                     $displaySuffix = 'Вт';
                                                 }
                                                 if ($displaySuffix !== '' && mb_stripos($displayValue, $displaySuffix) !== false) {
+                                                    $displaySuffix = '';
+                                                }
+                                                // A fitting may combine a metric pipe and an inch thread (25 x 1").
+                                                // Keep the supplier's explicit inch unit instead of appending a category's mm suffix.
+                                                if (in_array(mb_strtolower(trim($displaySuffix)), ['мм', 'mm'], true)
+                                                    && preg_match('/\d\s*(?:"|″|дюйм)/ui', $displayValue)) {
                                                     $displaySuffix = '';
                                                 }
                                             @endphp
