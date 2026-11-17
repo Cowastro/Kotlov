@@ -4172,3 +4172,31 @@ body.mobile-catalog-menu-is-open .ai-selector__assistance-menu { display: none !
 @media (min-width: 1200px) {
     .tf-header:has(#desktop-catalog.active) { z-index: 202; }
 }
+
+/* Desktop catalog hover intent: desktop-catalog.js keeps one panel open (li.is-open)
+   while the pointer travels diagonally to it; panels switch instantly, never cross-fade. */
+@media (min-width: 1200px) {
+    #desktop-catalog.js-aim > li > .sub-nav-category {
+        transition: none !important;
+    }
+    #desktop-catalog.js-aim > .has-sub-nav-category:hover:not(.is-open) > .sub-nav-category,
+    #desktop-catalog.js-aim.active > li:focus-within:not(.is-open) > .sub-nav-category {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+    #desktop-catalog.js-aim > .has-sub-nav-category:hover:not(.is-open) > .nav-category_link {
+        color: inherit;
+        background: transparent;
+    }
+    #desktop-catalog.js-aim.active > .has-sub-nav-category.is-open > .sub-nav-category {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: none;
+    }
+    #desktop-catalog.js-aim > .has-sub-nav-category.is-open > .nav-category_link {
+        color: var(--primary);
+        background: var(--bg);
+    }
+}
