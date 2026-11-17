@@ -1,8 +1,10 @@
+@unless($b2bClient)<details class="cart-retail-selection"><summary>Выбрать часть товаров или найти в корзине</summary>@endunless
 <div class="cart-list-tools">
     <label class="cart-check-all"><input type="checkbox" id="cart-select-all" @checked($cartSelection['positions'] === count($items))> Выбрать всё</label>
     <span class="cart-selection-count">Выбрано <strong data-selected-positions>{{ $cartSelection['positions'] }}</strong> из {{ count($items) }}</span>
     <label class="cart-find"><span class="visually-hidden">Найти в корзине</span><input type="search" id="cart-find" placeholder="Найти товар или артикул"></label>
 </div>
+@unless($b2bClient)</details>@endunless
 <p class="cart-feedback" id="cart-save-state" role="status" aria-live="polite">{{ auth()->check() ? 'Все изменения сохраняются в аккаунте' : 'Изменения сохраняются в этой корзине' }}</p>
 <p class="cart-error" id="cart-error" role="alert" hidden></p>
 <p class="cart-search-empty" hidden>Совпадений нет. Измените запрос — товары остаются в корзине.</p>
@@ -23,8 +25,8 @@
             @if (($item['pricing_type'] ?? null) === 'b2b')<small class="cart-line__warehouse">Партнёрская цена@if (! empty($item['warehouse_name'])) · {{ $item['warehouse_name'] }}@endif</small>@endif
         </div>
         <details class="cart-line__menu"><summary aria-label="Действия с {{ $item['name'] }}">⋯</summary><div>
-            <button type="button" data-edit-line-note>Комментарий к позиции</button>
-            @auth<button type="button" data-move-line>В другой подбор</button>@endauth
+            @if($b2bClient)<button type="button" data-edit-line-note>Комментарий к позиции</button>
+            <button type="button" data-move-line>В другой подбор</button>@endif
             <form action="{{ route('cart.remove') }}" method="post">@csrf<input type="hidden" name="product_id" value="{{ $item['id'] }}"><button type="submit" class="cart-line__remove">Удалить</button></form>
         </div></details>
         <div class="cart-line__price"><span data-unit-price>{{ number_format($item['price'], 2, ',', ' ') }}</span> × <span data-line-quantity>{{ $item['quantity'] }}</span><small>BYN за штуку</small></div>

@@ -108,6 +108,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/animate.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/styles.css') }}?v={{ filemtime(public_path('assets/css/styles.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/css/kotlov.css') }}?v={{ filemtime(public_path('assets/css/kotlov.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/cart-preview.css') }}?v={{ filemtime(public_path('assets/css/cart-preview.css')) }}">
 
 
     <link rel="shortcut icon" href="{{ asset('img/favicon.ico') }}">
@@ -258,7 +259,7 @@
                 var url  = '/' + item.category_slug + '/' + item.slug;
                 var total = (parseFloat(item.price) * parseInt(item.quantity)).toFixed(2);
                 var html =
-                    '<div class="tf-mini-cart-item file-delete" data-product-id="' + item.id + '">' +
+                    '<div class="tf-mini-cart-item file-delete cart-preview__item" data-product-id="' + item.id + '">' +
                         '<div class="tf-mini-cart-image">' +
                             '<a href="' + url + '">' +
                             '<img loading="lazy" width="100" height="100" src="' + img + '" ' +
@@ -276,14 +277,13 @@
                                 'data-product-id="' + item.id + '">' +
                                 '<span class="text-caption-01 fw-semibold">Удалить</span>' +
                             '</button>' +
-                            // Quantity right in the mini cart: − n + × price.
-                            '<div class="fw-semibold d-flex align-items-center justify-content-between gap-8">' +
+                            '<div class="cart-preview__line-bottom">' +
                                 '<span class="mini-cart-qty" aria-label="Количество">' +
-                                    '<button type="button" class="mini-cart-qty__btn" data-product-id="' + item.id + '" data-quantity="' + (parseInt(item.quantity) - 1) + '" aria-label="Меньше">−</button>' +
+                                    '<button type="button" class="mini-cart-qty__btn" data-product-id="' + item.id + '" data-quantity="' + Math.max(1, parseInt(item.quantity) - 1) + '" ' + (parseInt(item.quantity) <= 1 ? 'disabled ' : '') + 'aria-label="Меньше">−</button>' +
                                     '<span class="number">' + item.quantity + '</span>' +
                                     '<button type="button" class="mini-cart-qty__btn" data-product-id="' + item.id + '" data-quantity="' + (parseInt(item.quantity) + 1) + '" aria-label="Больше">+</button>' +
                                 '</span>' +
-                                '<span class="price tf-mini-card-price">× ' + parseFloat(item.price).toFixed(2) + ' BYN</span>' +
+                                '<span class="cart-preview__line-total">' + total + ' BYN<small>' + parseFloat(item.price).toFixed(2) + ' BYN / шт.</small></span>' +
                             '</div>' +
                         '</div>' +
                     '</div>';
@@ -291,7 +291,7 @@
             });
 
             // Обновляем итог в футере
-            var totalEl = document.querySelector('.tf-totals-total-value');
+            var totalEl = document.getElementById('mini-cart-total');
             if (totalEl) totalEl.textContent = parseFloat(data.total).toFixed(2) + ' BYN';
             var discountRow = document.getElementById('mini-cart-discount-row');
             var discountEl = document.getElementById('mini-cart-discount');
@@ -316,6 +316,7 @@
                     updateCartCount(data.count);
                     renderMiniCart(data);
                     updateThreshold(data);
+                    document.dispatchEvent(new CustomEvent('cart:refreshed', {detail:data}));
                 });
         }
 
@@ -498,13 +499,19 @@
             if (!btn) return;
             e.preventDefault();
             var quantity = parseInt(btn.dataset.quantity, 10);
-            btn.closest('.mini-cart-qty').style.opacity = '.5';
+            var stepper = btn.closest('.mini-cart-qty');
+            if (stepper.dataset.pending) return;
+            stepper.dataset.pending = '1';
+            stepper.querySelectorAll('button').forEach(function(b){b.disabled=true;});
+            stepper.style.opacity = '.5';
             fetch(quantity > 0 ? '/cart/update' : '/cart/remove', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
                 body: JSON.stringify(quantity > 0 ? { product_id: btn.dataset.productId, quantity: quantity } : { product_id: btn.dataset.productId }),
             })
-            .then(function () { loadMiniCart(); });
+            .then(function (r) { if (!r.ok) throw new Error('quantity'); return r.json(); })
+            .then(function () { loadMiniCart(); })
+            .catch(function () { stepper.style.opacity='1'; delete stepper.dataset.pending; stepper.querySelectorAll('button').forEach(function(b){b.disabled=Number(b.dataset.quantity)<1;}); var message=document.getElementById('cart-preview-error'); if(message)message.hidden=false; });
         });
 
         // Загружаем корзину при открытии offcanvas

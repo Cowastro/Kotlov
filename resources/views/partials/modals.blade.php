@@ -622,7 +622,7 @@
 <!-- /Quick View -->
 
 <!-- Shopping Cart -->
-<div class="offcanvas offcanvas-end popup-shopping-cart" id="shoppingCart">
+<div class="offcanvas offcanvas-end popup-shopping-cart cart-preview {{ auth()->user()?->activeB2bClient() ? 'cart-preview--b2b' : 'cart-preview--retail' }}" id="shoppingCart" aria-labelledby="cart-preview-title">
     <div class="tf-minicart-recommendations">
         <div class="title d-flex justify-content-between align-items-center">
             <h5>Вам может понравиться</h5>
@@ -635,8 +635,8 @@
     <div class="canvas-wrapper">
         <div class="popup-header">
             <div class="d-flex align-items-center justify-content-between mb-12">
-                <h5 class="title">Корзина</h5>
-                <span class="icon-X2 icon-close-popup" data-bs-dismiss="offcanvas"></span>
+                <h5 class="title" id="cart-preview-title">{{ auth()->user()?->activeB2bClient() ? 'B2B · Корзина заказа' : 'Корзина' }}</h5>
+                <button type="button" class="icon-X2 icon-close-popup" data-bs-dismiss="offcanvas" aria-label="Закрыть корзину"></button>
             </div>
             {{-- Retail free-delivery progress; B2B delivery terms are agreed by the manager. --}}
             @unless (auth()->user()?->activeB2bClient())
@@ -659,6 +659,7 @@
                 <div class="tf-mini-cart-main">
                     <div class="tf-mini-cart-sroll">
                         <div class="tf-mini-cart-items list-empty" id="cart-items">
+                            <p id="cart-preview-error" role="alert" hidden>Не удалось сохранить количество. Проверьте соединение и повторите.</p>
                             <div class="box-text_empty type-shop_cart">
                                 <div class="shop-empty_top">
                                     <span class="icon"><i class="icon-Handbag"></i></span>
@@ -678,13 +679,14 @@
                         <div class="tf-mini-cart-total">
                             {{-- Промокод: всегда на виду, одной строкой (не для B2B-партнёров) --}}
                             @unless (auth()->user()?->activeB2bClient())
+                            <details class="cart-preview__promo"><summary>Есть промокод?</summary>
                             <form class="mini-cart-ajax-form promo-inline mb-12" data-url="{{ route('cart.coupon') }}">
                                 @csrf
                                 <input type="text" name="coupon" id="mini-cart-coupon" value="{{ session('cart_coupon') }}"
                                     placeholder="Промокод" maxlength="50" autocomplete="off" aria-label="Промокод">
                                 <button type="submit" class="tf-btn btn-stroke">Применить</button>
                                 <p class="mini-cart-form-msg text-caption-01 cl-text-2 mt-4 mb-0" style="display:none;"></p>
-                            </form>
+                            </form></details>
                             @endunless
                             <p class="online-order-mini-note mb-10" id="mini-cart-online-note" style="display:none;">Онлайн-скидка −3% применяется автоматически</p>
                             <p class="d-flex justify-content-between mb-8" id="mini-cart-discount-row" style="display:none!important;">
@@ -693,7 +695,7 @@
                             </p>
                             <h5 class="text-total d-flex align-content-center justify-content-between">
                                 <span class="subtotal">Итого</span>
-                                <span class="total-price tf-totals-total-value">0.00 BYN</span>
+                                <span class="total-price" id="mini-cart-total">…</span>
                             </h5>
                         </div>
                         <div class="checkbox-wrap">
@@ -709,7 +711,7 @@
                             Необходимо принять условия обработки данных
                         </p>
                         <div class="tf-mini-cart-view-checkout">
-                            <a href="/cart" class="tf-btn btn-stroke">Корзина</a>
+                            <a href="/cart" class="tf-btn btn-stroke">{{ auth()->user()?->activeB2bClient() ? 'Открыть подбор заказа' : 'Посмотреть корзину' }}</a>
                             <a href="#" id="mini-cart-checkout-btn" class="tf-btn animate-btn">
                                 Оформить заказ
                             </a>

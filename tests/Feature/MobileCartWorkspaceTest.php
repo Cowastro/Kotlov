@@ -12,6 +12,23 @@ class MobileCartWorkspaceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_only_approved_business_accounts_get_the_business_cart_workspace(): void
+    {
+        $p = $this->product();
+        $user = User::factory()->create();
+        $this->actingAs($user)->postJson('/cart/add', ['product_id' => $p->id])->assertOk();
+        $this->get('/cart')->assertOk()->assertSee('cart-page--retail', false)
+            ->assertSee('cart-retail-selection', false)->assertDontSee('data-edit-line-note', false);
+
+        $client = \App\Models\B2bClient::create(['user_id' => $user->id, 'partner_type' => 'wholesale', 'status' => 'pending', 'company_name' => 'Тестовый партнёр']);
+        $this->get('/cart')->assertOk()->assertSee('cart-page--retail', false);
+        $client->update(['status' => 'approved']);
+        $this->actingAs($user->fresh())->get('/cart')->assertOk()->assertSee('cart-page--b2b', false)
+            ->assertSee('data-edit-line-note', false)->assertSee('cart-find', false)
+            ->assertSee('cart-save-tools--business', false)->assertDontSee('cart-retail-selection', false)
+            ->assertDontSee('id="cart-coupon"', false);
+    }
+
     private function product(float $price = 25): Product
     {
         $c = Category::firstOrCreate(['slug' => 'mobile-cart-test'], ['name' => 'Фитинги', 'parent_id' => 0, 'is_active' => true]);

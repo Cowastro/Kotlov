@@ -1,7 +1,7 @@
 @extends('layouts.amerce')
 
 @section('content')
-<main id="wrapper" class="cart-page {{ $b2bClient ? 'cart-page--b2b' : '' }}" data-cart-workspace data-initial-selection='@json($cartSelection)'>
+<main id="wrapper" class="cart-page {{ $b2bClient ? 'cart-page--b2b' : 'cart-page--retail' }}" data-cart-workspace data-initial-selection='@json($cartSelection)'>
 
     @if ($b2bClient)
         @include('partials.b2b-page-head')
@@ -62,7 +62,7 @@
                     <div class="col-lg-4">
                         <div class="fl-sidebar-cart mt-lg-0 sticky-top">
                             <div class="box-order-summary" id="cart-order-summary" tabindex="-1">
-                                <h5 class="title mb-20">Итого по выбранным товарам</h5>
+                                <h5 class="title mb-20">{{ $b2bClient ? 'Итог заявки' : 'Ваш заказ' }}</h5>
 
                                 <div class="subtotal d-flex justify-content-between align-items-center mb-12">
                                     <p class="fw-medium lh-24 mb-0">Товаров:</p>
@@ -102,12 +102,13 @@
                                 @endif
 
                                 {{-- Промокод: всегда на виду --}}
+                                <details class="cart-promo-details"><summary>Есть промокод?</summary>
                                 <form method="POST" action="{{ route('cart.coupon') }}" class="promo-inline mb-20">
                                     @csrf
                                     <input type="text" name="coupon" id="cart-coupon" value="{{ session('cart_coupon') }}"
                                         placeholder="Промокод" maxlength="50" autocomplete="off" aria-label="Промокод">
                                     <button type="submit" class="tf-btn btn-stroke">Применить</button>
-                                </form>
+                                </form></details>
 
                                 @if ($coupon['bundle']['active'])
                                     <div class="online-order-cart-note mb-20" id="cart-bundle-note">
@@ -209,11 +210,11 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/cart-workspace.js') }}?v=20261117" defer></script>
+<script src="{{ asset('assets/js/cart-workspace.js') }}?v={{ filemtime(public_path('assets/js/cart-workspace.js')) }}" defer></script>
 @endpush
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('assets/css/cart-workspace.css') }}?v=20261117">
+<link rel="stylesheet" href="{{ asset('assets/css/cart-workspace.css') }}?v={{ filemtime(public_path('assets/css/cart-workspace.css')) }}">
 <style>
 .b2b-cart-title { margin: 22px 0 0; font-size: 28px; letter-spacing: -.02em; }
 .b2b-cart-title span { display: block; margin-top: 4px; color: #78889b; font-size: 14px; font-weight: 500; letter-spacing: 0; }
