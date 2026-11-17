@@ -13,10 +13,16 @@ class SyncDealByBrandPricesCommand extends Command
 {
     private const PAGE_SIZE = 100;
 
-    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall', 'kaminproff', 'akvateploservis', 'teplov'];
+    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall', 'kaminproff', 'akvateploservis', 'teplov', 'metabel'];
 
     /** Galmet and Apamet goods of the shop by their name (Акватеплосервис). */
     private const GALMET_NAME = '/galmet|apamet|галмет|апамет/ui';
+
+    /** Мета-Бел goods on the shop: «Печь-камин Мета-Бел Ока 6 кВт», «Печь-камин Селенга 7 кВт (Мета-Бел)». */
+    private const META_NAME = '/мета[\s-]*бел/ui';
+
+    /** Shop items found by the model of the name, linked by hand with --pair. */
+    private const MODEL_SUPPLIERS = ['kaminproff', 'akvateploservis', 'metabel'];
 
     /** Fireway goods of the shop by their name: no articles, the model decides (Камин-профессионал). */
     private const FIREWAY_NAME = '/fire\s*way|файрвей|паровар|alma/ui';
@@ -188,8 +194,12 @@ class SyncDealByBrandPricesCommand extends Command
             ->forget('');
         // Fireway (Камин-профессионал) has no articles, Galmet shop items often lack them: the shop item and the
         // card meet by the model of the name.
-        $fireway = in_array($this->supplierCode, ['kaminproff', 'akvateploservis'], true);
-        $namePattern = $this->supplierCode === 'akvateploservis' ? self::GALMET_NAME : self::FIREWAY_NAME;
+        $fireway = in_array($this->supplierCode, self::MODEL_SUPPLIERS, true);
+        $namePattern = match ($this->supplierCode) {
+            'akvateploservis' => self::GALMET_NAME,
+            'metabel' => self::META_NAME,
+            default => self::FIREWAY_NAME,
+        };
         $localByModel = $fireway
             ? $localProducts->flatMap(fn (Product $product) => collect([$product->name])
                 ->concat($product->supplierProducts->where('supplier_id', $supplierId)->pluck('supplier_name'))
@@ -345,7 +355,7 @@ class SyncDealByBrandPricesCommand extends Command
      */
     private function dealPairs(Collection $localProducts, Collection $remoteProducts): array
     {
-        if (! in_array($this->supplierCode, ['kaminproff', 'akvateploservis'], true)) {
+        if (! in_array($this->supplierCode, self::MODEL_SUPPLIERS, true)) {
             return [];
         }
         $supplierId = (int) \Illuminate\Support\Facades\DB::table('suppliers')->where('code', $this->supplierCode)->value('id');
@@ -449,10 +459,11 @@ class SyncDealByBrandPricesCommand extends Command
         $this->line('metric.deal_brand_prices.invalid_remote_price='.$plan['invalid_remote_price']);
 
         // ProMetall and Fireway goods on the shop as they are named there: to link the rest by hand.
-        if (in_array($this->supplierCode, ['prometall', 'kaminproff', 'akvateploservis'], true)) {
+        if (in_array($this->supplierCode, ['prometall', ...self::MODEL_SUPPLIERS], true)) {
             $pattern = match ($this->supplierCode) {
                 'prometall' => '/атмосфер|прометалл|prometall|эйфори|бахт|арктик/ui',
                 'akvateploservis' => self::GALMET_NAME,
+                'metabel' => self::META_NAME,
                 default => self::FIREWAY_NAME,
             };
             $matchedRemote = array_flip($plan['matched_remote_ids']);
@@ -513,8 +524,37 @@ class SyncDealByBrandPricesCommand extends Command
         if ($this->supplierCode === 'akvateploservis') {
             return array_values(array_filter([\App\Services\Suppliers\AkvateploservisPriceList::modelKey($name)]));
         }
+        if ($this->supplierCode === 'metabel') {
+            return self::metaKeys($name);
+        }
 
         return self::firewayKeys($name);
+    }
+
+    /**
+     * Мета-Бел model keys: the model left of a name once the brand, the kind of goods, the power and the
+     * АОТ/ТКТ code are dropped («Печь-камин Мета-Бел Ока 6 кВт» = «Печь-камин АОТ 6.0 (в модификации "Ока")» =
+     * «ока»), then the door/box/grill code alone («Печная дверца со стеклом Мета-Бел Сож ДК-01» = «code:дк01»).
+     *
+     * @return list<string>
+     */
+    public static function metaKeys(string $name): array
+    {
+        $name = str_replace('ё', 'е', mb_strtolower($name));
+        $name = preg_replace('/\(\s*в\s+модификации\s+([^)]*)\)/u', ' $1 ', $name) ?? $name;
+        $name = preg_replace('/(?<![а-яa-z])в\s+модификации(?![а-яa-z])/u', ' ', $name) ?? $name;
+        $code = preg_match('/(?<![а-яa-z])(дп|дк|зя|ог|кн)\s*-?\s*(\d{1,3})(?!\d)/u', $name, $m) ? $m[1].$m[2] : null;
+        $patterns = [
+            '/мета[\s-]*бел/u', '/снято с производства/u', '/\([^)]*\)/u',
+            '/(?<![а-яa-z])(аот|ткт)[кв]?\s*-?\s*\d+(?:[.,]\d+)?(?:\s*-\s*\d+)?/u', '/\d+\s*квт(?![а-я])/u', '/(?<![а-я])квт(?![а-я])/u',
+            '/(?<![а-я])(конвекционная|отопительная|банная|каминная|каминный|печная|угловая|туннельная)(?![а-я])/u',
+            '/печь-каменка|печь-камин|печь|каменка|топка|дверца|дверь|со стеклом|с водяным контуром|без пьедестала/u',
+        ];
+        $model = preg_replace($patterns, ' ', $name) ?? $name;
+        $model = preg_replace('/[^a-zа-я0-9+]+/u', ' ', $model) ?? $model;
+        $model = trim(preg_replace('/\s+/u', ' ', $model) ?? $model);
+
+        return array_values(array_unique(array_filter([$model !== '' ? $model : null, $code ? 'code:'.$code : null])));
     }
 
     /** @return list<string> the exact model key first, then the looser one teplodvor-style names need */
