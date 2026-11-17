@@ -15,11 +15,16 @@ class TdKomplektMatcher
 
     private array $products = [];
 
+    private array $tankModels = [];
+
     public function __construct()
     {
         Product::with('brand:id,name')->where('is_archived', false)->select(['id', 'sku', 'name', 'brand_id', 'specs'])->chunkById(500, function ($products) {
             foreach ($products as $p) {
                 $this->products[$p->id] = TdKomplektFeed::key($p->brand?->name ?? '');
+                if ($this->products[$p->id] === 'WESTER' && ($model = TdKomplektPumpCategories::tankModelKey($p->name))) {
+                    $this->index($this->tankModels, $model, $p->id);
+                }
                 $this->index($this->articles, $p->sku, $p->id);
                 $this->index($this->names, $p->name, $p->id);
                 foreach ($p->specs ?? [] as $spec) {
@@ -84,6 +89,13 @@ class TdKomplektMatcher
             }
         }
 
+        if ($matches === [] && TdKomplektPumpCategories::applies($row)
+            && TdKomplektFeed::key($row['brand']) === 'WESTER'
+            && TdKomplektPumpCategories::category($row) === 'membrannye-baki'
+            && ($model = TdKomplektPumpCategories::tankModelKey($row['name'], $row['vendor_code'] ?? ''))
+            && ($ids = array_values($this->tankModels[$model] ?? [])) !== []) {
+            return ['product_id' => count($ids) === 1 ? $ids[0] : null, 'candidates' => $ids, 'reason' => count($ids) === 1 ? 'exact_manufacturer_model' : 'ambiguous'];
+        }
         if ($matches === [] && $unconfirmed !== []) {
             return ['product_id' => null, 'candidates' => $unconfirmed, 'reason' => 'brand_unconfirmed'];
         }

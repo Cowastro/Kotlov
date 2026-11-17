@@ -186,4 +186,43 @@ class TdKomplektSyncTest extends TestCase
         $p->update(['service_info' => ['Гарантийное обслуживание' => 'По документам поставщика', 'Безопасный вывод' => '<script>supplier</script>']]);
         $this->get($url)->assertOk()->assertSeeText('Гарантийное обслуживание')->assertSeeText('По документам поставщика')->assertSee('&lt;script&gt;supplier&lt;/script&gt;', false)->assertDontSee('<script>supplier</script>', false);
     }
+
+    public function test_new_pump_export_creates_tanks_and_spares_in_separate_existing_categories_without_duplicates(): void
+    {
+        foreach (['membrannye-baki' => 'Мембранные баки', 'komplektuyushchie-dlya-nasosov' => 'Комплектующие для насосов'] as $slug => $name) {
+            Category::firstOrCreate(['slug' => $slug], ['name' => $name, 'parent_id' => 0, 'is_active' => true]);
+        }
+        $rows = [];
+        foreach ([['810001', 'TEST-WRV8', 'Бак мембранный тестовый Wester', 'membrannye-baki'], ['810002', 'TEST-MEM24', 'Мембрана тестовая для бака Wester', 'komplektuyushchie-dlya-nasosov']] as [$id,$article,$name,$category]) {
+            $rows[] = $this->row(['id' => $id, 'okdp' => 'TEST-'.$id, 'vendor_code' => $article, 'name' => $name, 'brand' => 'Wester', 'barcode' => '1234567'.$id, 'parentid_name1' => 'Насосы и насосное оборудование', 'parentid_name2' => 'Баки мембранные', 'parentid_name3' => '', 'description' => 'Объем бака: 8 л']);
+        }
+        $file = $this->csv($rows);
+        $this->artisan('supplier:sync-td-komplekt', ['--file' => $file, '--apply' => true, '--create-new' => true])->assertSuccessful();
+        $this->assertSame('membrannye-baki', Product::where('sku', 'TDK-810001')->firstOrFail()->category->slug);
+        $this->assertSame('komplektuyushchie-dlya-nasosov', Product::where('sku', 'TDK-810002')->firstOrFail()->category->slug);
+        $this->artisan('supplier:sync-td-komplekt', ['--file' => $file, '--apply' => true, '--create-new' => true])->assertSuccessful();
+        $this->assertSame(2, Product::whereIn('sku', ['TDK-810001', 'TDK-810002'])->count());
+    }
+
+    public function test_exact_wester_model_finds_existing_tank_but_duplicate_models_require_review(): void
+    {
+        $brand = Brand::firstOrCreate(['slug' => 'wester-model-test'], ['name' => 'Wester']);
+        $category = Category::firstOrCreate(['slug' => 'membrannye-baki'], ['name' => 'Мембранные баки', 'parent_id' => 0, 'is_active' => true]);
+        $unique = Product::create(['brand_id' => $brand->id, 'category_id' => $category->id, 'sku' => 'OLD-WRV-777', 'slug' => 'old-wrv-777', 'name' => 'Мембранный бак Wester WRV 777', 'price' => 100, 'is_active' => true, 'is_archived' => false]);
+        foreach (['a', 'b'] as $suffix) {
+            Product::create(['brand_id' => $brand->id, 'category_id' => $category->id, 'sku' => 'OLD-WRV-888-'.$suffix, 'slug' => 'old-wrv-888-'.$suffix, 'name' => 'Бак мембранный WRV 888 Wester', 'price' => 100, 'is_active' => true, 'is_archived' => false]);
+        }
+        $matcher = new TdKomplektMatcher;
+        $row = $this->row(['parentid_name1' => 'Насосы и насосное оборудование', 'parentid_name2' => 'Баки мембранные', 'parentid_name3' => '', 'brand' => 'Wester', 'name' => 'Бак мембранный для отопления Wester WRV777', 'vendor_code' => 'WRV777']);
+        $this->assertSame($unique->id, $matcher->match($row)['product_id']);
+        $this->assertSame('exact_manufacturer_model', $matcher->match($row)['reason']);
+        $row['name'] = 'Бак мембранный для отопления Wester WRV888';
+        $row['vendor_code'] = 'WRV888';
+        $this->assertNull($matcher->match($row)['product_id']);
+        $this->assertSame('ambiguous', $matcher->match($row)['reason']);
+        $row['name'] = 'Бак мембранный Wester WRV8880';
+        $row['vendor_code'] = 'WRV8880';
+        $this->assertNull($matcher->match($row)['product_id']);
+        $this->assertSame('unmatched', $matcher->match($row)['reason']);
+    }
 }

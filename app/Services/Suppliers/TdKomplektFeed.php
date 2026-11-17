@@ -137,6 +137,9 @@ class TdKomplektFeed
 
     public function category(array $row): ?string
     {
+        if (TdKomplektPumpCategories::applies($row)) {
+            return TdKomplektPumpCategories::category($row);
+        }
         $group = mb_strtolower(($row['parentid_name3'] ?? '').' '.($row['parentid_name4'] ?? ''));
         $name = mb_strtolower($row['name']);
         if (str_contains($group, 'распродажа')) {
