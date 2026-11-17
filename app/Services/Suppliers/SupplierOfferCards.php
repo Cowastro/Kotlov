@@ -65,6 +65,10 @@ class SupplierOfferCards
     public function suggestedCategoryId(int $offerId): ?int
     {
         $offer = SupplierProduct::query()->with('supplier:id,code')->find($offerId);
+        if ($offer && $offer->supplier?->code === 'td_komplekt') {
+            $slug = (new TdKomplektFeed)->category($offer->raw);
+            return $slug ? Category::where('slug',$slug)->value('id') : null;
+        }
         $slug = $offer && $offer->supplier?->code === 'tsk_nasosy' ? TskPumpClassifier::categorySlug((string) $offer->supplier_name) : null;
 
         return $slug ? Category::query()->where('slug', $slug)->value('id') : null;
@@ -73,6 +77,7 @@ class SupplierOfferCards
     /** A page with photos and specs: the supplier's own card where we know it. */
     public function suggestedSourceUrl(SupplierProduct $offer): ?string
     {
+        if ($offer->supplier?->code === 'td_komplekt') return null; // The homepage is not a product card.
         if ($offer->supplier?->code === 'tsk_nasosy') {
             return $this->aqualiderCards()[ltrim((string) $offer->supplier_article, '0')] ?? null;
         }
@@ -130,6 +135,12 @@ class SupplierOfferCards
             return $product;
         });
 
+        if ($offer->supplier?->code === 'td_komplekt') {
+            $product->update((new TdKomplektFeed)->catalogFields($offer->raw)+['supplier_id'=>$offer->supplier_id,'content_source_url'=>'https://tools.by']);
+            app(ProductSourceEnricher::class)->syncSpecsToAttributeValues($product);
+            app(SupplierProductAvailabilityService::class)->refreshMany([$product->id]);
+            return $product->fresh();
+        }
         $sourceUrl = $sourceUrl ?: $this->suggestedSourceUrl($offer);
         if ($sourceUrl) {
             $offer->forceFill(['source_url' => $sourceUrl])->save();

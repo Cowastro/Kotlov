@@ -10,6 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 class SupplierSyncJournalRecorder
 {
     private const COMMAND_SUPPLIER_CODES = [
+        'supplier:sync-td-komplekt' => 'td_komplekt',
         'supplier:sync-rusklimat' => 'rusklimat',
         'supplier:sync-rusklimat-pricelist' => 'rusklimat',
         'supplier:sync-svah-group' => 'svah_group',
@@ -390,6 +391,9 @@ class SupplierSyncJournalRecorder
     private function sourceCandidates(string $command, InputInterface $input): array
     {
         $values = [];
+        if ($command === 'supplier:sync-td-komplekt') {
+            $values[] = \Illuminate\Support\Facades\Storage::disk('local')->path(\App\Services\Suppliers\TdKomplektFeed::DIRECTORY.'/latest.csv');
+        }
 
         foreach ([$input->getOptions(), $input->getArguments()] as $collection) {
             foreach ($collection as $value) {
