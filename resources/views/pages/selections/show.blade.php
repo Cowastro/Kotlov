@@ -1,10 +1,10 @@
 @extends('layouts.amerce')
 @section('title', $selection->name.' | KOTLOV')
 @php $robots = 'noindex, nofollow'; @endphp
-@push('styles')<link rel="stylesheet" href="{{ asset('assets/css/customer-selections.css') }}">@endpush
-@push('scripts')<script src="{{ asset('assets/js/customer-selections.js') }}" defer></script>@endpush
+@push('styles')<link rel="stylesheet" href="{{ asset('assets/css/customer-selections.css') }}?v=20261117">@endpush
+@push('scripts')<script src="{{ asset('assets/js/customer-selections.js') }}?v=20261117" defer></script>@endpush
 @section('content')
-<main class="container py-4">
+<main class="container py-4 selection-page">
     <nav class="d-flex flex-wrap gap-3 mb-3"><a class="link" href="{{ route('selections.index') }}">← Мои подборы</a><a class="link" href="{{ route('cart') }}">Текущая корзина</a></nav>
     <h1 class="mb-3">{{ $selection->name }}</h1>
     <p class="cl-text-2 mb-3">{{ count($selection->items) }} позиций · сохранено {{ $selection->updated_at->format('d.m.Y H:i') }}. Цены на момент сохранения. При оформлении проверим актуальную цену и доступность.</p>
@@ -14,8 +14,13 @@
     @if ($errors->any())<div role="alert" class="alert alert-danger">{{ $errors->first() }}</div>@endif
     <div class="selection-toolbar d-flex flex-wrap gap-2 mb-4">
         <button type="submit" form="selection-editor" class="tf-btn btn-primary small">Сохранить изменения</button>
-        <form method="post" action="{{ route('selections.restore', $selection) }}">@csrf<button class="tf-btn btn-primary small">Открыть в корзине / оформить заявку</button></form>
-        <a class="tf-btn btn-stroke small" href="{{ route('selections.show', [$selection, 'print' => 1]) }}" target="_blank" rel="noopener">Печать / PDF</a>
+        <form method="post" action="{{ route('selections.restore', $selection) }}">@csrf<button class="tf-btn btn-primary small">Открыть в корзине</button></form>
+        <details class="selection-more"><summary>Ещё ⋯</summary><div>
+            <a class="tf-btn btn-stroke small" href="{{ route('selections.show', [$selection, 'print' => 1]) }}" target="_blank" rel="noopener">Печать / PDF</a>
+            <form method="post" action="{{ route('selections.duplicate', $selection) }}">@csrf<button class="tf-btn btn-stroke small">Сохранить копию</button></form>
+            <button type="button" class="tf-btn btn-stroke small" data-share-selection>Поделиться</button>
+        </div></details>
+        <span data-share-state role="status" aria-live="polite"></span>
     </div>
     <form id="selection-editor" method="post" action="{{ route('selections.update', $selection) }}">
         @csrf @method('PUT')
@@ -30,7 +35,7 @@
         <div class="table-responsive border rounded-4 mb-3">
             <table class="table selection-table align-middle mb-0"><thead><tr><th>Товар / артикул</th><th class="text-end">Цена, BYN</th><th>Количество</th><th class="text-end">Сумма, BYN</th></tr></thead>
                 <tbody>@foreach ($selection->items as $id => $item)<tr data-selection-row data-price="{{ (float) $item['price'] }}">
-                    <td class="selection-product"><span class="fw-semibold">{{ $item['name'] }}</span><br><small class="cl-text-2">{{ $item['sku'] ?? '' }}</small></td>
+                    <td class="selection-product"><span class="fw-semibold">{{ $item['name'] }}</span><br><small class="cl-text-2">{{ $item['sku'] ?? '' }}</small>@if (! empty($item['selection_note']))<p class="text-caption-01 cl-text-2">{{ $item['selection_note'] }}</p>@endif</td>
                     <td data-label="Цена, BYN" class="text-end text-nowrap">{{ number_format((float) $item['price'], 2, ',', ' ') }}</td>
                     <td data-label="Количество"><input aria-label="Количество: {{ $item['name'] }}" type="number" min="0" max="999" name="quantities[{{ $id }}]" value="{{ old('quantities.'.$id, $item['quantity']) }}" class="form-control"></td>
                     <td data-label="Сумма, BYN" data-line-total class="text-end text-nowrap">{{ number_format($item['price'] * $item['quantity'], 2, ',', ' ') }}</td>

@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class CustomerCartStore
 {
-    public const META = ['cart_note', 'cart_coupon', 'cart_delivery_region', 'cart_delivery_city', 'cart_selection_id', 'cart_selection_revision'];
+    public const META = ['cart_note', 'cart_coupon', 'cart_delivery_region', 'cart_delivery_city', 'cart_selection_id', 'cart_selection_revision', CartSelection::KEY];
 
     public function meta(Request $request): array
     {

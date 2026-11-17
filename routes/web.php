@@ -618,6 +618,8 @@ Route::view('/privacy', 'pages.privacy');
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
 Route::middleware('auth')->group(function () {
     Route::get('/cart/print', [\App\Http\Controllers\CustomerSelectionController::class, 'printCurrent'])->name('cart.print');
+    Route::post('/cart/move-to-selection', [\App\Http\Controllers\CustomerSelectionController::class, 'moveLine'])->name('selections.move-line');
+    Route::post('/account/selections/{selection}/duplicate', [\App\Http\Controllers\CustomerSelectionController::class, 'duplicate'])->name('selections.duplicate');
     Route::get('/account/selections', [\App\Http\Controllers\CustomerSelectionController::class, 'index'])->name('selections.index');
     Route::post('/account/selections', [\App\Http\Controllers\CustomerSelectionController::class, 'store'])->name('selections.store');
     Route::get('/account/selections/{selection}', [\App\Http\Controllers\CustomerSelectionController::class, 'show'])->name('selections.show');
@@ -625,6 +627,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/account/selections/{selection}/restore', [\App\Http\Controllers\CustomerSelectionController::class, 'restore'])->name('selections.restore');
 });
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/selection', [CartController::class, 'selectLines'])->name('cart.selection');
+Route::post('/cart/line-note', [CartController::class, 'lineNote'])->name('cart.line-note');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
 Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');

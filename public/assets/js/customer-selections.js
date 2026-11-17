@@ -28,3 +28,19 @@
     editor.addEventListener('input', event => { if (event.target.matches('input[type=number]')) recalculate(); });
     recalculate();
 }());
+
+// Sharing is explicit plain text: saved account pages stay private.
+document.querySelectorAll('[data-share-selection]').forEach(function (button) {
+    button.addEventListener('click', async function () {
+        var form = document.getElementById('selection-editor');
+        var rows = Array.from(form.querySelectorAll('[data-selection-row]'));
+        var text = form.querySelector('[name="name"]').value + ' · KOTLOV.BY\n\n' + rows.map(function (row) {
+            return row.querySelector('.selection-product').innerText.trim() + ' · ' + row.querySelector('input[type="number"]').value + ' шт. · ' + row.querySelector('[data-line-total]').textContent.trim() + ' BYN';
+        }).join('\n\n') + '\n\nЦены на момент подбора. Наличие и условия подтвердит менеджер.';
+        var state = document.querySelector('[data-share-state]');
+        try {
+            if (navigator.share) await navigator.share({ title: 'Подбор KOTLOV', text: text });
+            else { await navigator.clipboard.writeText(text); state.textContent = 'Подбор скопирован'; }
+        } catch (error) { if (error.name !== 'AbortError') state.textContent = 'Не удалось поделиться. Используйте печать / PDF.'; }
+    });
+});

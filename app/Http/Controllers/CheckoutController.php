@@ -13,6 +13,7 @@ use App\Services\B2bOrders\B2bOrderPlacement;
 use App\Services\B2bSupplyOptionResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
+use App\Services\CartSelection;
 use App\Services\CommercialDocuments\CheckoutInvoiceService;
 use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Orders\OrderEconomicSnapshotRecorder;
@@ -33,12 +34,12 @@ class CheckoutController extends Controller
         CartCouponService $couponService,
         B2bCheckoutTerms $b2bTerms,
     ) {
-        $cart = session(self::CART_KEY, []);
+        $cart = CartSelection::items(session(self::CART_KEY, []));
 
         $availability = $availabilityGuard->reconcileRetailItems($cart);
         $cart = $availability['cart'];
         if ($availability['removed_ids'] !== []) {
-            session([self::CART_KEY => $cart]);
+            session([self::CART_KEY => CartSelection::merge($cart)]);
 
             return redirect()->route('cart')->with(
                 'error',
@@ -46,7 +47,7 @@ class CheckoutController extends Controller
             );
         }
         if ($availability['price_changed_ids'] !== []) {
-            session([self::CART_KEY => $cart]);
+            session([self::CART_KEY => CartSelection::merge($cart)]);
 
             return redirect()->route('cart')->with(
                 'info',
@@ -55,7 +56,7 @@ class CheckoutController extends Controller
         }
 
         if (empty($cart)) {
-            return redirect()->route('cart')->with('info', 'Корзина пуста.');
+            return redirect()->route('cart')->with('info', 'Выберите товары в корзине для оформления.');
         }
 
         $subtotal = $this->calcSubtotal($cart);
@@ -131,16 +132,16 @@ class CheckoutController extends Controller
         CheckoutInvoiceService $checkoutInvoices,
         B2bOrderPlacement $b2bOrderPlacement,
     ) {
-        $cart = session(self::CART_KEY, []);
+        $cart = CartSelection::items(session(self::CART_KEY, []));
 
         if (empty($cart)) {
-            return redirect()->route('cart')->with('info', 'Корзина пуста.');
+            return redirect()->route('cart')->with('info', 'Выберите товары в корзине для оформления.');
         }
 
         $availability = $availabilityGuard->reconcileRetailItems($cart);
         $cart = $availability['cart'];
         if ($availability['removed_ids'] !== []) {
-            session([self::CART_KEY => $cart]);
+            session([self::CART_KEY => CartSelection::merge($cart)]);
 
             return redirect()->route('cart')->with(
                 'error',
@@ -148,7 +149,7 @@ class CheckoutController extends Controller
             );
         }
         if ($availability['price_changed_ids'] !== []) {
-            session([self::CART_KEY => $cart]);
+            session([self::CART_KEY => CartSelection::merge($cart)]);
 
             return redirect()->route('cart')->with(
                 'error',
@@ -211,7 +212,7 @@ class CheckoutController extends Controller
             }
 
             if ($b2bPriceChanged) {
-                session([self::CART_KEY => $cart]);
+                session([self::CART_KEY => CartSelection::merge($cart)]);
 
                 return redirect()->route('cart')->with(
                     'error',
@@ -230,7 +231,7 @@ class CheckoutController extends Controller
             foreach ($archivedIds as $aid) {
                 unset($cart[$aid]);
             }
-            session([self::CART_KEY => $cart]);
+            session([self::CART_KEY => CartSelection::merge($cart)]);
 
             if (empty($cart)) {
                 return redirect()->route('cart')->with('error', 'Товары в корзине сняты с продажи и недоступны для заказа.');
@@ -348,13 +349,7 @@ class CheckoutController extends Controller
                 'comment' => $request->filled('comment') ? $request->comment : null,
             ], $b2bCheckout);
 
-            session()->forget([
-                self::CART_KEY,
-                'cart_note',
-                'cart_coupon',
-                'cart_delivery_region',
-                'cart_delivery_city',
-            ]);
+            CartSelection::complete(array_keys($cart));
 
             return to_route('b2b.cabinet', ['section' => 'orders'])
                 ->with('success', 'B2B-заказ '.$order->number.' зарегистрирован отдельно и отправлен вашему B2B-менеджеру.');
@@ -482,13 +477,7 @@ class CheckoutController extends Controller
         NewOrderCreated::dispatch($order->load('items'));
 
         // Очищаем корзину и вспомогательные данные
-        session()->forget([
-            self::CART_KEY,
-            'cart_note',
-            'cart_coupon',
-            'cart_delivery_region',
-            'cart_delivery_city',
-        ]);
+        CartSelection::complete(array_keys($cart));
 
         return redirect()->route('checkout.success', $order->number)
             ->with('order_number', $order->number)
