@@ -44,6 +44,7 @@
             }
 
             .catalog-subcategory-group__heading::-webkit-details-marker { display: none; }
+            .catalog-subcategory-group__icon { flex: none; color: var(--text); }
             .catalog-subcategory-group__heading .icon-CaretDown { margin-left: auto; font-size: 13px; }
             .catalog-subcategory-group[open] .icon-CaretDown { transform: rotate(180deg); }
             .catalog-subcategory-group .catalog-type-nav__grid { margin-bottom: 12px; }
@@ -68,7 +69,11 @@
         @foreach ($groups as $group)
             <details class="catalog-subcategory-group" data-accessories-group @if ($groups->count() === 1 || ($loop->first && in_array($category->slug, ['santehnika', 'montazhnye-materialy'], true))) open @endif>
                 <summary class="catalog-subcategory-group__heading">
-                    <i class="icon {{ $group['icon'] }}" aria-hidden="true"></i>
+                    @if ($groupIcon = \App\Support\CategoryIcons::group($group['title']))
+                        <svg class="catalog-subcategory-group__icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ $groupIcon }}"></path></svg>
+                    @else
+                        <i class="icon {{ $group['icon'] }}" aria-hidden="true"></i>
+                    @endif
                     <span>{{ $group['title'] }}</span>
                     <i class="icon icon-CaretDown" aria-hidden="true"></i>
                 </summary>

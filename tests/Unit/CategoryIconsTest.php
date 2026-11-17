@@ -40,4 +40,19 @@ class CategoryIconsTest extends TestCase
     {
         $this->assertNull(CategoryIcons::for('no-such-section'));
     }
+
+    public function test_every_configured_group_heading_has_a_drawing(): void
+    {
+        $config = require dirname(__DIR__, 2).'/config/navigation.php';
+        foreach ($config['groups'] as $parent => $groups) {
+            $paths = [];
+            foreach ($groups as $group) {
+                $path = CategoryIcons::group($group['title']);
+                $this->assertNotNull($path, "{$parent}: no drawing for group «{$group['title']}»");
+                $paths[] = $path;
+            }
+            $this->assertSame(count($paths), count(array_unique($paths)), "{$parent}: two groups share a drawing");
+        }
+        $this->assertNotNull(CategoryIcons::group('Ещё'));
+    }
 }
