@@ -1013,6 +1013,13 @@ class SyncRusklimatCommand extends Command
                     Str::slug((string) $row['article']) ?: 'none', Str::slug((string) ($row['brand'] ?? '')) ?: 'none',
                     (int) ($row['quantity'] ?? 0), (int) round((float) ($row['retail_price'] ?? 0)), $row['action']));
             }
+            // Low-confidence guesses: the sheet row and the card the sync would attach it to.
+            if (($row['confidence'] ?? '') === 'manual_review') {
+                $this->line(sprintf('audit.rusklimat_sync.review=%s:%s:%d:%d:%d',
+                    Str::slug((string) $row['article']) ?: 'none', Str::slug((string) ($row['brand'] ?? '')) ?: 'none',
+                    (int) ($row['matched_product_id'] ?? 0), (int) ($row['quantity'] ?? 0),
+                    (int) round((float) ($row['retail_price'] ?? 0))));
+            }
         }
         $this->line('Run with <fg=green>--apply</> to write changes to the database.');
         $this->line('Run with <fg=green>--apply --create-new</> to also create missing products.');
