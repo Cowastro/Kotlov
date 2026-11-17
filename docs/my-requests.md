@@ -8,4 +8,6 @@ Preparing a partial cart rechecks current stock and prices on the server, keeps 
 
 Waiting is a saved demand, not a reservation. The separate reserve list shows actual active CRM order reservations within the existing account/company permissions. A CRM reservation does not by itself establish a reservation in a supplier’s external system. No automatic supplier booking or order placement is added here.
 
+The migration widens selection metadata from TEXT to LONGTEXT: MySQL's 64 KiB TEXT limit is insufficient for 150-line availability snapshots. Rollback deliberately does not shrink the column, preserving existing large snapshots.
+
 Validation: feature coverage includes legacy conversion, missing products, partial quantities, current prices, stale stock, ownership, selection revisions, excluded lines, preserving an earlier cart, active reservations, and 150-line allocation. Browser checks at 360/390 and 1440 pixels verified search, waiting filters, selection persistence and a 150-line partial cart (650 available of 1,500 requested, 850 waiting) without page overflow. Production orders were not created during testing.
