@@ -503,6 +503,8 @@ class CommercialDocumentResource extends Resource
                         ->schema([
                             Select::make('product_id')
                                 ->label('Товар сайта')
+                                ->placeholder('Найти на сайте или оставить пустым')
+                                ->helperText('Товара нет на сайте? Оставьте поле пустым и впишите наименование, единицу и цену вручную.')
                                 ->relationship('product', 'name', modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('name'))
                                 ->getOptionLabelFromRecordUsing(fn (Product $record): string => trim($record->name.' · '.($record->sku ?: 'без артикула')))
                                 ->searchable(['name', 'sku'])
@@ -537,7 +539,9 @@ class CommercialDocumentResource extends Resource
                                 ->content(function (Get $get): HtmlString {
                                     $productId = (int) $get('product_id');
                                     if ($productId <= 0) {
-                                        return new HtmlString('<span class="text-sm text-gray-500">Выберите товар, чтобы увидеть закупочную цену, маржу и рынок.</span>');
+                                        return new HtmlString(filled($get('name'))
+                                            ? '<span class="text-sm text-warning-600">Позиция вне каталога: закупку и маржу проверьте вручную.</span>'
+                                            : '<span class="text-sm text-gray-500">Выберите товар, чтобы увидеть закупочную цену, маржу и рынок, или впишите позицию вне каталога вручную.</span>');
                                     }
 
                                     $pricing = app(CommercialOfferCopilotService::class)->pricing($productId, (float) $get('unit_price'));

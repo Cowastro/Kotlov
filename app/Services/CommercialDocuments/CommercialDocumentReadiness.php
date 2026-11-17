@@ -60,9 +60,8 @@ class CommercialDocumentReadiness
         $document->loadMissing('items.product');
         foreach ($document->retail_quick ? [] : $document->items as $item) {
             if (! $item->product) {
-                if ($document->allow_unconfirmed_purchase_price) {
-                    $warnings[] = 'нет подтверждённой входной цены: '.$item->name;
-                }
+                // A line typed by hand (the item is not on the site yet): allowed, but nobody checked its purchase price.
+                $warnings[] = 'позиция вне каталога, закупка не проверена: '.$item->name;
 
                 continue;
             }
