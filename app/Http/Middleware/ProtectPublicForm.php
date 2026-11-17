@@ -22,7 +22,11 @@ class ProtectPublicForm
         // 2. Время заполнения: слишком быстро = бот, слишком давно = реплей/скрипт
         $startedAt = (int) $request->input('form_started_at', 0);
         $elapsed   = $startedAt > 0 ? time() - $startedAt : null;
-        if ($elapsed !== null && $elapsed < 5) {
+        // Returning verified customers may submit a prefilled checkout at once.
+        // Honeypot, request limits and Turnstile still run for these orders.
+        $prefilledCustomerCheckout = $request->routeIs('checkout.store')
+            && $request->user()?->hasVerifiedEmail();
+        if ($elapsed !== null && $elapsed < 5 && ! $prefilledCustomerCheckout) {
             $this->logBlocked($request, $formKey, 'too_fast', ['elapsed' => $elapsed]);
             return $this->fakeSuccess($request);
         }
@@ -61,6 +65,14 @@ class ProtectPublicForm
 
     private function fakeSuccess(Request $request): Response
     {
+        // A rejected order must never look like a successfully placed order.
+        // Keep the cart and entered non-secret fields available for a retry.
+        if ($request->routeIs('checkout.store')) {
+            $message = 'Не удалось отправить заказ. Корзина сохранена. Подождите несколько минут и попробуйте ещё раз или свяжитесь с менеджером.';
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 422)
+                : back()->with('error', $message)->withInput($request->except(['_token', '_hpf', 'cf-turnstile-response']));
+        }
         // Не показываем ошибку — делаем вид, что форма принята
         return back()->with('success', 'Сообщение отправлено! Мы свяжемся с вами в течение рабочего дня.');
     }

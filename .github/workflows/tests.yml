@@ -71,3 +71,6 @@ jobs:
 
       - name: Execute tests
         run: php artisan test
+
+      - name: Test cart navigation saves
+        run: node --test tests/JavaScript/cart-workspace.test.cjs

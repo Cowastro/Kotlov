@@ -81,6 +81,37 @@
     var mobile=document.getElementById('cart-mobile-checkout');if(mobile)mobile.addEventListener('click',function(){if(agree.checked)checkout.click();else{document.getElementById('cart-order-summary').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});agree.focus({preventScroll:true});}});
     root.querySelectorAll('form').forEach(function(form){form.addEventListener('submit',function(e){e.preventDefault();if(form.dataset.waiting)return;form.dataset.waiting='1';flush().then(function(){if(failures.size){delete form.dataset.waiting;errorBox.scrollIntoView({block:'center'});return;}if(form.reportValidity()){form.dataset.ready='1';HTMLFormElement.prototype.submit.call(form);}else{delete form.dataset.waiting;}});});});
     root.querySelectorAll('a[target="_blank"]').forEach(function(a){a.addEventListener('click',function(e){if(busy()||failures.size){e.preventDefault();showError('Сначала дождитесь сохранения изменений.');}});});
+    // Header/account actions live outside the cart form. Wait for its debounced
+    // writes before navigation or logout invalidates the current session.
+    function afterSaved(action) {
+        flush().then(function () {
+            if (failures.size) {
+                if (errorBox) errorBox.scrollIntoView({block:'center'});
+                return;
+            }
+            action();
+        });
+    }
+    document.addEventListener('click', function (event) {
+        if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || (!busy() && !failures.size)) return;
+        var link = event.target.closest('a[href]');
+        if (!link || link.hasAttribute('download') || (link.target && link.target !== '_self') || link.getAttribute('href').startsWith('#')) return;
+        var url = new URL(link.href, location.href);
+        if (url.origin !== location.origin || (url.pathname === location.pathname && url.search === location.search && url.hash)) return;
+        event.preventDefault();
+        afterSaved(function () { location.assign(url.href); });
+    });
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (root.contains(form) || (!busy() && !failures.size)) return;
+        var url = new URL(form.action, location.href);
+        if (url.origin !== location.origin || url.pathname !== '/logout') return;
+        event.preventDefault();
+        if (form.dataset.cartWaiting) return;
+        form.dataset.cartWaiting = '1';
+        afterSaved(function () { HTMLFormElement.prototype.submit.call(form); });
+        chain.then(function () { delete form.dataset.cartWaiting; });
+    });
     var dialog=document.getElementById('cart-move-dialog');if(dialog){dialog.querySelector('[data-close-cart-dialog]').onclick=function(){dialog.close();};document.getElementById('cart-move-target').onchange=function(){var fresh=!this.value;document.getElementById('cart-move-new').hidden=!fresh;document.getElementById('cart-move-title').required=fresh;};}
     var note=document.getElementById('cart-b2b-note');if(note)note.addEventListener('input',function(){schedule(note,function(){enqueue('cart-note','/cart/note',{note:note.value});});});
     root.querySelectorAll('[data-share-cart]').forEach(function(button){button.addEventListener('click',async function(){

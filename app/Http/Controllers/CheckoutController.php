@@ -251,10 +251,9 @@ class CheckoutController extends Controller
 
         // Защита от двойного сабмита — один токен = один заказ
         $token = $request->input('order_token');
-        if (! $token || session('order_token_used_'.$token)) {
+        if (! is_string($token) || $token === '' || strlen($token) > 128 || session('order_token_used_'.$token)) {
             return redirect()->route('checkout')->with('info', 'Заказ уже был отправлен. Проверьте список заказов.');
         }
-        session(['order_token_used_'.$token => true]);
 
         $request->validate([
             'customer_name' => ['required', 'string', 'max:255'],
@@ -349,6 +348,7 @@ class CheckoutController extends Controller
                 'comment' => $request->filled('comment') ? $request->comment : null,
             ], $b2bCheckout);
 
+            session(['order_token_used_'.$token => true]);
             CartSelection::complete(array_keys($cart));
 
             return to_route('b2b.cabinet', ['section' => 'orders'])
@@ -474,7 +474,14 @@ class CheckoutController extends Controller
             );
         }
 
-        NewOrderCreated::dispatch($order->load('items'));
+        session(['order_token_used_'.$token => true]);
+        // The order is committed already. A notification/queue outage must not
+        // show a failed checkout or leave ordered goods ready to order again.
+        try {
+            NewOrderCreated::dispatch($order->load('items'));
+        } catch (\Throwable $exception) {
+            report($exception);
+        }
 
         // Очищаем корзину и вспомогательные данные
         CartSelection::complete(array_keys($cart));
