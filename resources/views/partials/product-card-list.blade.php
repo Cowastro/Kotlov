@@ -67,7 +67,7 @@
     $fireplaceCardSpecs = $verifiedGasMeter['card'] ?? $fireplaceCardSpecs ?? [];
 @endphp
 
-<div class="card-product product-style_list">
+<div class="card-product product-style_list catalog-product-list">
     <div class="card-product_wrapper">
         <a href="{{ $productUrl }}" class="product-img">
             <img class="img-product" loading="lazy" width="330" height="440"

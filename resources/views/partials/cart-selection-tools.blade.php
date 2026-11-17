@@ -1,10 +1,10 @@
-<section class="cart-save-tools" aria-label="Сохранение подбора">
+<section class="cart-save-tools {{ $b2bClient ? 'cart-save-tools--business' : 'cart-save-tools--retail' }}" aria-label="Сохранение подбора">
     @auth
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
             <p class="fw-semibold"><span class="cart-saved-dot" aria-hidden="true"></span> Автосохранение</p>
-            <a class="link" href="{{ route('selections.index') }}">Мои подборы →</a>
+            <div class="cart-save-links"><a class="link" href="{{ route('selections.index') }}">Мои подборы</a>@if($b2bClient && count($items))<a class="link" href="{{ route('cart.print') }}" target="_blank" rel="noopener">Печать / PDF</a>@endif</div>
         </div>
-        <details class="cart-save-details"><summary>Сохранить, поделиться, печать</summary><p class="text-caption-01 cl-text-2 mb-3">Сохраните отдельный подбор с названием клиента или объекта. К нему можно вернуться после повторного входа.</p>
+        <details class="cart-save-details"><summary>{{ $b2bClient ? 'Сохранить подбор для клиента или объекта' : 'Сохранить список или распечатать' }}</summary><p class="text-caption-01 cl-text-2 mb-3">Сохраните отдельный подбор с названием клиента или объекта. К нему можно вернуться после повторного входа.</p>
         @if (session('error'))<p role="alert" class="text-danger mb-2">{{ session('error') }}</p>@endif
         @error('name')<p role="alert" class="text-danger mb-2">{{ $message }}</p>@enderror
         @if (count($items) > 0)
@@ -29,6 +29,6 @@
         @endif
         </details>
     @else
-        <p><a class="link fw-semibold" href="#sign" data-bs-toggle="modal">Войдите в аккаунт</a>, чтобы корзина сохранялась после завершения сессии и можно было сохранить подбор для клиента.</p>
+        <p><a class="link fw-semibold" href="#sign" data-bs-toggle="modal">Войдите</a>, чтобы сохранить корзину в аккаунте.</p>
     @endauth
 </section>
