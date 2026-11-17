@@ -5,6 +5,21 @@ namespace App\Services\Suppliers;
 /** Source sections contain spare parts and occasional misplaced pumps. */
 final class TdKomplektPumpCategories
 {
+    public static function tankModelKey(string $name, string $article = ''): ?string
+    {
+        if (! preg_match('/(?:^|\s)(?:бак|гидроаккумулятор)(?:\s|$)/ui', $name)
+            || preg_match('/^(?:мембрана|баллон|комплект|кронштейн|фланец|ремкомплект)\b/ui', $name)) {
+            return null;
+        }
+        $value = preg_match('/^(?:WRV|WAO|WAV|WDV)[ -]*\d+(?:[ -]*P)?$/i', $article) ? $article : $name;
+        if (! preg_match('/(?<![a-z0-9])(WRV|WAO|WAV|WDV)[ -]*(\d+)(?:[ -]*(P))?(?![a-z0-9])/i', $value, $m)) {
+            return null;
+        }
+        $suffix = ! empty($m[3]) || (strtoupper($m[1]) === 'WDV' && stripos($name, 'Premium') !== false) ? 'P' : '';
+
+        return strtoupper($m[1]).$m[2].$suffix;
+    }
+
     public static function applies(array $row): bool
     {
         return str_contains(mb_strtolower($row['parentid_name1'] ?? ''), 'насосы и насосное оборудование');

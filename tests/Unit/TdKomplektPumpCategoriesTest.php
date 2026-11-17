@@ -3,10 +3,23 @@
 namespace Tests\Unit;
 
 use App\Services\Suppliers\TdKomplektFeed;
+use App\Services\Suppliers\TdKomplektPumpCategories;
 use PHPUnit\Framework\TestCase;
 
 class TdKomplektPumpCategoriesTest extends TestCase
 {
+    public function test_wester_model_keys_keep_capacity_family_and_premium_variant_separate(): void
+    {
+        $class = TdKomplektPumpCategories::class;
+        $this->assertSame('WRV8', $class::tankModelKey('Мембранный бак Wester WRV 8'));
+        $this->assertSame('WRV80', $class::tankModelKey('Бак мембранный WRV80 Wester'));
+        $this->assertSame('WRV20P', $class::tankModelKey('Бак мембранный Wester Impero WRV20-P'));
+        $this->assertSame('WDV8P', $class::tankModelKey('Бак мембранный WDV 8 Premium WESTER'));
+        $this->assertSame('WAO24', $class::tankModelKey('Бак мембранный Wester WAO24'));
+        $this->assertSame('WAV24', $class::tankModelKey('Бак мембранный Wester WAV24'));
+        $this->assertNull($class::tankModelKey('Мембрана для бака WRV8 Wester'));
+    }
+
     public function test_supplier_sections_are_corrected_by_the_actual_product_type(): void
     {
         $cases = [
