@@ -1069,6 +1069,12 @@
                                                 if ($displaySuffix !== '' && mb_stripos($displayValue, $displaySuffix) !== false) {
                                                     $displaySuffix = '';
                                                 }
+                                                // A fitting may combine a metric pipe and an inch thread (25 x 1").
+                                                // Keep the supplier's explicit inch unit instead of appending a category's mm suffix.
+                                                if (in_array(mb_strtolower(trim($displaySuffix)), ['мм', 'mm'], true)
+                                                    && preg_match('/\d\s*(?:"|″|дюйм)/ui', $displayValue)) {
+                                                    $displaySuffix = '';
+                                                }
                                             @endphp
                                             @if (!$isEmpty)
                                                 <tr>

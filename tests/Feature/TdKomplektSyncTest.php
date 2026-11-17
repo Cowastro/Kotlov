@@ -9,6 +9,7 @@ use App\Models\SupplierProduct;
 use App\Services\Suppliers\TdKomplektFeed;
 use App\Services\Suppliers\TdKomplektMatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -176,10 +177,12 @@ class TdKomplektSyncTest extends TestCase
 
     public function test_product_service_tab_shows_supplier_rows_and_legacy_maps_with_escaped_values(): void
     {
-        $this->artisan('supplier:sync-td-komplekt', ['--file' => $this->csv([$this->row()]), '--apply' => true, '--create-new' => true])->assertSuccessful();
+        $this->artisan('supplier:sync-td-komplekt', ['--file' => $this->csv([$this->row(['description' => 'Номинальный диаметр: 25x1"'])]), '--apply' => true, '--create-new' => true])->assertSuccessful();
         $p = Product::where('sku', 'TDK-12345')->firstOrFail();
+        DB::table('attributes')->where('category_id', $p->category_id)->where('name', 'Номинальный диаметр')->update(['suffix' => 'мм']);
         $url = '/rezbovye-fitingi/'.$p->slug;
-        $this->get($url)->assertOk()->assertSeeText('Минимальный заказ')->assertSeeText('Кратность заказа')->assertSeeText('Импортёр');
+        $response = $this->get($url)->assertOk()->assertSeeText('Минимальный заказ')->assertSeeText('Кратность заказа')->assertSeeText('Импортёр')->assertSee('25x1&quot;', false);
+        $this->assertDoesNotMatchRegularExpression('/25x1&quot;\s+мм/u', $response->getContent());
         $p->update(['service_info' => ['Гарантийное обслуживание' => 'По документам поставщика', 'Безопасный вывод' => '<script>supplier</script>']]);
         $this->get($url)->assertOk()->assertSeeText('Гарантийное обслуживание')->assertSeeText('По документам поставщика')->assertSee('&lt;script&gt;supplier&lt;/script&gt;', false)->assertDontSee('<script>supplier</script>', false);
     }
