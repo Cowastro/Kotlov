@@ -1021,6 +1021,9 @@
                                     <p class="mb-2">Указаны подтверждённые параметры этого исполнения. Максимальные напор и расход достигаются в разных точках. Номинальные и табличные значения показаны отдельно; рабочую точку проверяют по кривой производителя.</p>
                                     @if ($pumpDetailDocument)
                                         <a href="{{ $pumpDetailDocument['url'] }}" target="_blank" rel="noopener">{{ $pumpDetailDocument['title'] }} ↗</a>
+                                        @foreach ($pumpDetailDocument['manuals'] ?? [] as $manual)
+                                            <a class="d-block" href="{{ $manual }}" target="_blank" rel="noopener">Инструкция производителя (PDF) ↗</a>
+                                        @endforeach
                                     @endif
                                 </div>
                             @endif

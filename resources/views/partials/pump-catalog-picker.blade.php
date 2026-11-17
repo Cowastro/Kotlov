@@ -47,6 +47,7 @@
             <div class="pump-picker__actions"><button type="submit" class="tf-btn btn-primary small">Показать насосы</button>
                 <a class="link text-caption-01" href="{{ url()->current().($resetParameters ? '?'.http_build_query($resetParameters) : '') }}#catalog-products">Сбросить параметры</a>
                 @if (! in_array($category->slug, ['vodosnabzhenie', 'promyshlennye-nasosy'], true))<a class="link text-caption-01" href="{{ url('/vodosnabzhenie') }}">Другой тип насоса →</a>@endif
+                @if (in_array($category->slug, \App\Support\Catalog\PumpCatalog::MANUFACTURER_CATEGORIES, true))<a class="link text-caption-01" href="{{ url('/komplektuyushchie-dlya-nasosov') }}">Комплектующие для насосов →</a>@endif
             </div>
         </form>
         <p class="pump-picker__note text-caption-01 cl-text-2 mt-3">Фильтр сравнивает указанные в каталоге предельные характеристики. Максимальный напор и максимальный расход достигаются в разных точках. Рабочую точку Q/H проверяют по кривой производителя. Товары без указанных значений не попадают в отбор.</p>

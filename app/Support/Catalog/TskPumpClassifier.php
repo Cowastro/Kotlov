@@ -16,6 +16,17 @@ final class TskPumpClassifier
             return null;
         }
 
+        // An automation assembly or sewage collection tank is not a complete pump.
+        // Check accessories before model codes (WQ/ECO/АКВАРОБОТ) or tank mentions.
+        if (self::containsAny($value, ['комплект автоматики', 'выключатель поплавков',
+            'поплавковый выключатель', 'шланг пвх', 'шланг текстиль', 'сливной клапан',
+            'в сборе к eco vint', 'в обойме к eco vint', 'адаптер скважинный'])
+            || preg_match('/(?:^|\s)краб(?:-т)?(?:\s|$)/u', $value)
+            || (str_contains($value, 'колено') && str_contains($value, 'насос'))
+            || (str_contains($value, 'fekabox') && self::containsAny($value, ['емкость', 'ёмкость']))) {
+            return 'komplektuyushchie-dlya-nasosov';
+        }
+
         // Water filters: «Фильтр-грязевик» is not a mud pump, «фильтрующий элемент» not an accessory.
         if (str_contains($value, 'фильтр') && ! str_contains($value, 'насос')) {
             return 'filtry';

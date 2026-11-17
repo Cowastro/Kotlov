@@ -93,9 +93,14 @@ class HouseholdPumpPickerTest extends TestCase
         $records = HouseholdPumpFacts::records();
         foreach ($records['products'] as $binding) {
             $model = $records['models'][$binding['model']];
-            $this->assertNotEmpty($model['pages']);
             $source = $model['source'] ?? $records['source'];
-            $this->assertContains(parse_url($source['url'], PHP_URL_HOST), ['unipump.ru', 'wellmix-pump.ru', 'imp-pumps.com', 'jeelex.ru', 'www.puritypumps.com', 'www.dabpumps.com', 'www.koshin-ltd.jp']);
+            if (($source['type'] ?? 'pdf') === 'html') {
+                $this->assertSame([], $model['pages']);
+                $this->assertNotEmpty($model['manufacturer_article']);
+            } else {
+                $this->assertNotEmpty($model['pages']);
+            }
+            $this->assertContains(parse_url($source['url'], PHP_URL_HOST), ['unipump.ru', 'wellmix-pump.ru', 'imp-pumps.com', 'jeelex.ru', 'www.puritypumps.com', 'www.dabpumps.com', 'www.koshin-ltd.jp', 'www.wellmix-pump.ru', 'rutector.ru', 'dambat.pl', 'cms.media.wilo.com', 'www.c-o-k.ru', 'dn.ru', 'wilo.com']);
             $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $source['sha256']);
             foreach ($model['numbers'] as $field => $value) {
                 $this->assertGreaterThan(0, $value, $binding['model'].' '.$field);
@@ -162,5 +167,66 @@ class HouseholdPumpPickerTest extends TestCase
         $station = $this->verified('DAB AQUAJET 82 M - G');
         $this->get('https://kotlov.by/nasosnyie-stantsii?pump[tank]=20')->assertOk()
             ->assertViewHas('products', fn ($products) => $products->modelKeys() === [$station->id]);
+    }
+
+    public function test_official_article_page_and_manual_are_available_without_a_fake_pdf_page(): void
+    {
+        $p = $this->verified('UNIPUMP article 82229');
+        $document = HouseholdPumpFacts::document($p, 'poverhnostnyie');
+        $this->assertStringNotContainsString('#page=', $document['url']);
+        $this->get('https://kotlov.by/poverhnostnyie/'.$p->slug)->assertOk()
+            ->assertSee('Артикул производителя')->assertSee('82229')
+            ->assertSee('Инструкция производителя (PDF)');
+    }
+
+    public function test_review_accounts_for_all_original_cards_without_assigning_accessory_hydraulics(): void
+    {
+        $review = json_decode(file_get_contents(resource_path('data/pump-remaining-review.json')), true);
+        $this->assertCount(376, $review['products']);
+        $this->assertCount(376, array_unique(array_column($review['products'], 'id')));
+        $counts = array_count_values(array_column($review['products'], 'status'));
+        $this->assertSame(151, $counts['parameters_confirmed']);
+        $this->assertSame(48, $counts['accessory']);
+        $this->assertSame(177, $counts['needs_confirmation']);
+        foreach ($review['products'] as $row) {
+            $bound = isset(HouseholdPumpFacts::records()['products'][(string) $row['id']]);
+            $this->assertSame($row['status'] === 'parameters_confirmed', $bound);
+        }
+    }
+
+    public function test_wq25_is_not_mistaken_for_the_wq2_series_table(): void
+    {
+        $p = $this->verified('WELLMIX 50WQ25-25-3');
+        $facts = HouseholdPumpFacts::facts($p, 'drenajnyie', []);
+        $this->assertSame(3, $facts['numbers']['power_kw']);
+        $this->assertSame(41, $facts['numbers']['weight_kg']);
+        $this->assertSame(20, $facts['numbers']['free_passage']);
+        $this->assertArrayNotHasKey('head', $facts['numbers']);
+    }
+
+    public function test_accessory_manifest_migrates_exact_cards_and_preserves_later_changes(): void
+    {
+        $rows = json_decode(file_get_contents(resource_path('data/pump-accessory-classification.json')), true)['products'];
+        $destination = Category::create(['name' => 'Комплектующие для насосов', 'slug' => 'komplektuyushchie-dlya-nasosov', 'parent_id' => 0, 'is_active' => true]);
+        foreach ($rows as $row) {
+            $source = Category::firstOrCreate(['slug' => $row['from']], ['name' => $row['from'], 'parent_id' => 0, 'is_active' => true]);
+            $p = new Product(['name' => $row['name'], 'slug' => 'accessory-'.$row['id'], 'sku' => 'ACCESSORY-'.$row['id'], 'category_id' => $source->id, 'is_active' => true, 'price' => 10]);
+            $p->forceFill(['id' => $row['id']])->save();
+            $this->assertSame($row['to'], \App\Support\Catalog\TskPumpClassifier::categorySlug($row['name']), $row['name']);
+        }
+        // A renamed card is no longer an exact match; do not overwrite it.
+        Product::findOrFail($rows[0]['id'])->update(['name' => 'Later edited card']);
+        $migration = require database_path('migrations/2026_11_17_120000_separate_remaining_pump_accessories.php');
+        $migration->up();
+        $migration->up();
+        $this->assertSame(count($rows) - 1, Product::where('category_id', $destination->id)->count());
+        $example = $rows[1];
+        $this->get('https://kotlov.by/'.$example['from'].'/accessory-'.$example['id'])
+            ->assertRedirect('https://kotlov.by/'.$example['to'].'/accessory-'.$example['id']);
+        $migration->down();
+        $this->assertSame(0, Product::where('category_id', $destination->id)->count());
+        $this->assertSame('Later edited card', Product::findOrFail($rows[0]['id'])->name);
+        $this->assertSame('nasosnyie-stantsii', \App\Support\Catalog\TskPumpClassifier::categorySlug('UNIPUMP АКВАРОБОТ JET 80 L (г/а 5 л)'));
+        $this->assertSame('drenajnyie', \App\Support\Catalog\TskPumpClassifier::categorySlug('Дренажный насос DAB FEKA 600 M-A'));
     }
 }

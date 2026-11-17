@@ -65,6 +65,8 @@ class HouseholdPumpFacts
         foreach (['weight_kg' => ['Масса', ' кг'], 'cable' => ['Длина кабеля', ' м']] as $key => [$label, $unit]) {
             if (isset($numbers[$key])) $details[$label] = str_replace('.', ',', (string) $numbers[$key]).$unit;
         }
+        if (! empty($record['manufacturer_article'])) $details['Артикул производителя'] = (string) $record['manufacturer_article'];
+        if (! empty($record['manufacturer_model'])) $details['Обозначение производителя'] = $record['manufacturer_model'];
         foreach ($record['conflicts'] ?? [] as $key => $conflict) {
             $label = ['immersion' => 'Макс. погружение', 'flow' => 'Макс. расход', 'head' => 'Макс. напор'][$key] ?? $key;
             $details[$label] = 'Требует уточнения: данные документов производителя различаются';
@@ -77,7 +79,8 @@ class HouseholdPumpFacts
         $record = self::verified($product, $slug);
         if (! $record) return null;
         $source = $record['source'] ?? self::records()['source'];
-        return ['url' => $source['url'].'#page='.$record['pages'][0], 'title' => $source['title']];
+        $page = $record['pages'][0] ?? null;
+        return ['url' => $source['url'].($page ? '#page='.$page : ''), 'title' => $source['title'], 'manuals' => $record['manuals'] ?? []];
     }
 
     public static function summary(Product $product): ?string
