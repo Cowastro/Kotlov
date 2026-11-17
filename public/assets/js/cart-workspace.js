@@ -41,7 +41,7 @@
         [['cart-online-note',data.coupon_discount],['cart-bundle-note',data.bundle_discount]].forEach(function(x){var el=document.getElementById(x[0]);if(el)el.hidden=!(x[1]>0);});
         var delivery=document.getElementById('cart-delivery-estimate');if(delivery)delivery.textContent=data.subtotal>=Number(delivery.dataset.threshold)?'В пределах МКАД-2 — бесплатно; по городам графика — согласно тарифу':'от 10 BYN, точная цена при оформлении';
         put('cart-bundle-discount-label',(data.bundle_mode==='self_selection'?'Самостоятельный подбор':'Дымоход с оборудованием')+' −'+data.bundle_percent+'%:');
-        var all=document.getElementById('cart-select-all');if(all){var n=rows.filter(function(r){return r.querySelector('.cart-line-check').checked;}).length;all.checked=n===rows.length;all.indeterminate=n>0&&n<rows.length;}
+        var all=document.getElementById('cart-select-all');if(all){var visibleRows=rows.filter(function(r){return !r.hidden;}),n=visibleRows.filter(function(r){return r.querySelector('.cart-line-check').checked;}).length;all.checked=visibleRows.length>0&&n===visibleRows.length;all.indeterminate=n>0&&n<visibleRows.length;all.disabled=visibleRows.length===0;}
         syncButtons();
     }
     function enqueue(key,url,body,onSuccess) {
@@ -74,13 +74,37 @@
         var editNote=row.querySelector('[data-edit-line-note]');if(editNote)editNote.addEventListener('click',function(){row.querySelector('.cart-line__note').hidden=false;row.querySelector('details').open=false;note.focus();});
         var move=row.querySelector('[data-move-line]');if(move)move.addEventListener('click',function(){document.getElementById('cart-move-id').value=row.dataset.productId;document.getElementById('cart-move-name').textContent=row.querySelector('h2').textContent;row.querySelector('details').open=false;document.getElementById('cart-move-dialog').showModal();});
     });
-    var all=document.getElementById('cart-select-all');if(all)all.addEventListener('change',function(){var selected=all.checked;rows.forEach(function(row){row.querySelector('.cart-line-check').checked=selected;row.classList.toggle('is-postponed',!selected);});enqueue('select-all','/cart/selection',{ids:rows.map(function(r){return Number(r.dataset.productId);}),selected:selected});});
-    var search=document.getElementById('cart-find');if(search)search.addEventListener('input',function(){var q=this.value.toLocaleLowerCase('ru').trim(), visible=0;rows.forEach(function(row){row.hidden=!row.querySelector('.cart-line__info').textContent.toLocaleLowerCase('ru').includes(q);if(!row.hidden)visible++;});root.querySelector('.cart-search-empty').hidden=visible>0;});
+    var all=document.getElementById('cart-select-all');if(all)all.addEventListener('change',function(){var selected=all.checked, visibleRows=rows.filter(function(row){return !row.hidden;});if(!visibleRows.length)return;visibleRows.forEach(function(row){row.querySelector('.cart-line-check').checked=selected;row.classList.toggle('is-postponed',!selected);});enqueue('select-all','/cart/selection',{ids:visibleRows.map(function(r){return Number(r.dataset.productId);}),selected:selected});});
+    function searchKey(value) { return String(value).normalize('NFKC').toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/[^\p{L}\p{N}]/gu,''); }
+    var search=document.getElementById('cart-find'), clearSearch=document.getElementById('cart-search-clear');
+    var searchRows=rows.map(function(row){return {row:row,key:searchKey(row.querySelector('.cart-line__info').textContent)};});
+    function filterRows() {
+        var query=search.value.trim(), terms=query.split(/\s+/).map(searchKey).filter(Boolean), visible=0;
+        searchRows.forEach(function(entry){entry.row.hidden=!terms.every(function(term){return entry.key.includes(term);});if(!entry.row.hidden)visible++;});
+        root.querySelector('.cart-search-empty').hidden=visible>0;
+        var result=document.getElementById('cart-search-result');
+        if(result){result.hidden=!query;result.textContent='Найдено '+visible+' из '+rows.length+'. Сохранение и печать — весь подбор.';}
+        if(clearSearch)clearSearch.hidden=!query;
+        put('cart-select-label',query?'Выбрать показанные':'Выбрать всё');
+        drawSelection(summary);
+    }
+    if(search)search.addEventListener('input',filterRows);
+    if(clearSearch)clearSearch.addEventListener('click',function(){search.value='';filterRows();search.focus();});
     var agree=document.getElementById('cart-agree');if(agree)agree.addEventListener('change',syncButtons);
     var checkout=document.getElementById('checkout-btn');if(checkout)checkout.addEventListener('click',function(){flush().then(function(){if(!failures.size&&summary.positions>0&&agree.checked)location.href='/checkout';});});
     var mobile=document.getElementById('cart-mobile-checkout');if(mobile)mobile.addEventListener('click',function(){if(agree.checked)checkout.click();else{document.getElementById('cart-order-summary').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});agree.focus({preventScroll:true});}});
     root.querySelectorAll('form').forEach(function(form){form.addEventListener('submit',function(e){e.preventDefault();if(form.dataset.waiting)return;form.dataset.waiting='1';flush().then(function(){if(failures.size){delete form.dataset.waiting;errorBox.scrollIntoView({block:'center'});return;}if(form.reportValidity()){form.dataset.ready='1';HTMLFormElement.prototype.submit.call(form);}else{delete form.dataset.waiting;}});});});
-    root.querySelectorAll('a[target="_blank"]').forEach(function(a){a.addEventListener('click',function(e){if(busy()||failures.size){e.preventDefault();showError('Сначала дождитесь сохранения изменений.');}});});
+    root.querySelectorAll('a[target="_blank"]').forEach(function(a){a.addEventListener('click',function(e){
+        if(!busy()&&!failures.size)return;
+        e.preventDefault();
+        var preview=window.open('about:blank','_blank');
+        if(preview)preview.opener=null;
+        flush().then(function(){
+            if(failures.size){if(preview)preview.close();showError('Печать не открыта: есть несохранённые изменения.');return;}
+            if(preview)preview.location.replace(a.href);
+            else showError('Изменения сохранены. Разрешите открытие вкладки и нажмите «Печать / PDF» ещё раз.');
+        });
+    });});
     // Header/account actions live outside the cart form. Wait for its debounced
     // writes before navigation or logout invalidates the current session.
     function afterSaved(action) {
