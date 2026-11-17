@@ -916,6 +916,12 @@ class SyncRusklimatCommand extends Command
         }
         $combined = mb_strtolower($catRaw . ' ' . $name);
 
+        // BONECO consumables (the sheet spells the group «Акcессуары к BONECO» with a Latin «c»)
+        // belong next to the BONECO humidifiers and air washers.
+        if (preg_match('/ак[cс]ессуары к boneco/u', $combined)) {
+            return \App\Models\Category::where('slug', 'uvlazhniteli-vozdukha')->value('id');
+        }
+
         // A category removed from the catalog must not break product creation (FK error) — the row then
         // shows up as category_missing instead.
         static $existing = null;

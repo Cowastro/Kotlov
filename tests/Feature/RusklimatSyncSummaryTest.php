@@ -52,4 +52,27 @@ class RusklimatSyncSummaryTest extends TestCase
             ->expectsOutputToContain("audit.rusklimat_sync.review=ns-7700001:zilon:{$productId}:3:620")
             ->assertSuccessful();
     }
+
+    public function test_boneco_accessories_go_to_humidifiers(): void
+    {
+        if (! DB::table('suppliers')->where('code', 'rusklimat')->exists()) {
+            DB::table('suppliers')->insert(['code' => 'rusklimat', 'name' => 'Русклимат', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        }
+        $now = now();
+        if (! DB::table('brands')->whereRaw('lower(name) = ?', ['boneco'])->exists()) {
+            DB::table('brands')->insert(['name' => 'BONECO', 'slug' => 'boneco-accessory-test', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now]);
+        }
+        if (! DB::table('categories')->where('slug', 'uvlazhniteli-vozdukha')->exists()) {
+            DB::table('categories')->insert(['name' => 'Увлажнители воздуха', 'slug' => 'uvlazhniteli-vozdukha', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now]);
+        }
+        $file = tempnam(sys_get_temp_dir(), 'rk').'.csv';
+        file_put_contents($file, "Группа,Модель,\"Наличие,шт\",\"Розница, BYN\",\"Дилер, BYN\",НС-код,Бренд
+"
+            ."Акcессуары к BONECO,A7417 Calcoff,11,65,40,НС-0070577,BONECO
+");
+
+        $this->artisan('supplier:sync-rusklimat', ['--dry-run' => true, '--stock-file' => $file, '--no-images' => true])
+            ->expectsOutputToContain('audit.rusklimat_sync.new=ns-0070577:boneco:11:65:create_candidate')
+            ->assertSuccessful();
+    }
 }
