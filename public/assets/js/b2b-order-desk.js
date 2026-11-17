@@ -1,0 +1,124 @@
+(function () {
+    'use strict';
+    var root = document.querySelector('[data-order-desk]'); if (!root) return;
+    var state = JSON.parse(root.dataset.state), busy = false, selectedOnly = false, action = 'copy';
+    var csrf = document.querySelector('meta[name="csrf-token"]').content;
+    var rows = Array.from(root.querySelectorAll('[data-desk-row]'));
+    var dialog = document.getElementById('desk-transfer-dialog');
+    var targetSelect = dialog.querySelector('select');
+    var errorBox = root.querySelector('[data-desk-error]');
+    function money(value) { return Number(value || 0).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' BYN'; }
+    function chosen() { return state.items.filter(function (item) { return !state.excluded.includes(item.id); }); }
+    function status(text) { root.querySelector('[data-desk-status]').textContent = text; }
+    function visibleRows() {
+        var needle = root.querySelector('[data-desk-search]').value.trim().toLocaleLowerCase('ru');
+        var visible = 0;
+        rows.forEach(function (row) {
+            var item = state.items.find(function (line) { return line.id === Number(row.dataset.deskRow); });
+            var match = item && (!selectedOnly || !state.excluded.includes(item.id)) && (item.name + ' ' + (item.sku || '') + ' ' + (item.workspace_purchase ? item.workspace_purchase.supplier : '')).toLocaleLowerCase('ru').includes(needle);
+            row.hidden = !match; if (match) visible++;
+        });
+        root.querySelector('[data-desk-found]').textContent = visible + ' из ' + state.items.length;
+        root.querySelector('[data-desk-empty]').hidden = visible > 0;
+    }
+    function paint() {
+        var items = chosen(), total = 0, cost = 0, margin = 0, marginRetail = 0, unknown = 0;
+        items.forEach(function (item) {
+            total += item.price * item.quantity;
+            if (item.workspace_purchase && item.workspace_purchase.purchase_price !== null) {
+                cost += item.workspace_purchase.purchase_price * item.quantity;
+                if (item.price > 0) { margin += (item.price - item.workspace_purchase.purchase_price) * item.quantity; marginRetail += item.price * item.quantity; }
+                else unknown++;
+            } else unknown++;
+        });
+        root.querySelector('[data-desk-count]').textContent = items.length + ' из ' + state.items.length + ' позиций';
+        root.querySelector('[data-desk-total]').textContent = money(total) + (items.some(function (item) { return !(item.price > 0); }) ? ' + уточнение' : '');
+        root.querySelector('[data-desk-margin]').textContent = state.procurement ? 'Закупка ' + money(cost) + ' · Маржа ' + money(margin) + (marginRetail > 0 ? ' / ' + (margin / marginRetail * 100).toLocaleString('ru-RU', {maximumFractionDigits:1}) + '%' : '') + (unknown ? ' · По подтверждённым ценам; уточнить ' + unknown + ' поз.' : '') : '';
+        root.querySelector('[data-desk-title]').textContent = state.name;
+        var all = root.querySelector('[data-desk-check-all]'); all.checked = state.items.length > 0 && items.length === state.items.length; all.indeterminate = items.length > 0 && items.length < state.items.length;
+        root.querySelector('[data-desk-undo]').hidden = !state.undo_available;
+        rows.forEach(function (row) {
+            var item = state.items.find(function (line) { return line.id === Number(row.dataset.deskRow); }); if (!item) { row.hidden = true; return; }
+            row.querySelector('[data-desk-check]').checked = !state.excluded.includes(item.id);
+            row.classList.toggle('is-postponed', state.excluded.includes(item.id));
+            row.querySelector('[data-desk-quantity]').value = item.quantity;
+            row.querySelector('[data-desk-line-total]').textContent = item.price > 0 ? money(item.price * item.quantity) : 'Уточняется';
+            var warning = row.querySelector('[data-desk-stock-warning]');
+            if (warning) warning.hidden = item.quantity <= item.workspace_purchase.stock_quantity;
+        });
+        visibleRows();
+    }
+    function lock(value) {
+        busy = value;
+        root.querySelectorAll('button, [data-desk-check], [data-desk-check-all], [data-desk-quantity]').forEach(function (node) { node.disabled = value; });
+        dialog.querySelector('[type="submit"]').disabled = value;
+        root.querySelectorAll('[data-desk-export]').forEach(function (node) { node.setAttribute('aria-disabled', value ? 'true' : 'false'); });
+    }
+    function mutate(payload) {
+        if (busy) return Promise.reject(new Error('Дождитесь сохранения.'));
+        errorBox.hidden = true; status('Сохраняем…'); lock(true);
+        return fetch(root.dataset.updateUrl, {method:'PATCH', headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf}, body:JSON.stringify(Object.assign({revision:state.revision}, payload))})
+            .then(function (response) { return response.json().then(function (data) { if (!response.ok) throw new Error(data.message || 'Не удалось сохранить изменения.'); return data; }); })
+            .then(function (data) {
+                state = data.state; paint(); status('Сохранено ' + state.saved_at);
+                if (data.target) {
+                    var option = Array.from(targetSelect.options).find(function (entry) { return Number(entry.value) === data.target.id; });
+                    if (!option) { option = new Option(data.target.name, data.target.id); targetSelect.add(option); }
+                    option.dataset.revision = data.target.revision;
+                    var link = document.createElement('a'); link.href = data.target.url; link.textContent = ' Открыть «' + data.target.name + '» →';
+                    root.querySelector('[data-desk-status]').appendChild(link);
+                }
+                return data;
+            }).catch(function (error) {
+                errorBox.textContent = error.message || 'Нет соединения. Повторите сохранение.'; errorBox.hidden = false; status('Изменение не сохранено');
+                paint(); throw error;
+            }).finally(function () { lock(false); });
+    }
+    root.querySelector('[data-desk-search]').addEventListener('input', visibleRows);
+    root.querySelector('[data-desk-sort]').addEventListener('change', function (event) {
+        var by = event.target.value;
+        var ordered = state.items.slice().sort(function (a,b) {
+            if (by === 'quantity') return b.quantity - a.quantity;
+            if (by === 'total') return b.price*b.quantity - a.price*a.quantity;
+            return String(a[by] || '').localeCompare(String(b[by] || ''), 'ru', {numeric:true});
+        });
+        var parent = root.querySelector('[data-desk-rows]'); ordered.forEach(function (item) { var row = rows.find(function (entry) { return Number(entry.dataset.deskRow) === item.id; }); if (row) parent.appendChild(row); });
+    });
+    root.addEventListener('change', function (event) {
+        var input = event.target;
+        if (input.matches('[data-desk-check], [data-desk-check-all]')) {
+            var ids = input.hasAttribute('data-desk-check-all') ? (input.checked ? state.items.map(function (item) { return item.id; }) : []) : rows.filter(function (row) { return state.items.some(function (item) { return item.id === Number(row.dataset.deskRow); }) && row.querySelector('[data-desk-check]').checked; }).map(function (row) { return Number(row.dataset.deskRow); });
+            mutate({action:'select', ids:ids}).catch(function () {});
+        }
+        if (input.matches('[data-desk-quantity]')) saveQuantity(input);
+    });
+    function saveQuantity(input, advance) {
+        var value = Number(input.value), id = Number(input.closest('[data-desk-row]').dataset.deskRow);
+        if (!Number.isInteger(value) || value < 1 || value > 999) { input.value = state.items.find(function (item) { return item.id === id; }).quantity; errorBox.textContent = 'Количество: целое число от 1 до 999.'; errorBox.hidden = false; return; }
+        if (busy) return;
+        mutate({action:'quantity', product_id:id, quantity:value}).then(function () {
+            if (advance) { var visible = Array.from(root.querySelectorAll('[data-desk-row]:not([hidden]) [data-desk-quantity]')); var next = visible[visible.indexOf(input)+1]; if (next) { next.focus(); next.select(); } }
+        }).catch(function () {});
+    }
+    root.addEventListener('keydown', function (event) { if (event.key === 'Enter' && event.target.matches('[data-desk-quantity]')) { event.preventDefault(); saveQuantity(event.target, true); } });
+    root.addEventListener('click', function (event) {
+        var button = event.target.closest('button'); if (!button || busy) return;
+        if (button.hasAttribute('data-desk-step')) { var input = button.closest('[data-desk-row]').querySelector('[data-desk-quantity]'); input.value = Math.min(999, Math.max(1, Number(input.value) + Number(button.dataset.deskStep))); saveQuantity(input); }
+        if (button.hasAttribute('data-desk-filter-selected')) { selectedOnly = !selectedOnly; button.setAttribute('aria-pressed', String(selectedOnly)); visibleRows(); }
+        if (button.hasAttribute('data-desk-select-found')) mutate({action:'select', ids:rows.filter(function (row) { return !row.hidden; }).map(function (row) { return Number(row.dataset.deskRow); })}).catch(function () {});
+        if (button.hasAttribute('data-desk-remove')) mutate({action:'remove', ids:chosen().map(function (item) { return item.id; })}).catch(function () {});
+        if (button.hasAttribute('data-desk-undo')) mutate({action:'undo'}).catch(function () {});
+        if (button.hasAttribute('data-desk-transfer')) { action = button.dataset.deskTransfer; dialog.querySelector('h2').textContent = action === 'move' ? 'Перенести отмеченные' : 'Копировать отмеченные'; dialog.showModal(); }
+    });
+    root.querySelector('[data-desk-details]').addEventListener('submit', function (event) { event.preventDefault(); mutate({action:'details', name:event.target.elements.name.value, note:event.target.elements.note.value}).catch(function () {}); });
+    dialog.querySelector('[data-desk-close]').addEventListener('click', function () { dialog.close(); });
+    targetSelect.addEventListener('change', function () { var fresh = targetSelect.value === ''; dialog.querySelector('[data-desk-new-target]').hidden = !fresh; dialog.querySelector('input[name="name"]').required = fresh; });
+    dialog.querySelector('form').addEventListener('submit', function (event) {
+        event.preventDefault(); var form = event.target, error = form.querySelector('[data-desk-transfer-error]'); error.hidden = true;
+        mutate({action:action, ids:chosen().map(function (item) { return item.id; }), target_id:targetSelect.value || null, target_revision:targetSelect.value ? Number(targetSelect.selectedOptions[0].dataset.revision) : null, name:form.elements.name.value})
+            .then(function () { dialog.close(); }).catch(function (failure) { error.textContent = failure.message; error.hidden = false; });
+    });
+    root.querySelectorAll('[data-desk-export]').forEach(function (link) { link.addEventListener('click', function (event) { if (busy) { event.preventDefault(); status('Дождитесь сохранения перед экспортом.'); } }); });
+    window.addEventListener('beforeunload', function (event) { if (busy) { event.preventDefault(); event.returnValue = ''; } });
+    paint();
+})();

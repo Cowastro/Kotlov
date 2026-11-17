@@ -33,8 +33,7 @@ class StaffCatalogWorkspaceController extends Controller
     public function update(Request $request, CustomerSelection $selection, int $product, StaffCatalogWorkspace $workspace)
     {
         abort_unless(StaffCatalogWorkspace::allowed($request->user()), 403);
-        abort_unless((int) $selection->user_id === (int) $request->user()->id
-            && ($selection->meta['staff_workspace'] ?? false), 404);
+        abort_unless((int) $selection->user_id === (int) $request->user()->id, 404);
         $data = $request->validate([
             'quantity' => ['required', 'integer', 'min:0', 'max:999'],
             'revision' => ['required', 'integer', 'min:1'],
@@ -66,10 +65,11 @@ class StaffCatalogWorkspaceController extends Controller
                     abort_if(filled($key) && ! $offer, 422, 'Предложение поставщика изменилось. Обновите каталог и выберите поставщика заново.');
                     if ($offer) {
                         $items[$product]['workspace_purchase'] = $offer;
+                        $items[$product]['order_rules'] = $offer['order_rules'] ?? [];
                     }
                 }
             }
-            $locked->update(['items' => $items, 'revision' => $locked->revision + 1]);
+            $locked->update(['items' => $items, 'meta' => array_replace($locked->meta ?? [], ['staff_workspace' => true]), 'revision' => $locked->revision + 1]);
 
             return $locked;
         });

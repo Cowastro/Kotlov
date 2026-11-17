@@ -11,6 +11,7 @@ use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\B2bOrders\B2bStockLocator;
 use App\Services\Pricing\B2bPartnerPricingEngine;
+use App\Services\Suppliers\SupplierOrderRules;
 use Illuminate\Support\Collection;
 
 class B2bSupplyOptionResolver
@@ -199,6 +200,7 @@ class B2bSupplyOptionResolver
             'product' => $offer->product,
             'integration_product_id' => null,
             'supplier_product_id' => (int) $offer->id,
+            'order_rules' => SupplierOrderRules::fromOffer($offer),
             'warehouse_stock_id' => null,
             'stock_key' => 'supplier:'.$offer->id,
             'source_key' => 'supplier:'.$supplier?->id,
@@ -222,6 +224,7 @@ class B2bSupplyOptionResolver
     private function publicOption(array $option): array
     {
         return collect($option)->only([
+            'order_rules',
             'key', 'kind', 'product_id', 'product', 'integration_product_id', 'supplier_product_id',
             'warehouse_stock_id', 'stock_key', 'source_key', 'source_label', 'warehouse_name', 'delivery_days',
             'delivery_label', 'stock', 'stock_label', 'procurement', 'is_own_stock', 'priority',

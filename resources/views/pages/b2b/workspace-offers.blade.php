@@ -14,6 +14,7 @@
             <article><strong>{{ $offer['supplier'] }}</strong><span>Входная: {{ $offer['purchase_price'] !== null ? number_format($offer['purchase_price'], 2, ',', ' ').' BYN' : 'уточняется' }}@if($offer['margin'] !== null) · Маржа {{ number_format($offer['margin'], 2, ',', ' ') }} BYN / {{ number_format($offer['margin_percent'], 1, ',', ' ') }}%@endif</span>
                 <span>{{ $offer['stock'] }}{{ ! $offer['is_fresh'] ? ' · остаток требует проверки' : '' }}</span>
                 @if($offer['article'])<span>Арт. поставщика: {{ $offer['article'] }}</span>@endif
+                @if(!empty($offer['order_rules']))<span>{{ \App\Services\Suppliers\SupplierOrderRules::label($offer['order_rules']) }}</span>@endif
                 @if(!empty($offer['catalog_code']))<span>Код каталога: {{ $offer['catalog_code'] }}</span>@endif
                 @if($offer['warehouse'])<span>Склад: {{ $offer['warehouse'] }}</span>@endif
                 @foreach(($offer['warehouse_breakdown'] ?? []) as $warehouse)<span>{{ $warehouse }}</span>@endforeach

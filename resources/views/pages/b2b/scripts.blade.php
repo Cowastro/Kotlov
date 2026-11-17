@@ -8,6 +8,14 @@
     var timer = null;
     var request = null;
     var activeIndex = -1;
+    var density = document.querySelector('[data-b2b-density]');
+    if (density) {
+        var dense = true;
+        try { dense = localStorage.getItem('kotlov-b2b-density') !== 'regular'; } catch (ignore) {}
+        function drawDensity() { document.querySelector('.b2b-portal').classList.toggle('is-dense', dense); density.setAttribute('aria-pressed', String(dense)); }
+        drawDensity();
+        density.addEventListener('click', function () { dense = !dense; drawDensity(); try { localStorage.setItem('kotlov-b2b-density', dense ? 'compact' : 'regular'); } catch (ignore) {} });
+    }
 
     document.querySelectorAll('[data-auto-submit]').forEach(function (select) {
         select.addEventListener('change', function () { filterForm.submit(); });
@@ -155,8 +163,10 @@
         var stock = document.querySelector('[data-option-stock="' + productId + '"]');
         var source = document.querySelector('[data-option-source="' + productId + '"]');
         if (price) price.innerHTML = Number(option.dataset.price).toLocaleString('ru-RU', { minimumFractionDigits:2, maximumFractionDigits:2 }) + ' <small>BYN</small>';
-        if (stock) stock.innerHTML = '<span class="b2b-live-dot"></span>' + option.dataset.stock;
+        if (stock) { var dot = document.createElement('span'); dot.className = 'b2b-live-dot'; stock.replaceChildren(dot, document.createTextNode(option.dataset.stock)); }
         if (source) source.textContent = option.dataset.source;
+        var rules = document.querySelector('[data-option-rules="' + productId + '"]');
+        if (rules) rules.textContent = option.dataset.rules || '';
     });
 
     // Added-to-order feedback: the button and row remember the order, the bar sums it up.

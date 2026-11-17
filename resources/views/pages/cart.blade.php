@@ -215,6 +215,8 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('assets/css/cart-workspace.css') }}?v={{ filemtime(public_path('assets/css/cart-workspace.css')) }}">
+<link rel="stylesheet" href="{{ asset('assets/css/quantity-controls.css') }}?v={{ filemtime(public_path('assets/css/quantity-controls.css')) }}">
+@if($b2bClient)<link rel="stylesheet" href="{{ asset('assets/css/b2b-order-desk.css') }}?v={{ filemtime(public_path('assets/css/b2b-order-desk.css')) }}">@endif
 <style>
 .b2b-cart-title { margin: 22px 0 0; font-size: 28px; letter-spacing: -.02em; }
 .b2b-cart-title span { display: block; margin-top: 4px; color: #78889b; font-size: 14px; font-weight: 500; letter-spacing: 0; }

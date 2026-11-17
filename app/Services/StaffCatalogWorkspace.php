@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CustomerSelection;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Suppliers\SupplierOrderRules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -18,12 +19,12 @@ class StaffCatalogWorkspace
 
     public function current(Request $request): ?CustomerSelection
     {
-        $query = $this->selections($request);
+        $query = CustomerSelection::query()->where('user_id', $request->user()->id);
         if ($request->filled('selection_id')) {
             $selection = $query->findOrFail($request->integer('selection_id'));
         } else {
             $selection = (clone $query)->find($request->session()->get('staff_selection_id'))
-                ?? $query->latest('updated_at')->first();
+                ?? $this->selections($request)->latest('updated_at')->first();
         }
         if ($selection) {
             $request->session()->put('staff_selection_id', $selection->id);
@@ -70,6 +71,8 @@ class StaffCatalogWorkspace
         }
 
         return $offers->map(function ($offer) use ($product) {
+            $source = $product->operationalSupplierProducts()->first(fn ($row) => $row->supplier_article === ($offer['article'] ?? null) && $row->supplier?->name === $offer['supplier']);
+            $offer['order_rules'] = $source ? SupplierOrderRules::fromOffer($source) : [];
             $cost = $offer['purchase_price'];
             $retail = (float) $product->price;
             $offer['margin'] = $cost !== null && $retail > 0 ? round($retail - $cost, 2) : null;
@@ -109,6 +112,7 @@ class StaffCatalogWorkspace
             'saved_at' => $selection?->updated_at?->format('d.m.Y H:i'),
             'edit_url' => $selection ? route('selections.show', $selection) : null,
             'print_url' => $selection ? route('selections.show', [$selection, 'print' => 1]) : null,
+            'desk_url' => $selection ? route('b2b.selections.show', $selection) : null,
         ];
     }
 }

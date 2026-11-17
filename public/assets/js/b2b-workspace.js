@@ -99,6 +99,7 @@
             var href = link.hasAttribute('data-workspace-print') ? state.print_url : state.edit_url;
             link.hidden = !href; if (href) link.href = href;
         });
+        document.querySelectorAll('[data-workspace-desk]').forEach(function (link) { link.hidden = !state.desk_url; if (state.desk_url) link.href = state.desk_url; });
         document.querySelector('[data-workspace-title]').textContent = state.name;
         document.querySelectorAll('[data-workspace-selection-id]').forEach(function (input) { input.value = state.id || ''; });
         var found = Array.from(switcher.options).some(function (option) { return Number(option.value) === state.id; });

@@ -117,6 +117,7 @@
                     @if ($query !== '' || $categoryId > 0 || $brandId > 0 || $sourceKey !== '' || $sort !== 'name')<a href="{{ $resetUrl }}" class="b2b-reset-filters">Сбросить</a>@endif
                 </div>
             </div>
+            @include('pages.b2b.catalog-quick-filters')
         </form>
 
         <section class="b2b-mobile-category-showcase" aria-label="Основные категории">
@@ -194,6 +195,7 @@
                                     <div class="b2b-stock-cell">
                                         <strong data-option-stock="{{ $product->id }}"><span class="b2b-live-dot"></span>{{ $item['stock_label'] }}</strong>
                                         <span data-option-source="{{ $product->id }}">{{ $item['option']['source_label'] }} · {{ $item['option']['delivery_label'] }}</span>
+                                        <span data-option-rules="{{ $product->id }}">{{ \App\Services\Suppliers\SupplierOrderRules::label($item['option']['order_rules'] ?? []) }}</span>
                                         @if ($item['options']->count() > 1)
                                             <label class="b2b-supply-choice">
                                                 <span>Вариант поставки</span>
@@ -202,6 +204,7 @@
                                                         <option value="{{ $option['key'] }}"
                                                             data-price="{{ number_format((float) $option['price'], 2, '.', '') }}"
                                                             data-stock="{{ $option['stock_label'] }}"
+                                                            data-rules="{{ \App\Services\Suppliers\SupplierOrderRules::label($option['order_rules'] ?? []) }}"
                                                             data-source="{{ $option['source_label'] }} · {{ $option['delivery_label'] }}">
                                                             {{ $option['warehouse_name'] }} · {{ $option['delivery_label'] }} · {{ number_format((float) $option['price'], 2, ',', ' ') }} BYN
                                                         </option>
@@ -275,7 +278,9 @@
 
 @push('styles')
     @include('pages.b2b.styles')
+    <link rel="stylesheet" href="{{ asset('assets/css/b2b-catalog-filters.css') }}?v={{ filemtime(public_path('assets/css/b2b-catalog-filters.css')) }}">
     @if($staffWorkspace)<link rel="stylesheet" href="{{ asset('assets/css/b2b-workspace.css') }}?v={{ filemtime(public_path('assets/css/b2b-workspace.css')) }}">@endif
+    <link rel="stylesheet" href="{{ asset('assets/css/quantity-controls.css') }}?v={{ filemtime(public_path('assets/css/quantity-controls.css')) }}">
 @endpush
 @push('scripts')
     @include('pages.b2b.scripts')

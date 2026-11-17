@@ -6,6 +6,8 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\ContactRequest;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Services\B2bCatalogFilters;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bCompanyAccess;
 use App\Services\B2bSupplyOptionResolver;
@@ -35,6 +37,21 @@ class B2bMarketplaceController extends Controller
         abort_unless($staffWorkspace || $staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog.view')), 403);
 
         $mode = $staffWorkspace || $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
+        $workspace = app(StaffCatalogWorkspace::class);
+        $workspaceSelection = $staffWorkspace ? $workspace->current($request) : null;
+        $selectedProductIds = array_keys($workspaceSelection?->items ?? []);
+        $flags = array_values(array_intersect(array_keys(B2bCatalogFilters::LABELS), (array) $request->input('flags', [])));
+        if (! $staffWorkspace) {
+            $flags = array_values(array_diff($flags, ['selected']));
+        }
+        $request->validate(['price_min' => ['nullable', 'numeric', 'min:0', 'max:1000000000'], 'price_max' => ['nullable', 'numeric', 'min:0', 'max:1000000000']]);
+        $priceMin = $request->filled('price_min') ? (float) $request->input('price_min') : null;
+        $priceMax = $request->filled('price_max') ? (float) $request->input('price_max') : null;
+        if ($priceMin !== null && $priceMax !== null && $priceMin > $priceMax) {
+            [$priceMin, $priceMax] = [$priceMax, $priceMin];
+        }
+        $supplierId = $staffWorkspace && $user->isAdmin() ? max(0, $request->integer('workspace_supplier')) : 0;
+        $filters = app(B2bCatalogFilters::class);
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
         $categoryId = max(0, $request->integer('category'));
         // The main search is global. A category remains selected only while the
@@ -90,6 +107,9 @@ class B2bMarketplaceController extends Controller
         $listingOptions = $selectedSource
             ? $allOptions->whereIn('source_key', $selectedSource['source_keys'])
             : $allOptions;
+        if ($mode === 'orderable' && in_array('in_stock', $flags, true)) {
+            $listingOptions = $listingOptions->filter(fn ($option) => ($option['stock'] ?? null) !== null && $option['stock'] > 0);
+        }
 
         $categoryIndex = Category::query()
             ->where('is_active', true)
@@ -112,6 +132,7 @@ class B2bMarketplaceController extends Controller
             $productsQuery = $referenceBaseQuery->with(['category', 'brand']);
 
             $this->applyProductFilters($productsQuery, $query, $categoryId, $categoryFilterIds, $brandId);
+            $filters->apply($productsQuery, $flags, $priceMin, $priceMax, $selectedProductIds, $supplierId);
             if ($sort === 'price_asc' || $sort === 'price_desc') {
                 $productsQuery->orderBy('price', $sort === 'price_asc' ? 'asc' : 'desc');
             }
@@ -135,12 +156,13 @@ class B2bMarketplaceController extends Controller
                 ];
             });
             $matchIds = $query === '' ? [] : array_flip($this->smartMatches($query, $rows->keys()->all(), false));
-            $rows = $rows->filter(function (array $row) use ($query, $matchIds, $categoryId, $categoryFilterIds, $brandId): bool {
+            $rows = $rows->filter(function (array $row) use ($query, $matchIds, $categoryId, $categoryFilterIds, $brandId, $filters, $flags, $priceMin, $priceMax): bool {
                 $product = $row['product'];
 
                 return ($query === '' || isset($matchIds[(int) $product->id]))
                     && ($categoryId === 0 || in_array((int) $product->category_id, $categoryFilterIds, true))
-                    && ($brandId === 0 || (int) $product->brand_id === $brandId);
+                    && ($brandId === 0 || (int) $product->brand_id === $brandId)
+                    && $filters->rowMatches($row, $flags, $priceMin, $priceMax);
             });
 
             $rows = (match ($sort) {
@@ -173,8 +195,11 @@ class B2bMarketplaceController extends Controller
                 ->unique('product_id')
                 ->keyBy('product_id');
 
-        $workspace = app(StaffCatalogWorkspace::class);
         $showProcurement = $staffWorkspace && $user->isAdmin();
+        $workspaceSuppliers = $showProcurement ? Supplier::query()->where('is_active', true)
+            ->where(fn ($supplier) => $supplier->whereHas('supplierProducts', fn ($offer) => $offer->whereHas('product', fn ($product) => $product->active()->notArchived()))
+                ->orWhereHas('integrationSources', fn ($source) => $source->where('is_active', true)->whereHas('products', fn ($offer) => $offer->where('match_status', 'matched')->whereHas('product', fn ($product) => $product->active()->notArchived()))))
+            ->orderBy('name')->get(['id', 'name']) : collect();
         $workspaceOffers = collect();
         if ($showProcurement) {
             $products->getCollection()->loadMissing([
@@ -187,12 +212,11 @@ class B2bMarketplaceController extends Controller
             ]);
             $workspaceOffers = $products->getCollection()->mapWithKeys(fn ($product) => [$product->id => $workspace->offers($product, $user)]);
         }
-        $workspaceSelection = $staffWorkspace ? $workspace->current($request) : null;
         $workspaceState = $workspace->state($workspaceSelection, $user);
         $workspaceSelections = $staffWorkspace ? $workspace->selections($request)->latest('updated_at')->limit(100)->get(['id', 'name']) : collect();
 
         return response()->view('pages.b2b.marketplace', compact(
-            'showProcurement', 'workspaceOffers', 'staffWorkspace', 'workspaceState', 'workspaceSelections', 'perPage', 'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceKey', 'sort',
+            'flags', 'priceMin', 'priceMax', 'supplierId', 'workspaceSuppliers', 'showProcurement', 'workspaceOffers', 'staffWorkspace', 'workspaceState', 'workspaceSelections', 'perPage', 'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceKey', 'sort',
             'categoryTree', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests', 'minimalLayout', 'staffPreview',
         ))->header('Cache-Control', 'private, no-store');
     }
