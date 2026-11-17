@@ -94,12 +94,12 @@ class SyncRusklimatCommand extends Command
         'bojlery-kosvennogo-nagreva' => 100,
         'комбинированный бойлер'   => 101,
         'kombinirovannye-bojlery'  => 101,
-        'циркуляционный насос'     => 60,
-        'circulating_pumps'        => 60,
+        'циркуляционный насос'     => 248,
+        'circulating_pumps'        => 248,
         'насосная станция'         => 251,
         'pumping_stations'         => 251,
-        'скважинный насос'         => 272,
-        'borehole_pumps'           => 272,
+        'скважинный насос'         => 264,
+        'borehole_pumps'           => 264,
         'канализационная установка' => 265,
         'sewer_installations'      => 265,
         'алюминиевый радиатор'     => 233,
@@ -153,7 +153,7 @@ class SyncRusklimatCommand extends Command
         'мойки воздуха'                          => 304,
         'сушилк'                                 => 304,  // Сушилки для рук, волос
         'монтажный профиль'                      => 195,  // → Комплектующие для отопления
-        'монтажный комплект'                     => 285,  // Монтажный комплект → Монтажные комплекты
+        'монтажный комплект'                     => 283,  // Монтажный комплект → Монтажные комплекты
         'аксесуары к'                            => 195,  // Аксессуары к котлам (с опечаткой)
         'аксессуары к'                           => 195,
         'кабель для модуля'                      => 58,   // HDN/WFN cable → Автоматика
@@ -163,10 +163,10 @@ class SyncRusklimatCommand extends Command
         'дренажный насос'                        => 265,
         'установки для отвода'                   => 265,
         'канализационн'                          => 265,  // Канализационная установка / установка канализационная
-        'насос циркуляционный'                   => 60,   // "Насос циркуляционный" (обратный порядок слов)
-        'центробежный насос'                     => 263,  // Центробежный насос → Центробежные
+        'насос циркуляционный'                   => 248,   // "Насос циркуляционный" (обратный порядок слов)
+        'центробежный насос'                     => 391,  // Центробежный насос → Центробежные
         'трап душев'                             => 193,  // Трап душевой → Трубы и фитинги
-        'насос повышения давления'               => 60,
+        'насос повышения давления'               => 334,
         'тэн'                                    => 299,
         'оборудование для систем'                => 195,
         'водоснабжени'                           => 251,  // Автоматическая установка для водоснабжения → Насосные станции
@@ -916,9 +916,13 @@ class SyncRusklimatCommand extends Command
         }
         $combined = mb_strtolower($catRaw . ' ' . $name);
 
+        // A category removed from the catalog must not break product creation (FK error) — the row then
+        // shows up as category_missing instead.
+        static $existing = null;
+        $existing ??= array_flip(DB::table('categories')->pluck('id')->map(fn ($id) => (int) $id)->all());
         foreach (self::CATEGORY_MAP as $keyword => $catId) {
             if (str_contains($combined, $keyword)) {
-                return $catId;
+                return isset($existing[$catId]) ? $catId : null;
             }
         }
 
