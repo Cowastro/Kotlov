@@ -43,10 +43,14 @@ class LargeB2bCartTest extends TestCase
         $response = $this->get('/cart')->assertOk()->assertSee('cart-page--b2b', false);
         $this->assertSame(150, $this->countNodes($response->getContent(), '//article[@data-cart-row]'));
         $ids = array_keys($items);
+        $loadedOffers = [];
+        SupplierProduct::retrieved(function (SupplierProduct $offer) use (&$loadedOffers) { $loadedOffers[] = $offer->product_id; });
         foreach ([0 => 3, 74 => 17, 149 => 9] as $index => $quantity) {
             $this->postJson('/cart/update', ['product_id' => $ids[$index], 'quantity' => $quantity])
                 ->assertOk()->assertJsonPath('item_quantity', $quantity)->assertJsonPath('selection.positions', 150);
         }
+        $this->assertCount(3, $loadedOffers, 'Each quantity edit loads only the offer for that product, not all 150 offers.');
+        $this->assertSame([$ids[0], $ids[74], $ids[149]], $loadedOffers);
         $this->postJson('/cart/line-note', ['product_id' => $ids[149], 'note' => 'Последняя позиция · этаж 2'])->assertOk();
         $this->post('/account/selections', ['name' => 'Объект на 150 позиций'])->assertRedirect();
         $selection = CustomerSelection::where('user_id', $user->id)->sole();
