@@ -998,6 +998,18 @@ class SyncRusklimatCommand extends Command
 
         $this->showMissingSummary($classified);
         $this->line('');
+
+        // Safe summary for the GitHub workflow log: counts by action and the sheet rows that have no card yet.
+        foreach ($stats as $action => $count) {
+            $this->line("metric.rusklimat_sync.{$action}={$count}");
+        }
+        foreach ($classified as $row) {
+            if (in_array($row['action'] ?? '', ['create_candidate', 'brand_missing', 'category_missing'], true)) {
+                $this->line(sprintf('audit.rusklimat_sync.new=%s:%s:%d:%d:%s',
+                    Str::slug((string) $row['article']) ?: 'none', Str::slug((string) ($row['brand'] ?? '')) ?: 'none',
+                    (int) ($row['quantity'] ?? 0), (int) round((float) ($row['retail_price'] ?? 0)), $row['action']));
+            }
+        }
         $this->line('Run with <fg=green>--apply</> to write changes to the database.');
         $this->line('Run with <fg=green>--apply --create-new</> to also create missing products.');
 
