@@ -276,7 +276,7 @@
                                                 Текущий пароль <span class="text-primary">*</span>
                                             </label>
                                             <div class="password-wrapper w-100">
-                                                <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
+                                                <button type="button" class="toggle-pass icon-EyeSlash fs-20 cl-text-3" aria-label="Показать пароль" aria-pressed="false"></button>
                                                 <input class="password-field" type="password"
                                                     name="current_password" required>
                                             </div>
@@ -286,7 +286,7 @@
                                                 Новый пароль <span class="text-primary">*</span>
                                             </label>
                                             <div class="password-wrapper w-100">
-                                                <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
+                                                <button type="button" class="toggle-pass icon-EyeSlash fs-20 cl-text-3" aria-label="Показать пароль" aria-pressed="false"></button>
                                                 <input class="password-field" type="password"
                                                     name="password" required>
                                             </div>
@@ -296,7 +296,7 @@
                                                 Повторите пароль <span class="text-primary">*</span>
                                             </label>
                                             <div class="password-wrapper w-100">
-                                                <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
+                                                <button type="button" class="toggle-pass icon-EyeSlash fs-20 cl-text-3" aria-label="Показать пароль" aria-pressed="false"></button>
                                                 <input class="password-field" type="password"
                                                     name="password_confirmation" required>
                                             </div>

@@ -1170,9 +1170,11 @@
             if (input.attr("type") === "password") {
                 input.attr("type", "text");
                 icon.removeClass("icon-EyeSlash").addClass("icon-Eye");
+                icon.attr({"aria-pressed": "true", "aria-label": "Скрыть пароль"});
             } else {
                 input.attr("type", "password");
                 icon.removeClass("icon-Eye").addClass("icon-EyeSlash");
+                icon.attr({"aria-pressed": "false", "aria-label": "Показать пароль"});
             }
         });
     };

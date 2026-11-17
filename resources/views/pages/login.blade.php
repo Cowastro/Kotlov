@@ -12,9 +12,7 @@
                     {{-- Логотип / заголовок --}}
                     <div class="text-center mb-32">
                         <a href="/" class="d-inline-block mb-16">
-                            {{-- logo-dark.png — тёмная версия логотипа для светлого фона --}}
-                            {{-- если есть только одно лого — используем filter: invert() через CSS --}}
-                            <img src="{{ asset('img/logo.png') }}" alt="KOTLOV.BY" height="36" class="login-logo">
+                            <img src="{{ asset('img/logo-kotlov.png') }}" alt="KOTLOV.BY" height="36" class="login-logo">
                         </a>
                         <p class="text-body-1 cl-text-2">Маркетплейс отопительного оборудования</p>
                     </div>
@@ -29,13 +27,13 @@
                     {{-- Табы --}}
                     <div class="login-card">
 
-                        <div class="login-tabs">
-                            <button @class(['login-tab-btn', 'active' => ! $registrationFailed]) data-target="tab-login">Войти</button>
-                            <button @class(['login-tab-btn', 'active' => $registrationFailed]) data-target="tab-register">Регистрация</button>
+                        <div class="login-tabs" role="tablist" aria-label="Вход и регистрация">
+                            <button @class(['login-tab-btn', 'active' => ! $registrationFailed]) type="button" role="tab" id="login-tab" aria-controls="tab-login" aria-selected="{{ $registrationFailed ? 'false' : 'true' }}" tabindex="{{ $registrationFailed ? '-1' : '0' }}" data-target="tab-login">Войти</button>
+                            <button @class(['login-tab-btn', 'active' => $registrationFailed]) type="button" role="tab" id="register-tab" aria-controls="tab-register" aria-selected="{{ $registrationFailed ? 'true' : 'false' }}" tabindex="{{ $registrationFailed ? '0' : '-1' }}" data-target="tab-register">Регистрация</button>
                         </div>
 
                         {{-- ===== ТАБ ВХОД ===== --}}
-                        <div id="tab-login" @class(['login-tab-content', 'active' => ! $registrationFailed])>
+                        <div id="tab-login" @class(['login-tab-content', 'active' => ! $registrationFailed]) role="tabpanel" aria-labelledby="login-tab">
 
                             @if ($errors->any() && old('_form') === 'login')
                                 <div class="kotlov-alert kotlov-alert-error mb-16">
@@ -57,7 +55,7 @@
                                         <input type="email" id="login-email" name="email"
                                             value="{{ old('email') }}"
                                             placeholder="Ваш email"
-                                            required autofocus>
+                                            required autocomplete="username">
                                     </fieldset>
 
                                     <fieldset class="tf-field">
@@ -65,10 +63,10 @@
                                             Пароль <span class="text-primary">*</span>
                                         </label>
                                         <div class="password-wrapper w-100">
-                                            <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
+                                            <button type="button" class="toggle-pass icon-EyeSlash fs-20 cl-text-3" aria-label="Показать пароль" aria-pressed="false"></button>
                                             <input class="password-field" type="password"
                                                 id="login-password" name="password"
-                                                placeholder="Ваш пароль" required>
+                                                placeholder="Ваш пароль" autocomplete="current-password" required>
                                         </div>
                                     </fieldset>
 
@@ -92,7 +90,7 @@
                         </div>
 
                         {{-- ===== ТАБ РЕГИСТРАЦИЯ ===== --}}
-                        <div id="tab-register" @class(['login-tab-content', 'active' => $registrationFailed])>
+                        <div id="tab-register" @class(['login-tab-content', 'active' => $registrationFailed]) role="tabpanel" aria-labelledby="register-tab">
 
                             @if ($registrationFailed)
                                 <div class="kotlov-alert kotlov-alert-error mb-16" role="alert">
@@ -112,7 +110,7 @@
                                 <div class="checkbox-wrap">
                                     <input class="tf-check flex-shrink-0" type="checkbox"
                                         id="reg-subscribe" name="subscribe" value="1"
-                                        {{ old('subscribe') ? 'checked' : 'checked' }}>
+                                        @checked(old('_form') === 'register' ? old('subscribe', false) : true)>
                                     <label for="reg-subscribe">
                                         Подписаться на новости и акции KOTLOV.BY
                                     </label>
@@ -195,9 +193,11 @@
 
 .mb-32 { margin-bottom: 32px; }
 
-/* Логотип: если файл белый — инвертируем на тёмный */
+/* Shared dark logo on the light login card. */
 .login-logo {
-    filter: brightness(0); /* делает любой логотип чёрным */
+    width: 180px;
+    height: auto;
+    max-width: 100%;
 }
 </style>
 @endpush
@@ -209,7 +209,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const contents = document.querySelectorAll('.login-tab-content');
 
     function showTab(target) {
-        btns.forEach(b => b.classList.remove('active'));
+        btns.forEach(function (button) {
+            const selected = button.dataset.target === target;
+            button.classList.toggle('active', selected);
+            button.setAttribute('aria-selected', String(selected));
+            button.tabIndex = selected ? 0 : -1;
+        });
         contents.forEach(c => c.classList.remove('active'));
 
         document.querySelector('[data-target="' + target + '"]').classList.add('active');
@@ -219,6 +224,14 @@ document.addEventListener('DOMContentLoaded', function () {
     btns.forEach(function (btn) {
         btn.addEventListener('click', function () {
             showTab(this.dataset.target);
+        });
+        btn.addEventListener('keydown', function (event) {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            const index = Array.from(btns).indexOf(this);
+            const next = event.key === 'Home' ? 0 : event.key === 'End' ? btns.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + btns.length) % btns.length;
+            showTab(btns[next].dataset.target);
+            btns[next].focus();
         });
     });
 

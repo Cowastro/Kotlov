@@ -174,9 +174,9 @@
                             <form class="form-sub mb-16" action="/subscribe" method="POST">
                                 @csrf
                                 <fieldset>
-                                    <input type="email" name="email" placeholder="Ваш e-mail" required>
+                                    <input type="email" name="email" placeholder="Ваш e-mail" aria-label="Email для подписки на новости" autocomplete="email" required>
                                 </fieldset>
-                                <button type="submit" class="btn-action">
+                                <button type="submit" class="btn-action" aria-label="Подписаться на новости">
                                     <i class="icon icon-ArrowUpRight"></i>
                                 </button>
                             </form>
