@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 
 class PumpCatalog extends SpecificationCatalog
 {
-    protected const FACTS_VERSION = 3;
+    protected const FACTS_VERSION = 4;
     public const ROOT = 'vodosnabzhenie';
 
     public const MANUFACTURER_CATEGORIES = ['skvajinnye-nasosy', 'poverhnostnyie', 'drenajnyie', 'nasosnyie-stantsii'];

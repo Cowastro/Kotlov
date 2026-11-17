@@ -1,5 +1,5 @@
 {
-  "checked_on": "2026-11-16",
+  "checked_on": "2026-11-17",
   "source": {
     "url": "https://unipump.ru/upload/iblock/7be/p1izanxps39qv3nnd6gjzxyiq3i2sao2/Katalog-2026.-Bytovoe-oborudovanie.pdf",
     "title": "UNIPUMP. Каталог бытового оборудования, 2026",
@@ -12669,6 +12669,3085 @@
       "pages": [
         25
       ]
+    },
+    "WELLMIX 50GNWQ 15-15-1,5": {
+      "numbers": {
+        "rated_flow": 15.0,
+        "rated_head": 15.0,
+        "connection_dn": 50.0,
+        "free_passage": 20.0,
+        "weight_kg": 34.0,
+        "power_kw": 1.5,
+        "cable": 8.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        62,
+        60
+      ],
+      "manufacturer_article": "13119996",
+      "manufacturer_model": "50GNWQ 15-15-1,5",
+      "voltage": "380"
+    },
+    "WELLMIX 50WQ15-12-1,1": {
+      "numbers": {
+        "rated_flow": 15.0,
+        "rated_head": 12.0,
+        "free_passage": 20.0,
+        "weight_kg": 24.0,
+        "power_kw": 1.1,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        6,
+        4
+      ],
+      "manufacturer_article": "19089999",
+      "manufacturer_model": "50WQ15-12-1,1",
+      "voltage": "380"
+    },
+    "WELLMIX 50WQ15-22-2,2": {
+      "numbers": {
+        "rated_flow": 15.0,
+        "rated_head": 22.0,
+        "free_passage": 20.0,
+        "weight_kg": 29.0,
+        "power_kw": 2.2,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        6,
+        4
+      ],
+      "manufacturer_article": "19089997",
+      "manufacturer_model": "50WQ15-22-2,2",
+      "voltage": "380"
+    },
+    "WELLMIX 50WQ25-25-3": {
+      "numbers": {
+        "rated_flow": 25,
+        "rated_head": 25,
+        "free_passage": 20,
+        "weight_kg": 41,
+        "power_kw": 3,
+        "cable": 10
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        6,
+        4
+      ],
+      "manufacturer_article": "19089995",
+      "manufacturer_model": "50WQ25-25-3",
+      "voltage": "380"
+    },
+    "WELLMIX 65GNWQ 20-12-1,5": {
+      "numbers": {
+        "rated_flow": 20.0,
+        "rated_head": 12.0,
+        "connection_dn": 65.0,
+        "free_passage": 26.0,
+        "weight_kg": 34.0,
+        "power_kw": 1.5,
+        "cable": 8.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        64,
+        60
+      ],
+      "manufacturer_article": "13119995",
+      "manufacturer_model": "65GNWQ 20-12-1,5",
+      "voltage": "380"
+    },
+    "WELLMIX 65WQ30-10-1,5": {
+      "numbers": {
+        "rated_flow": 30.0,
+        "rated_head": 10.0,
+        "free_passage": 30.0,
+        "weight_kg": 29.0,
+        "power_kw": 1.5,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        8,
+        4
+      ],
+      "manufacturer_article": "19089994",
+      "manufacturer_model": "65WQ30-10-1,5",
+      "voltage": "380"
+    },
+    "WELLMIX 65WQ30-15-2,2": {
+      "numbers": {
+        "rated_flow": 30.0,
+        "rated_head": 15.0,
+        "free_passage": 30.0,
+        "weight_kg": 30.0,
+        "power_kw": 2.2,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        8,
+        4
+      ],
+      "manufacturer_article": "19089993",
+      "manufacturer_model": "65WQ30-15-2,2",
+      "voltage": "380"
+    },
+    "WELLMIX 65WQ30-22-4": {
+      "numbers": {
+        "rated_flow": 30.0,
+        "rated_head": 22.0,
+        "free_passage": 30.0,
+        "weight_kg": 46.0,
+        "power_kw": 4.0,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        8,
+        4
+      ],
+      "manufacturer_article": "19089991",
+      "manufacturer_model": "65WQ30-22-4",
+      "voltage": "380"
+    },
+    "WELLMIX 65WQ30-30-5,5": {
+      "numbers": {
+        "rated_flow": 30.0,
+        "rated_head": 30.0,
+        "free_passage": 30.0,
+        "weight_kg": 67.0,
+        "power_kw": 5.5,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        8,
+        4
+      ],
+      "manufacturer_article": "19089990",
+      "manufacturer_model": "65WQ30-30-5,5",
+      "voltage": "380"
+    },
+    "WELLMIX 80WQ50-8-2,2": {
+      "numbers": {
+        "rated_flow": 50.0,
+        "rated_head": 8.0,
+        "free_passage": 40.0,
+        "weight_kg": 35.0,
+        "power_kw": 2.2,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        10,
+        4
+      ],
+      "manufacturer_article": "19089989",
+      "manufacturer_model": "80WQ50-8-2,2",
+      "voltage": "380"
+    },
+    "WELLMIX 80WQ50-10-3": {
+      "numbers": {
+        "rated_flow": 50.0,
+        "rated_head": 10.0,
+        "free_passage": 40.0,
+        "weight_kg": 36.0,
+        "power_kw": 3.0,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        10,
+        4
+      ],
+      "manufacturer_article": "19089988",
+      "manufacturer_model": "80WQ50-10-3",
+      "voltage": "380"
+    },
+    "WELLMIX 80WQ50-15-4": {
+      "numbers": {
+        "rated_flow": 50.0,
+        "rated_head": 15.0,
+        "free_passage": 40.0,
+        "weight_kg": 51.0,
+        "power_kw": 4.0,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        10,
+        4
+      ],
+      "manufacturer_article": "19089987",
+      "manufacturer_model": "80WQ50-15-4",
+      "voltage": "380"
+    },
+    "WELLMIX 80WQ50-25-5,5": {
+      "numbers": {
+        "rated_flow": 50.0,
+        "rated_head": 25.0,
+        "free_passage": 40.0,
+        "weight_kg": 72.0,
+        "power_kw": 5.5,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        10,
+        4
+      ],
+      "manufacturer_article": "19089985",
+      "manufacturer_model": "80WQ50-25-5,5",
+      "voltage": "380"
+    },
+    "WELLMIX 100WQ2-80-35-15/2_380": {
+      "numbers": {
+        "rated_flow": 80.0,
+        "rated_head": 35.0,
+        "weight_kg": 179.0,
+        "power_kw": 15.0,
+        "free_passage": 36.0,
+        "cable": 9.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        40
+      ],
+      "manufacturer_article": "19119956",
+      "manufacturer_model": "100WQ2-80-35-15/2_380",
+      "voltage": "380"
+    },
+    "WELLMIX 100WQ2-80-40-18,5/2_380": {
+      "numbers": {
+        "rated_flow": 80.0,
+        "rated_head": 40.0,
+        "weight_kg": 174.0,
+        "power_kw": 18.5,
+        "free_passage": 25.0,
+        "cable": 9.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        42
+      ],
+      "manufacturer_article": "19119949",
+      "manufacturer_model": "100WQ2-80-40-18,5/2_380",
+      "voltage": "380"
+    },
+    "WELLMIX 100WQ80-7-3": {
+      "numbers": {
+        "rated_flow": 80.0,
+        "rated_head": 7.0,
+        "free_passage": 50.0,
+        "weight_kg": 52.0,
+        "power_kw": 3.0,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        12,
+        4
+      ],
+      "manufacturer_article": "19089984",
+      "manufacturer_model": "100WQ80-7-3",
+      "voltage": "380"
+    },
+    "WELLMIX 100WQ80-18-7,5": {
+      "numbers": {
+        "rated_flow": 80.0,
+        "rated_head": 18.0,
+        "free_passage": 50.0,
+        "weight_kg": 76.0,
+        "power_kw": 7.5,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        12,
+        4
+      ],
+      "manufacturer_article": "19089981",
+      "manufacturer_model": "100WQ80-18-7,5",
+      "voltage": "380"
+    },
+    "WELLMIX 150WQ150-10-7,5": {
+      "numbers": {
+        "rated_flow": 150.0,
+        "rated_head": 10.0,
+        "free_passage": 70.0,
+        "weight_kg": 85.0,
+        "power_kw": 7.5,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        14,
+        4
+      ],
+      "manufacturer_article": "19089979",
+      "manufacturer_model": "150WQ150-10-7,5",
+      "voltage": "380"
+    },
+    "WELLMIX 150WQ160-15-11": {
+      "numbers": {
+        "rated_flow": 160.0,
+        "rated_head": 15.0,
+        "free_passage": 70.0,
+        "weight_kg": 225.0,
+        "power_kw": 11.0,
+        "cable": 10.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        14,
+        4
+      ],
+      "manufacturer_article": "19089978",
+      "manufacturer_model": "150WQ160-15-11",
+      "voltage": "380"
+    },
+    "WELLMIX 50WQ2-10-30-2,2/2_220": {
+      "numbers": {
+        "rated_flow": 10.0,
+        "rated_head": 30.0,
+        "weight_kg": 32.0,
+        "power_kw": 2.2,
+        "free_passage": 8.0,
+        "cable": 9.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        22
+      ],
+      "manufacturer_article": "19119988",
+      "manufacturer_model": "50WQ2-10-30-2,2/2_220",
+      "voltage": "220"
+    },
+    "WELLMIX 50WQ2-10-30-2,2/2_380": {
+      "numbers": {
+        "rated_flow": 10.0,
+        "rated_head": 30.0,
+        "weight_kg": 32.0,
+        "power_kw": 2.2,
+        "free_passage": 8.0,
+        "cable": 9.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        22
+      ],
+      "manufacturer_article": "19119989",
+      "manufacturer_model": "50WQ2-10-30-2,2/2_380",
+      "voltage": "380"
+    },
+    "WELLMIX 50WQ2-15-20-2,2/2_220": {
+      "numbers": {
+        "rated_flow": 15.0,
+        "rated_head": 20.0,
+        "weight_kg": 30.0,
+        "power_kw": 2.2,
+        "free_passage": 23.0,
+        "cable": 9.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        24
+      ],
+      "manufacturer_article": "19119990",
+      "manufacturer_model": "50WQ2-15-20-2,2/2_220",
+      "voltage": "220"
+    },
+    "WELLMIX 50WQ2-20-70-15/2_380": {
+      "numbers": {
+        "rated_flow": 20.0,
+        "rated_head": 70.0,
+        "weight_kg": 98.0,
+        "power_kw": 15.0,
+        "free_passage": 10.0,
+        "cable": 9.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        26
+      ],
+      "manufacturer_article": "19119959",
+      "manufacturer_model": "50WQ2-20-70-15/2_380",
+      "voltage": "380"
+    },
+    "WELLMIX 50WQ2-8-34-3/2_380": {
+      "numbers": {
+        "rated_flow": 8.0,
+        "rated_head": 34.0,
+        "weight_kg": 34.0,
+        "power_kw": 3.0,
+        "free_passage": 8.0,
+        "cable": 9.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        22
+      ],
+      "manufacturer_article": "19119982",
+      "manufacturer_model": "50WQ2-8-34-3/2_380",
+      "voltage": "380"
+    },
+    "WELLMIX 65WQ2-25-18-2,2/2_220": {
+      "numbers": {
+        "rated_flow": 25.0,
+        "rated_head": 18.0,
+        "weight_kg": 30.0,
+        "power_kw": 2.2,
+        "free_passage": 23.0,
+        "cable": 9.0
+      },
+      "source": {
+        "url": "https://www.wellmix-pump.ru/upload/iblock/9de/watrtpqqgl1fljw1vrcfvtavv743ut8b.pdf",
+        "sha256": "7968fb49d71758bef8eb646fe9194f53f3ad9f55d23bcc5fe23bbc954df42a31",
+        "title": "WELLMIX. Каталог WQ, WQ2, GNWQ, WQD, 2025"
+      },
+      "pages": [
+        28
+      ],
+      "manufacturer_article": "19119986",
+      "manufacturer_model": "65WQ2-25-18-2,2/2_220",
+      "voltage": "220"
+    },
+    "UNIPUMP article 82229": {
+      "numbers": {
+        "head": 33.0,
+        "flow": 2.4,
+        "power_kw": 0.45,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 7.65
+      },
+      "manufacturer_article": "82229",
+      "manufacturer_model": "Поверхностный насос UNIPUMP JS 60",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-js-60/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP JS 60",
+        "type": "html",
+        "sha256": "1b209f4dbfd05da87f09f371460fb17ed57d32eeb57c3b4a5e18c565bbcb8af7"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/450/lkfyvsb1fgzwzxs30r7a1fgfqay8rtv5/Instruktsiya-seriya-JET-L.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 83955": {
+      "numbers": {
+        "head": 40.0,
+        "flow": 3.3,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 8.95
+      },
+      "manufacturer_article": "83955",
+      "manufacturer_model": "Поверхностный насос UNIPUMP JS 100",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-js-100/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP JS 100",
+        "type": "html",
+        "sha256": "c1ad56149b534552d8db7c863e8395dd42d653f052595a60be39e56295d99755"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/450/lkfyvsb1fgzwzxs30r7a1fgfqay8rtv5/Instruktsiya-seriya-JET-L.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 39568": {
+      "numbers": {
+        "head": 65.0,
+        "flow": 5.52,
+        "power_kw": 1.1,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.5,
+        "weight_kg": 26.0
+      },
+      "manufacturer_article": "39568",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO MH 600C",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-mh-600c/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO MH 600C",
+        "type": "html",
+        "sha256": "3d88d6f1e2a9335223ea0ad0f9673a406f2377cd98252dbeaa37455d7855add4"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/1b3/0k2hkwn5d61je9hb1zqymsj21iuhjr0k/Instruktsiya-Nasosnaya-stantsiya-UNIPUMP-AUTO-MH_24_V2401-_wg_.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 57119": {
+      "numbers": {
+        "head": 58.0,
+        "flow": 9.0,
+        "power_kw": 1.8,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.5,
+        "weight_kg": 25.0
+      },
+      "manufacturer_article": "57119",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO MH 500C",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-mh-500c/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO MH 500C",
+        "type": "html",
+        "sha256": "cc8cd7a3a67ff26bd16c8381eb88f1fdb097e5ca5db9bd87d17e617622282b6c"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/1b3/0k2hkwn5d61je9hb1zqymsj21iuhjr0k/Instruktsiya-Nasosnaya-stantsiya-UNIPUMP-AUTO-MH_24_V2401-_wg_.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 69112": {
+      "numbers": {
+        "head": 33.0,
+        "flow": 2.4,
+        "power_kw": 0.45,
+        "suction": 8.0,
+        "tank": 5.0,
+        "cable": 1.7,
+        "weight_kg": 9.7
+      },
+      "manufacturer_article": "69112",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 60-5",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-60-5/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 60-5",
+        "type": "html",
+        "sha256": "b8f6bba5589c095386642d4e5471bc0e6c92e2f2258ff71c7fbfa2e1ed25fa98"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 10943": {
+      "numbers": {
+        "head": 40.0,
+        "flow": 3.3,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "tank": 5.0,
+        "cable": 1.7,
+        "weight_kg": 11.1
+      },
+      "manufacturer_article": "10943",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 100-5",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-100-5/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 100-5",
+        "type": "html",
+        "sha256": "af0e3380855a7816dd4fade11532346aebdd4259bc32256d73d299a36297e9b2"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 69231": {
+      "numbers": {
+        "head": 65.0,
+        "flow": 5.52,
+        "power_kw": 1.1,
+        "suction": 8.0,
+        "cable": 1.5,
+        "weight_kg": 17.6
+      },
+      "manufacturer_article": "69231",
+      "manufacturer_model": "Насос поверхностный многоступенчатый MH 600C",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-poverkhnostnyy-mnogostupenchatyy-mh-600c/",
+        "title": "UNIPUMP. Насос поверхностный многоступенчатый MH 600C",
+        "type": "html",
+        "sha256": "4aac4006832367a09da9934ac06a654c0bcbc3721e9c40bb85d71d5676444f81"
+      },
+      "pages": [],
+      "manuals": [],
+      "voltage": "220"
+    },
+    "UNIPUMP article 20580": {
+      "numbers": {
+        "head": 58.0,
+        "flow": 9.0,
+        "power_kw": 1.8,
+        "suction": 8.0,
+        "cable": 1.5,
+        "weight_kg": 18.4
+      },
+      "manufacturer_article": "20580",
+      "manufacturer_model": "Насос поверхностный многоступенчатый MH 500C",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-poverkhnostnyy-mnogostupenchatyy-unipump-mh-500c/",
+        "title": "UNIPUMP. Насос поверхностный многоступенчатый MH 500C",
+        "type": "html",
+        "sha256": "94821d0aa16ff9cc4c90269ce74b7a56f1e002b928d2e61ce350629746f63235"
+      },
+      "pages": [],
+      "manuals": [],
+      "voltage": "220"
+    },
+    "UNIPUMP article 41212": {
+      "numbers": {
+        "head": 33.0,
+        "flow": 2.4,
+        "power_kw": 0.45,
+        "suction": 8.0,
+        "tank": 50.0,
+        "cable": 1.7,
+        "weight_kg": 16.5
+      },
+      "manufacturer_article": "41212",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 60-50",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-60-50/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 60-50",
+        "type": "html",
+        "sha256": "5331e828e1d64fe366cd921dd80c3fdf414c180bc6ed93fab8ebc52ad0016551"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 26384": {
+      "numbers": {
+        "head": 40.0,
+        "flow": 3.3,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "tank": 50.0,
+        "cable": 1.7,
+        "weight_kg": 17.6
+      },
+      "manufacturer_article": "26384",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 100-50",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-100-50/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 100-50",
+        "type": "html",
+        "sha256": "5dab0abe1d235a61ff8919bd445ba36d0f797880953a39be94c7cb92ec388ef0"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 20924": {
+      "numbers": {
+        "head": 33.0,
+        "flow": 2.4,
+        "power_kw": 0.45,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.7,
+        "weight_kg": 12.8
+      },
+      "manufacturer_article": "20924",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 60",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-60/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 60",
+        "type": "html",
+        "sha256": "7144404e3f8c07a151cd4c26afe61f55bfce1d1357de7da32910865c3ebb05ea"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 69252": {
+      "numbers": {
+        "head": 40.0,
+        "flow": 3.3,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.7,
+        "weight_kg": 14.2
+      },
+      "manufacturer_article": "69252",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 100",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-100/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 100",
+        "type": "html",
+        "sha256": "2eb5a0c8a4c7d0b9270c6c12a91c746e48cf04cc0efd8657b8c66e090e824b38"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 96231": {
+      "numbers": {
+        "head": 33.0,
+        "flow": 2.4,
+        "power_kw": 0.45,
+        "suction": 8.0,
+        "tank": 2.0,
+        "cable": 1.7,
+        "weight_kg": 9.8
+      },
+      "manufacturer_article": "96231",
+      "manufacturer_model": "Адаптивная насосная станция АКВАРОБОТ JS 60",
+      "source": {
+        "url": "https://unipump.ru/product--adaptivnaya-nasosnaya-stantsiya-akvarobot-js-60/",
+        "title": "UNIPUMP. Адаптивная насосная станция АКВАРОБОТ JS 60",
+        "type": "html",
+        "sha256": "257b948f5380fe6fc02eaa687db5c8f5c09a2320fa52499649a31b2866f75d35"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 26536": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 2.7,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "tank": 2.0,
+        "cable": 1.7,
+        "weight_kg": 10.2
+      },
+      "manufacturer_article": "26536",
+      "manufacturer_model": "Адаптивная насосная станция АКВАРОБОТ JS 80",
+      "source": {
+        "url": "https://unipump.ru/product--adaptivnaya-nasosnaya-stantsiya-akvarobot-js-80/",
+        "title": "UNIPUMP. Адаптивная насосная станция АКВАРОБОТ JS 80",
+        "type": "html",
+        "sha256": "c8c1e6171853fd84beb039853c47cee6d84244595557d1b8a44b98962124eb02"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 92824": {
+      "numbers": {
+        "head": 40.0,
+        "flow": 3.3,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "tank": 2.0,
+        "cable": 1.7,
+        "weight_kg": 10.8
+      },
+      "manufacturer_article": "92824",
+      "manufacturer_model": "Адаптивная насосная станция АКВАРОБОТ JS 100",
+      "source": {
+        "url": "https://unipump.ru/product--adaptivnaya-nasosnaya-stantsiya-akvarobot-js-100/",
+        "title": "UNIPUMP. Адаптивная насосная станция АКВАРОБОТ JS 100",
+        "type": "html",
+        "sha256": "8b57462bd24e12d5d043de5d2aeb5ed4e90c8f6af20c5f90516d1d48d1db7250"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 87955": {
+      "numbers": {
+        "head": 33.0,
+        "flow": 2.4,
+        "power_kw": 0.45,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.7,
+        "weight_kg": 14.0
+      },
+      "manufacturer_article": "87955",
+      "manufacturer_model": "Универсальная насосная станция АКВАРОБОТ JS 60",
+      "source": {
+        "url": "https://unipump.ru/product--universalnaya-nasosnaya-stantsiya-akvarobot-js-60/",
+        "title": "UNIPUMP. Универсальная насосная станция АКВАРОБОТ JS 60",
+        "type": "html",
+        "sha256": "e38365951fb0778d1cd9ad385a70dec2316bf01b83ed479ee8c3216ff9581054"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 36339": {
+      "numbers": {
+        "head": 40.0,
+        "flow": 3.3,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.7,
+        "weight_kg": 15.1
+      },
+      "manufacturer_article": "36339",
+      "manufacturer_model": "Универсальная насосная станция АКВАРОБОТ JS 100",
+      "source": {
+        "url": "https://unipump.ru/product--universalnaya-nasosnaya-stantsiya-akvarobot-js-100/",
+        "title": "UNIPUMP. Универсальная насосная станция АКВАРОБОТ JS 100",
+        "type": "html",
+        "sha256": "3763885d94ae09646ef6741a4a4fab48eec9d259fcce78cf9abf69a590115818"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 69303": {
+      "numbers": {
+        "head": 33.0,
+        "flow": 2.4,
+        "power_kw": 0.45,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.7,
+        "weight_kg": 13.8
+      },
+      "manufacturer_article": "69303",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 60-S (нерж.)",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-60-s-nerzh-/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 60-S (нерж.)",
+        "type": "html",
+        "sha256": "ff527051d8307e7bd28305d0561bae15d9e6f8a30eb3256c7b5e6965ade0ded7"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 77863": {
+      "numbers": {
+        "head": 40.0,
+        "flow": 3.3,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.7,
+        "weight_kg": 14.8
+      },
+      "manufacturer_article": "77863",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 100-S (нерж.)",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-100-s-nerzh-/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 100-S (нерж.)",
+        "type": "html",
+        "sha256": "c4fe2137de0b2e0ae36698a76826232814b9068d3934c2782ff74a36a7845742"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 61656": {
+      "numbers": {
+        "head": 64.0,
+        "flow": 3.3,
+        "power_kw": 0.37,
+        "diameter": 94.0,
+        "bore": 98.0,
+        "immersion": 100.0,
+        "cable": 1.5,
+        "weight_kg": 10.8,
+        "rated_flow": 2.0,
+        "rated_head": 45.0
+      },
+      "manufacturer_article": "61656",
+      "manufacturer_model": "Насос погружной скважинный UNIPUMP ЭЦВ 4-2-45 (RU)",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-pogruzhnoy-skvazhinnyy-unipump-etsv-4-2-45-ru/",
+        "title": "UNIPUMP. Насос погружной скважинный UNIPUMP ЭЦВ 4-2-45 (RU)",
+        "type": "html",
+        "sha256": "778322ffed1c4fb396bf257950643ac1f3a3ffe4374f778410a3994f8d5848de"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/8dd/wl0v97pagng54btsfrx0dvjnimqincte/Instruktsiya-ETSV-RUS.pdf"
+      ],
+      "voltage": "380"
+    },
+    "UNIPUMP article 70291": {
+      "numbers": {
+        "head": 88.0,
+        "flow": 3.3,
+        "power_kw": 0.55,
+        "diameter": 94.0,
+        "bore": 98.0,
+        "immersion": 100.0,
+        "cable": 1.5,
+        "weight_kg": 11.9,
+        "rated_flow": 2.0,
+        "rated_head": 60.0
+      },
+      "manufacturer_article": "70291",
+      "manufacturer_model": "Насос погружной скважинный UNIPUMP ЭЦВ 4-2-60 (RU)",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-pogruzhnoy-skvazhinnyy-unipump-etsv-4-2-60-ru/",
+        "title": "UNIPUMP. Насос погружной скважинный UNIPUMP ЭЦВ 4-2-60 (RU)",
+        "type": "html",
+        "sha256": "6de9436c6afb7ca9eb8189653c8b8dea4bae9fe10819f4a69399317ba5bdcffc"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/8dd/wl0v97pagng54btsfrx0dvjnimqincte/Instruktsiya-ETSV-RUS.pdf"
+      ],
+      "voltage": "380"
+    },
+    "UNIPUMP article 31710": {
+      "numbers": {
+        "head": 80.0,
+        "flow": 8.0,
+        "suction": 2.0,
+        "cable": 1.8,
+        "weight_kg": 13.0,
+        "rated_flow": 5.0,
+        "rated_head": 40.0
+      },
+      "manufacturer_article": "31710",
+      "manufacturer_model": "Насос с частотным преобразователем PSB 5-40",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-s-chastotnym-preobrazovatelem-psb-5-40/",
+        "title": "UNIPUMP. Насос с частотным преобразователем PSB 5-40",
+        "type": "html",
+        "sha256": "fefef9a748424899dc700edcd3c34a3d950bfbd226d7115820d7990537d16113"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/02e/49z51h2d3zevshi1dbyoyx993knujwpq/Instruktsiya-seriya-PSB.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 89553": {
+      "numbers": {
+        "head": 50.0,
+        "flow": 12.0,
+        "suction": 2.0,
+        "cable": 1.8,
+        "weight_kg": 13.0,
+        "rated_flow": 6.0,
+        "rated_head": 30.0
+      },
+      "manufacturer_article": "89553",
+      "manufacturer_model": "Насос с частотным преобразователем PSB 6-30",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-s-chastotnym-preobrazovatelem-psb-6-30/",
+        "title": "UNIPUMP. Насос с частотным преобразователем PSB 6-30",
+        "type": "html",
+        "sha256": "75ffc9c900f7b58659b7fe1a99d0b7531d7b4c307b1f1734ed8c30452842159a"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/02e/49z51h2d3zevshi1dbyoyx993knujwpq/Instruktsiya-seriya-PSB.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 95795": {
+      "numbers": {
+        "head": 60.0,
+        "flow": 18.0,
+        "suction": 2.0,
+        "cable": 1.8,
+        "weight_kg": 28.0,
+        "rated_flow": 10.0,
+        "rated_head": 50.0
+      },
+      "manufacturer_article": "95795",
+      "manufacturer_model": "Насос с частотным преобразователем PSB 10-50",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-s-chastotnym-preobrazovatelem-psb--10-50/",
+        "title": "UNIPUMP. Насос с частотным преобразователем PSB 10-50",
+        "type": "html",
+        "sha256": "3d8574d83c007440433e62693ee4d3df673a957966998795baf54a9f2499d5fc"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/02e/49z51h2d3zevshi1dbyoyx993knujwpq/Instruktsiya-seriya-PSB.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 41827": {
+      "numbers": {
+        "head": 173.0,
+        "flow": 2.8,
+        "power_kw": 1.5,
+        "diameter": 75.0,
+        "bore": 85.0,
+        "immersion": 40.0,
+        "cable": 50.0,
+        "weight_kg": 25.45,
+        "rated_flow": 1.0,
+        "rated_head": 144.0
+      },
+      "manufacturer_article": "41827",
+      "manufacturer_model": "Насос погружной скважинный UNIPUMP MINI ECO 1-144",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-pogruzhnoy-skvazhinnyy-unipump-mini-eco-1-144/",
+        "title": "UNIPUMP. Насос погружной скважинный UNIPUMP MINI ECO 1-144",
+        "type": "html",
+        "sha256": "4c398f697714ec49a479a21a07cbb1bc9a3b5d6eb92a75bff296f8d818781750"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/704/xq1z3ul6w4i323zhta7g8hc5h3cmjo5f/Instruktsiya-MINI-ESO.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 18856": {
+      "numbers": {
+        "head": 60.0,
+        "flow": 5.0,
+        "power_kw": 0.55,
+        "diameter": 75.0,
+        "bore": 85.0,
+        "immersion": 40.0,
+        "cable": 20.0,
+        "weight_kg": 14.05,
+        "rated_flow": 3.0,
+        "rated_head": 34.0
+      },
+      "manufacturer_article": "18856",
+      "manufacturer_model": "Насос погружной скважинный UNIPUMP MINI ECO 3-34",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-pogruzhnoy-skvazhinnyy-unipump-mini-eco-3-34/",
+        "title": "UNIPUMP. Насос погружной скважинный UNIPUMP MINI ECO 3-34",
+        "type": "html",
+        "sha256": "8f1f63f8add659222fd80f38966173e2b20bdf561832b7bf63f028e4cc995e51"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/704/xq1z3ul6w4i323zhta7g8hc5h3cmjo5f/Instruktsiya-MINI-ESO.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 30924": {
+      "numbers": {
+        "head": 8.0,
+        "flow": 8.7,
+        "power_kw": 0.4,
+        "cable": 1.7,
+        "weight_kg": 7.1
+      },
+      "manufacturer_article": "30924",
+      "manufacturer_model": "Канализационная насосная станция SANIVORT 405 М  8м (центральный вход)",
+      "source": {
+        "url": "https://unipump.ru/product--kanalizatsionnaya-nasosnaya-stantsiya-sanivort-405-m-8m-tsentralnyy-vkhod/",
+        "title": "UNIPUMP. Канализационная насосная станция SANIVORT 405 М  8м (центральный вход)",
+        "type": "html",
+        "sha256": "3187cb94f32a362b19288ee165eb37785748fe091b5e5eb322786d949ab63c29"
+      },
+      "pages": [],
+      "manuals": [],
+      "voltage": "220"
+    },
+    "UNIPUMP article 62916": {
+      "numbers": {
+        "head": 8.0,
+        "flow": 8.7,
+        "power_kw": 0.4,
+        "cable": 1.7,
+        "weight_kg": 7.1
+      },
+      "manufacturer_article": "62916",
+      "manufacturer_model": "Канализационная насосная станция SANIVORT 405 M 8м (боковой вход)",
+      "source": {
+        "url": "https://unipump.ru/product--kanalizatsionnaya-nasosnaya-stantsiya-sanivort-405-m-8m-bokovoy-vkhod/",
+        "title": "UNIPUMP. Канализационная насосная станция SANIVORT 405 M 8м (боковой вход)",
+        "type": "html",
+        "sha256": "ee29cb19d8c407ab3c5357f96105e776ec5772ad7829ad246a6eb671676f7eac"
+      },
+      "pages": [],
+      "manuals": [],
+      "voltage": "220"
+    },
+    "UNIPUMP article 42061": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 3.0,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "weight_kg": 14.2
+      },
+      "manufacturer_article": "42061",
+      "manufacturer_model": "Поверхностный насос UNIPUMP ECO JET 80 LA",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-eco-jet-80-la/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP ECO JET 80 LA",
+        "type": "html",
+        "sha256": "53f65c4ceb34319d72f016ab5109eb90f4934be5c8580b6ec79ccba269c51a64"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/afc/sm6htju088ta45bkndkymupt5ntm9cjk/Instruktsiya-serii-ECO-JET-LA.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 22419": {
+      "numbers": {
+        "head": 45.0,
+        "flow": 3.0,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "weight_kg": 14.75
+      },
+      "manufacturer_article": "22419",
+      "manufacturer_model": "Поверхностный насос UNIPUMP ECO JET 100 LA",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-eco-jet-100-la/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP ECO JET 100 LA",
+        "type": "html",
+        "sha256": "f08a42a34a731815bdd30fe1ef248edff2dbd7778a2c948780b982ea1827d811"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/afc/sm6htju088ta45bkndkymupt5ntm9cjk/Instruktsiya-serii-ECO-JET-LA.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 89628": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 3.0,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 14.2
+      },
+      "manufacturer_article": "89628",
+      "manufacturer_model": "Поверхностный насос UNIPUMP JET 80 L",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-jet-80-l/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP JET 80 L",
+        "type": "html",
+        "sha256": "e9eff407f87b8e70fd6422cf37b9964a196ac175fa1b4917a05cc3dddd7a95f4"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/450/lkfyvsb1fgzwzxs30r7a1fgfqay8rtv5/Instruktsiya-seriya-JET-L.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 78918": {
+      "numbers": {
+        "head": 43.0,
+        "flow": 3.6,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 14.75
+      },
+      "manufacturer_article": "78918",
+      "manufacturer_model": "Поверхностный насос UNIPUMP JET 100 L",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-jet-100-l/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP JET 100 L",
+        "type": "html",
+        "sha256": "692ebc43d9264ad2e2732662c38334005f9947c7cd0b937360e19a3024452a0a"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/450/lkfyvsb1fgzwzxs30r7a1fgfqay8rtv5/Instruktsiya-seriya-JET-L.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 11582": {
+      "numbers": {
+        "head": 53.0,
+        "flow": 3.0,
+        "power_kw": 0.9,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 15.45
+      },
+      "manufacturer_article": "11582",
+      "manufacturer_model": "Поверхностный насос UNIPUMP JET 110 L",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-jet-110-l/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP JET 110 L",
+        "type": "html",
+        "sha256": "986fffaa8a1dc672609536a50d063f6b9bf79f076580c289c570b48b387f6ca6"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/450/lkfyvsb1fgzwzxs30r7a1fgfqay8rtv5/Instruktsiya-seriya-JET-L.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 60382": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 2.7,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 8.15
+      },
+      "manufacturer_article": "60382",
+      "manufacturer_model": "Поверхностный насос UNIPUMP JS 80",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-js-80/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP JS 80",
+        "type": "html",
+        "sha256": "1c7b5ff829e22f3e0d7109370fa14bb328cc0589f20ae12ae64e1233498f5a37"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/450/lkfyvsb1fgzwzxs30r7a1fgfqay8rtv5/Instruktsiya-seriya-JET-L.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 85517": {
+      "numbers": {
+        "head": 45.0,
+        "flow": 3.6,
+        "power_kw": 0.55,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 10.57
+      },
+      "manufacturer_article": "85517",
+      "manufacturer_model": "Центробежный поверхностный насос JS 80 (удлиненный эжектор)",
+      "source": {
+        "url": "https://unipump.ru/product--tsentrobezhnyy-poverkhnostnyy-nasos-js-80-udlinennyy-ezhektor/",
+        "title": "UNIPUMP. Центробежный поверхностный насос JS 80 (удлиненный эжектор)",
+        "type": "html",
+        "sha256": "0c14179cda5f729801a9ee6dea738c8078b8beac4011fda4b8210b68ed0446a2"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/512/46zo5l58liy93hhdlz45av125w0kda2e/Instruktsiya-nasosy-JS.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 94344": {
+      "numbers": {
+        "head": 51.0,
+        "flow": 3.6,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 11.15
+      },
+      "manufacturer_article": "94344",
+      "manufacturer_model": "Центробежный поверхностный насос JS 100 (удлиненный эжектор)",
+      "source": {
+        "url": "https://unipump.ru/product--tsentrobezhnyy-poverkhnostnyy-nasos-js-100-udlinennyy-ezhektor/",
+        "title": "UNIPUMP. Центробежный поверхностный насос JS 100 (удлиненный эжектор)",
+        "type": "html",
+        "sha256": "7562b46a1136998f922972f9fe8af2b14e62727621a204321d68846e3dc46e87"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/512/46zo5l58liy93hhdlz45av125w0kda2e/Instruktsiya-nasosy-JS.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 66799": {
+      "numbers": {
+        "head": 43.0,
+        "flow": 3.6,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 13.6
+      },
+      "manufacturer_article": "66799",
+      "manufacturer_model": "Поверхностный насос UNIPUMP JET 100 S садовый",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-jet-100-s-sadovyy/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP JET 100 S садовый",
+        "type": "html",
+        "sha256": "12b50b46748d91c8e8386c08e8220c4229a8fd6c00e28e6ca0913ef0908eb2c2"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/d97/hv4pklgqcm33qk4jr81rexntwg2ipy3x/Instruktsiya-UNIPUMP-serii-JET-L-sadovyy.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 98928": {
+      "numbers": {
+        "head": 50.0,
+        "flow": 6.5,
+        "power_kw": 1.1,
+        "suction": 8.0,
+        "cable": 1.0,
+        "weight_kg": 13.0
+      },
+      "manufacturer_article": "98928",
+      "manufacturer_model": "Поверхностный насос UNIPUMP MH-500C садовый",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-mh-500c-sadovyy/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP MH-500C садовый",
+        "type": "html",
+        "sha256": "fb8e05bda16e3b881a8e336f49c1dd30d13430606ce8ad1513d23155f293fbb0"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/833/qrptd9dg243bf5zynfz0ms3wf7c25uvy/Instruktsiya-sadovyy-nasos_MH.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 25632": {
+      "numbers": {
+        "head": 60.0,
+        "flow": 6.5,
+        "power_kw": 1.3,
+        "suction": 8.0,
+        "cable": 1.0,
+        "weight_kg": 14.0
+      },
+      "manufacturer_article": "25632",
+      "manufacturer_model": "Поверхностный насос UNIPUMP MH-600C садовый",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-mh-600c-sadovyy/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP MH-600C садовый",
+        "type": "html",
+        "sha256": "4b6799c309b4f2f467ed69ccceb3b5cd64273c70cfc7e9b9a74a423ae307b426"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/833/qrptd9dg243bf5zynfz0ms3wf7c25uvy/Instruktsiya-sadovyy-nasos_MH.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 54426": {
+      "numbers": {
+        "head": 20.0,
+        "flow": 5.1,
+        "power_kw": 0.37,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.5,
+        "weight_kg": 15.9
+      },
+      "manufacturer_article": "54426",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO MH 200A",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-mh-200a/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO MH 200A",
+        "type": "html",
+        "sha256": "d970eebdf005c957762600c95587c5064ce8b0769092b901bd4228a40f166053"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/1b3/0k2hkwn5d61je9hb1zqymsj21iuhjr0k/Instruktsiya-Nasosnaya-stantsiya-UNIPUMP-AUTO-MH_24_V2401-_wg_.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 52544": {
+      "numbers": {
+        "head": 33.0,
+        "flow": 2.4,
+        "power_kw": 0.45,
+        "suction": 8.0,
+        "tank": 50.0,
+        "cable": 1.7,
+        "weight_kg": 16.7
+      },
+      "manufacturer_article": "52544",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 60-50-S (нерж.)",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-60-50-s-nerzh-/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 60-50-S (нерж.)",
+        "type": "html",
+        "sha256": "cda30fdac66dd85cd3e7d2ac02a1496671b7085e6c67ea155b8ec983b85c5722"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 56683": {
+      "numbers": {
+        "head": 40.0,
+        "flow": 3.3,
+        "power_kw": 0.75,
+        "suction": 8.0,
+        "tank": 50.0,
+        "cable": 1.7,
+        "weight_kg": 18.0
+      },
+      "manufacturer_article": "56683",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 100-50-S (нерж.)",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-100-50-s-nerzh-/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 100-50-S (нерж.)",
+        "type": "html",
+        "sha256": "791ed6269282dad8b8437e7a99e8490b741e33226845bdc8a0000c52f31d6570"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 74526": {
+      "numbers": {
+        "head": 144.0,
+        "flow": 3.4,
+        "power_kw": 1.1,
+        "diameter": 94.0,
+        "bore": 98.0,
+        "immersion": 100.0,
+        "cable": 1.5,
+        "weight_kg": 15.5,
+        "rated_flow": 2.0,
+        "rated_head": 100.0
+      },
+      "manufacturer_article": "74526",
+      "manufacturer_model": "Насос погружной скважинный UNIPUMP ЭЦВ 4-2-100 (RU)",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-pogruzhnoy-skvazhinnyy-unipump-etsv-4-2-100-ru/",
+        "title": "UNIPUMP. Насос погружной скважинный UNIPUMP ЭЦВ 4-2-100 (RU)",
+        "type": "html",
+        "sha256": "4f9fab2fca0880b854f0777ac539610075181b4c61a564434f0809d56689aed7"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/8dd/wl0v97pagng54btsfrx0dvjnimqincte/Instruktsiya-ETSV-RUS.pdf"
+      ],
+      "voltage": "380"
+    },
+    "UNIPUMP article 54338": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 3.0,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 12.65
+      },
+      "manufacturer_article": "54338",
+      "manufacturer_model": "Поверхностный насос UNIPUMP JET 80 S",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-jet-80-s/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP JET 80 S",
+        "type": "html",
+        "sha256": "61be5d7957717c2bc9b1b5f5797bba787256f2586fa533892c6f53c664060d93"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/450/lkfyvsb1fgzwzxs30r7a1fgfqay8rtv5/Instruktsiya-seriya-JET-L.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 43196": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 2.7,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 8.9
+      },
+      "manufacturer_article": "43196",
+      "manufacturer_model": "Поверхностный насос UNIPUMP JS 80 садовый",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-js-80-sadovyy/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP JS 80 садовый",
+        "type": "html",
+        "sha256": "8227970f3b1a66ac8b6017edf77f0f576a0747bf3062d522e2cc9aae1a106841"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/d97/hv4pklgqcm33qk4jr81rexntwg2ipy3x/Instruktsiya-UNIPUMP-serii-JET-L-sadovyy.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 63649": {
+      "numbers": {
+        "head": 108.0,
+        "flow": 2.8,
+        "power_kw": 0.75,
+        "diameter": 75.0,
+        "bore": 85.0,
+        "immersion": 40.0,
+        "cable": 30.0,
+        "weight_kg": 17.35,
+        "rated_flow": 1.0,
+        "rated_head": 93.0
+      },
+      "manufacturer_article": "63649",
+      "manufacturer_model": "Насос погружной скважинный UNIPUMP MINI ECO 1-93",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-pogruzhnoy-skvazhinnyy-unipump-mini-eco-1-93/",
+        "title": "UNIPUMP. Насос погружной скважинный UNIPUMP MINI ECO 1-93",
+        "type": "html",
+        "sha256": "ebd09edc8f20b55f27c3cca3941d7c6176bf5b771a5d4151a80d024186e864d1"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/704/xq1z3ul6w4i323zhta7g8hc5h3cmjo5f/Instruktsiya-MINI-ESO.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 87325": {
+      "numbers": {
+        "head": 110.0,
+        "flow": 3.8,
+        "power_kw": 1.1,
+        "diameter": 75.0,
+        "bore": 85.0,
+        "immersion": 40.0,
+        "cable": 40.0,
+        "weight_kg": 20.25,
+        "rated_flow": 2.0,
+        "rated_head": 85.0
+      },
+      "manufacturer_article": "87325",
+      "manufacturer_model": "Насос погружной скважинный UNIPUMP MINI ECO 2-85",
+      "source": {
+        "url": "https://unipump.ru/product--nasos-pogruzhnoy-skvazhinnyy-unipump-mini-eco-2-85/",
+        "title": "UNIPUMP. Насос погружной скважинный UNIPUMP MINI ECO 2-85",
+        "type": "html",
+        "sha256": "1544e4b6e32e1a2bbec1c832ea5ba193ce291fbf9823cac1b0849685eb12a912"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/704/xq1z3ul6w4i323zhta7g8hc5h3cmjo5f/Instruktsiya-MINI-ESO.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 53605": {
+      "numbers": {
+        "head": 58.0,
+        "flow": 9.0,
+        "power_kw": 1.8,
+        "suction": 8.0,
+        "tank": 50.0,
+        "cable": 1.5,
+        "weight_kg": 25.0
+      },
+      "manufacturer_article": "53605",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO MH 500 C-50",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-mh-500-c-50/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO MH 500 C-50",
+        "type": "html",
+        "sha256": "1eafe81a321369b7daab2f6847393fa1cb8a9867db9c6ca32e0bcf4b2016a590"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/6a0/efrjzxa0u546dkw31ckqcc00ruk6yz6a/Instruktsiya-Auto-MH-50.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 78778": {
+      "numbers": {
+        "head": 65.0,
+        "flow": 5.52,
+        "power_kw": 1.1,
+        "suction": 8.0,
+        "tank": 50.0,
+        "cable": 1.5,
+        "weight_kg": 26.0
+      },
+      "manufacturer_article": "78778",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO MH 600 C-50",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-mh-600-c-50/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO MH 600 C-50",
+        "type": "html",
+        "sha256": "35282e9333190bdeb5aab7dac700d376e5a2913fc1ef418e732e686447986bfa"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/6a0/efrjzxa0u546dkw31ckqcc00ruk6yz6a/Instruktsiya-Auto-MH-50.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 24429": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 2.7,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.7,
+        "weight_kg": 13.3
+      },
+      "manufacturer_article": "24429",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 80",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-80/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 80",
+        "type": "html",
+        "sha256": "80009253a804a677909e479fb00e0638c70b7489eb6d5fd1dbdb2abf8bd27eef"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 36729": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 2.7,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "tank": 5.0,
+        "cable": 1.7,
+        "weight_kg": 10.1
+      },
+      "manufacturer_article": "36729",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 80-5",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-80-5/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 80-5",
+        "type": "html",
+        "sha256": "0a8e14b5640298b1b38885552f090fbed84c562835ba3939a14b3b9875e24fcc"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 92831": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 2.7,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "tank": 50.0,
+        "cable": 1.7,
+        "weight_kg": 16.0
+      },
+      "manufacturer_article": "92831",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 80-50",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-80-50/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 80-50",
+        "type": "html",
+        "sha256": "93383d1d54b995e2afa90e3f64db0d131ede18c41955ff2ae8a69b403d3c3aae"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 45847": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 2.7,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "tank": 50.0,
+        "cable": 1.7,
+        "weight_kg": 16.5
+      },
+      "manufacturer_article": "45847",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 80-50-S (нерж.)",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-80-50-s-nerzh-/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 80-50-S (нерж.)",
+        "type": "html",
+        "sha256": "1e4e9975d8e3a7f06747ebaf61cb49f00020c0b960cad633cdbd43765ca76700"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 26418": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 2.7,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.7,
+        "weight_kg": 14.5
+      },
+      "manufacturer_article": "26418",
+      "manufacturer_model": "Насосная станция UNIPUMP AUTO JS 80-S (нерж.)",
+      "source": {
+        "url": "https://unipump.ru/product--nasosnaya-stantsiya-unipump-auto-js-80-s-nerzh-/",
+        "title": "UNIPUMP. Насосная станция UNIPUMP AUTO JS 80-S (нерж.)",
+        "type": "html",
+        "sha256": "2cee858601cd7626db9806cfaf8d0cdf5532d17fc764f78f9a4137c23782f9d1"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "UNIPUMP article 68264": {
+      "numbers": {
+        "head": 38.0,
+        "flow": 2.7,
+        "power_kw": 0.6,
+        "suction": 8.0,
+        "tank": 24.0,
+        "cable": 1.7,
+        "weight_kg": 14.3
+      },
+      "manufacturer_article": "68264",
+      "manufacturer_model": "Универсальная насосная станция АКВАРОБОТ JS 80",
+      "source": {
+        "url": "https://unipump.ru/product--universalnaya-nasosnaya-stantsiya-akvarobot-js-80/",
+        "title": "UNIPUMP. Универсальная насосная станция АКВАРОБОТ JS 80",
+        "type": "html",
+        "sha256": "d493d57b38875e3a7c76db405fca5a1c88ff4d6abe607f62e980ed625f0eed45"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/aeb/2k8dukeg0cc56v93y656qgo1bnmn77d2/Instruktsiya-nasosnye-stantsii.pdf"
+      ],
+      "voltage": "220"
+    },
+    "MERAN MPG201": {
+      "numbers": {
+        "head": 30,
+        "flow": 30,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPG201"
+    },
+    "MERAN MPG301": {
+      "numbers": {
+        "head": 30,
+        "flow": 53,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPG301"
+    },
+    "MERAN MPG201ST": {
+      "numbers": {
+        "head": 30,
+        "flow": 30,
+        "solids": 10
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPG201ST"
+    },
+    "MERAN MPG401ST": {
+      "numbers": {
+        "head": 35,
+        "flow": 90,
+        "solids": 25
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPG401ST"
+    },
+    "MERAN MPG301T": {
+      "numbers": {
+        "head": 27,
+        "flow": 70,
+        "solids": 30
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        37
+      ],
+      "manufacturer_model": "MPG301T"
+    },
+    "MERAN MPG401T": {
+      "numbers": {
+        "head": 25,
+        "flow": 100,
+        "solids": 30
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        37
+      ],
+      "manufacturer_model": "MPG401T"
+    },
+    "MERAN MPG201H": {
+      "numbers": {
+        "head": 50,
+        "flow": 25,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        37
+      ],
+      "manufacturer_model": "MPG201H"
+    },
+    "MERAN MPG211H": {
+      "numbers": {
+        "head": 80,
+        "flow": 18,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        37
+      ],
+      "manufacturer_model": "MPG211H"
+    },
+    "MERAN MPG301H": {
+      "numbers": {
+        "head": 70,
+        "flow": 50,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        37
+      ],
+      "manufacturer_model": "MPG301H"
+    },
+    "MERAN MPG301ST": {
+      "numbers": {
+        "head": 26,
+        "flow": 58,
+        "solids": 25
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPG301ST"
+    },
+    "MERAN MPG401": {
+      "numbers": {
+        "head": 30,
+        "flow": 85,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPG401"
+    },
+    "MERAN MPD201H": {
+      "numbers": {
+        "head": 80,
+        "flow": 18,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPD201H"
+    },
+    "MERAN MPD301T": {
+      "numbers": {
+        "head": 25,
+        "flow": 70,
+        "solids": 30
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        37
+      ],
+      "manufacturer_model": "MPD301T"
+    },
+    "MERAN MPD401T": {
+      "numbers": {
+        "head": 25,
+        "flow": 90,
+        "solids": 30
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        37
+      ],
+      "manufacturer_model": "MPD401T"
+    },
+    "MERAN MPD201ST": {
+      "numbers": {
+        "head": 27,
+        "flow": 30,
+        "solids": 10
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPD201ST"
+    },
+    "MERAN MPD301ST": {
+      "numbers": {
+        "head": 25,
+        "flow": 61,
+        "solids": 25
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPD301ST"
+    },
+    "MERAN MPD401ST": {
+      "numbers": {
+        "head": 30,
+        "flow": 90,
+        "solids": 25
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPD401ST"
+    },
+    "MERAN MPD301": {
+      "numbers": {
+        "head": 27,
+        "flow": 53,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPD301"
+    },
+    "MERAN MPD401": {
+      "numbers": {
+        "head": 29,
+        "flow": 90,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        36
+      ],
+      "manufacturer_model": "MPD401"
+    },
+    "PURITY PXZW15-25-1.5": {
+      "numbers": {
+        "head": 25,
+        "flow": 15,
+        "rated_flow": 10,
+        "rated_head": 18,
+        "power_kw": 1.5,
+        "suction": 8,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, PXZW",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        54
+      ]
+    },
+    "PURITY PXZW18-30-2.2": {
+      "numbers": {
+        "head": 30,
+        "flow": 18,
+        "rated_flow": 10,
+        "rated_head": 20,
+        "power_kw": 2.2,
+        "suction": 8,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, PXZW",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        54
+      ]
+    },
+    "PURITY PXZW25-35-3": {
+      "numbers": {
+        "head": 35,
+        "flow": 25,
+        "rated_flow": 12,
+        "rated_head": 22,
+        "power_kw": 3,
+        "suction": 8,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, PXZW",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        54
+      ]
+    },
+    "PURITY PXZW28-38-4": {
+      "numbers": {
+        "head": 38,
+        "flow": 28,
+        "rated_flow": 15,
+        "rated_head": 25,
+        "power_kw": 4,
+        "suction": 8,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, PXZW",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        54
+      ]
+    },
+    "PURITY PXZW(D)15-25-1.5": {
+      "numbers": {
+        "head": 25,
+        "flow": 15,
+        "rated_flow": 10,
+        "rated_head": 18,
+        "power_kw": 1.5,
+        "suction": 8,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, PXZW",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        54
+      ]
+    },
+    "IBO IP 550": {
+      "numbers": {
+        "tabulated_flow": 10.5,
+        "tabulated_head": 7,
+        "power_kw": 0.55,
+        "free_passage": 30,
+        "cable": 10
+      },
+      "source": {
+        "url": "https://dambat.pl/cdn/shop/files/Karta_IP.pdf?v=13848748385407285466",
+        "sha256": "82b55d971f3006c294d6e94f2c5c31550fd1929df887b96db10a5e5a6d46261d",
+        "title": "IBO / DAMBAT. Карта серии IP"
+      },
+      "pages": [
+        1
+      ],
+      "manufacturer_model": "IP 550",
+      "voltage": "220"
+    },
+    "IBO IP 750": {
+      "numbers": {
+        "tabulated_flow": 12.959999999999999,
+        "tabulated_head": 8,
+        "power_kw": 0.75,
+        "free_passage": 30,
+        "cable": 10
+      },
+      "source": {
+        "url": "https://dambat.pl/cdn/shop/files/Karta_IP.pdf?v=13848748385407285466",
+        "sha256": "82b55d971f3006c294d6e94f2c5c31550fd1929df887b96db10a5e5a6d46261d",
+        "title": "IBO / DAMBAT. Карта серии IP"
+      },
+      "pages": [
+        1
+      ],
+      "manufacturer_model": "IP 750",
+      "voltage": "220"
+    },
+    "IBO IP 1100": {
+      "numbers": {
+        "tabulated_flow": 15.0,
+        "tabulated_head": 9.5,
+        "power_kw": 1.1,
+        "free_passage": 30,
+        "cable": 10
+      },
+      "source": {
+        "url": "https://dambat.pl/cdn/shop/files/Karta_IP.pdf?v=13848748385407285466",
+        "sha256": "82b55d971f3006c294d6e94f2c5c31550fd1929df887b96db10a5e5a6d46261d",
+        "title": "IBO / DAMBAT. Карта серии IP"
+      },
+      "pages": [
+        1
+      ],
+      "manufacturer_model": "IP 1100",
+      "voltage": "220"
+    },
+    "KOSHIN SERH-50B": {
+      "numbers": {
+        "tabulated_head": 57,
+        "tabulated_flow": 26.4,
+        "suction": 8
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        17
+      ],
+      "manufacturer_model": "SERH-50B"
+    },
+    "KOSHIN SERH-50V": {
+      "numbers": {
+        "tabulated_head": 80,
+        "tabulated_flow": 25.8,
+        "suction": 8
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        17
+      ],
+      "manufacturer_model": "SERH-50V"
+    },
+    "KOSHIN SERH-50Z": {
+      "numbers": {
+        "tabulated_head": 90,
+        "tabulated_flow": 30,
+        "suction": 8
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        17
+      ],
+      "manufacturer_model": "SERH-50Z"
+    },
+    "KOSHIN PGH-50": {
+      "numbers": {
+        "tabulated_head": 26,
+        "tabulated_flow": 33.6,
+        "suction": 8
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        18
+      ],
+      "manufacturer_model": "PGH-50"
+    },
+    "KOSHIN SEH-100X": {
+      "numbers": {
+        "tabulated_head": 28,
+        "tabulated_flow": 87,
+        "suction": 8
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        7
+      ],
+      "manufacturer_model": "SEH-100X"
+    },
+    "KOSHIN SEH-50JP": {
+      "numbers": {
+        "tabulated_head": 27,
+        "tabulated_flow": 38.4,
+        "suction": 8
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        7
+      ],
+      "manufacturer_model": "SEH-50JP"
+    },
+    "KOSHIN SEH-80JP": {
+      "numbers": {
+        "tabulated_head": 27,
+        "tabulated_flow": 66,
+        "suction": 8
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        7
+      ],
+      "manufacturer_model": "SEH-80JP"
+    },
+    "KOSHIN SEV-25L": {
+      "numbers": {
+        "tabulated_head": 32,
+        "tabulated_flow": 6.6,
+        "suction": 8,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        5
+      ],
+      "manufacturer_model": "SEV-25L"
+    },
+    "KOSHIN SEV-40F": {
+      "numbers": {
+        "tabulated_head": 26,
+        "tabulated_flow": 15.6,
+        "suction": 8,
+        "solids": 5
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        5
+      ],
+      "manufacturer_model": "SEV-40F"
+    },
+    "KOSHIN STH-50X": {
+      "numbers": {
+        "tabulated_head": 29,
+        "tabulated_flow": 36,
+        "suction": 8,
+        "solids": 8
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        10
+      ],
+      "manufacturer_model": "STH-50X"
+    },
+    "KOSHIN STH-80X": {
+      "numbers": {
+        "tabulated_head": 26,
+        "tabulated_flow": 54,
+        "suction": 8,
+        "solids": 9
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        10
+      ],
+      "manufacturer_model": "STH-80X"
+    },
+    "KOSHIN STV-50X": {
+      "numbers": {
+        "tabulated_head": 26,
+        "tabulated_flow": 34.8,
+        "suction": 8,
+        "solids": 8
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        9
+      ],
+      "manufacturer_model": "STV-50X"
+    },
+    "KOSHIN STV-80X": {
+      "numbers": {
+        "tabulated_head": 26,
+        "tabulated_flow": 54,
+        "suction": 8,
+        "solids": 9
+      },
+      "source": {
+        "url": "https://rutector.ru/media/14550590/_katalog_koshin-web.pdf",
+        "sha256": "fc795f02198a2497e369e33dfe18ae141899ec50a4c011a16c44cf4a6efac752",
+        "title": "KOSHIN. Каталог оборудования: мотопомпы и насосы"
+      },
+      "pages": [
+        9
+      ],
+      "manufacturer_model": "STV-80X"
+    },
+    "KOSHIN SERV-50Z": {
+      "numbers": {
+        "tabulated_head": 90,
+        "tabulated_flow": 28.8,
+        "suction": 8,
+        "weight_kg": 33.9
+      },
+      "source": {
+        "url": "https://www.koshin-ltd.jp/en/leaflet/leaflet/SERV/699717601_SERV-50Z_2009.pdf",
+        "sha256": "38be53f7a94ab718a4f7cd79217b02c31a96028307c234878b6654bc1c4b0f43",
+        "title": "KOSHIN. SERV-50Z, лист 699717601"
+      },
+      "pages": [
+        1
+      ],
+      "manufacturer_model": "SERV-50Z"
+    },
+    "KOSHIN STV-100X": {
+      "numbers": {
+        "tabulated_head": 28,
+        "tabulated_flow": 90,
+        "suction": 8,
+        "weight_kg": 56.5
+      },
+      "source": {
+        "url": "https://www.koshin-ltd.jp/en/leaflet/leaflet/STV/699718401_leaf_STV-100X_2105.pdf",
+        "sha256": "9fffe3db10152c83652f02d7ed6a17c2ade0bc4722e7a88dde4ffc39f2678029",
+        "title": "KOSHIN. STV-100X, лист 699718401"
+      },
+      "pages": [
+        1
+      ],
+      "manufacturer_model": "STV-100X"
+    },
+    "JEMIX 100КПН100-25-11": {
+      "numbers": {
+        "power_kw": 11,
+        "head": 33,
+        "flow": 160,
+        "rated_head": 25,
+        "rated_flow": 100,
+        "cable": 8,
+        "immersion": 5,
+        "weight_kg": 119.8
+      },
+      "source": {
+        "url": "https://dn.ru/storage/certificates/jemix/nasosy/katalog-nasosy-jemix.pdf",
+        "sha256": "765bcf0ab9bf768ed435e02caf1d6faae748a7a5ae6caae4aa8e237cb9598b05",
+        "title": "JEMIX. Каталог насосов, модель 100КПН100-25-11"
+      },
+      "pages": [
+        23
+      ],
+      "manufacturer_model": "100КПН100-25-11",
+      "voltage": "380"
+    },
+    "PURITY 50WQ15-15-1.5QG": {
+      "numbers": {
+        "rated_head": 15,
+        "rated_flow": 15,
+        "power_kw": 1.5,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "50WQ15-15-1.5QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 100WQ65-12-4QG": {
+      "numbers": {
+        "rated_head": 12,
+        "rated_flow": 65,
+        "power_kw": 4,
+        "connection_dn": 100
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "100WQ65-12-4QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 100WQ65-23-7.5QG": {
+      "numbers": {
+        "rated_head": 23,
+        "rated_flow": 65,
+        "power_kw": 7.5,
+        "connection_dn": 100
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "100WQ65-23-7.5QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 150WQ100-12-7.5QG": {
+      "numbers": {
+        "rated_head": 12,
+        "rated_flow": 100,
+        "power_kw": 7.5,
+        "connection_dn": 150
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "150WQ100-12-7.5QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 50WQ10-10-0.75QG": {
+      "numbers": {
+        "rated_head": 10,
+        "rated_flow": 10,
+        "power_kw": 0.75,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "50WQ10-10-0.75QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 50WQ15-10-1.1QG": {
+      "numbers": {
+        "rated_head": 10,
+        "rated_flow": 15,
+        "power_kw": 1.1,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "50WQ15-10-1.1QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 50WQ15-20-2.2QG": {
+      "numbers": {
+        "rated_head": 20,
+        "rated_flow": 15,
+        "power_kw": 2.2,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "50WQ15-20-2.2QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 50WQ15-30-3QG": {
+      "numbers": {
+        "rated_head": 30,
+        "rated_flow": 15,
+        "power_kw": 3,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "50WQ15-30-3QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 50WQ9-22-2.2QG": {
+      "numbers": {
+        "rated_head": 22,
+        "rated_flow": 9,
+        "power_kw": 2.2,
+        "connection_dn": 50
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "50WQ9-22-2.2QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 65WQ25-10-1.5QG": {
+      "numbers": {
+        "rated_head": 10,
+        "rated_flow": 25,
+        "power_kw": 1.5,
+        "connection_dn": 65
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "65WQ25-10-1.5QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 65WQ25-17-2.2QG": {
+      "numbers": {
+        "rated_head": 17,
+        "rated_flow": 25,
+        "power_kw": 2.2,
+        "connection_dn": 65
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "65WQ25-17-2.2QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 65WQ25-21-3QG": {
+      "numbers": {
+        "rated_head": 21,
+        "rated_flow": 25,
+        "power_kw": 3,
+        "connection_dn": 65
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "65WQ25-21-3QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 65WQ25-26-4QG": {
+      "numbers": {
+        "rated_head": 26,
+        "rated_flow": 25,
+        "power_kw": 4,
+        "connection_dn": 65
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "65WQ25-26-4QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 65WQ30-30-5.5QG": {
+      "numbers": {
+        "rated_head": 30,
+        "rated_flow": 30,
+        "power_kw": 5.5,
+        "connection_dn": 65
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "65WQ30-30-5.5QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 65WQ30-36-7.5QG": {
+      "numbers": {
+        "rated_head": 36,
+        "rated_flow": 30,
+        "power_kw": 7.5,
+        "connection_dn": 65
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "65WQ30-36-7.5QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 80WQ40-23-5.5QG": {
+      "numbers": {
+        "rated_head": 23,
+        "rated_flow": 40,
+        "power_kw": 5.5,
+        "connection_dn": 80
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "80WQ40-23-5.5QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 80WQ43-13-3QG": {
+      "numbers": {
+        "rated_head": 13,
+        "rated_flow": 43,
+        "power_kw": 3,
+        "connection_dn": 80
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "80WQ43-13-3QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 80WQ45-17-4QG": {
+      "numbers": {
+        "rated_head": 17,
+        "rated_flow": 45,
+        "power_kw": 4,
+        "connection_dn": 80
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "80WQ45-17-4QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 80WQ45-28-7.5QG": {
+      "numbers": {
+        "rated_head": 28,
+        "rated_flow": 45,
+        "power_kw": 7.5,
+        "connection_dn": 80
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "80WQ45-28-7.5QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY 80WQ45-9-2.2QG": {
+      "numbers": {
+        "rated_head": 9,
+        "rated_flow": 45,
+        "power_kw": 2.2,
+        "connection_dn": 80
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "80WQ45-9-2.2QG/2",
+      "evidence_note": "The manufacturer uses the short QG label on performance curves and /2 in the technical table. No voltage inferred."
+    },
+    "PURITY Насоспогружнойканализационный100WQV100-30-15/2": {
+      "numbers": {
+        "rated_head": 30,
+        "rated_flow": 100,
+        "power_kw": 15,
+        "connection_dn": 100
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "Насоспогружнойканализационный100WQV100-30-15/2"
+    },
+    "PURITY Насоспогружнойканализационный80WQV80-30-15/4": {
+      "numbers": {
+        "rated_head": 30,
+        "rated_flow": 80,
+        "power_kw": 15,
+        "connection_dn": 80
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "Насоспогружнойканализационный80WQV80-30-15/4"
+    },
+    "PURITY 100WQV80-25-11/2": {
+      "numbers": {
+        "rated_head": 25,
+        "rated_flow": 80,
+        "power_kw": 11,
+        "connection_dn": 100
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "100WQV80-25-11/2"
+    },
+    "PURITY 100WQV80-30-15/4": {
+      "numbers": {
+        "rated_head": 30,
+        "rated_flow": 80,
+        "power_kw": 15,
+        "connection_dn": 100
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "100WQV80-30-15/4"
+    },
+    "PURITY 150WQV150-15-11/4": {
+      "numbers": {
+        "rated_head": 15,
+        "rated_flow": 150,
+        "power_kw": 11,
+        "connection_dn": 150
+      },
+      "source": {
+        "url": "https://www.puritypumps.com/uploads/PURITY-PUMP-NEW-CATALOG-for-all-pumps-50hz.pdf",
+        "title": "PURITY. Каталог 50 Гц, WQ/QG/WQV",
+        "sha256": "1d61eeff5f5b8acd050e2a41af4e494f5a28018325f2734cfedf10ddf45fce2f"
+      },
+      "pages": [
+        57
+      ],
+      "manufacturer_model": "150WQV150-15-11/4"
+    },
+    "UNIPUMP article 59464": {
+      "numbers": {
+        "head": 33.0,
+        "flow": 2.4,
+        "power_kw": 0.45,
+        "suction": 8.0,
+        "cable": 1.7,
+        "weight_kg": 12.0
+      },
+      "manufacturer_article": "59464",
+      "manufacturer_model": "Поверхностный насос UNIPUMP JET 60 S садовый",
+      "source": {
+        "url": "https://unipump.ru/product--poverkhnostnyy-nasos-unipump-jet-60-s-sadovyy/",
+        "title": "UNIPUMP. Поверхностный насос UNIPUMP JET 60 S садовый",
+        "type": "html",
+        "sha256": "43a2a5732a4a52e16911f862655b9d9efc4a796c6e3631c910285cee2ff18d10"
+      },
+      "pages": [],
+      "manuals": [
+        "https://unipump.ru/upload/iblock/d97/hv4pklgqcm33qk4jr81rexntwg2ipy3x/Instruktsiya-UNIPUMP-serii-JET-L-sadovyy.pdf"
+      ],
+      "voltage": "220"
+    },
+    "MERAN MPG201C": {
+      "numbers": {
+        "head": 25,
+        "flow": 30,
+        "solids": 1
+      },
+      "source": {
+        "url": "https://rutector.ru/upload/iblock/012/hao53qkbddpqcokp3qu402gq032u6d5b/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%BF%D1%80%D0%BE%D0%BC%D1%8B%D1%88%D0%BB%D0%B5%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%B8%20%D1%81%D1%82%D1%80%D0%BE%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BE%D0%B1%D0%BE%D1%80%D1%83%D0%B4%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F.pdf",
+        "title": "Рутектор. Каталог MERAN",
+        "sha256": "7b6e916ffe83d260925bff9fcd872c6327efe1849ef29a25c35662c5c9b23ab7"
+      },
+      "pages": [
+        35
+      ]
+    },
+    "WILO Medana article 4231480": {
+      "numbers": {
+        "power_kw": 0.75,
+        "weight_kg": 12.9
+      },
+      "source": {
+        "url": "https://wilo.com/gb/en/Products/en/products/medana-ch1-l_id579/4231480",
+        "sha256": "861ae086d9af73dc5efa600d04f6ce23a9376df214e81612fcba6563f9268511",
+        "type": "html",
+        "title": "Medana CH1-L.405-1/E/A/10T"
+      },
+      "pages": [],
+      "voltage": "220",
+      "manufacturer_article": "4231480",
+      "manufacturer_model": "Medana CH1-L.405-1/E/A/10T"
     }
   },
   "products": {
@@ -16606,6 +19685,761 @@
       "name": "Дизельная мотопомпа для сильно-загрязненных вод Koshin STY-80D",
       "category": "poverhnostnyie",
       "model": "Дизельная мотопомпа для сильно-загрязненных вод Koshin STY-80D"
+    },
+    "24858": {
+      "name": "Канализационный насос Wellmix 50GNWQ 15-15-1.5 NEW (1500Вт, 3х380В, кабель 8м) с режущим механизмом",
+      "category": "drenajnyie",
+      "model": "WELLMIX 50GNWQ 15-15-1,5"
+    },
+    "24861": {
+      "name": "Канализационный насос Wellmix 50WQ15-12-1.1 (1,1кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 50WQ15-12-1,1"
+    },
+    "24863": {
+      "name": "Канализационный насос Wellmix 50WQ15-22-2.2 (2,2кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 50WQ15-22-2,2"
+    },
+    "24864": {
+      "name": "Канализационный насос Wellmix 50WQ25-25-3 (3кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 50WQ25-25-3"
+    },
+    "24865": {
+      "name": "Канализационный насос Wellmix 65GNWQ 20-12-1.5 NEW (1500Вт, 3х380В, кабель 8м) с режущим механизмом",
+      "category": "drenajnyie",
+      "model": "WELLMIX 65GNWQ 20-12-1,5"
+    },
+    "24870": {
+      "name": "Канализационный насос Wellmix 65WQ30-10-1.5 (1,5кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 65WQ30-10-1,5"
+    },
+    "24871": {
+      "name": "Канализационный насос Wellmix 65WQ30-15-2.2 (2,2кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 65WQ30-15-2,2"
+    },
+    "24872": {
+      "name": "Канализационный насос Wellmix 65WQ30-22-4 (4кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 65WQ30-22-4"
+    },
+    "24873": {
+      "name": "Канализационный насос Wellmix 65WQ30-30-5.5 (5,5кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 65WQ30-30-5,5"
+    },
+    "24875": {
+      "name": "Канализационный насос Wellmix 80WQ50- 8-2.2 (2,2кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 80WQ50-8-2,2"
+    },
+    "24876": {
+      "name": "Канализационный насос Wellmix 80WQ50-10-3 (3кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 80WQ50-10-3"
+    },
+    "24877": {
+      "name": "Канализационный насос Wellmix 80WQ50-15-4 (4кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 80WQ50-15-4"
+    },
+    "24879": {
+      "name": "Канализационный насос Wellmix 80WQ50-25-5.5 (5,5кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 80WQ50-25-5,5"
+    },
+    "24903": {
+      "name": "Канализационный насос Wellmix 100WQ2-80-35-15/2_380V",
+      "category": "drenajnyie",
+      "model": "WELLMIX 100WQ2-80-35-15/2_380"
+    },
+    "24904": {
+      "name": "Канализационный насос Wellmix 100WQ2-80-40-18.5/2_380V",
+      "category": "drenajnyie",
+      "model": "WELLMIX 100WQ2-80-40-18,5/2_380"
+    },
+    "24907": {
+      "name": "Канализационный насос Wellmix 100WQ80- 7-3 (3кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 100WQ80-7-3"
+    },
+    "24910": {
+      "name": "Канализационный насос Wellmix 100WQ80-18-7.5 (7,5кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 100WQ80-18-7,5"
+    },
+    "24920": {
+      "name": "Канализационный насос Wellmix 150WQ150-10-7.5 (7,5кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 150WQ150-10-7,5"
+    },
+    "24921": {
+      "name": "Канализационный насос Wellmix 150WQ160-15-11 (11кВт, 380В, кабель 10м)",
+      "category": "drenajnyie",
+      "model": "WELLMIX 150WQ160-15-11"
+    },
+    "24965": {
+      "name": "Канализационный насос Wellmix 50WQ2-10-30-2.2/2_220V",
+      "category": "drenajnyie",
+      "model": "WELLMIX 50WQ2-10-30-2,2/2_220"
+    },
+    "24966": {
+      "name": "Канализационный насос Wellmix 50WQ2-10-30-2.2/2_380V",
+      "category": "drenajnyie",
+      "model": "WELLMIX 50WQ2-10-30-2,2/2_380"
+    },
+    "24969": {
+      "name": "Канализационный насос Wellmix 50WQ2-15-20-2.2/2_220V",
+      "category": "drenajnyie",
+      "model": "WELLMIX 50WQ2-15-20-2,2/2_220"
+    },
+    "24974": {
+      "name": "Канализационный насос Wellmix 50WQ2-20-70-15/2_380V",
+      "category": "drenajnyie",
+      "model": "WELLMIX 50WQ2-20-70-15/2_380"
+    },
+    "24977": {
+      "name": "Канализационный насос Wellmix 50WQ2-8-34-3/2_380V",
+      "category": "drenajnyie",
+      "model": "WELLMIX 50WQ2-8-34-3/2_380"
+    },
+    "24988": {
+      "name": "Канализационный насос Wellmix 65WQ2-25-18-2.2/2_220V",
+      "category": "drenajnyie",
+      "model": "WELLMIX 65WQ2-25-18-2,2/2_220"
+    },
+    "8559": {
+      "name": "Насос поверхностный UNIPUMP JS 60",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 82229"
+    },
+    "8560": {
+      "name": "Насос поверхностный UNIPUMP JS 100",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 83955"
+    },
+    "8617": {
+      "name": "Насосная станция UNIPUMP AUTO MH 600 C",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 39568"
+    },
+    "8622": {
+      "name": "Насосная станция UNIPUMP AUTO MH 500 C",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 57119"
+    },
+    "8628": {
+      "name": "Насосная станция UNIPUMP AUTO JS 60-5",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 69112"
+    },
+    "8629": {
+      "name": "Насосная станция UNIPUMP AUTO JS 100-5",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 10943"
+    },
+    "8659": {
+      "name": "Насос поверхностный многоступенчатый UNIPUMP MH-600 C",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 69231"
+    },
+    "8667": {
+      "name": "Насос поверхностный многоступенчатый UNIPUMP MH-500 C",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 20580"
+    },
+    "8677": {
+      "name": "Насосная станция UNIPUMP AUTO JS 60-50",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 41212"
+    },
+    "8678": {
+      "name": "Насосная станция UNIPUMP AUTO JS 100-50",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 26384"
+    },
+    "8679": {
+      "name": "Насосная станция UNIPUMP AUTO JS 60",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 20924"
+    },
+    "8680": {
+      "name": "Насосная станция UNIPUMP AUTO JS 100",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 69252"
+    },
+    "8685": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JS 60 (r/a 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 96231"
+    },
+    "8686": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JS 80 (r/a 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 26536"
+    },
+    "8687": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JS 100 (r/a 2л)",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 92824"
+    },
+    "8694": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JS 60-24",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 87955"
+    },
+    "8695": {
+      "name": "Насосная станция UNIPUMP АКВАРОБОТ JS 100-24",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 36339"
+    },
+    "8698": {
+      "name": "Насосная станция UNIPUMP AUTO JS 60-S",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 69303"
+    },
+    "8700": {
+      "name": "Насосная станция UNIPUMP AUTO JS 100-S",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 77863"
+    },
+    "16194": {
+      "name": "UNIPUMP Насос ЭЦВ 4-2-45",
+      "category": "skvajinnye-nasosy",
+      "model": "UNIPUMP article 61656"
+    },
+    "16195": {
+      "name": "UNIPUMP Насос ЭЦВ 4-2-60",
+      "category": "skvajinnye-nasosy",
+      "model": "UNIPUMP article 70291"
+    },
+    "16372": {
+      "name": "UNIPUMP PSB 5-40",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 31710"
+    },
+    "16373": {
+      "name": "UNIPUMP PSB 6-30",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 89553"
+    },
+    "16374": {
+      "name": "UNIPUMP PSB 10-50",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 95795"
+    },
+    "25994": {
+      "name": "UNIPUMP MINI ECO 1-144 (кабель-50м)",
+      "category": "skvajinnye-nasosy",
+      "model": "UNIPUMP article 41827"
+    },
+    "26001": {
+      "name": "UNIPUMP MINI ECO 3-34 (кабель-20м)",
+      "category": "skvajinnye-nasosy",
+      "model": "UNIPUMP article 18856"
+    },
+    "26126": {
+      "name": "UNIPUMP SANIVORT 405 M 8м с ножом (центр. вход)",
+      "category": "drenajnyie",
+      "model": "UNIPUMP article 30924"
+    },
+    "26127": {
+      "name": "UNIPUMP SANIVORT 405 М 8м с ножом (бок. вход)",
+      "category": "drenajnyie",
+      "model": "UNIPUMP article 62916"
+    },
+    "26129": {
+      "name": "UNIPUMP ECO JET 80 LA (удлиненный эжектор)",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 42061"
+    },
+    "26130": {
+      "name": "UNIPUMP ECO JET 100 LA (удлиненный эжектор)",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 22419"
+    },
+    "26131": {
+      "name": "UNIPUMP JET 80 L (удлиненный эжектор)",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 89628"
+    },
+    "26132": {
+      "name": "UNIPUMP JET 100 L (удлиненный эжектор)",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 78918"
+    },
+    "26133": {
+      "name": "UNIPUMP JET 110 L (удлиненный эжектор)",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 11582"
+    },
+    "26134": {
+      "name": "UNIPUMP JS 80",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 60382"
+    },
+    "26135": {
+      "name": "UNIPUMP JS 80 (удлиненный эжектор)",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 85517"
+    },
+    "26136": {
+      "name": "UNIPUMP JS 100 (удлиненный эжектор)",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 94344"
+    },
+    "26138": {
+      "name": "UNIPUMP JET 100 S садовый",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 66799"
+    },
+    "26142": {
+      "name": "UNIPUMP MH-500C (садовый)",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 98928"
+    },
+    "26143": {
+      "name": "UNIPUMP MH-600C (садовый)",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 25632"
+    },
+    "26170": {
+      "name": "UNIPUMP AUTO MH 200 A",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 54426"
+    },
+    "26179": {
+      "name": "UNIPUMP AUTO JS 60-50-S",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 52544"
+    },
+    "26180": {
+      "name": "UNIPUMP AUTO JS 100-50-S",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 56683"
+    },
+    "27512": {
+      "name": "UNIPUMP Насос скваж. ЭЦВ 4-2-100 (1100 Вт)",
+      "category": "skvajinnye-nasosy",
+      "model": "UNIPUMP article 74526"
+    },
+    "27589": {
+      "name": "UNIPUMP Поверхностный насос JET 80 S",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 54338"
+    },
+    "27591": {
+      "name": "UNIPUMP Поверхностный насос JS 80 садовый",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 43196"
+    },
+    "27592": {
+      "name": "UNIPUMP Погружной насос 3\" MINI ECO 1-93 (750 Вт, кабель-30м)",
+      "category": "skvajinnye-nasosy",
+      "model": "UNIPUMP article 63649"
+    },
+    "27593": {
+      "name": "UNIPUMP Погружной насос 3\" MINI ECO 2-85 (1100 Вт, кабель-40м)",
+      "category": "skvajinnye-nasosy",
+      "model": "UNIPUMP article 87325"
+    },
+    "27612": {
+      "name": "UNIPUMP Станция авт. водосн. AUTO MH 500 C-50",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 53605"
+    },
+    "27613": {
+      "name": "UNIPUMP Станция авт. водосн. AUTO MH 600 C-50",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 78778"
+    },
+    "27626": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JS 80",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 24429"
+    },
+    "27627": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JS 80 - 5",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 36729"
+    },
+    "27628": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JS 80-50",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 92831"
+    },
+    "27629": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JS 80-50-S",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 45847"
+    },
+    "27630": {
+      "name": "UNIPUMP Станция авт.водоснабжения AUTO JS 80-S",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 26418"
+    },
+    "27637": {
+      "name": "UNIPUMP Универсальная станция АКВАРОБОТ JS 80-24",
+      "category": "nasosnyie-stantsii",
+      "model": "UNIPUMP article 68264"
+    },
+    "16339": {
+      "name": "MERAN MPG201",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG201"
+    },
+    "16340": {
+      "name": "MERAN MPG301",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG301"
+    },
+    "16341": {
+      "name": "MERAN MPG201ST",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG201ST"
+    },
+    "16342": {
+      "name": "MERAN MPG401ST",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG401ST"
+    },
+    "16343": {
+      "name": "MERAN MPG301T",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG301T"
+    },
+    "16344": {
+      "name": "MERAN MPG401T",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG401T"
+    },
+    "16345": {
+      "name": "MERAN MPG201H",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG201H"
+    },
+    "26625": {
+      "name": "Бензиновая высоконапорная мотопомпа Meran MPG211H",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG211H"
+    },
+    "26626": {
+      "name": "Бензиновая высоконапорная мотопомпа Meran MPG301H",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG301H"
+    },
+    "26653": {
+      "name": "Бензиновая мотопомпа для средне-загрязненных вод Meran MPG301ST",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG301ST"
+    },
+    "26654": {
+      "name": "Бензиновая мотопомпа для чистых вод Meran MPG401",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG401"
+    },
+    "26891": {
+      "name": "Дизельная высоконапорная мотопомпа Meran MPD201H",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPD201H"
+    },
+    "26894": {
+      "name": "Дизельная мотопомпа для сильно загрязненных вод Meran MPD301T",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPD301T"
+    },
+    "26895": {
+      "name": "Дизельная мотопомпа для сильно загрязненных вод Meran MPD401T",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPD401T"
+    },
+    "26903": {
+      "name": "Дизельная мотопомпа для средне загрязненных вод Meran MPD201ST",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPD201ST"
+    },
+    "26904": {
+      "name": "Дизельная мотопомпа для средне загрязненных вод Meran MPD301ST",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPD301ST"
+    },
+    "26905": {
+      "name": "Дизельная мотопомпа для средне загрязненных вод Meran MPD401ST",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPD401ST"
+    },
+    "26906": {
+      "name": "Дизельная мотопомпа для чистой воды Meran MPD301",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPD301"
+    },
+    "26907": {
+      "name": "Дизельная мотопомпа для чистой воды Meran MPD401",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPD401"
+    },
+    "27596": {
+      "name": "PURITY Самовсасывающий насос для загрязненной воды PXZW 15-25-1.5",
+      "category": "poverhnostnyie",
+      "model": "PURITY PXZW15-25-1.5"
+    },
+    "27597": {
+      "name": "PURITY Самовсасывающий насос для загрязненной воды PXZW 18-30-2.2",
+      "category": "poverhnostnyie",
+      "model": "PURITY PXZW18-30-2.2"
+    },
+    "27598": {
+      "name": "PURITY Самовсасывающий насос для загрязненной воды PXZW 25-35-3",
+      "category": "poverhnostnyie",
+      "model": "PURITY PXZW25-35-3"
+    },
+    "27599": {
+      "name": "PURITY Самовсасывающий насос для загрязненной воды PXZW 28-38-4",
+      "category": "poverhnostnyie",
+      "model": "PURITY PXZW28-38-4"
+    },
+    "27600": {
+      "name": "PURITY Самовсасывающий насос для загрязненной воды PXZW(D) 15-25-1.5",
+      "category": "poverhnostnyie",
+      "model": "PURITY PXZW(D)15-25-1.5"
+    },
+    "31231": {
+      "name": "Насос дренажный IP 550 IBO",
+      "category": "drenajnyie",
+      "model": "IBO IP 550"
+    },
+    "31232": {
+      "name": "Насос дренажный IP 750 IBO",
+      "category": "drenajnyie",
+      "model": "IBO IP 750"
+    },
+    "31233": {
+      "name": "Насос дренажный IP 1100 IBO",
+      "category": "drenajnyie",
+      "model": "IBO IP 1100"
+    },
+    "26621": {
+      "name": "Бензиновая высоконапорная мотопомпа Koshin SERH-50B",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN SERH-50B"
+    },
+    "26622": {
+      "name": "Бензиновая высоконапорная мотопомпа Koshin SERH-50V",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN SERH-50V"
+    },
+    "26623": {
+      "name": "Бензиновая высоконапорная мотопомпа Koshin SERH-50Z",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN SERH-50Z"
+    },
+    "26632": {
+      "name": "Бензиновая мотопомпа для агрессивных жидкостей Koshin PGH-50 (полимер)",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN PGH-50"
+    },
+    "26634": {
+      "name": "Бензиновая мотопомпа для загрязненных вод Koshin SEH-100X",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN SEH-100X"
+    },
+    "26635": {
+      "name": "Бензиновая мотопомпа для загрязненных вод Koshin SEH-50JP",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN SEH-50JP"
+    },
+    "26636": {
+      "name": "Бензиновая мотопомпа для загрязненных вод Koshin SEH-80JP",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN SEH-80JP"
+    },
+    "26639": {
+      "name": "Бензиновая мотопомпа для загрязненных вод Koshin SEV-25L (2-тактный двигатель)",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN SEV-25L"
+    },
+    "26640": {
+      "name": "Бензиновая мотопомпа для загрязненных вод Koshin SEV-40F",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN SEV-40F"
+    },
+    "26649": {
+      "name": "Бензиновая мотопомпа для средне-загрязненных вод Koshin STH-50X",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN STH-50X"
+    },
+    "26650": {
+      "name": "Бензиновая мотопомпа для средне-загрязненных вод Koshin STH-80X",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN STH-80X"
+    },
+    "26651": {
+      "name": "Бензиновая мотопомпа для средне-загрязненных вод Koshin STV-50X",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN STV-50X"
+    },
+    "26652": {
+      "name": "Бензиновая мотопомпа для средне-загрязненных вод Koshin STV-80X",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN STV-80X"
+    },
+    "26624": {
+      "name": "Бензиновая высоконапорная мотопомпа Koshin SERV-50Z",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN SERV-50Z"
+    },
+    "26647": {
+      "name": "Бензиновая мотопомпа для средне загрязненных вод Koshin STV-100X",
+      "category": "poverhnostnyie",
+      "model": "KOSHIN STV-100X"
+    },
+    "16321": {
+      "name": "JEMIX Канализационный погружной насос, 100КПН100-25-11",
+      "category": "drenajnyie",
+      "model": "JEMIX 100КПН100-25-11"
+    },
+    "16322": {
+      "name": "PURITY 50WQ15-15-1.5QG",
+      "category": "drenajnyie",
+      "model": "PURITY 50WQ15-15-1.5QG"
+    },
+    "27427": {
+      "name": "PURITY Насос погружной канализационный 100WQ65-12-4QG",
+      "category": "drenajnyie",
+      "model": "PURITY 100WQ65-12-4QG"
+    },
+    "27429": {
+      "name": "PURITY Насос погружной канализационный 100WQ65-23-7.5QG",
+      "category": "drenajnyie",
+      "model": "PURITY 100WQ65-23-7.5QG"
+    },
+    "27435": {
+      "name": "PURITY Насос погружной канализационный 150WQ100-12-7.5QG",
+      "category": "drenajnyie",
+      "model": "PURITY 150WQ100-12-7.5QG"
+    },
+    "27450": {
+      "name": "PURITY Насос погружной канализационный 50WQ10-10-0.75QG",
+      "category": "drenajnyie",
+      "model": "PURITY 50WQ10-10-0.75QG"
+    },
+    "27451": {
+      "name": "PURITY Насос погружной канализационный 50WQ15-10-1.1QG",
+      "category": "drenajnyie",
+      "model": "PURITY 50WQ15-10-1.1QG"
+    },
+    "27454": {
+      "name": "PURITY Насос погружной канализационный 50WQ15-20-2.2QG",
+      "category": "drenajnyie",
+      "model": "PURITY 50WQ15-20-2.2QG"
+    },
+    "27456": {
+      "name": "PURITY Насос погружной канализационный 50WQ15-30-3QG",
+      "category": "drenajnyie",
+      "model": "PURITY 50WQ15-30-3QG"
+    },
+    "27463": {
+      "name": "PURITY Насос погружной канализационный 50WQ9-22-2.2QG",
+      "category": "drenajnyie",
+      "model": "PURITY 50WQ9-22-2.2QG"
+    },
+    "27466": {
+      "name": "PURITY Насос погружной канализационный 65WQ25-10-1.5QG",
+      "category": "drenajnyie",
+      "model": "PURITY 65WQ25-10-1.5QG"
+    },
+    "27468": {
+      "name": "PURITY Насос погружной канализационный 65WQ25-17-2.2QG",
+      "category": "drenajnyie",
+      "model": "PURITY 65WQ25-17-2.2QG"
+    },
+    "27469": {
+      "name": "PURITY Насос погружной канализационный 65WQ25-21-3QG",
+      "category": "drenajnyie",
+      "model": "PURITY 65WQ25-21-3QG"
+    },
+    "27471": {
+      "name": "PURITY Насос погружной канализационный 65WQ25-26-4QG",
+      "category": "drenajnyie",
+      "model": "PURITY 65WQ25-26-4QG"
+    },
+    "27476": {
+      "name": "PURITY Насос погружной канализационный 65WQ30-30-5.5QG",
+      "category": "drenajnyie",
+      "model": "PURITY 65WQ30-30-5.5QG"
+    },
+    "27478": {
+      "name": "PURITY Насос погружной канализационный 65WQ30-36-7.5QG",
+      "category": "drenajnyie",
+      "model": "PURITY 65WQ30-36-7.5QG"
+    },
+    "27482": {
+      "name": "PURITY Насос погружной канализационный 80WQ40-23-5.5QG",
+      "category": "drenajnyie",
+      "model": "PURITY 80WQ40-23-5.5QG"
+    },
+    "27485": {
+      "name": "PURITY Насос погружной канализационный 80WQ43-13-3QG",
+      "category": "drenajnyie",
+      "model": "PURITY 80WQ43-13-3QG"
+    },
+    "27486": {
+      "name": "PURITY Насос погружной канализационный 80WQ45-17-4QG",
+      "category": "drenajnyie",
+      "model": "PURITY 80WQ45-17-4QG"
+    },
+    "27487": {
+      "name": "PURITY Насос погружной канализационный 80WQ45-28-7.5QG",
+      "category": "drenajnyie",
+      "model": "PURITY 80WQ45-28-7.5QG"
+    },
+    "27491": {
+      "name": "PURITY Насос погружной канализационный 80WQ45-9-2.2QG",
+      "category": "drenajnyie",
+      "model": "PURITY 80WQ45-9-2.2QG"
+    },
+    "27430": {
+      "name": "PURITY Насос погружной канализационный 100WQV100-30-15/2",
+      "category": "drenajnyie",
+      "model": "PURITY Насоспогружнойканализационный100WQV100-30-15/2"
+    },
+    "27492": {
+      "name": "PURITY Насос погружной канализационный 80WQV80-30-15/4",
+      "category": "drenajnyie",
+      "model": "PURITY Насоспогружнойканализационный80WQV80-30-15/4"
+    },
+    "27493": {
+      "name": "Насос погружной канализационный PURITY 100WQV 80-25-11/2",
+      "category": "drenajnyie",
+      "model": "PURITY 100WQV80-25-11/2"
+    },
+    "27494": {
+      "name": "Насос погружной канализационный PURITY 100WQV 80-30-15/4",
+      "category": "drenajnyie",
+      "model": "PURITY 100WQV80-30-15/4"
+    },
+    "27498": {
+      "name": "Насос погружной канализационный PURITY 150WQV 150-15-11/4",
+      "category": "drenajnyie",
+      "model": "PURITY 150WQV150-15-11/4"
+    },
+    "26137": {
+      "name": "UNIPUMP JET 60 S садовый",
+      "category": "poverhnostnyie",
+      "model": "UNIPUMP article 59464"
+    },
+    "26633": {
+      "name": "MERAN Бензиновая мотопомпа для агрессивных жидкостей MPG201C",
+      "category": "poverhnostnyie",
+      "model": "MERAN MPG201C"
+    },
+    "31500": {
+      "name": "Насос MEDANA CH1-L.405-1/E/A/10T №4231480 WILO",
+      "category": "poverhnostnyie",
+      "model": "WILO Medana article 4231480"
     }
   }
 }
