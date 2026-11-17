@@ -4,18 +4,18 @@
     // B2B partners keep shopping in the B2B catalog.
     $miniCartCatalogUrl = auth()->user()?->activeB2bClient() ? route('b2b.catalog') : '/catalog';
 @endphp
-<div class="offcanvas offcanvas-start canvas-mb" id="mobileMenu">
+<div class="offcanvas offcanvas-start canvas-mb" id="mobileMenu" tabindex="-1" aria-labelledby="mobile-menu-title">
     <div class="canvas-header">
-        <span class="icon-close-popup" data-bs-dismiss="offcanvas">
-            <i class="icon icon-X2"></i>
-        </span>
+        <button type="button" class="icon-close-popup" data-bs-dismiss="offcanvas" aria-label="Закрыть меню">
+            <i class="icon icon-X2" aria-hidden="true"></i>
+        </button>
         <form action="/search" method="get" class="form-search-nav" autocomplete="off">
             <fieldset style="position:relative;flex:1;">
-                <input type="text" name="q" id="mobilemenu-search-input"
+                <input type="text" name="q" id="mobilemenu-search-input" aria-label="Поиск по каталогу" enterkeyhint="search" maxlength="100"
                     placeholder="Поиск по каталогу" required autocomplete="off">
                 <div id="mobilemenu-search-suggest" class="search-suggest-dropdown"></div>
             </fieldset>
-            <button type="submit" class="btn-action">
+            <button type="submit" class="btn-action" aria-label="Найти товары">
                 <i class="icon icon-MagnifyingGlass"></i>
             </button>
         </form>
@@ -26,7 +26,7 @@
         <div class="mb-categories">
             <div class="mb-cat-header">
                 <i class="icon icon-List"></i>
-                <span>Каталог товаров</span>
+                <span id="mobile-menu-title">Каталог товаров</span>
             </div>
             <ul class="mb-cat-list">
                 @foreach ($navCategories as $rootCat)
@@ -49,12 +49,12 @@
                                     </span>
                                     <span>{{ $rootCat->name }}</span>
                                 </a>
-                                <button class="mb-cat-toggle" type="button">
+                                <button class="mb-cat-toggle" type="button" aria-label="Подразделы: {{ $rootCat->name }}" aria-expanded="false" aria-controls="mobile-category-{{ $rootCat->id }}">
                                     <i class="icon icon-CaretDown"></i>
                                 </button>
                             </div>
                             @php $mbGroups = \App\Support\CategoryNavigationGroups::for($rootCat->slug, $children->values()); @endphp
-                            <ul class="mb-cat-sub">
+                            <ul class="mb-cat-sub" id="mobile-category-{{ $rootCat->id }}">
                                 @if ($mbGroups->isNotEmpty())
                                     {{-- A large section: its groups with headings, the first five of each. --}}
                                     @foreach ($mbGroups as $group)
@@ -195,7 +195,7 @@
 <div class="modal modalCentered fade modal-log modal-log_forgot" id="modalForgot">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <span class="icon-close-popup" data-bs-dismiss="modal"><i class="icon-X2"></i></span>
+            <button type="button" class="icon-close-popup" data-bs-dismiss="modal" aria-label="Закрыть окно"><i class="icon-X2"></i></button>
             <div class="modal-heading text-center">
                 <h3 class="title-pop mb-8">Восстановление пароля</h3>
                 <p class="desc-pop cl-text-2">Введите email — отправим инструкцию по сбросу пароля.</p>
@@ -393,7 +393,7 @@
 <div class="modal modalCentered fade modal-log modal-ask" id="ask">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <span class="icon-close-popup" data-bs-dismiss="modal"><i class="icon-X2"></i></span>
+            <button type="button" class="icon-close-popup" data-bs-dismiss="modal" aria-label="Закрыть окно"><i class="icon-X2"></i></button>
             <div class="modal-heading text-center">
                 <h3 class="title-pop mb-8">Задать вопрос</h3>
                 <p class="desc-pop cl-text-2">Наш специалист ответит в течение рабочего дня.</p>
@@ -442,7 +442,7 @@
 <div class="modal modalCentered fade modal-log modal-ask" id="engineeringCalculation">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <span class="icon-close-popup" data-bs-dismiss="modal"><i class="icon-X2"></i></span>
+            <button type="button" class="icon-close-popup" data-bs-dismiss="modal" aria-label="Закрыть окно"><i class="icon-X2"></i></button>
             <div class="modal-heading text-center">
                 <h3 class="title-pop mb-8">Заявка на инженерный расчёт</h3>
                 <p class="desc-pop cl-text-2">Специалист уточнит задачу, проверит оборудование и предложит решение под ключ.</p>
@@ -554,7 +554,7 @@
     <div class="wrap-canvas">
         <div class="canvas-header ps-md-0">
             <h5 class="title-pop">Быстрый просмотр</h5>
-            <span class="icon-close-popup" data-bs-dismiss="offcanvas"><i class="icon icon-X2"></i></span>
+            <button type="button" class="icon-close-popup" data-bs-dismiss="offcanvas" aria-label="Закрыть окно"><i class="icon icon-X2"></i></button>
         </div>
         <div class="canvas-body ps-md-0">
             <div class="tf-product-quick_view tf-quick-prd_variant">
@@ -735,11 +735,11 @@
             </div>
             <form action="/search" method="GET" class="form-search-nav style-2" autocomplete="off">
                 <fieldset style="position:relative;flex:1;">
-                    <input type="text" name="q" id="modal-search-input"
+                    <input type="text" name="q" id="modal-search-input" aria-label="Товар, артикул или категория" enterkeyhint="search" maxlength="100"
                         placeholder="Товар, артикул или категория" required autocomplete="off">
                     <div id="modal-search-suggest" class="search-suggest-dropdown"></div>
                 </fieldset>
-                <button type="submit" class="btn-action"><i class="icon icon-MagnifyingGlass"></i></button>
+                <button type="submit" class="btn-action" aria-label="Найти товары"><i class="icon icon-MagnifyingGlass"></i></button>
             </form>
             <div class="recently-view" id="recently-viewed-block">
                 <p class="h5 mb-16">Недавно просмотренные</p>
@@ -759,7 +759,7 @@
 <div class="modal modalCentered fade modal-log" id="register">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <span class="icon-close-popup" data-bs-dismiss="modal"><i class="icon-X2"></i></span>
+            <button type="button" class="icon-close-popup" data-bs-dismiss="modal" aria-label="Закрыть окно"><i class="icon-X2"></i></button>
             <div class="modal-heading text-center">
                 <h3 class="title-pop mb-8">Регистрация</h3>
                 <p class="desc-pop cl-text-2">Создайте аккаунт для удобного оформления заказов.</p>
@@ -799,7 +799,7 @@
 <div class="modal modalCentered fade modal-log" id="sign">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <span class="icon-close-popup" data-bs-dismiss="modal"><i class="icon-X2"></i></span>
+            <button type="button" class="icon-close-popup" data-bs-dismiss="modal" aria-label="Закрыть окно"><i class="icon-X2"></i></button>
             <div class="modal-heading text-center">
                 <h3 class="title-pop mb-8">Вход в аккаунт</h3>
                 <p class="desc-pop cl-text-2">Войдите для доступа к заказам и личному кабинету.</p>
@@ -810,13 +810,13 @@
                     <div class="form-content">
                         <fieldset class="tf-field">
                             <label for="user-name-log" class="tf-lable fw-medium">Email <span class="text-primary">*</span></label>
-                            <input type="email" name="email" id="user-name-log" placeholder="Ваш email*" required>
+                            <input type="email" name="email" id="user-name-log" placeholder="Ваш email*" autocomplete="username" required>
                         </fieldset>
                         <fieldset class="tf-field password-wrapper">
                             <label for="password" class="tf-lable fw-medium">Пароль <span class="text-primary">*</span></label>
                             <div class="password-wrapper w-100">
-                                <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
-                                <input class="password-field" type="password" name="password" id="password" placeholder="Пароль*" required>
+                                <button type="button" class="toggle-pass icon-EyeSlash fs-20 cl-text-3" aria-label="Показать пароль" aria-pressed="false"></button>
+                                <input class="password-field" type="password" name="password" id="password" placeholder="Пароль*" autocomplete="current-password" required>
                             </div>
                         </fieldset>
                         <fieldset class="field-bottom">
@@ -844,7 +844,8 @@
 document.querySelectorAll('.mb-cat-toggle').forEach(function(btn) {
     btn.addEventListener('click', function() {
         var item = this.closest('.mb-cat-item');
-        item.classList.toggle('open');
+        var expanded = item.classList.toggle('open');
+        this.setAttribute('aria-expanded', String(expanded));
     });
 });
 </script>

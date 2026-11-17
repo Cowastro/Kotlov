@@ -57,11 +57,11 @@
     </fieldset>
     <fieldset class="tf-field password-wrapper">
         <label for="{{ $prefix }}-password" class="tf-lable fw-medium">Пароль <span class="text-primary">*</span></label>
-        <div class="password-wrapper w-100"><span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span><input class="password-field" type="password" name="password" id="{{ $prefix }}-password" placeholder="Минимум 8 символов" required autocomplete="new-password"></div>
+        <div class="password-wrapper w-100"><button type="button" class="toggle-pass icon-EyeSlash fs-20 cl-text-3" aria-label="Показать пароль" aria-pressed="false"></button><input class="password-field" type="password" name="password" id="{{ $prefix }}-password" placeholder="Минимум 8 символов" required autocomplete="new-password"></div>
     </fieldset>
     <fieldset class="tf-field password-wrapper">
         <label for="{{ $prefix }}-password-confirm" class="tf-lable fw-medium">Повторите пароль <span class="text-primary">*</span></label>
-        <div class="password-wrapper w-100"><span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span><input class="password-field" type="password" name="password_confirmation" id="{{ $prefix }}-password-confirm" placeholder="Повторите пароль" required autocomplete="new-password"></div>
+        <div class="password-wrapper w-100"><button type="button" class="toggle-pass icon-EyeSlash fs-20 cl-text-3" aria-label="Показать пароль" aria-pressed="false"></button><input class="password-field" type="password" name="password_confirmation" id="{{ $prefix }}-password-confirm" placeholder="Повторите пароль" required autocomplete="new-password"></div>
     </fieldset>
 </div>
 </div>

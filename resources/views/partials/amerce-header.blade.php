@@ -58,7 +58,7 @@
         <div class="container">
             <div class="header-inner">
                 <div class="box-open-menu-mobile mobile-header-tools d-xl-none">
-                    <a href="#mobileMenu" data-bs-toggle="offcanvas" class="btn-open-menu">
+                    <a href="#mobileMenu" data-bs-toggle="offcanvas" class="btn-open-menu" aria-label="Открыть каталог и меню" aria-controls="mobileMenu">
                         <i class="icon icon-List"></i>
                     </a>
                     <a href="#search" data-bs-toggle="modal"
@@ -135,13 +135,10 @@
                     <ul class="nav-icon-list d-xl-none">
                         <li>
                             @auth
-                                <form action="{{ route('logout') }}" method="POST" class="m-0 d-flex">
-                                    @csrf
-                                    <button type="submit" class="nav-icon-item link border-0 bg-transparent p-0"
-                                        aria-label="Выйти из аккаунта" title="Выйти">
-                                        <i class="icon icon-SignOut"></i>
-                                    </button>
-                                </form>
+                                <a href="{{ route('account') }}" class="nav-icon-item link"
+                                    aria-label="Личный кабинет" title="Личный кабинет">
+                                    <i class="icon icon-User" aria-hidden="true"></i>
+                                </a>
                             @else
                                 <a href="#sign" data-bs-toggle="modal" class="nav-icon-item link"
                                     aria-label="Войти в аккаунт" title="Войти">
@@ -151,14 +148,14 @@
                         </li>
 
                         <li class="d-none d-sm-block">
-                            <a href="/wishlist" class="nav-icon-item link wishlist-link">
+                            <a href="/wishlist" class="nav-icon-item link wishlist-link" aria-label="Избранное">
                                 <i class="icon icon-HeartStraight"></i>
                                 <span class="count wishlist-count">{{ $wishlistCount ?? 0 }}</span>
                             </a>
                         </li>
 
                         <li>
-                            <a href="#shoppingCart" data-bs-toggle="offcanvas" class="nav-icon-item link shop-cart">
+                            <a href="#shoppingCart" data-bs-toggle="offcanvas" class="nav-icon-item link shop-cart" aria-label="Открыть корзину">
                                 <i class="icon icon-Handbag"></i>
                                 <span class="count">
                                     {{ $cartCount ?? 0 }}
@@ -467,14 +464,14 @@
                     </li>
 
                     <li class="d-none d-sm-block">
-                        <a href="/wishlist" class="nav-icon-item link wishlist-link">
+                        <a href="/wishlist" class="nav-icon-item link wishlist-link" aria-label="Избранное">
                             <i class="icon icon-HeartStraight"></i>
                             <span class="count wishlist-count">{{ $wishlistCount ?? 0 }}</span>
                         </a>
                     </li>
 
                     <li>
-                        <a href="#shoppingCart" data-bs-toggle="offcanvas" class="nav-icon-item link shop-cart">
+                        <a href="#shoppingCart" data-bs-toggle="offcanvas" class="nav-icon-item link shop-cart" aria-label="Открыть корзину">
                             <i class="icon icon-Handbag"></i>
                             <span class="count">{{ $cartCount ?? 0 }}</span>
                         </a>

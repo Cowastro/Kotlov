@@ -10,7 +10,7 @@ class MobileAccountNavigationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_authenticated_mobile_header_offers_logout_instead_of_login(): void
+    public function test_authenticated_mobile_header_opens_account_without_logging_out(): void
     {
         $user = User::factory()->create();
 
@@ -22,8 +22,9 @@ class MobileAccountNavigationTest extends TestCase
             'navBrands' => collect(),
         ])->render();
 
-        $this->assertStringContainsString('aria-label="Выйти из аккаунта"', $html);
-        $this->assertStringContainsString('action="'.route('logout').'"', $html);
+        $this->assertStringContainsString('aria-label="Личный кабинет"', $html);
+        $this->assertStringContainsString('href="'.route('account').'"', $html);
+        $this->assertStringNotContainsString('action="'.route('logout').'"', $html);
         $this->assertStringNotContainsString('href="#sign"', $html);
     }
 
