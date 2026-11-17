@@ -17,7 +17,7 @@
                     Ваш заказ принят. Мы свяжемся с вами в ближайшее время.
                 </p>
                 @if ($order->user_id && $order->user?->email)
-                    <p class="text-caption-01 cl-text-3">Подтверждение отправлено на email вашего аккаунта: {{ $order->user->email }}.</p>
+                    <p class="text-caption-01 cl-text-3">Заказ доступен в личном кабинете. Email для уведомлений: {{ $order->user->email }}.</p>
                 @else
                     <p class="text-caption-01 cl-text-3">Заказ оформлен без регистрации — менеджер подтвердит его по телефону.</p>
                 @endif
