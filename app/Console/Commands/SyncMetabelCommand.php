@@ -19,7 +19,8 @@ class SyncMetabelCommand extends Command
         {--enrich : Generate unique SEO descriptions via Claude API (requires ANTHROPIC_API_KEY)}
         {--sleep=200 : Delay between website requests in milliseconds}
         {--price-file= : Path to Excel price file (default: storage/prices/meta_2025.xlsx)}
-        {--only-existing : Update prices of cards already found; never create new cards}';
+        {--only-existing : Update prices of cards already found; never create new cards}
+        {--link=* : A price row linked by hand to a card: <slug of the row model>:<card id> (pec-bannaia-pbm-16-zk-ultra-cernaia-setka:44402)}';
 
     protected $description = 'Sync MetaBel prices from Excel МРЦ and enrich product cards from metabel.by.';
 
@@ -567,6 +568,14 @@ class SyncMetabelCommand extends Command
 
     private function findProduct(array $item, int $supplierId): ?object
     {
+        // Linked by hand: the row name differs from the card («ПБМ 16_ЗК ULTRA (черная сетка)»).
+        foreach ((array) $this->option('link') as $pair) {
+            [$slug, $id] = array_pad(explode(':', (string) $pair, 2), 2, '');
+            if ($slug !== '' && $slug === Str::slug($item['supplier_article']) && ctype_digit($id)) {
+                return DB::table('products')->where('id', (int) $id)->first();
+            }
+        }
+
         if ($supplierId > 0) {
             $sp = DB::table('supplier_products')
                 ->where('supplier_id', $supplierId)
