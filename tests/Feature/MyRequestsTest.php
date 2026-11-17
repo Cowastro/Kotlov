@@ -15,11 +15,86 @@ use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\CartSelection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\PaginationState;
+use Illuminate\Pagination\Paginator;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class MyRequestsTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_waiting_print_and_excel_use_only_shortage_and_keep_original_demand_unchanged(): void
+    {
+        [$user, $selection, $offer, $item] = $this->fixture();
+        $this->actingAs($user)->post(route('requests.check', $selection), ['revision' => 1])->assertRedirect();
+        $this->get(route('b2b.selections.export', [$selection, 'format' => 'print', 'scope' => 'waiting']))
+            ->assertOk()->assertSee('Недостающее количество')->assertSee('Не является резервом.')->assertSee('480,00');
+        $response = $this->get(route('b2b.selections.export', [$selection, 'scope' => 'waiting']))->assertOk();
+        $file = tempnam(sys_get_temp_dir(), 'request-export-');
+        try {
+            file_put_contents($file, $response->streamedContent());
+            $book = IOFactory::load($file);
+            $sheet = $book->getActiveSheet();
+            $this->assertSame(4, $sheet->getCell('D4')->getValue());
+            $this->assertSame(480.0, $sheet->getCell('E4')->getValue());
+            $this->assertStringContainsString('Недостающее количество', $sheet->getCell('A1')->getValue());
+            $this->assertStringContainsString('цены из сохранённой заявки', $sheet->getCell('A2')->getValue());
+            $this->assertArrayHasKey('A1:F1', $sheet->getMergeCells());
+            $book->disconnectWorksheets();
+        } finally {
+            @unlink($file);
+        }
+        $this->get(route('b2b.selections.export', [$selection, 'format' => 'print', 'scope' => 'ready']))
+            ->assertOk()->assertSee('Доступное количество')->assertSee('720,00');
+        $this->assertSame(10, $selection->fresh()->items[$item['id']]['quantity']);
+        $this->assertSame(2, $selection->fresh()->revision);
+        $this->assertDatabaseCount('b2b_order_reservations', 0);
+    }
+
+    public function test_split_export_rejects_empty_or_invalid_scope_and_warns_about_unchecked_rows(): void
+    {
+        [$user, $selection, $offer, $item] = $this->fixture();
+        $this->actingAs($user)->get(route('b2b.selections.export', [$selection, 'scope' => 'waiting']))
+            ->assertRedirect(route('b2b.selections.show', $selection))->assertSessionHas('error');
+        $this->getJson(route('b2b.selections.export', [$selection, 'scope' => 'made-up']))->assertUnprocessable();
+        $this->post(route('requests.check', $selection), ['revision' => 1])->assertRedirect();
+        $items = $selection->fresh()->items;
+        $items[999] = ['id' => 999, 'name' => 'Ещё не проверяли', 'sku' => 'UNKNOWN', 'price' => 1, 'quantity' => 5];
+        $selection->update(['items' => $items]);
+        $this->get(route('b2b.selections.export', [$selection, 'format' => 'print', 'scope' => 'waiting']))
+            ->assertOk()->assertSee('Не включено непроверенных позиций: 1.')->assertDontSee('Ещё не проверяли');
+        $this->patchJson(route('b2b.selections.update', $selection), ['action' => 'quantity', 'revision' => 2, 'product_id' => $item['id'], 'quantity' => 11])->assertOk();
+        $this->get(route('b2b.selections.export', [$selection, 'scope' => 'waiting']))->assertSessionHas('error');
+        $this->get(route('b2b.selections.export', [$selection, 'format' => 'print']))->assertOk()->assertSee('Ещё не проверяли');
+        $this->assertSame(11, $selection->fresh()->items[$item['id']]['quantity']);
+    }
+
+    public function test_request_search_filters_own_and_legacy_names_and_keeps_pagination_query(): void
+    {
+        [$user,$selection] = $this->fixture();
+        $foreign = User::factory()->create();
+        CustomerSelection::create(['user_id' => $foreign->id, 'name' => 'Лесная чужой объект', 'items' => []]);
+        for ($i = 1; $i <= 22; $i++) {
+            CustomerSelection::create(['user_id' => $user->id, 'name' => 'Лесная заявка '.$i, 'items' => []]);
+        }
+        B2bSavedCart::create(['user_id' => $user->id, 'name' => 'Лесная старая корзина', 'items' => [], 'items_count' => 0, 'total' => 0]);
+        B2bSavedCart::create(['user_id' => $user->id, 'name' => 'Другая старая корзина', 'items' => [], 'items_count' => 0, 'total' => 0]);
+        // Livewire/Filament changes these process-wide resolvers. The account
+        // page must use its own request path and page, even after such a component.
+        Paginator::currentPageResolver(fn () => 999);
+        Paginator::currentPathResolver(fn () => '/unrelated-component');
+        try {
+            $this->actingAs($user)->get(route('selections.index', ['q' => 'Лесная']))->assertOk()
+                ->assertSee('Лесная старая корзина')->assertDontSee('Другая старая корзина')->assertDontSee('Лесная чужой объект')
+                ->assertDontSee('Объект №1')->assertViewHas('selections', fn ($paginator) => $paginator->total() === 22 && $paginator->lastPage() === 2)->assertSee('page=2')->assertSee('q=%D0%9B%D0%B5%D1%81%D0%BD%D0%B0%D1%8F');
+            $this->get(route('selections.index', ['q' => 'Лесная', 'page' => 2]))->assertOk()->assertViewHas('selections', fn ($paginator) => $paginator->count() === 2);
+            $this->get(route('selections.index', ['q' => 'Нет такого объекта']))->assertOk()->assertSee('По этому названию заявок не найдено.');
+            $this->get(route('selections.index', ['q' => 'Лесная старая']))->assertOk()->assertSee('Лесная старая корзина')->assertDontSee('По этому названию заявок не найдено.');
+        } finally {
+            PaginationState::resolveUsing($this->app);
+        }
+    }
 
     private function fixture(int $stock = 6): array
     {
@@ -159,7 +234,7 @@ class MyRequestsTest extends TestCase
         $this->assertCount(150, session('cart'));
         $this->assertSame(900, array_sum(array_column(session('cart'), 'quantity')));
         $this->assertSame(600, array_sum(array_column($selection->fresh()->meta['availability'], 'waiting')));
-        $this->assertSame(1500,array_sum(array_column($selection->fresh()->items,'quantity')));
-        $this->assertDatabaseCount('b2b_order_reservations',0);
+        $this->assertSame(1500, array_sum(array_column($selection->fresh()->items, 'quantity')));
+        $this->assertDatabaseCount('b2b_order_reservations', 0);
     }
 }

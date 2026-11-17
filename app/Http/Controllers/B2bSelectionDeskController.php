@@ -137,19 +137,32 @@ class B2bSelectionDeskController extends Controller
     public function export(Request $request, CustomerSelection $selection)
     {
         $this->authorizeSelection($request, $selection);
-        $items = array_diff_key($selection->items, array_flip($selection->meta['desk_excluded_ids'] ?? []));
+        $data = $request->validate(['scope' => ['nullable', Rule::in(array_keys(\App\Services\SelectionExport::SCOPES))]]);
+        $scope = $data['scope'] ?? 'all';
+        ['items' => $items, 'name' => $name, 'note' => $note] = app(\App\Services\SelectionExport::class)->prepare($selection, $scope);
         $internal = $request->boolean('internal');
         abort_if($internal && ! $request->user()->isAdmin(), 403);
+        if ($scope !== 'all' && $items === []) return to_route('b2b.selections.show', $selection)->with('error', 'Для этой выгрузки нет отмеченных позиций с подходящим количеством. Проверьте наличие и выбор товаров.');
         if ($request->input('format') === 'print') {
-            return response()->view('pages.selections.print', ['name' => $selection->name, 'note' => $selection->note, 'items' => $items, 'date' => $selection->updated_at, 'pumpCalculations' => $selection->meta['pump_calculations'] ?? []])->header('Cache-Control', 'private, no-store');
+            return response()->view('pages.selections.print', ['name' => $name, 'note' => $note, 'items' => $items, 'date' => $selection->updated_at, 'pumpCalculations' => $selection->meta['pump_calculations'] ?? []])->header('Cache-Control', 'private, no-store');
         }
 
-        return response()->streamDownload(function () use ($selection, $items, $internal) {
+        return response()->streamDownload(function () use ($selection, $items, $internal, $name, $note) {
             $book = new Spreadsheet;
             $sheet = $book->getActiveSheet();
             $sheet->setTitle('Подбор');
-            $sheet->setCellValueExplicit('A1', $selection->name, DataType::TYPE_STRING);
-            if (!empty($selection->meta['pump_calculations'])) $sheet->setCellValueExplicit('A2', collect($selection->meta['pump_calculations'])->pluck('result.summary')->implode(' | '), DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit('A1', $name, DataType::TYPE_STRING);
+            $lastColumn = $internal ? 'I' : 'F';
+            $sheet->mergeCells('A1:'.$lastColumn.'1');
+            $sheet->getStyle('A1')->getAlignment()->setWrapText(true);
+            $sheet->getRowDimension(1)->setRowHeight(30);
+            $context = trim(($note ?? '')."\n".collect($selection->meta['pump_calculations'] ?? [])->pluck('result.summary')->implode(' | '));
+            if ($context !== '') {
+                $sheet->setCellValueExplicit('A2', $context, DataType::TYPE_STRING);
+                $sheet->mergeCells('A2:'.$lastColumn.'2');
+                $sheet->getStyle('A2')->getAlignment()->setWrapText(true);
+                $sheet->getRowDimension(2)->setRowHeight(min(409, max(30, (ceil(mb_strlen($context) / 120) + substr_count($context, "\n")) * 15)));
+            }
             $headers = ['Артикул', 'Название', 'Цена, BYN', 'Количество', 'Сумма, BYN', 'Комментарий'];
             if ($internal) {
                 $headers = array_merge($headers, ['Поставщик', 'Входная, BYN', 'Маржа, BYN']);
@@ -187,6 +200,6 @@ class B2bSelectionDeskController extends Controller
             $sheet->getStyle('A3:'.($internal ? 'I' : 'F').'3')->getFont()->setBold(true);
             (new Xlsx($book))->save('php://output');
             $book->disconnectWorksheets();
-        }, 'kotlov-selection-'.$selection->id.($internal ? '-internal' : '').'.xlsx', ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Cache-Control' => 'private, no-store']);
+        }, 'kotlov-selection-'.$selection->id.($scope === 'all' ? '' : '-'.$scope).($internal ? '-internal' : '').'.xlsx', ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Cache-Control' => 'private, no-store']);
     }
 }
