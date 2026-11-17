@@ -60,6 +60,7 @@
             .catalog-type-card--indirect { --type-ink: #684694; --type-fill: #f3edfa; }
             .catalog-type-card--combined { --type-ink: #17615c; --type-fill: #e7f5f2; }
             .catalog-type-card--equipment { --type-ink: #48576b; --type-fill: #edf1f6; }
+            .catalog-type-card--water { --type-ink: #0a6c99; --type-fill: #e5f4fb; }
 
             .catalog-type-card__icon .icon { font-size: 21px; }
 
@@ -108,17 +109,6 @@
 @endonce
 
 @php
-    $plumbingIcons = [
-        'dushevye-sistemy' => ['combined', 'M5 22V6a4 4 0 0 1 8 0v1m-4 4h12l-2-4h-8l-2 4Zm2 4v2m4-2v3m4-3v2m-8 3v1m4 0v1m4-2v1'],
-        'shlangi-i-soediniteli' => ['lightning', 'M4 3v4m-2 0h4v4H2V7Zm2 4v5a4 4 0 0 0 8 0v-3a4 4 0 0 1 8 0v4m-2 0h4v4h-4v-4Zm2 4v2'],
-        'vodorazbornye-krany' => ['combined', 'M3 11h12a5 5 0 0 1 5 5v2h-4v-2a1 1 0 0 0-1-1H3m4-4V7h5v4M9.5 7V3M6 4h7M3 9v8m16 4h-2'],
-        'raspredelitelnye-kollektory' => ['combined', 'M3 8h18v7H3V8Zm4 7v6m5-6v6m5-6v6M7 8V3m5 5V3m5 5V3M5 4h4m1 0h4m1 0h4'],
-        'komplektuyushchie-kollektorov' => ['equipment', 'M4 5h6v14H4V5Zm2-3h2v3m-2 14v3m7-15h7v5h-7V7Zm3-3v3m0 5v8m-3-3h6M6 9h2m-2 4h2'],
-        'instrument-dlya-prochistki-trub' => ['equipment', 'M4 5h10a5 5 0 0 1 0 10H8a3 3 0 0 0 0 6h12M4 3v4M1 4v2m15-1V2h4v3m-4 14v4m4-4v4'],
-        'fitingi-dlya-mednyh-trub' => ['wood', 'M3 3h7v8h11v7H8a5 5 0 0 1-5-5V3Zm0 2h7m9 6v7M1 3h11m9 6v11'],
-        'gazovye-filtry' => ['pellets', 'M3 7h18v10H3V7Zm-2 2h2m18 0h2M8 7v10m8-10v10m-4-7v4m-1 3v5h5m-2-2v4'],
-        'aksessuary-dlya-vannoy' => ['indirect', 'M4 9h16v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Zm2 0V5a2 2 0 0 1 4 0v1m-7 3h18M7 21v2m10-2v2'],
-    ];
     $categoryIcons = [
         'flame' => 'M12 22a7 7 0 0 0 7-7c0-4-3-6-4-9-.5 2-1.5 3-3 4-1-3-1-5 0-8-4 3-7 8-7 13a7 7 0 0 0 7 7Zm0 0c-2 0-3.5-1.5-3.5-3.5 0-1.7 1-3.2 2.5-4.5.4 1.3 1.2 2 2.2 2.3.3-.6.5-1.2.5-2.1 1.2 1.3 1.8 2.8 1.8 4.3C15.5 20.5 14 22 12 22Z',
         'lightning' => 'M13 2 4 13h7l-1 9 10-12h-7l1-8Z',
@@ -143,7 +133,7 @@
         @foreach ($entries as $slug => $entry)
             @php
                 $icon = $entry['icon'];
-                $plumbingIcon = $plumbingIcons[$slug] ?? null;
+                $drawnIcon = \App\Support\CategoryIcons::for($slug);
                 $tone = match ($icon) {
                     'icon-Sparkle' => 'flame',
                     'icon-Lightning', 'icon-Lightning-1', 'icon-Devices' => 'lightning',
@@ -152,7 +142,7 @@
                     'icon-Wind', 'icon-filter', 'icon-GitDiff', 'icon-ArrowClockwise' => 'combined',
                     default => isset($categoryIcons[$icon]) ? $icon : 'equipment',
                 };
-                $tone = $plumbingIcon[0] ?? $tone;
+                $tone = $drawnIcon[0] ?? $tone;
                 $href = $entry['url'] ?? url('/'.$slug).($inStockOnly ? '?in_stock=1#catalog-products' : '');
             @endphp
             <a class="catalog-type-card catalog-type-card--{{ $tone }}"
@@ -160,8 +150,8 @@
                @isset($entry['search']) data-accessories-item data-search="{{ $entry['search'] }}" @endisset
                @if (($selectedTypeSlug ?? null) === $slug) aria-current="page" @endif>
                 <span class="catalog-type-card__icon" aria-hidden="true">
-                    @if ($plumbingIcon)
-                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="{{ $plumbingIcon[1] }}"></path></svg>
+                    @if ($drawnIcon)
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="{{ $drawnIcon[1] }}"></path></svg>
                     @elseif (isset($categoryIcons[$icon]))
                         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
                              stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
