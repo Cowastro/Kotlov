@@ -40,7 +40,7 @@
                     @unless($staffWorkspace)<a href="{{ route('b2b.workspace') }}" class="b2b-topbar__link">B2B-подбор</a>@endunless
                 @endif
                 @if ($staffWorkspace)
-                    <a href="{{ route('selections.index') }}" class="b2b-topbar__link">Мои подборы</a>
+                    <a href="{{ route('selections.index') }}" class="b2b-topbar__link">Мои заявки</a>
                 @elseif ($staffPreview)
                     <span class="b2b-topbar__link b2b-topbar__preview"><i class="icon icon-Eye"></i><span>Только просмотр</span></span>
                 @else

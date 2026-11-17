@@ -5,7 +5,7 @@
 @push('scripts')<script src="{{ asset('assets/js/customer-selections.js') }}?v=20261117" defer></script>@endpush
 @section('content')
 <main class="container py-4 selection-page">
-    <nav class="d-flex flex-wrap gap-3 mb-3"><a class="link" href="{{ route('selections.index') }}">← Мои подборы</a><a class="link" href="{{ route('cart') }}">Текущая корзина</a>@if(($selection->meta['staff_workspace'] ?? false) && \App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a class="link" href="{{ route('b2b.catalog', ['workspace' => 1, 'mode' => 'reference', 'selection_id' => $selection->id]) }}">Продолжить B2B-подбор →</a>@endif</nav>
+    <nav class="d-flex flex-wrap gap-3 mb-3"><a class="link" href="{{ route('selections.index') }}">← Мои заявки</a><a class="link" href="{{ route('cart') }}">Текущая корзина</a>@if(($selection->meta['staff_workspace'] ?? false) && \App\Services\StaffCatalogWorkspace::allowed(auth()->user()))<a class="link" href="{{ route('b2b.catalog', ['workspace' => 1, 'mode' => 'reference', 'selection_id' => $selection->id]) }}">Продолжить B2B-подбор →</a>@endif</nav>
     <h1 class="mb-3">{{ $selection->name }}</h1>
     <p class="cl-text-2 mb-3">{{ count($selection->items) }} позиций · сохранено {{ $selection->updated_at->format('d.m.Y H:i') }}. Цены на момент сохранения. При оформлении проверим актуальную цену и доступность.</p>
     @foreach (['success' => 'success', 'error' => 'danger'] as $key => $style)

@@ -264,7 +264,7 @@ class B2bCompanyTeamTest extends TestCase
             ->get(route('b2b.cabinet', ['section' => 'reconciliation']))
             ->assertOk()
             ->assertSeeText('Сверка взаиморасчётов')
-            ->assertDontSeeText('Сохранённые корзины');
+            ->assertDontSeeText('Мои заявки');
         $this->actingAs($accountant)
             ->get(route('account'))
             ->assertOk()

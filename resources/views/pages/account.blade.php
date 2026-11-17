@@ -82,7 +82,7 @@
                                 <span class="text h6 fw-medium">Кабинет монтажника</span>
                             </a>
                             @endif
-                            <a href="{{ route('selections.index') }}" class="link-account"><i class="icon icon-Handbag"></i><span class="text h6 fw-medium">Мои подборы</span></a>
+                            <a href="{{ route('selections.index') }}" class="link-account"><i class="icon icon-Handbag"></i><span class="text h6 fw-medium">Мои заявки</span></a>
                             <a href="#" class="link-account {{ session('open_tab', 'orders') === 'orders' && !$errors->any() ? 'active' : '' }}"
                                 data-tab="orders" onclick="showAccountTab('orders'); return false;">
                                 <i class="icon icon-Package"></i>
@@ -490,7 +490,7 @@
                     <span class="text h6 fw-medium">Кабинет монтажника</span>
                 </a>
                 @endif
-                <a href="{{ route('selections.index') }}" class="link-account"><i class="icon icon-Handbag"></i><span class="text h6 fw-medium">Мои подборы</span></a>
+                <a href="{{ route('selections.index') }}" class="link-account"><i class="icon icon-Handbag"></i><span class="text h6 fw-medium">Мои заявки</span></a>
                 <a href="#" class="link-account" data-tab="orders"
                     onclick="showAccountTab('orders'); bootstrap.Offcanvas.getInstance(document.getElementById('mbSidebar')).hide(); return false;">
                     <i class="icon icon-Package"></i>

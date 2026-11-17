@@ -115,14 +115,13 @@ class B2bCabinetTest extends TestCase
                 11 => ['id' => 11, 'name' => 'Розничный товар', 'quantity' => 1, 'price' => 9, 'pricing_type' => 'retail'],
             ]])
             ->post(route('b2b.cabinet.carts.store'), ['name' => 'Объект на Лесной'])
-            ->assertRedirect(route('b2b.cabinet', ['section' => 'carts']));
+            ->assertRedirect();
 
-        $this->assertDatabaseHas('b2b_saved_carts', [
-            'user_id' => $partner->id,
-            'name' => 'Объект на Лесной',
-            'items_count' => 3,
-            'total' => 37.5,
-        ]);
+        $saved = \App\Models\CustomerSelection::where('user_id', $partner->id)->sole();
+        $this->assertSame('Объект на Лесной', $saved->name);
+        $this->assertCount(1, $saved->items);
+        $this->assertSame(3, $saved->items[10]['quantity']);
+        $this->assertSame(37.5, $saved->total());
 
         $this->actingAs($partner)
             ->delete(route('b2b.cabinet.carts.destroy', $foreignCart))

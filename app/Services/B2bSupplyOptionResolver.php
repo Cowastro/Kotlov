@@ -26,10 +26,10 @@ class B2bSupplyOptionResolver
     ) {}
 
     /** @return Collection<int, array<string, mixed>> */
-    public function optionsForUser(?User $user, ?int $productId = null): Collection
+    public function optionsForUser(?User $user, int|array|null $productId = null): Collection
     {
         $cacheKey = $user ? 'user:'.$user->id : 'guest';
-        if ($productId !== null) $cacheKey .= ':product:'.$productId;
+        if ($productId !== null) $cacheKey .= ':product:'.implode(',', (array) $productId);
         if (isset($this->optionsCache[$cacheKey])) {
             return $this->optionsCache[$cacheKey];
         }
@@ -51,7 +51,7 @@ class B2bSupplyOptionResolver
         $external = SupplierProduct::query()
             ->with(['supplier.b2bPricingRules', 'product.brand', 'product.category'])
             ->whereNotNull('product_id')
-            ->when($productId !== null, fn ($query) => $query->where('product_id', $productId))
+            ->when($productId !== null, fn ($query) => $query->whereIn('product_id', (array) $productId))
             ->where('match_status', 'matched')
             ->whereIn('supplier_id', $supplierIds)
             ->whereHas('supplier', fn ($query) => $query

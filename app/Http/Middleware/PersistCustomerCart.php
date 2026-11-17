@@ -45,7 +45,7 @@ class PersistCustomerCart
                         'user_id' => $userId, 'name' => 'Корзина до проверки доступности · '.now()->format('d.m.Y H:i'),
                         'items' => $before[0], 'meta' => $before[1], 'note' => $before[1]['cart_note'] ?? null,
                     ]);
-                    $request->session()->flash('success', 'До обновления доступности сохранена копия корзины в разделе «Мои подборы».');
+                    $request->session()->flash('success', 'До обновления доступности сохранена копия корзины в разделе «Мои заявки».');
                 }
                 $store->save($request, $userId);
             }
