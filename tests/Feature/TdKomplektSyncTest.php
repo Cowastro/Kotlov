@@ -58,6 +58,9 @@ class TdKomplektSyncTest extends TestCase
         $this->assertNull(TdKomplektFeed::image('https://evil.example/photo.jpg'));
         $this->assertSame('rezbovye-fitingi', $parser->category($this->row()));
         $this->assertSame('sharovye-krany', $parser->category($this->row(['name' => 'Кран шаровой 1/2'])));
+        $this->assertNull($parser->category($this->row(['name' => 'Кран водоразборный SUS304'])));
+        $steel = collect($parser->specs($this->row(['description' => 'Материал: нержавеющая сталь'])))->pluck('value', 'key');
+        $this->assertSame('нержавеющая сталь', $steel['Материал']);
     }
 
     public function test_create_is_idempotent_stores_wholesale_and_retail_separately_and_handles_missing_stock(): void

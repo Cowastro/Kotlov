@@ -155,9 +155,6 @@ class TdKomplektFeed
             return 'krepleniya-dlya-trub';
         }
         if (str_contains($group, 'резьбовые') && ! str_contains($group, 'pex') && ! str_contains($group, 'полотенцесуш')) {
-            if (preg_match('/^(?:кран|вентиль)\b/u', $name)) {
-                return 'sharovye-krany';
-            }
             if (preg_match('/^(?:ниппель|тройник|угол|угольник|муфта|переход|футорка|контргайка|заглушка|пробка|сгон|бочонок|штуцер|крестовина|удлинитель|соединител|американка|резьба)/u', $name)) {
                 return 'rezbovye-fitingi';
             }
@@ -275,12 +272,15 @@ class TdKomplektFeed
                 $specs[trim($m[1])] = rtrim(trim($m[2]), ',');
             }
         }
-        $group = mb_strtolower($row['parentid_name3'] ?? '');
-        if (str_contains($group, 'резьбовые чугунные')) {
-            $specs['Материал'] = 'Чугун';
-        }
-        if (str_contains($group, 'резьбовые латунные')) {
-            $specs['Материал'] = 'Латунь';
+        // Supplier groups contain counterexamples (steel taps in the brass group).
+        // A specific product's own description wins over all category labels.
+        if (! isset($specs['Материал'])) {
+            $name = mb_strtolower($row['name']);
+            if (str_contains($name, 'чугун')) {
+                $specs['Материал'] = 'Чугун';
+            } elseif (str_contains($name, 'латун')) {
+                $specs['Материал'] = 'Латунь';
+            }
         }
 
         return collect($specs)->filter(fn ($v) => $v !== '')->map(fn ($v, $k) => ['key' => $k, 'value' => $v])->values()->all();
