@@ -49,6 +49,8 @@ class SyncTdKomplektCommand extends Command
             if ($old->count() && count($rows) < $old->count() * .8) {
                 throw new RuntimeException('Число строк уменьшилось более чем на 20%. Обмен остановлен.');
             }
+            $byArticle = $old->filter(fn ($o) => trim((string) $o->supplier_article) !== '')->groupBy(fn ($o) => TdKomplektFeed::key($o->supplier_article));
+            $supplierArticles = array_count_values(array_map(fn ($r) => TdKomplektFeed::key($r['vendor_code']), $rows));
             $categories = Category::pluck('id', 'slug');
             $report = [];
             $stats = ['rows' => count($rows), 'matched' => 0, 'ambiguous' => 0, 'created' => 0, 'drafts' => 0, 'offers' => 0, 'retail_updated' => 0, 'retail_review' => 0, 'missing' => 0];
@@ -58,6 +60,12 @@ class SyncTdKomplektCommand extends Command
                 $row['_unique_article'] = $row['vendor_code'] !== '' && ($articles[TdKomplektMatcher::brandKey($row['brand']).'|'.TdKomplektFeed::key($row['vendor_code'])] ?? 0) === 1;
                 $rows[$id] = $row;
                 $link = $old->get($id);
+                $reusedOfferId = null;
+                $articleLinks = $byArticle->get(TdKomplektFeed::key($row['vendor_code']), collect());
+                if (! $link && $articleLinks->count() === 1 && ! isset($rows[$articleLinks->first()->source_wp_id])) {
+                    $link = $articleLinks->first();
+                    $reusedOfferId = $link->id;
+                }
                 $match = $matcher->match($row);
                 if ($row['_duplicate_barcode']) {
                     $match = ['product_id' => null, 'candidates' => $match['candidates'], 'reason' => 'duplicate_feed_barcode'];
@@ -71,13 +79,16 @@ class SyncTdKomplektCommand extends Command
                         ? ['product_id' => $p->id, 'candidates' => [$p->id], 'reason' => 'existing_supplier_id']
                         : ['product_id' => null, 'candidates' => [], 'reason' => 'linked_identity_changed'];
                 }
+                if ($row['vendor_code'] !== '' && (($supplierArticles[TdKomplektFeed::key($row['vendor_code'])] ?? 0) > 1 || $articleLinks->count() > 1)) {
+                    $match = ['product_id' => null, 'candidates' => $articleLinks->pluck('product_id')->filter()->unique()->values()->all(), 'reason' => 'duplicate_supplier_article'];
+                }
                 $slug = $feed->category($row);
                 $category = $slug ? ($categories[$slug] ?? null) : null;
-                $report[$id] = ['id' => (string) $id, 'article' => $row['vendor_code'], 'name' => $row['name'], 'category' => $slug, 'category_id' => $category, 'duplicate_barcode' => $row['_duplicate_barcode']] + $match;
+                $report[$id] = ['id' => (string) $id, 'article' => $row['vendor_code'], 'name' => $row['name'], 'category' => $slug, 'category_id' => $category, 'duplicate_barcode' => $row['_duplicate_barcode'], 'reused_offer_id' => $reusedOfferId] + $match;
                 if ($match['product_id']) {
                     $stats['matched']++;
                 }
-                if (in_array($match['reason'], ['ambiguous', 'conflicting_identifiers', 'linked_identity_changed', 'duplicate_feed_barcode', 'brand_unconfirmed', 'variant_unconfirmed'])) {
+                if (in_array($match['reason'], ['duplicate_supplier_article', 'ambiguous', 'conflicting_identifiers', 'linked_identity_changed', 'duplicate_feed_barcode', 'brand_unconfirmed', 'variant_unconfirmed'])) {
                     $stats['ambiguous']++;
                 }
             }
@@ -92,7 +103,10 @@ class SyncTdKomplektCommand extends Command
                     $result = $report[$id];
                     $data = $row['_data'];
                     $p = $result['product_id'] ? Product::find($result['product_id']) : null;
-                    $previous = $old->get($id);
+                    $previous = $old->get($id) ?? ($result['reused_offer_id'] ? $old->firstWhere('id', $result['reused_offer_id']) : null);
+                    if ($result['reason'] === 'duplicate_supplier_article' && ! $previous) {
+                        continue; // Never create a second offer for the same supplier article.
+                    }
                     $uniqueBarcode = preg_match('/^\d{8,14}$/D', $row['barcode'] ?? '') && ! $row['_duplicate_barcode'];
                     $identity = $row['_unique_article'] || ($row['okdp'] !== '' && $uniqueBarcode && ! $row['_duplicate_name']);
                     $draft = ! TdKomplektFeed::image($row['media_img']);
@@ -106,9 +120,10 @@ class SyncTdKomplektCommand extends Command
                         $stats['created']++;
                     }
                     // Keep old links pending review on identifier changes, but withdraw their stock.
-                    $quarantined = $result['reason'] === 'linked_identity_changed';
+                    $quarantined = in_array($result['reason'], ['linked_identity_changed', 'duplicate_supplier_article'], true);
                     $productId = $p?->id ?? ($quarantined ? $previous?->product_id : null);
-                    SupplierProduct::updateOrCreate(['supplier_id' => $supplier->id, 'source_wp_id' => (int) $id], [
+                    SupplierProduct::updateOrCreate($result['reused_offer_id'] ? ['id' => $result['reused_offer_id'], 'supplier_id' => $supplier->id] : ['supplier_id' => $supplier->id, 'source_wp_id' => (int) $id], [
+                        'source_wp_id' => (int) $id,
                         'supplier_sync_id' => $sync->id, 'product_id' => $productId, 'product_sku' => $p?->sku ?? $previous?->product_sku,
                         'supplier_article' => $row['vendor_code'] ?: $row['okdp'], 'supplier_article_normalized' => TdKomplektFeed::key($row['vendor_code'] ?: $row['okdp']),
                         'supplier_catalog_code' => TdKomplektFeed::key($row['okdp']) ?: null,
@@ -116,7 +131,7 @@ class SyncTdKomplektCommand extends Command
                         'supplier_article_compact' => TdKomplektFeed::key($row['vendor_code'] ?: $row['okdp']), 'supplier_name' => $row['name'],
                         'source_url' => 'https://tools.by', 'price' => $data['wholesale'], 'price_byn' => $data['wholesale'], 'currency' => 'BYN', 'currency_rate' => 1,
                         'in_stock' => ! $quarantined && $data['in_stock'], 'stock_quantity' => $quarantined ? 0 : $data['quantity'], 'stock_status' => $quarantined ? 'unknown' : $data['stock_status'],
-                        'stock_text' => $quarantined ? 'Изменился артикул — требуется проверка' : $row['warehouse_all'], 'warehouse_name' => 'ТД Комплект — все склады (без суммирования дублей)',
+                        'stock_text' => $quarantined ? ($result['reason'] === 'duplicate_supplier_article' ? 'Дублируется артикул — требуется проверка' : 'Изменился артикул — требуется проверка') : $row['warehouse_all'], 'warehouse_name' => 'ТД Комплект — все склады (без суммирования дублей)',
                         'delivery_days' => $data['delivery_days'], 'last_stock_synced_at' => now(), 'last_synced_at' => now(),
                         'match_status' => $quarantined ? 'review' : ($p ? 'matched' : 'unmatched'), 'match_confidence' => $report[$id]['reason'],
                         'raw' => array_diff_key($row, ['_data' => true]) + ['catalog_version' => 4, 'retail' => $data['retail'], 'wholesale' => $data['wholesale'], 'source' => 'tools.by CSV', 'identity_review' => $quarantined, 'identity_vendor_code' => $previous?->raw['identity_vendor_code'] ?? ($previous?->product_id ? ($previous->raw['vendor_code'] ?? $row['vendor_code']) : $row['vendor_code']), 'identity_brand' => $previous?->raw['identity_brand'] ?? ($previous?->product_id ? ($previous->raw['brand'] ?? $row['brand']) : $row['brand'])],
