@@ -84,6 +84,7 @@
                 price.append(amount);
                 if (item.stock) price.append(stock);
                 link.append(image, copy);
+                @if($staffWorkspace)
                 if (item.procurement) {
                     link.classList.add('is-staff');
                     var procurement = item.procurement;
@@ -110,6 +111,9 @@
                 } else {
                     link.appendChild(price);
                 }
+                @else
+                link.appendChild(price);
+                @endif
                 suggest.appendChild(link);
             });
         }
