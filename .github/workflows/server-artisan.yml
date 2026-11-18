@@ -1232,6 +1232,11 @@ jobs:
           if [[ "$TASK" == "recover-deal-price-lock" ]]; then
             grep -E '^metric\.deal_recovery\.(blocked|released)=[01]$' "$detail_log" || true
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:normalize-teplov-names" ]]; then
+            echo "safe_teplov_names_begin"
+            grep -E '^(metric\.teplov_names\.[a-z_]+=[0-9]+|audit\.teplov_names\.(export=exports/[a-z0-9-]+\.xlsx|backup=tis-names-[0-9-]+\.json))$' "$detail_log" || true
+            echo "safe_teplov_names_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "deal:import-file" ]]; then
             echo "safe_deal_import_begin"
             grep -E '^metric\.deal_import\.[a-z0-9_]+=[0-9]+$' "$detail_log" || true
