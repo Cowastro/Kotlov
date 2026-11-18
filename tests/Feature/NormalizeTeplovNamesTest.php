@@ -29,6 +29,9 @@ class NormalizeTeplovNamesTest extends TestCase
         $apronA = $card('Фартук Теплов и сухов 180', 'tis-apron-a');
         $apronB = $card('ТиС Фартук D 180 (М)', 'tis-apron-b');
         $linked = $card('ТиС Отвод 87* ОМ-Р 430-0.5 D150 (3S)', 'tis-elbow-87');
+        // A merged duplicate in the archive neither blocks the name nor gets renamed.
+        $merged = $card('Отвод моно ТиС ОМ-Р 87*, 430, 0.5, Ø 150', 'tis-elbow-87-old');
+        $merged->update(['is_archived' => true, 'is_active' => false]);
         $teplov = Supplier::query()->updateOrCreate(['code' => 'teplov'], ['name' => 'Теплов и Сухов', 'currency' => 'BYN', 'is_active' => true]);
         // The price list row of the 87° elbow: the new name still passes the link check.
         SupplierProduct::create(['supplier_id' => $teplov->id, 'product_id' => $linked->id, 'supplier_article' => 'TS.1', 'match_status' => 'matched',
@@ -53,6 +56,7 @@ class NormalizeTeplovNamesTest extends TestCase
         $this->assertSame('tis-elbow-150', $elbow->fresh()->slug);
         $this->assertSame('Отвод Моно Теплов и Сухов ОМ-Р 87°, 430-0,5, Ø 150', $linked->fresh()->name);
         $this->assertSame('Фартук Теплов и сухов 180', $apronA->fresh()->name);
+        $this->assertSame('Отвод моно ТиС ОМ-Р 87*, 430, 0.5, Ø 150', $merged->fresh()->name);
         $this->assertSame('Бак навесной ТиС Стандарт 80 горизонтальный (201-0,8)', $tank->fresh()->name);
 
         $backup = basename(Storage::disk('local')->files('catalog')[0]);

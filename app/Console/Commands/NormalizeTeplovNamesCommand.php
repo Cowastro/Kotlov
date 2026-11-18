@@ -45,7 +45,8 @@ class NormalizeTeplovNamesCommand extends Command
 
             return self::FAILURE;
         }
-        $cards = Product::query()->with('category:id,name')->where('brand_id', $brand->id)->orderBy('id')->get(['id', 'name', 'h1', 'slug', 'category_id']);
+        // Archived cards (merged duplicates among them) keep their names and do not count as taken.
+        $cards = Product::query()->with('category:id,name')->where('brand_id', $brand->id)->where('is_archived', false)->orderBy('id')->get(['id', 'name', 'h1', 'slug', 'category_id']);
         $links = SupplierProduct::query()->whereIn('product_id', $cards->pluck('id'))
             ->whereHas('supplier', fn ($supplier) => $supplier->where('code', 'teplov'))
             ->where('match_confidence', '!=', 'manual_link')->whereNotNull('supplier_name')
