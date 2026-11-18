@@ -53,6 +53,10 @@ class B2bMarketplaceController extends Controller
         }
         $supplierId = $staffWorkspace && StaffCatalogWorkspace::canViewProcurement($user) ? max(0, $request->integer('workspace_supplier')) : 0;
         $filters = app(B2bCatalogFilters::class);
+        // Characteristics (diameter, steel, attributes «in filter») are offered inside a category only.
+        $characteristics = app(\App\Services\B2bCharacteristicFilters::class);
+        $characteristicSelection = $characteristics->selected($request);
+        $characteristicPanel = [];
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
         $categoryId = max(0, $request->integer('category'));
         // The main search is global. A category remains selected only while the
@@ -142,6 +146,10 @@ class B2bMarketplaceController extends Controller
             $productsQuery = $referenceBaseQuery->with(['category', 'brand']);
 
             $this->applyProductFilters($productsQuery, $query, $categoryId, $categoryFilterIds, 0);
+            if ($categoryId > 0) {
+                $characteristicPanel = $characteristics->panel((clone $productsQuery)->without(['category', 'brand']), $characteristicSelection);
+                $characteristics->apply($productsQuery, $characteristicSelection);
+            }
             if ($sort === 'price_asc' || $sort === 'price_desc') {
                 $productsQuery->orderBy('price', $sort === 'price_asc' ? 'asc' : 'desc');
             }
@@ -171,6 +179,14 @@ class B2bMarketplaceController extends Controller
                 return ($query === '' || isset($matchIds[(int) $product->id]))
                     && ($categoryId === 0 || in_array((int) $product->category_id, $categoryFilterIds, true));
             });
+            if ($categoryId > 0 && $rows->isNotEmpty()) {
+                $rowBase = fn () => Product::query()->whereIn('products.id', $rows->keys()->all());
+                $characteristicPanel = $characteristics->panel($rowBase(), $characteristicSelection);
+                if ($characteristics->active($characteristicSelection)) {
+                    $keep = array_flip($characteristics->apply($rowBase(), $characteristicSelection)->pluck('products.id')->map(fn ($id): int => (int) $id)->all());
+                    $rows = $rows->filter(fn (array $row): bool => isset($keep[(int) $row['product']->id]));
+                }
+            }
 
             $rows = (match ($sort) {
                 'price_asc' => $rows->sortBy('price'),
@@ -228,7 +244,7 @@ class B2bMarketplaceController extends Controller
         return response()->view('pages.b2b.marketplace', compact(
             'flags', 'priceMin', 'priceMax', 'supplierId', 'workspaceSuppliers', 'showProcurement', 'workspaceOffers', 'staffWorkspace', 'workspaceState', 'workspaceSelections', 'perPage', 'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceKey', 'sort',
             'categoryTree', 'navigationTotal', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests', 'minimalLayout', 'staffPreview',
-            'diameterGrid', 'gridView',
+            'diameterGrid', 'gridView', 'characteristicPanel', 'characteristicSelection',
         ))->header('Cache-Control', 'private, no-store');
     }
 
