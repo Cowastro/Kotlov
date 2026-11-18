@@ -18,7 +18,14 @@
     }
 
     document.querySelectorAll('[data-auto-submit]').forEach(function (select) {
-        select.addEventListener('change', function () { filterForm.submit(); });
+        select.addEventListener('change', function () {
+            // Turning stock on starts from all stocked categories; subsequent
+            // category links retain the flag and can narrow that stocked tree.
+            if (select.matches('input[name="flags[]"][value="in_stock"]') && select.checked) {
+                filterForm.querySelectorAll('input[name="category"]').forEach(function (input) { input.remove(); });
+            }
+            filterForm.submit();
+        });
     });
 
     filterForm.addEventListener('submit', function () {

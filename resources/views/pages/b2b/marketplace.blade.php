@@ -151,10 +151,11 @@
                     <button type="button" class="b2b-category-panel__close" data-catalog-close aria-label="Закрыть">×</button>
                 </div>
                 <label class="b2b-category-search"><i class="icon icon-MagnifyingGlass"></i><input type="search" id="b2b-category-search" placeholder="Найти раздел" aria-label="Поиск категории"></label>
-                <a href="{{ request()->fullUrlWithQuery(['category' => null, 'page' => null]) }}" class="b2b-category-all {{ $categoryId === 0 ? 'active' : '' }}">
-                    <span>Все товары</span><span class="b2b-category-count">{{ $categoryTree->sum('count') }}</span>
+                <a href="{{ request()->fullUrlWithQuery(['category' => null, 'q' => null, 'page' => null]) }}" class="b2b-category-all {{ $categoryId === 0 ? 'active' : '' }}">
+                    <span>{{ in_array('in_stock', $flags, true) ? 'Все в наличии' : 'Все товары' }}</span><span class="b2b-category-count">{{ $navigationTotal }}</span>
                 </a>
                 <div class="b2b-category-tree" id="b2b-category-tree">@include('partials.b2b-category-tree', ['nodes' => $categoryTree, 'level' => 0])</div>
+                @if($categoryTree->isEmpty())<p class="b2b-workspace-price-note">Нет категорий по выбранным условиям.</p>@endif
                 <p class="b2b-category-empty" hidden>Раздел не найден</p>
             </aside>
 
