@@ -235,6 +235,8 @@
  .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-offers>summary{min-height:32px;line-height:32px}
 }
 /* Column titles stay in view while scrolling a long list. */
+/* kotlov.css hides horizontal overflow on html/body; «hidden» makes body a scroll box and breaks sticky, «clip» does not. This file loads on the workspace page only. */
+html,body{overflow-x:clip}
 .b2b-portal.b2b-staff-workspace .b2b-product-table{overflow:visible}
 .b2b-portal.b2b-staff-workspace .b2b-product-table__head{position:sticky;top:0;z-index:6;background:#f7f8f9;border-radius:11px 11px 0 0;box-shadow:0 1px 0 var(--b2b-line)}
 /* A thumbnail grows on hover: 45° and 87° elbows look alike at 48 px. */
