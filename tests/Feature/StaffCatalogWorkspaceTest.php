@@ -132,6 +132,28 @@ class StaffCatalogWorkspaceTest extends TestCase
         $this->get(route('b2b.catalog', ['workspace' => 1, 'per_page' => 100000]))->assertOk()->assertViewHas('products', fn ($products) => $products->perPage() === 30);
     }
 
+    public function test_a_chimney_category_opens_as_a_diameter_table(): void
+    {
+        $category = Category::firstOrCreate(['slug' => 'workspace-elbows'], ['name' => 'Колена и отводы моно', 'is_active' => true]);
+        foreach ([150 => 49.63, 180 => 57.44, 200 => 65.41] as $diameter => $price) {
+            foreach (['45*' => 0, '87*' => 10] as $angle => $extra) {
+                Product::create(['category_id' => $category->id, 'name' => "Отвод моно ОМ-Р {$angle}, 430, 0.8, Ø {$diameter}", 'slug' => "workspace-elbow-{$diameter}-".(int) $angle,
+                    'price' => $price + $extra, 'is_active' => true, 'is_archived' => false]);
+            }
+        }
+        Product::create(['category_id' => $category->id, 'name' => 'Darco Колено KNSR 150/45', 'slug' => 'workspace-darco', 'price' => 97, 'is_active' => true, 'is_archived' => false]);
+        $this->actingAs($this->manager());
+
+        $this->get(route('b2b.catalog', ['workspace' => 1, 'category' => $category->id]))->assertOk()
+            ->assertSee('Сетка по диаметрам')->assertDontSee('data-diameter-grid', false);
+        $this->get(route('b2b.catalog', ['workspace' => 1, 'category' => $category->id, 'view' => 'grid']))->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->perPage() === 300)
+            ->assertSee('data-diameter-grid', false)->assertSee('Списком')
+            ->assertSeeInOrder(['Ø 150', 'Ø 180', 'Ø 200', 'Отвод моно ОМ-Р 45*, 430, 0.8', 'Отвод моно ОМ-Р 87*, 430, 0.8', 'Без диаметра в названии · 1', 'Darco Колено KNSR 150/45']);
+        // Without a category there is no table.
+        $this->get(route('b2b.catalog', ['workspace' => 1, 'view' => 'grid']))->assertOk()->assertDontSee('data-diameter-grid', false);
+    }
+
     public function test_admin_sees_supplier_costs_stock_and_margin_and_can_choose_an_offer(): void
     {
         $product = $this->product();
