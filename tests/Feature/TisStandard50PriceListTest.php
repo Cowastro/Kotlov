@@ -17,7 +17,7 @@ class TisStandard50PriceListTest extends TestCase
         Category::query()->updateOrCreate(['slug' => 'dymohody'], ['name' => 'Дымоходы', 'parent_id' => 0, 'is_active' => true]);
         $mono = Category::query()->updateOrCreate(['slug' => 'truby-mono'], ['name' => 'Трубы Моно', 'parent_id' => 0, 'is_active' => true]);
         $thermo = Category::query()->updateOrCreate(['slug' => 'truby-sendvich'], ['name' => 'Трубы Термо', 'parent_id' => 0, 'is_active' => true]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-test', 'is_active' => true]);
+        $brand = Brand::forImport('Теплов и Сухов');
 
         $this->product($mono, $brand, 'Моно', '115', 98.55, 1);
         $this->product($mono, $brand, 'Моно', '150', 128.23, 2);

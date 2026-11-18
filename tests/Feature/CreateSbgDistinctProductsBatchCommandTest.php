@@ -818,7 +818,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'update_stock' => true,
         ]);
         $category = Category::query()->create(['name' => 'Колена моно', 'slug' => 'mono-elbows-130', 'parent_id' => 0]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-omr']);
+        $brand = Brand::forImport('Теплов и Сухов');
         $template = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -1044,7 +1044,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'slug' => 'chimney-adapters-150-200-test',
             'parent_id' => 0,
         ]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-adapter-test']);
+        $brand = Brand::forImport('Теплов и Сухов');
         $wrongDiameterCandidate = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -1117,7 +1117,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'slug' => 'mono-pipes-304-l500-test',
             'parent_id' => 0,
         ]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-pipe-test']);
+        $brand = Brand::forImport('Теплов и Сухов');
         $wrongPipeCandidate = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -1327,7 +1327,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'slug' => 'mono-pipes-310-l500-test',
             'parent_id' => 0,
         ]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-energo-test']);
+        $brand = Brand::forImport('Теплов и Сухов');
         $wrongPipeCandidate = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -1392,7 +1392,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'slug' => 'mono-pipes-304-l250-test',
             'parent_id' => 0,
         ]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-standard-l250-test']);
+        $brand = Brand::forImport('Теплов и Сухов');
         $wrongPipeCandidate = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -1457,7 +1457,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'slug' => 'mono-pipes-304-l1000-test',
             'parent_id' => 0,
         ]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-standard-l1000-test']);
+        $brand = Brand::forImport('Теплов и Сухов');
         $wrongPipeCandidate = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -11402,10 +11402,7 @@ XML;
             ['slug' => 'prochie-dymohod'],
             ['name' => 'Прочие элементы дымохода', 'parent_id' => 0, 'is_active' => true],
         );
-        $templateBrand = Brand::query()->create([
-            'name' => 'Теплов и Сухов',
-            'slug' => 'teplov-i-suhov-stabilizer-template',
-        ]);
+        $templateBrand = Brand::forImport('Теплов и Сухов');
         Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $templateBrand->id,

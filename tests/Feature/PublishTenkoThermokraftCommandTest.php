@@ -17,7 +17,9 @@ class PublishTenkoThermokraftCommandTest extends TestCase
         $boilers = Category::query()->firstOrCreate(['slug' => 'elektricheskie'], ['name' => 'Электрические котлы', 'parent_id' => 0, 'is_active' => true]);
         $heaters = Category::query()->firstOrCreate(['slug' => 'elektricheskie-teny-dlya-otopleniya'], ['name' => 'ТЭНы', 'parent_id' => 0, 'is_active' => true]);
         $brand = Brand::query()->updateOrCreate(['slug' => 'tenko'], ['name' => 'Tenko', 'is_active' => true]);
-        $duplicate = Brand::query()->create(['name' => 'TENKO', 'slug' => 'tenko-2', 'is_active' => true]);
+        // This repair test intentionally reproduces the pre-constraint legacy database.
+        \Illuminate\Support\Facades\Schema::table('brands', fn (\Illuminate\Database\Schema\Blueprint $t) => $t->dropUnique('brands_name_unique'));
+        $duplicate = Brand::withoutEvents(fn () => Brand::query()->create(['name' => 'TENKO', 'slug' => 'tenko-2', 'is_active' => true]));
         $legacy = Product::query()->create([
             'category_id' => $boilers->id, 'brand_id' => $duplicate->id, 'is_active' => true, 'price' => 0,
             'name' => 'Электрический котел Tenko ЭКОНОМ (КЕ) 18 кВт 380В', 'slug' => 'legacy-tenko-ekonom-18',

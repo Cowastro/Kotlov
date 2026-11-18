@@ -166,11 +166,7 @@ class StorefrontProductSearchTest extends TestCase
             'parent_id' => 0,
             'is_active' => true,
         ]);
-        $brand = Brand::create([
-            'name' => 'Теплов и Сухов',
-            'slug' => 'search-teplov-suhov-brand',
-            'is_active' => true,
-        ]);
+        $brand = Brand::forImport('Теплов и Сухов');
         $product = Product::create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,

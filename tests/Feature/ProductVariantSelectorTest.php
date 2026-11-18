@@ -126,11 +126,7 @@ class ProductVariantSelectorTest extends TestCase
             'parent_id' => 0,
             'is_active' => true,
         ]);
-        $brand = Brand::query()->create([
-            'name' => 'Теплов и Сухов',
-            'slug' => 'teplov-i-suhov-selector-test',
-            'is_active' => true,
-        ]);
+        $brand = Brand::forImport('Теплов и Сухов');
         $current = $this->tisChimney($category, $brand, '115');
         $second = $this->tisChimney($category, $brand, '150');
         $this->tisChimney($category, $brand, '200', 'Труба моно L500 ТМ-Р (304-0.8)');
@@ -150,11 +146,7 @@ class ProductVariantSelectorTest extends TestCase
             'parent_id' => 0,
             'is_active' => true,
         ]);
-        $brand = Brand::query()->create([
-            'name' => 'Теплов и Сухов',
-            'slug' => 'teplov-i-suhov-standard-30-selector-test',
-            'is_active' => true,
-        ]);
+        $brand = Brand::forImport('Теплов и Сухов');
         $current = $this->tisChimney($category, $brand, '80', standard: 30);
         $this->tisChimney($category, $brand, '120', standard: 30);
         $this->tisChimney($category, $brand, '150');
