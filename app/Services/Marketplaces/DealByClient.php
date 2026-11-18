@@ -67,6 +67,47 @@ class DealByClient
         return $this->post('products/edit', $products);
     }
 
+    /**
+     * Starts the shop import of a file at a public address (the same import as «Товары → Импорт» in the cabinet).
+     * Items missing in the file stay as they are.
+     *
+     * @param  list<string>  $updatedFields  fields of items already on the shop the import may change
+     * @return array<string, mixed>
+     */
+    public function importUrl(string $url, array $updatedFields = ['price']): array
+    {
+        return $this->send('products/import_url', [
+            'url' => $url,
+            'force_update' => false,
+            'only_available' => false,
+            'mark_missing_product_as' => 'none',
+            'updated_fields' => array_values($updatedFields),
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    public function importStatus(string $importId): array
+    {
+        return $this->request()->get($this->url('products/import/status/'.rawurlencode($importId)))->throw()->json() ?? [];
+    }
+
+    /**
+     * A write whose answer is returned as it is: the caller reads its errors.
+     *
+     * @param  array<string, mixed>  $body
+     * @return array<string, mixed>
+     */
+    private function send(string $path, array $body): array
+    {
+        // One attempt: a repeated import request would start a second import.
+        $payload = $this->request()->retry(1)->post($this->url($path), $body)->throw()->json();
+        if (! is_array($payload)) {
+            throw new RuntimeException('Deal.by вернул ответ не в формате JSON.');
+        }
+
+        return $payload;
+    }
+
     /** @param array<string, scalar> $query
      * @return array<string, mixed>
      */
