@@ -165,6 +165,42 @@ class StaffCatalogWorkspaceTest extends TestCase
             ->assertSee('Первый поставщик')->assertSee('data-workspace-cost', false)->assertSee('Рабочее место менеджера')->assertDontSee('Режим администратора');
     }
 
+    public function test_fresh_numeric_stock_is_preferred_but_saved_supplier_choice_is_preserved(): void
+    {
+        $product = $this->product();
+        foreach ([['Только статус', 2, null, true], ['Точный остаток', 3, 1, true], ['Старый остаток', 1, 99, false]] as [$name, $cost, $quantity, $fresh]) {
+            $supplier = Supplier::create(['code' => 'stock-priority-'.Supplier::count(), 'name' => $name, 'is_active' => true]);
+            SupplierProduct::create([
+                'supplier_id' => $supplier->id, 'product_id' => $product->id, 'supplier_article' => 'PRIORITY-'.Supplier::count(),
+                'price_byn' => $cost, 'in_stock' => true, 'stock_quantity' => $quantity, 'stock_status' => 'in_stock',
+                'match_confidence' => 'official_source', 'last_synced_at' => now(),
+                'last_stock_synced_at' => $fresh ? now() : now()->subDays(10),
+            ]);
+        }
+        $manager = $this->manager(['role' => 'admin']);
+        $offers = app(StaffCatalogWorkspace::class)->offers($product->fresh(), $manager);
+        $this->assertSame(['Точный остаток', 'Старый остаток', 'Только статус'], $offers->pluck('supplier')->all());
+        $this->actingAs($manager);
+        $url = route('b2b.catalog', ['workspace' => 1, 'q' => $product->sku]);
+        $page = $this->get($url)->assertOk();
+        $this->assertSame($offers->first()['supplier_key'], $this->selectedSupplier($page->getContent()));
+        $draft = $this->postJson(route('b2b.workspace.store'), ['name' => 'Ручной выбор'])->json();
+        $chosen = $offers->firstWhere('supplier', 'Только статус');
+        $this->putJson(route('b2b.workspace.update', ['selection' => $draft['id'], 'product' => $product->id]), [
+            'revision' => 1, 'quantity' => 1, 'supplier_key' => $chosen['supplier_key'],
+        ])->assertOk()->assertJsonPath('items.0.workspace_purchase.purchase_price', 2);
+        $page = $this->get($url)->assertOk();
+        $this->assertSame($chosen['supplier_key'], $this->selectedSupplier($page->getContent()));
+    }
+
+    private function selectedSupplier(string $html): string
+    {
+        $document = new \DOMDocument;
+        @$document->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+
+        return (new \DOMXPath($document))->evaluate('string((//select[@data-workspace-offer]/option[@selected] | //select[@data-workspace-offer][not(option[@selected])]/option[1])[1]/@value)');
+    }
+
     public function test_a_large_selection_keeps_all_positions_when_one_line_changes(): void
     {
         $manager = $this->manager();

@@ -88,6 +88,14 @@ class StaffCatalogWorkspace
             $offer['updated_at'] = $offer['updated_at']?->format('d.m.Y H:i');
 
             return $offer;
+        })->sortBy(function (array $offer): int {
+            // Prefer usable numeric stock over a cheaper textual availability.
+            // Stable sorting preserves the existing order within each tier.
+            if ($offer['is_fresh'] && (float) ($offer['stock_quantity'] ?? 0) > 0) {
+                return 0;
+            }
+
+            return $offer['is_fresh'] && $offer['in_stock'] ? 1 : 2;
         })->values();
     }
 
