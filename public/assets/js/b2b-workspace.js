@@ -24,6 +24,34 @@
         return Number(value || 0).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' BYN';
     }
 
+    // Lowest acceptable margin, % of retail: kept in this browser, rows below it are highlighted.
+    var thresholdInput = document.querySelector('[data-workspace-margin-threshold]');
+    var thresholdKey = 'kotlov.b2b.marginThreshold';
+    function threshold() {
+        var value = thresholdInput ? parseFloat(thresholdInput.value) : NaN;
+        return Number.isFinite(value) && value > 0 ? value : null;
+    }
+    function itemMarginPercent(item) {
+        var cost = item.workspace_purchase && item.workspace_purchase.purchase_price;
+        return cost !== null && cost !== undefined && item.price > 0 ? (item.price - cost) / item.price * 100 : null;
+    }
+    function paintMargins() {
+        var limit = threshold();
+        document.querySelectorAll('.b2b-workspace-margin[data-margin-percent]').forEach(function (box) {
+            var percent = box.dataset.marginPercent === '' ? null : Number(box.dataset.marginPercent);
+            var low = limit !== null && percent !== null && percent < limit;
+            box.classList.toggle('is-low', low);
+            box.closest('.b2b-product-row').classList.toggle('is-low-margin', low);
+        });
+    }
+    if (thresholdInput) {
+        try { thresholdInput.value = localStorage.getItem(thresholdKey) || ''; } catch (e) {}
+        thresholdInput.addEventListener('input', function () {
+            try { localStorage.setItem(thresholdKey, thresholdInput.value); } catch (e) {}
+            render();
+        });
+    }
+
     function status(text, error) {
         document.querySelector('[data-workspace-status]').textContent = text;
         document.querySelector('[data-workspace-status]').classList.toggle('is-error', !!error);
@@ -107,8 +135,18 @@
         document.querySelectorAll('[data-workspace-procurement]').forEach(function (node) {
             var cost = state.procurement;
             node.textContent = cost ? 'Закупка ' + money(cost.total) + ' · Маржа ' + money(cost.margin) + (cost.margin_percent !== null ? ' / ' + cost.margin_percent.toLocaleString('ru-RU') + '%' : '') + (cost.unconfirmed ? ' · Без входной цены: ' + cost.unconfirmed + ' поз.' : '') + (cost.margin_unconfirmed ? ' · Маржа рассчитана по подтверждённым ценам' : '') : '';
-            node.classList.toggle('is-negative', !!cost && cost.margin < 0);
+            var limit = threshold();
+            var low = limit === null ? 0 : state.items.filter(function (item) { var percent = itemMarginPercent(item); return percent !== null && percent < limit; }).length;
+            if (cost && low) node.textContent += ' · Маржа ниже ' + limit.toLocaleString('ru-RU') + '%: ' + low + ' поз.';
+            node.classList.toggle('is-negative', !!cost && (cost.margin < 0 || low > 0));
             node.hidden = !state.items.length;
+        });
+        document.querySelectorAll('[data-workspace-suppliers]').forEach(function (node) {
+            var suppliers = (state.procurement && state.procurement.suppliers) || [];
+            node.textContent = suppliers.map(function (supplier) {
+                return supplier.name + ': ' + supplier.positions + ' поз.' + (supplier.purchase !== null ? ', закупка ' + money(supplier.purchase) : '') + (supplier.unconfirmed && supplier.purchase !== null ? ' + ' + supplier.unconfirmed + ' без цены' : '');
+            }).join(' · ');
+            node.hidden = !suppliers.length;
         });
         document.querySelectorAll('[data-workspace-print], [data-workspace-edit]').forEach(function (link) {
             var href = link.hasAttribute('data-workspace-print') ? state.print_url : state.edit_url;
@@ -138,6 +176,7 @@
             var input = cell.querySelector('input');
             if (document.activeElement !== input && !cell.dataset.dirty) input.value = item ? item.quantity : '';
         });
+        paintMargins();
         if (dialog.open && !dialog.querySelector('[data-workspace-quantity]:focus')) drawLines();
         document.dispatchEvent(new CustomEvent('kotlov:workspace-updated'));
     }
@@ -232,6 +271,8 @@
             row.querySelector('[data-workspace-margin-percent]').textContent = option.dataset.marginPercent !== '' ? Number(option.dataset.marginPercent).toLocaleString('ru-RU', {maximumFractionDigits:1}) + '%' : '';
             row.querySelector('[data-workspace-margin]').classList.toggle('is-negative', Number(option.dataset.margin) < 0);
             row.querySelector('[data-workspace-margin]').classList.toggle('is-unknown', option.dataset.margin === '');
+            row.querySelector('.b2b-workspace-margin').dataset.marginPercent = option.dataset.marginPercent;
+            paintMargins();
             var box = row.querySelector('[data-workspace-product]');
             box.dataset.orderRules = option.dataset.orderRules || '{}';
             if (!box.dataset.dirty && !state.items.some(function (item) { return item.id === Number(box.dataset.workspaceProduct); })) box.querySelector('input').value = orderRules.initialQuantity(JSON.parse(box.dataset.orderRules));

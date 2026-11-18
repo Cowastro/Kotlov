@@ -151,6 +151,7 @@ class StaffCatalogWorkspace
                 'margin_percent' => $matchedRetail > 0 ? round(($matchedRetail - $marginCost) / $matchedRetail * 100, 1) : null,
                 'unconfirmed' => count($items) - $knownCosts->count(),
                 'margin_unconfirmed' => count($items) - $marginLines->count(),
+                'suppliers' => $this->supplierSummary($items),
             ] : null,
             'total' => $selection?->total() ?? 0,
             'saved_at' => $selection?->updated_at?->format('d.m.Y H:i'),
@@ -158,5 +159,21 @@ class StaffCatalogWorkspace
             'print_url' => $selection ? route('selections.show', [$selection, 'print' => 1]) : null,
             'desk_url' => $selection ? route('b2b.selections.show', $selection) : null,
         ];
+    }
+
+    /**
+     * Positions of the selection by supplier: what is ordered from whom, at purchase prices where they are known.
+     *
+     * @return list<array{name: string, positions: int, purchase: ?float, unconfirmed: int}>
+     */
+    private function supplierSummary(array $items): array
+    {
+        return collect($items)->groupBy(fn (array $item) => (string) ($item['workspace_purchase']['supplier'] ?? '') ?: 'Без поставщика')
+            ->map(function ($lines, string $name): array {
+                $known = $lines->filter(fn (array $item) => isset($item['workspace_purchase']['purchase_price']));
+
+                return ['name' => $name, 'positions' => $lines->count(), 'unconfirmed' => $lines->count() - $known->count(),
+                    'purchase' => $known->isEmpty() ? null : round($known->sum(fn (array $item) => $item['workspace_purchase']['purchase_price'] * $item['quantity']), 2)];
+            })->sortByDesc('positions')->values()->all();
     }
 }

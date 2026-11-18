@@ -1,5 +1,5 @@
 @if($offers->isNotEmpty())
-    <div class="b2b-workspace-supply">
+    <div class="b2b-workspace-supply{{ $offers->count() === 1 ? ' is-single' : '' }}">
     @php $displayOffer = $offers->firstWhere('supplier_key', data_get($savedLine, 'workspace_purchase.supplier_key')) ?? $offers->first(); @endphp
     <label class="b2b-workspace-supplier"><span class="visually-hidden">Поставщик: {{ $product->name }}</span>
         <span class="b2b-workspace-supplier-caption" data-workspace-supplier-caption aria-hidden="true" title="{{ $displayOffer['supplier'] }}">{{ $displayOffer['supplier'] }}</span>
