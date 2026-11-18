@@ -8,6 +8,7 @@
     var timer = null;
     var request = null;
     var activeIndex = -1;
+    var lastSuggestions = [];
     var density = document.querySelector('[data-b2b-density]');
     if (density) {
         var dense = true;
@@ -49,6 +50,7 @@
     }
 
     function renderSuggest(items) {
+        lastSuggestions = items;
         suggest.replaceChildren();
         if (!items.length) {
             var empty = document.createElement('div');
@@ -57,17 +59,20 @@
             suggest.appendChild(empty);
         } else {
             items.forEach(function (item) {
-                var link = document.createElement('a');
+                var staffSuggestion = @if($staffWorkspace) !!item.procurement @else false @endif;
+                var link = document.createElement(staffSuggestion ? 'div' : 'a');
                 link.className = 'b2b-suggest-item';
-                link.href = item.url;
-                link.setAttribute('role', 'option');
+                if (!staffSuggestion) link.href = item.url;
+                link.setAttribute('role', staffSuggestion ? 'group' : 'option');
+                if (staffSuggestion) link.setAttribute('aria-label', item.name);
 
                 var image = document.createElement('img');
                 image.src = item.image;
                 image.alt = '';
                 image.loading = 'lazy';
 
-                var copy = document.createElement('span');
+                var copy = document.createElement(staffSuggestion ? 'a' : 'span');
+                if (staffSuggestion) copy.href = item.url;
                 copy.className = 'b2b-suggest-item__copy';
                 var name = document.createElement('strong');
                 name.textContent = item.name;
@@ -108,6 +113,7 @@
                     var supplier = document.createElement('span'); supplier.textContent = procurement.supplier || 'Поставщик не привязан'; supplier.title = supplier.textContent;
                     var available = document.createElement('span'); available.textContent = procurement.stock_label; available.dataset.state = procurement.stock_state;
                     supply.append(supplier, available); link.append(finance, supply);
+                    if (window.KotlovSuggestionAdd) link.appendChild(window.KotlovSuggestionAdd.create(item));
                 } else {
                     link.appendChild(price);
                 }
@@ -145,11 +151,18 @@
             setActive(activeIndex + (event.key === 'ArrowDown' ? 1 : -1));
         } else if (event.key === 'Enter' && activeIndex >= 0) {
             event.preventDefault();
-            items[activeIndex].click();
+            (items[activeIndex].querySelector('a') || items[activeIndex]).click();
         } else if (event.key === 'Escape') {
             closeSuggest();
         }
     });
+
+    @if($staffWorkspace)
+    suggest.setAttribute('role', 'dialog'); suggest.setAttribute('aria-label', 'Товары для подбора');
+    searchInput.setAttribute('aria-haspopup', 'dialog');
+    document.addEventListener('kotlov:suggest-add-ready', function () { if (!suggest.hidden) renderSuggest(lastSuggestions); });
+    suggest.addEventListener('keydown', function (event) { if (event.key === 'Escape') { event.preventDefault(); closeSuggest(); searchInput.focus(); } });
+    @endif
 
     document.addEventListener('click', function (event) { if (!event.target.closest('.b2b-search')) closeSuggest(); });
     document.addEventListener('keydown', function (event) {

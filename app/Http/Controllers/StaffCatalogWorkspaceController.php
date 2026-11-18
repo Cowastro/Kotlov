@@ -38,6 +38,7 @@ class StaffCatalogWorkspaceController extends Controller
             'quantity' => ['required', 'integer', 'min:0', 'max:999'],
             'revision' => ['required', 'integer', 'min:1'],
             'supplier_key' => ['nullable', 'string', 'max:100'],
+            'operation' => ['nullable', 'in:add,set'],
         ]);
         abort_if(filled($data['supplier_key'] ?? null) && ! StaffCatalogWorkspace::canViewProcurement($request->user()), 403);
         $selection = DB::transaction(function () use ($selection, $product, $data, $workspace, $request) {
@@ -45,6 +46,14 @@ class StaffCatalogWorkspaceController extends Controller
             abort_unless($locked->revision === (int) $data['revision'], 409,
                 'Подбор изменён в другой вкладке. Обновите страницу перед сохранением.');
             $items = $locked->items;
+            $adding = ($data['operation'] ?? 'set') === 'add';
+            $quantity = (int) $data['quantity'] + ($adding ? (int) ($items[$product]['quantity'] ?? 0) : 0);
+            if ($adding && ((int) $data['quantity'] < 1 || $quantity > 999)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['quantity' => 'Добавьте положительное целое количество. В одной позиции может быть не более 999.']);
+            }
+            if ($adding && isset($items[$product]['workspace_purchase']['supplier_key']) && ($data['supplier_key'] ?? null) !== $items[$product]['workspace_purchase']['supplier_key']) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['supplier_key' => 'Поставщик в подборе изменён. Обновите поиск перед добавлением.']);
+            }
             if ((int) $data['quantity'] === 0) {
                 unset($items[$product]);
             } else {
@@ -54,7 +63,7 @@ class StaffCatalogWorkspaceController extends Controller
                 $previousLine = $items[$product] ?? [];
                 $items[$product] = [
                     'id' => $model->id, 'name' => $model->name, 'sku' => $model->sku,
-                    'price' => (float) $model->price, 'quantity' => (int) $data['quantity'],
+                    'price' => (float) $model->price, 'quantity' => $quantity,
                     'image' => $model->image_url, 'pricing_type' => 'retail',
                     'selection_note' => (float) $model->price > 0
                         ? 'Розничная цена на момент подбора.'
@@ -74,6 +83,9 @@ class StaffCatalogWorkspaceController extends Controller
                     $offer = filled($key) ? $offers->firstWhere('supplier_key', $key) : $offers->first();
                     abort_if(filled($key) && ! $offer, 422, 'Предложение поставщика изменилось. Обновите каталог и выберите поставщика заново.');
                     if ($offer) {
+                        if ($adding && ($warning = \App\Services\Suppliers\SupplierOrderRules::warning($offer['order_rules'] ?? [], $quantity)) !== '') {
+                            throw \Illuminate\Validation\ValidationException::withMessages(['quantity' => $warning]);
+                        }
                         $items[$product]['workspace_purchase'] = $offer;
                         $items[$product]['order_rules'] = $offer['order_rules'] ?? [];
                     }

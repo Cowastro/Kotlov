@@ -139,6 +139,7 @@
             if (document.activeElement !== input && !cell.dataset.dirty) input.value = item ? item.quantity : '';
         });
         if (dialog.open && !dialog.querySelector('[data-workspace-quantity]:focus')) drawLines();
+        document.dispatchEvent(new CustomEvent('kotlov:workspace-updated'));
     }
 
     function saveGridCell(input) {
@@ -283,5 +284,20 @@
         var dirty = document.querySelector('[data-workspace-product][data-dirty]');
         if (pending || dirty) { event.preventDefault(); event.returnValue = ''; }
     });
+    window.KotlovStaffWorkspace = {
+        line: function (productId) { return state.items.find(function (item) { return item.id === productId; }); },
+        add: function (productId, quantity, supplierKey) {
+            if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return Promise.reject(new Error('Укажите целое количество от 1 до 999.'));
+            return enqueue(function () {
+                return ensureSelection().then(function () {
+                    var url = root.dataset.updateUrl.replace('__selection__', state.id).replace('__product__', productId);
+                    return request(url, 'PUT', {quantity:quantity, revision:state.revision, supplier_key:supplierKey, operation:'add'});
+                }).then(function (data) {
+                    state = data; render(); status(pending > 1 ? 'Сохраняем…' : 'Сохранено ' + state.saved_at);
+                    return state.items.find(function (item) { return item.id === productId; });
+                });
+            });
+        },
+    };
     render();
 })();

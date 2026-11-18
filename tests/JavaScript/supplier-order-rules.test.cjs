@@ -24,3 +24,15 @@ test('supplier switch can remove old rules and decimal multiples remain accurate
     assert.equal(rules.warning({multiple:0.1}, 0.3), '');
     assert.match(rules.warning({multiple:3}, 8), /кратность/);
 });
+
+test('quick additions respect final line minimum, multiples and the workspace limit', () => {
+    const pack = {minimum:8, multiple:4, box:100};
+    assert.equal(rules.additionQuantity(pack, 0, 1, 1), 8);
+    assert.equal(rules.additionQuantity(pack, 8, 1, 1), 4);
+    assert.equal(rules.additionQuantity(pack, 3, 1, 1), 5);
+    assert.equal(rules.additionQuantity(pack, 8, 3, -1), null);
+    assert.equal(rules.additionQuantity(pack, 8, 5, 1), 8);
+    assert.equal(rules.additionQuantity({minimum:1.5, multiple:1.5}, 0, 1, 1), 3);
+    assert.equal(rules.additionQuantity({minimum:2000}, 0, 1, 1), null);
+    assert.equal(rules.additionQuantity({}, 999, 1, 1), null);
+});
