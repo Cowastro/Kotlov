@@ -23,7 +23,10 @@ class B2bAnalogs
     private const POOL = 2000;
 
     /** Units that define what an item is for: another value is another item. */
-    private const MAIN_UNITS = ['квт' => 'кВт', 'вт' => 'Вт', 'л' => 'л', 'м3/ч' => 'м³/ч', 'бар' => 'бар', 'м2' => 'м²'];
+    private const MAIN_UNITS = ['квт' => 'кВт', 'вт' => 'Вт', 'л' => 'л', 'м3/ч' => 'м³/ч', 'бар' => 'бар', 'м2' => 'м²', 'секц' => 'секций'];
+
+    /** Attributes of the cards that, like the units, say what the item is for: power, volume, area, head, sections. */
+    private const MAIN_ATTRIBUTES = '/мощност|объ[её]м|площад|напор|секци/u';
 
     /** Words that name the same chimney element. */
     private const TYPE_SYNONYMS = ['колено' => 'отвод', 'шибер-задвижка' => 'шибер', 'задвижка' => 'шибер', 'сборник' => 'конденсатоотвод'];
@@ -51,13 +54,14 @@ class B2bAnalogs
 
             return $row;
         });
-        $stockRank = fn (array $row): int => match ($row['summary']['stock_state'] ?? null) {
-            'known' => 0, 'available' => 1, 'unknown', null => 2, default => 3
+        // Stock weighs like a close characteristic, not more: a weaker item in stock does not beat a close one.
+        $rank = fn (array $row): int => $row['score'] + match ($row['summary']['stock_state'] ?? null) {
+            'known' => 3, 'available' => 2, 'empty' => -2, default => 0
         };
         $price = (float) $product->price;
 
-        return $rows->sort(fn (array $a, array $b): int => [$stockRank($a), -$a['score'], abs((float) $a['product']->price - $price)]
-            <=> [$stockRank($b), -$b['score'], abs((float) $b['product']->price - $price)])
+        return $rows->sort(fn (array $a, array $b): int => [-$rank($a), abs((float) $a['product']->price - $price)]
+            <=> [-$rank($b), abs((float) $b['product']->price - $price)])
             ->take(self::LIMIT)->values()->all();
     }
 
@@ -75,6 +79,9 @@ class B2bAnalogs
         $matches = [];
         foreach ($source['units'] as $unit => $value) {
             if (! isset($traits['units'][$unit])) {
+                // Its size is not known: below the items of the same size.
+                $score -= 2;
+
                 continue;
             }
             $other = $traits['units'][$unit];
@@ -97,10 +104,28 @@ class B2bAnalogs
             }
         }
         foreach ($source['attributes'] as $name => $value) {
+            $main = preg_match(self::MAIN_ATTRIBUTES, $name) === 1;
             if (! isset($traits['attributes'][$name])) {
+                $score -= $main ? 2 : 0;
+
                 continue;
             }
-            if ($traits['attributes'][$name] === $value) {
+            $other = $traits['attributes'][$name];
+            [$number, $otherNumber] = [$this->number($value), $this->number($other)];
+            if ($number !== null && $otherNumber !== null) {
+                // «100», «100 л», «0,1 м3» of a volume are numbers, not words.
+                $difference = abs($otherNumber - $number) / max($number, $otherNumber, 0.0001);
+                if ($main && $difference > 0.3) {
+                    return $none;
+                }
+                $score += $difference < 0.001 ? ($main ? 4 : 2) : ($difference <= 0.3 ? 1 : -1);
+                if ($difference <= 0.3) {
+                    $matches[] = $name.($difference < 0.001 ? '' : ' ≈');
+                }
+
+                continue;
+            }
+            if ($other === $value) {
                 $score += 2;
                 $matches[] = $name;
             } else {
@@ -135,8 +160,9 @@ class B2bAnalogs
     public function units(string $name): array
     {
         $units = [];
-        preg_match_all('/(?<![\d.,\/])(\d+(?:[.,]\d+)?)\s*(квт|kw|вт|w|л|l|м3\/ч|м³\/ч|бар|bar|м2|м²)(?![\p{L}\d])/iu', $name, $found, PREG_SET_ORDER);
+        preg_match_all('/(?<![\d.,\/])(\d+(?:[.,]\d+)?)\s*(квт|kw|вт|w|л|l|м3\/ч|м³\/ч|бар|bar|м2|м²|секц[\p{L}.]*)(?![\p{L}\d])/iu', $name, $found, PREG_SET_ORDER);
         foreach ($found as [, $number, $unit]) {
+            $unit = str_starts_with(mb_strtolower($unit), 'секц') ? 'секц' : $unit;
             $unit = match (mb_strtolower($unit)) {
                 'kw' => 'квт', 'w' => 'вт', 'l' => 'л', 'м³/ч' => 'м3/ч', 'bar' => 'бар', 'м²' => 'м2', default => mb_strtolower($unit)
             };
@@ -146,17 +172,29 @@ class B2bAnalogs
         return array_filter($units, fn (float $value): bool => $value > 0);
     }
 
+    /** «100», «100 л», «2,5 кВт» → the number; a value with two numbers («250/310») or none is a word. */
+    private function number(string $value): ?float
+    {
+        if (preg_match_all('/\d+(?:[.,]\d+)?/u', $value, $found) !== 1) {
+            return null;
+        }
+
+        return (float) str_replace(',', '.', $found[0][0]);
+    }
+
     /** Select attributes «in filter» of the cards: normalized name → normalized value. @return Collection<int, array<string, string>> */
     private function attributes(Collection $ids): Collection
     {
         return ProductAttributeValue::query()->whereIn('product_attribute_values.product_id', $ids)
             ->join('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
-            ->join('attribute_options', 'attribute_options.id', '=', 'product_attribute_values.option_id')
-            ->where('attributes.in_filter', true)->where('attributes.type', 'select')
-            ->get(['product_attribute_values.product_id', 'attributes.name as attribute', 'attribute_options.name as option'])
+            ->leftJoin('attribute_options', 'attribute_options.id', '=', 'product_attribute_values.option_id')
+            // Filters, and what the card shows: power or volume is often a number, not an option.
+            ->where(fn ($query) => $query->where('attributes.in_filter', true)->orWhere('attributes.in_product', true))
+            ->whereIn('attributes.type', ['select', 'value'])
+            ->get(['product_attribute_values.product_id', 'attributes.name as attribute', 'attribute_options.name as option', 'product_attribute_values.value'])
             ->groupBy('product_id')
-            ->map(fn (Collection $rows): array => $rows->mapWithKeys(fn ($row) => [$this->normal((string) $row->attribute) => $this->normal((string) $row->option)])
-                ->reject(fn (string $value, string $name) => $name === '' || $value === '' || preg_match('/^(производитель|бренд|торговая марка)$/u', $name) === 1)->all());
+            ->map(fn (Collection $rows): array => $rows->mapWithKeys(fn ($row) => [$this->normal((string) $row->attribute) => $this->normal((string) ($row->option ?? $row->value))])
+                ->reject(fn (string $value, string $name) => $name === '' || $value === '' || $value === '—' || preg_match('/^(производитель|бренд|торговая марка|страна.*|гарантия.*)$/u', $name) === 1)->all());
     }
 
     /** The category of the item; with few items there, its sister categories too. @return list<int> */
