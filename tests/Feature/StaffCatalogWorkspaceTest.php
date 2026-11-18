@@ -228,6 +228,22 @@ class StaffCatalogWorkspaceTest extends TestCase
         }
     }
 
+    public function test_catalog_quantity_changes_keep_agreed_client_price_and_original_catalog_prices(): void
+    {
+        $product = $this->product();
+        $product->update(['manual_purchase_price_byn' => 4, 'manual_price_updated_at' => now()]);
+        $user = $this->manager();
+        $draft = $this->actingAs($user)->postJson(route('b2b.workspace.store'), ['name' => 'Согласованная цена'])->assertOk()->json();
+        $url = route('b2b.workspace.update', ['selection' => $draft['id'], 'product' => $product->id]);
+        $this->putJson($url, ['revision' => 1, 'quantity' => 2])->assertOk();
+        $this->patchJson(route('b2b.selections.update', $draft['id']), ['action' => 'line', 'revision' => 2, 'product_id' => $product->id, 'quantity' => 2, 'pricing_mode' => 'price', 'client_price' => 9])->assertOk();
+        $this->putJson($url, ['revision' => 3, 'quantity' => 3, 'supplier_key' => 'manual'])->assertOk()
+            ->assertJsonPath('items.0.price', 9)->assertJsonPath('items.0.client_pricing.base_price', 12.5)
+            ->assertJsonPath('items.0.workspace_purchase.purchase_price', 4)->assertJsonPath('procurement.margin', 15);
+        $this->assertEquals(12.5, $product->fresh()->price);
+        $this->assertEquals(4, $product->fresh()->manual_purchase_price_byn);
+    }
+
     public function test_missing_retail_price_is_not_treated_as_a_free_product_or_a_confirmed_loss(): void
     {
         $product = $this->product();

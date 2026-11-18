@@ -51,6 +51,7 @@ class StaffCatalogWorkspaceController extends Controller
                 $model = Product::query()->active()->notArchived()->findOrFail($product);
                 abort_if(! isset($items[$product]) && count($items) >= 2000, 422, 'В подборе уже 2000 позиций. Создайте отдельный подбор.');
                 $previousNote = $items[$product]['workspace_note'] ?? null;
+                $previousLine = $items[$product] ?? [];
                 $items[$product] = [
                     'id' => $model->id, 'name' => $model->name, 'sku' => $model->sku,
                     'price' => (float) $model->price, 'quantity' => (int) $data['quantity'],
@@ -61,6 +62,11 @@ class StaffCatalogWorkspaceController extends Controller
                 ];
                 if ($previousNote !== null) {
                     $items[$product]['workspace_note'] = $previousNote;
+                }
+                if (isset($previousLine['client_pricing'])) {
+                    $items[$product]['client_pricing'] = $previousLine['client_pricing'];
+                    $items[$product]['price'] = $previousLine['price'];
+                    $items[$product]['selection_note'] = $previousLine['selection_note'] ?? null;
                 }
                 if (StaffCatalogWorkspace::canViewProcurement($request->user())) {
                     $offers = $workspace->offers($model, $request->user());

@@ -55,6 +55,7 @@ class B2bSelectionDeskController extends Controller
     public function update(Request $request, CustomerSelection $selection)
     {
         $this->authorizeSelection($request, $selection);
+        abort_if($request->hasAny(['pricing_mode', 'client_price', 'discount_percent']) && ! StaffCatalogWorkspace::canViewProcurement($request->user()), 403);
         $data = $request->validate([
             'action' => ['required', Rule::in(['quantity', 'line', 'select', 'details', 'copy', 'move', 'remove', 'undo'])],
             'revision' => ['required', 'integer', 'min:1'],
@@ -62,6 +63,9 @@ class B2bSelectionDeskController extends Controller
             'product_id' => ['required_if:action,quantity,line', 'integer'],
             'quantity' => ['required_if:action,quantity,line', 'integer', 'min:1', 'max:999'],
             'workspace_note' => ['nullable', 'string', 'max:1000'],
+            'pricing_mode' => ['sometimes', 'required', 'prohibited_unless:action,line', Rule::in(['price', 'discount', 'reset'])],
+            'client_price' => ['required_if:pricing_mode,price', 'prohibited_unless:pricing_mode,price', 'numeric', 'decimal:0,2', 'min:0.01', 'max:999999999.99'],
+            'discount_percent' => ['required_if:pricing_mode,discount', 'prohibited_unless:pricing_mode,discount', 'numeric', 'decimal:0,2', 'min:0', 'max:99.99'],
             'name' => ['required_if:action,details', 'nullable', 'string', 'max:160'],
             'note' => ['nullable', 'string', 'max:1000'],
             'target_id' => ['nullable', 'integer'],
@@ -85,6 +89,7 @@ class B2bSelectionDeskController extends Controller
                     $items[$data['product_id']]['quantity'] = (int) $data['quantity'];
                     if ($data['action'] === 'line') {
                         $items[$data['product_id']]['workspace_note'] = trim($data['workspace_note'] ?? '');
+                        $items[$data['product_id']] = \App\Services\SelectionClientPricing::apply($items[$data['product_id']], $data, (int) $request->user()->id);
                     }
                     break;
                 case 'select':
