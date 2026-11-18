@@ -9,6 +9,7 @@ use App\Models\SupplierProduct;
 use App\Services\Marketplaces\DealByClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery\MockInterface;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class SyncDealByBrandPricesFirewayTest extends TestCase
@@ -49,6 +50,7 @@ class SyncDealByBrandPricesFirewayTest extends TestCase
             'price' => 1996, 'is_active' => true, 'is_archived' => false, 'images' => ['img/products/x.jpg']]);
         $erik = $card('Печь отопительная Fireway ERIK', 'deal-fw-erik');
         $paul = $card('Печь отопительная Fireway PAUL', 'deal-fw-paul');
+        $paul->update(['images' => ['66d59fdd5cbc5.jpg']]);
         $supplier = Supplier::query()->updateOrCreate(['code' => 'kaminproff'], ['name' => 'Каминпрофессионал', 'currency' => 'BYN', 'is_active' => true]);
         foreach ([$erik, $paul] as $product) {
             SupplierProduct::query()->create(['supplier_id' => $supplier->id, 'product_id' => $product->id, 'supplier_article' => 'fw-'.$product->slug,
@@ -63,8 +65,16 @@ class SyncDealByBrandPricesFirewayTest extends TestCase
             ->expectsOutputToContain('metric.deal_brand_prices.exported=1')
             ->assertSuccessful();
         $this->assertFileExists(public_path('exports/fireway-test.xlsx'));
-        $rows = \PhpOffice\PhpSpreadsheet\IOFactory::load(public_path('exports/fireway-test.xlsx'))->getActiveSheet()->toArray();
+        $rows = IOFactory::load(public_path('exports/fireway-test.xlsx'))->getActiveSheet()->toArray();
         $this->assertSame('kotlov-'.$paul->id, $rows[1][11]);
+        // An old card keeps a bare file name: the shop gets the address the card page shows.
+        $this->assertMatchesRegularExpression('~^https?://[^/]+/proxy-image/product/.+/66d59fdd5cbc5\.jpg$~', $rows[1][8]);
+
+        $this->artisan('deal:sync-brand-prices', ['--supplier' => 'kaminproff', '--export-missing' => 'fireway-test', '--export-cards' => (string) $erik->id])
+            ->expectsOutputToContain('metric.deal_brand_prices.exported=1')->assertSuccessful();
+        $rows = IOFactory::load(public_path('exports/fireway-test.xlsx'))->getActiveSheet()->toArray();
+        $this->assertSame('kotlov-'.$erik->id, $rows[1][11]);
+        $this->assertStringEndsWith('/img/products/x.jpg', $rows[1][8]);
         @unlink(public_path('exports/fireway-test.xlsx'));
     }
 }

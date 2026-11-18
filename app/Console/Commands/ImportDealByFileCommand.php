@@ -21,7 +21,8 @@ class ImportDealByFileCommand extends Command
         {file : The import xlsx under public/exports, e.g. metabel-dlya-sbg}
         {--apply : Start the import on deal.by}
         {--status= : Only read the state of an import started before}
-        {--wait=300 : Seconds to wait for the import to finish}';
+        {--wait=300 : Seconds to wait for the import to finish}
+        {--fields=price : Comma separated fields the import may change on items already on the shop}';
 
     protected $description = 'Add cards missing on sbg.by by the deal.by import of an exported file';
 
@@ -58,13 +59,14 @@ class ImportDealByFileCommand extends Command
 
                 return self::SUCCESS;
             }
-            if ($new === []) {
+            $fields = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('fields')))));
+            if ($new === [] && $fields === ['price']) {
                 $this->info('Все карточки файла уже есть в магазине.');
 
                 return self::SUCCESS;
             }
 
-            $started = $client->importUrl(url('/exports/'.$name.'.xlsx'));
+            $started = $client->importUrl(url('/exports/'.$name.'.xlsx'), $fields ?: ['price']);
             $importId = (string) ($started['id'] ?? $started['import_id'] ?? '');
             if (filled($started['error'] ?? null) || $importId === '') {
                 $this->line('audit.deal_import.rejected='.(Str::slug((string) ($started['error'] ?? $started['message'] ?? 'no-id')) ?: 'no-id'));
