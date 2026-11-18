@@ -10,6 +10,15 @@
     var newDialog = document.getElementById('workspace-new-dialog');
     var csrf = document.querySelector('meta[name="csrf-token"]').content;
     var search = dialog.querySelector('[data-workspace-line-search]');
+    var orderRules = window.KotlovOrderRules;
+
+    function paintRules(box) {
+        var rules = JSON.parse(box.dataset.orderRules || '{}');
+        var label = box.querySelector('[data-workspace-order-rules]');
+        var warning = box.querySelector('[data-workspace-rule-warning]');
+        label.textContent = orderRules.label(rules); label.hidden = !label.textContent;
+        warning.textContent = orderRules.warning(rules, Number(box.querySelector('input').value)); warning.hidden = !warning.textContent;
+    }
 
     function money(value) {
         return Number(value || 0).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' BYN';
@@ -52,6 +61,12 @@
             var sku = document.createElement('small');
             sku.textContent = (item.sku || 'Без артикула') + ' · ' + (item.price > 0 ? money(item.price) + ' / шт.' : 'Цена уточняется');
             copy.append(name, sku);
+            if (item.order_rules_label) {
+                var rules = document.createElement('small'); rules.className = 'b2b-workspace-rule-label'; rules.textContent = item.order_rules_label; copy.appendChild(rules);
+            }
+            if (item.order_rules_warning) {
+                var ruleWarning = document.createElement('small'); ruleWarning.className = 'b2b-workspace-rule-warning'; ruleWarning.textContent = item.order_rules_warning; copy.appendChild(ruleWarning);
+            }
             if (item.workspace_purchase) {
                 var purchase = document.createElement('small');
                 purchase.textContent = item.workspace_purchase.supplier + ' · входная ' + (item.workspace_purchase.purchase_price !== null ? money(item.workspace_purchase.purchase_price) : 'уточняется') + ' · ' + item.workspace_purchase.stock;
@@ -114,6 +129,7 @@
             box.querySelector('[data-workspace-line-total]').textContent = item ? (item.price > 0 ? money(item.price * item.quantity) : 'Цена уточняется') : '';
             // Leave typed quantities intact while another row is being saved.
             if (item && document.activeElement !== box.querySelector('input') && !box.dataset.dirty) box.querySelector('input').value = item.quantity;
+            paintRules(box);
         });
         if (dialog.open && !dialog.querySelector('[data-workspace-quantity]:focus')) drawLines();
     }
@@ -166,6 +182,7 @@
         var input = box.querySelector('[data-workspace-quantity]');
         if (target.hasAttribute('data-step')) {
             input.value = Math.min(999, Math.max(0, (Number(input.value) || 0) + Number(target.dataset.step)));
+            if (box.classList.contains('b2b-workspace-quantity')) paintRules(box);
             box.dataset.dirty = '1';
             if (state.items.some(function (item) { return item.id === Number(box.dataset.workspaceProduct); })) save(box, Number(input.value)).catch(function () {});
         } else if (target.hasAttribute('data-workspace-save') || target.hasAttribute('data-workspace-remove')) {
@@ -174,7 +191,10 @@
     });
 
     document.addEventListener('input', function (event) {
-        if (event.target.matches('[data-workspace-quantity]')) event.target.closest('[data-workspace-product]').dataset.dirty = '1';
+        if (event.target.matches('[data-workspace-quantity]')) {
+            var box = event.target.closest('[data-workspace-product]'); box.dataset.dirty = '1';
+            if (box.classList.contains('b2b-workspace-quantity')) paintRules(box);
+        }
     });
     // New positions require confirmation; quantities already in the selection save on blur.
     document.addEventListener('change', function (event) {
@@ -185,10 +205,14 @@
             row.querySelector('[data-workspace-stock]').textContent = option.dataset.stockLabel;
             row.querySelector('[data-workspace-stock]').classList.toggle('is-confirmed', option.dataset.confirmed === '1');
             row.querySelector('[data-workspace-cost]').textContent = option.dataset.cost !== '' ? money(option.dataset.cost) : 'Уточняется';
-            row.querySelector('[data-workspace-margin]').textContent = option.dataset.margin !== '' ? 'Маржа ' + money(option.dataset.margin) + ' · ' + Number(option.dataset.marginPercent).toLocaleString('ru-RU') + '%' : 'Маржа не рассчитана';
+            row.querySelector('[data-workspace-margin]').textContent = option.dataset.margin !== '' ? money(option.dataset.margin) : 'Уточняется';
+            row.querySelector('[data-workspace-margin-percent]').textContent = option.dataset.marginPercent !== '' ? Number(option.dataset.marginPercent).toLocaleString('ru-RU', {maximumFractionDigits:1}) + '%' : '';
             row.querySelector('[data-workspace-margin]').classList.toggle('is-negative', Number(option.dataset.margin) < 0);
             row.querySelector('[data-workspace-margin]').classList.toggle('is-unknown', option.dataset.margin === '');
             var box = row.querySelector('[data-workspace-product]');
+            box.dataset.orderRules = option.dataset.orderRules || '{}';
+            if (!box.dataset.dirty && !state.items.some(function (item) { return item.id === Number(box.dataset.workspaceProduct); })) box.querySelector('input').value = orderRules.initialQuantity(JSON.parse(box.dataset.orderRules));
+            paintRules(box);
             if (state.items.some(function (item) { return item.id === Number(box.dataset.workspaceProduct); })) save(box, Number(box.querySelector('input').value)).catch(function () {});
             return;
         }

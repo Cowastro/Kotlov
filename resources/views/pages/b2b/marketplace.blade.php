@@ -174,7 +174,7 @@
                     <div class="b2b-product-table {{ $mode === 'reference' ? 'is-reference' : '' }}">
                         <div class="b2b-product-table__head" aria-hidden="true">
                             <span>Товар</span>
-                            @if ($mode === 'orderable')<span>Цена</span><span>Наличие</span><span>Количество</span>@else @if($showProcurement)<span>Входная / маржа</span>@endif<span>{{ $showProcurement ? 'Розница' : 'Цена сайта' }}</span><span>{{ $staffWorkspace ? 'Количество / сумма' : 'Запрос оптовой цены' }}</span>@endif
+                            @if ($mode === 'orderable')<span>Цена</span><span>Наличие</span><span>Количество</span>@else @if($showProcurement)<span>Входная</span>@endif<span>{{ $showProcurement ? 'Розница' : 'Цена сайта' }}</span>@if($showProcurement)<span>Маржа / шт.</span>@endif<span>{{ $staffWorkspace ? 'Количество / сумма' : 'Запрос оптовой цены' }}</span>@endif
                         </div>
                         @foreach ($products as $item)
                             @php
@@ -228,16 +228,27 @@
                                 @else
                                     @if($showProcurement)
                                         @php $selectedOffer = $workspaceOffers->get($product->id, collect())->firstWhere('supplier_key', data_get($workspaceLines->get($product->id), 'workspace_purchase.supplier_key')) ?? $workspaceOffers->get($product->id, collect())->first(); @endphp
-                                        <div class="b2b-workspace-cost"><small>Входная</small><strong data-workspace-cost>{{ isset($selectedOffer['purchase_price']) ? number_format($selectedOffer['purchase_price'], 2, ',', ' ').' BYN' : 'Уточняется' }}</strong><span data-workspace-margin class="{{ !isset($selectedOffer['margin']) ? 'is-unknown' : ($selectedOffer['margin'] < 0 ? 'is-negative' : '') }}" title="Маржа = розница − входная. Процент рассчитан от розницы.">{{ isset($selectedOffer['margin']) ? 'Маржа '.number_format($selectedOffer['margin'], 2, ',', ' ').' BYN · '.number_format($selectedOffer['margin_percent'], 1, ',', ' ').'%' : 'Маржа не рассчитана' }}</span></div>
+                                        <div class="b2b-workspace-cost"><small>Входная</small><strong data-workspace-cost>{{ isset($selectedOffer['purchase_price']) ? number_format($selectedOffer['purchase_price'], 2, ',', ' ').' BYN' : 'Уточняется' }}</strong></div>
                                     @endif
                                     <div class="b2b-price-cell"><span>{{ $showProcurement ? 'Розница' : 'Справочная цена' }}</span><strong>{{ (float) $product->price > 0 ? number_format((float) $product->price, 2, ',', ' ') : '—' }} <small>BYN</small></strong></div>
+                                    @if($showProcurement)
+                                    <div class="b2b-workspace-margin" title="Маржа за единицу = розница − входная. Процент рассчитан от розницы."><small>Маржа / шт.</small><strong data-workspace-margin class="{{ !isset($selectedOffer['margin']) ? 'is-unknown' : ($selectedOffer['margin'] < 0 ? 'is-negative' : '') }}">{{ isset($selectedOffer['margin']) ? number_format($selectedOffer['margin'], 2, ',', ' ').' BYN' : 'Уточняется' }}</strong><span data-workspace-margin-percent>{{ isset($selectedOffer['margin_percent']) ? number_format($selectedOffer['margin_percent'],1,',',' ').'%' : '' }}</span></div>
+                                    @endif
                                     <div class="b2b-request-cell">
                                         @if($staffWorkspace)
-                                            @php $workspaceLine = $workspaceLines->get($product->id); @endphp
-                                            <div class="b2b-workspace-quantity" data-workspace-product="{{ $product->id }}">
-                                                <div class="b2b-workspace-stepper"><button type="button" data-step="-1" aria-label="Уменьшить количество: {{ $product->name }}">−</button><input type="number" min="0" max="999" step="1" value="{{ $workspaceLine['quantity'] ?? 1 }}" inputmode="numeric" aria-label="Количество: {{ $product->name }}" data-workspace-quantity><button type="button" data-step="1" aria-label="Увеличить количество: {{ $product->name }}">+</button></div>
+                                            @php
+                                                $workspaceLine = $workspaceLines->get($product->id);
+                                                $orderRules = $showProcurement ? ($selectedOffer['order_rules'] ?? []) : ($workspaceLine['order_rules'] ?? []);
+                                                $orderRulesLabel = \App\Services\Suppliers\SupplierOrderRules::label($orderRules);
+                                                $initialQuantity = $workspaceLine['quantity'] ?? \App\Services\Suppliers\SupplierOrderRules::initialQuantity($orderRules);
+                                                $orderRulesWarning = \App\Services\Suppliers\SupplierOrderRules::warning($orderRules, $initialQuantity);
+                                            @endphp
+                                            <div class="b2b-workspace-quantity" data-workspace-product="{{ $product->id }}" data-order-rules='@json($orderRules)'>
+                                                <div class="b2b-workspace-stepper"><button type="button" data-step="-1" aria-label="Уменьшить количество: {{ $product->name }}">−</button><input type="number" min="0" max="999" step="1" value="{{ $initialQuantity }}" inputmode="numeric" aria-label="Количество: {{ $product->name }}" data-workspace-quantity><button type="button" data-step="1" aria-label="Увеличить количество: {{ $product->name }}">+</button></div>
                                                 <button type="button" data-workspace-save class="b2b-workspace-save">{{ $workspaceLine ? '✓ В подборе' : 'В подбор' }}</button>
+                                                <p class="b2b-workspace-rule-label" data-workspace-order-rules @if($orderRulesLabel === '')hidden @endif>{{ $orderRulesLabel }}</p>
                                                 <small data-workspace-line-total>{{ $workspaceLine ? number_format($workspaceLine['price'] * $workspaceLine['quantity'], 2, ',', ' ').' BYN' : '' }}</small>
+                                                <p class="b2b-workspace-rule-warning" data-workspace-rule-warning role="status" @if($orderRulesWarning === '')hidden @endif>{{ $orderRulesWarning }}</p>
                                             </div>
                                         @elseif ($staffPreview)
                                             <span class="b2b-preview-action">Тестовый просмотр</span>
@@ -287,6 +298,7 @@
 @endpush
 @push('scripts')
     @include('pages.b2b.scripts')
+    @if($staffWorkspace)<script src="{{ asset('assets/js/supplier-order-rules.js') }}?v={{ filemtime(public_path('assets/js/supplier-order-rules.js')) }}" defer></script>@endif
     @if($staffWorkspace)<script src="{{ asset('assets/js/b2b-workspace.js') }}?v={{ filemtime(public_path('assets/js/b2b-workspace.js')) }}" defer></script>@endif
 @endpush
 @endsection

@@ -3,7 +3,7 @@
     <label class="b2b-workspace-supplier"><span class="visually-hidden">Поставщик: {{ $product->name }}</span>
         <select data-workspace-offer data-product-id="{{ $product->id }}" aria-label="Поставщик: {{ $product->name }}">
             @foreach($offers as $offer)
-                <option value="{{ $offer['supplier_key'] }}" data-confirmed="{{ $offer['is_fresh'] && $offer['in_stock'] ? 1 : 0 }}" data-stock-label="{{ $offer['stock'].($offer['warehouse'] ? ' · '.$offer['warehouse'] : '').(! $offer['is_fresh'] ? ' · проверить остаток' : '') }}" data-cost="{{ $offer['purchase_price'] }}" data-margin="{{ $offer['margin'] }}" data-margin-percent="{{ $offer['margin_percent'] }}" @selected(data_get($savedLine, 'workspace_purchase.supplier_key') === $offer['supplier_key'])>{{ $offer['supplier'] }} · {{ $offer['stock'] }}{{ ! $offer['is_fresh'] ? ' · проверить остаток' : '' }}</option>
+                <option value="{{ $offer['supplier_key'] }}" data-order-rules='@json($offer['order_rules'] ?? [])' data-rules-label="{{ \App\Services\Suppliers\SupplierOrderRules::label($offer['order_rules'] ?? []) }}" data-confirmed="{{ $offer['is_fresh'] && $offer['in_stock'] ? 1 : 0 }}" data-stock-label="{{ $offer['stock'].($offer['warehouse'] ? ' · '.$offer['warehouse'] : '').(! $offer['is_fresh'] ? ' · проверить остаток' : '') }}" data-cost="{{ $offer['purchase_price'] }}" data-margin="{{ $offer['margin'] }}" data-margin-percent="{{ $offer['margin_percent'] }}" @selected(data_get($savedLine, 'workspace_purchase.supplier_key') === $offer['supplier_key'])>{{ $offer['supplier'] }} · {{ $offer['stock'] }}{{ ! $offer['is_fresh'] ? ' · проверить остаток' : '' }}</option>
             @endforeach
         </select>
     </label>

@@ -146,7 +146,7 @@ class StaffCatalogWorkspaceTest extends TestCase
         }
         $admin = $this->manager(['role' => 'admin']);
         $this->actingAs($admin)->get(route('b2b.catalog', ['workspace' => 1, 'q' => 'SUP-TEST-150']))->assertOk()
-            ->assertSee('Входная / маржа')->assertSee('Первый поставщик')->assertSee('Второй поставщик')
+            ->assertSee('Входная')->assertSee('Маржа / шт.')->assertSee('Первый поставщик')->assertSee('Второй поставщик')
             ->assertSee('Остаток уточняется')->assertSee('Минск, склад тест')->assertSee('30 шт.');
         $offers = app(StaffCatalogWorkspace::class)->offers($product->fresh(), $admin);
         $offer = $offers->firstWhere('supplier', 'Второй поставщик');
@@ -221,7 +221,24 @@ class StaffCatalogWorkspaceTest extends TestCase
         $draft = $this->actingAs($admin)->postJson(route('b2b.workspace.store'), ['name' => 'С упаковкой'])->json();
         $this->putJson(route('b2b.workspace.update', ['selection' => $draft['id'], 'product' => $product->id]), ['revision' => 1, 'quantity' => 2])
             ->assertOk()->assertJsonPath('items.0.order_rules.minimum', 2)->assertJsonPath('items.0.order_rules.multiple', 0.5);
+        $this->putJson(route('b2b.workspace.update', ['selection' => $draft['id'], 'product' => $product->id]), ['revision' => 2, 'quantity' => 1])
+            ->assertOk()->assertJsonPath('items.0.quantity', 1)
+            ->assertJsonPath('items.0.order_rules_label', 'Мин. 2 шт. · Кратность 0,5 шт.')
+            ->assertJsonPath('items.0.order_rules_warning', 'Количество меньше минимума поставщика: Мин. 2 шт.');
+        $this->get(route('b2b.catalog', ['workspace' => 1, 'selection_id' => $draft['id'], 'q' => 'SUP-TEST-150']))
+            ->assertOk()->assertSee('data-workspace-order-rules', false)->assertSee('Мин. 2 шт. · Кратность 0,5 шт.');
         $offer->raw = [];
         $this->assertSame([], SupplierOrderRules::fromOffer($offer));
+    }
+
+    public function test_box_size_is_information_and_does_not_replace_order_multiple(): void
+    {
+        $rules = ['minimum' => 8, 'multiple' => 1, 'box' => 100, 'unit' => 'шт.'];
+        $this->assertSame(8, SupplierOrderRules::initialQuantity($rules));
+        $this->assertSame('', SupplierOrderRules::warning($rules, 9));
+        $this->assertNotSame('', SupplierOrderRules::warning($rules, 7));
+        $this->assertSame(9, SupplierOrderRules::initialQuantity(['minimum' => 8, 'multiple' => 3]));
+        $this->assertSame(2, SupplierOrderRules::initialQuantity(['minimum' => 1.5, 'multiple' => 0.5]));
+        $this->assertSame('', SupplierOrderRules::warning($rules, 0));
     }
 }

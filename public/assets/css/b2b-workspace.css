@@ -149,3 +149,24 @@
  .b2b-portal.b2b-staff-workspace.is-dense .b2b-product-main{grid-template-columns:40px minmax(0,1fr)}
  .b2b-portal.b2b-staff-workspace.is-dense .b2b-product-image{width:40px;height:40px}
 }
+/* Procurement values stay in distinct columns; order rules belong to quantity. */
+.b2b-portal.b2b-staff-workspace.has-procurement .b2b-product-table.is-reference :is(.b2b-product-table__head,.b2b-product-row){grid-template-columns:minmax(180px,1fr) 110px 110px 110px 232px}
+.b2b-workspace-margin{display:grid;gap:5px;min-width:0;min-height:68px;padding:8px 10px;border:1px solid #cfe8d9;border-radius:8px;background:#f1faf5;font-variant-numeric:tabular-nums;box-sizing:border-box}
+.b2b-workspace-margin>small{font-size:10px;line-height:1.4;color:#326247}
+.b2b-workspace-margin>strong{font-size:14px;line-height:1.4;color:#17633f;overflow-wrap:anywhere}
+.b2b-workspace-margin>span{font-size:11px;color:#326247}
+.b2b-workspace-margin>.is-negative{color:#b42318}
+.b2b-workspace-margin>.is-unknown{color:#717b87}
+.b2b-workspace-quantity>.b2b-workspace-rule-label,.b2b-workspace-quantity>.b2b-workspace-rule-warning{grid-column:1/-1;margin:0;padding:5px 7px;font-size:11px;line-height:1.45;border-radius:6px;overflow-wrap:anywhere}
+.b2b-workspace-rule-label{color:#72501c;background:#fff8e8}
+.b2b-workspace-rule-warning{color:#a33d15;background:#fff0e7}
+.b2b-workspace-line .b2b-workspace-rule-warning{color:#a33d15}
+@media(min-width:761px) and (max-width:1200px){
+ .b2b-portal.b2b-staff-workspace.has-procurement .b2b-product-table.is-reference .b2b-product-row{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:'product product product' 'purchase retail margin' 'order order order'}
+ .b2b-staff-workspace.has-procurement .b2b-workspace-margin{grid-area:margin}
+}
+@media(max-width:760px){
+ .b2b-portal.b2b-staff-workspace.has-procurement .b2b-product-table.is-reference .b2b-product-row{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:'product product' 'purchase retail' 'margin margin' 'order order'}
+ .b2b-staff-workspace.has-procurement .b2b-workspace-margin{grid-area:margin;display:flex;align-items:baseline;gap:8px;min-height:0;padding:6px 8px}
+ .b2b-workspace-margin>small{margin-right:auto}
+}
