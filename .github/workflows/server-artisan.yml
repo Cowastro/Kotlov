@@ -1232,6 +1232,12 @@ jobs:
           if [[ "$TASK" == "recover-deal-price-lock" ]]; then
             grep -E '^metric\.deal_recovery\.(blocked|released)=[01]$' "$detail_log" || true
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "deal:import-file" ]]; then
+            echo "safe_deal_import_begin"
+            grep -E '^metric\.deal_import\.[a-z0-9_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.deal_import\.(row=[0-9]+:(new|on_shop)|missing=[0-9]+|id=[a-z0-9-]+|status=[a-z0-9-]+|rejected=[a-z0-9-]+|error=[a-z0-9-]+)$' "$detail_log" || true
+            echo "safe_deal_import_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "deal:sync-catalog-prices" ]]; then
             grep -E '^metric\.deal_catalog_prices\.[a-z_]+=[0-9]+$' "$detail_log" || true
             grep -E '^audit\.deal_catalog_price\.item=[0-9]+:[0-9]+:[a-z_]+:[a-z0-9-]+$' "$detail_log" || true
