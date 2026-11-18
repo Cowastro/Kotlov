@@ -61,7 +61,7 @@ class StaffSearchProcurementTest extends TestCase
             $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
             $keys = array_keys($response->json('items.0.procurement'));
             sort($keys);
-            $this->assertSame(['margin', 'margin_percent', 'purchase_price', 'stock_label', 'stock_state', 'supplier'], $keys);
+            $this->assertSame(['margin', 'margin_percent', 'order_rules', 'purchase_price', 'stock_label', 'stock_state', 'supplier', 'supplier_key'], $keys);
         }
     }
 

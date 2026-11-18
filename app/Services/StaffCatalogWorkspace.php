@@ -108,7 +108,9 @@ class StaffCatalogWorkspace
         $indicator = SupplierStockIndicator::fromOffer($offer ?? []);
 
         return [
+            'supplier_key' => $offer['supplier_key'] ?? null,
             'supplier' => $offer['supplier'] ?? null,
+            'order_rules' => $offer['order_rules'] ?? [],
             'purchase_price' => $offer['purchase_price'] ?? null,
             'margin' => $offer['margin'] ?? null,
             'margin_percent' => $offer['margin_percent'] ?? null,

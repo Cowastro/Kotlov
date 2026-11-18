@@ -21,5 +21,14 @@
         for (var quantity = minimum; quantity <= 999; quantity++) if (!warning(rules, quantity)) return quantity;
         return minimum;
     }
-    return {label:label, warning:warning, initialQuantity:initialQuantity};
+    // Quantities in a workspace are whole units; find a valid increment even
+    // when the supplier's pack size is fractional (e.g. 1.5 -> 3 whole units).
+    function additionQuantity(rules, existing, start, direction) {
+        direction = direction < 0 ? -1 : 1;
+        for (var quantity = start; quantity >= 1 && quantity + existing <= 999; quantity += direction) {
+            if (Number.isInteger(quantity) && !warning(rules, quantity + existing)) return quantity;
+        }
+        return null;
+    }
+    return {label:label, warning:warning, initialQuantity:initialQuantity, additionQuantity:additionQuantity};
 }));
