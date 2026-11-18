@@ -224,6 +224,9 @@ class B2bOrderWorkflow
     public function clientConfirm(B2bOrder $order, User $actor): B2bOrder
     {
         $order = $this->recordClientConfirmation($order, $actor);
+        if ($order->isStaffReservation()) {
+            return $order; // Pilot: confirmation only, no invoice, e-mail or 1C exchange.
+        }
         $issuer = User::query()->find($order->assigned_manager_id ?: $order->accepted_by);
         if (! $issuer?->is_active || ! $issuer->canManageB2bOrders()) {
             app(B2bOrderNotifier::class)->manager($order, 'Клиент подтвердил заказ', 'Выставите счёт вручную: у заказа нет активного B2B-менеджера.');
@@ -257,6 +260,14 @@ class B2bOrderWorkflow
             $locked = B2bOrder::query()->lockForUpdate()->findOrFail($order->id);
             $client = $actor->activeB2bClient();
             abort_unless($client && (int) $locked->b2b_client_id === (int) $client->id, 404);
+            if ($locked->isStaffReservation() && $locked->status === 'client_confirmed') {
+                return $locked;
+            }
+            if ($locked->isStaffReservation()) {
+                if ($locked->reservationExpired() || $locked->items()->get()->contains(fn ($item) => (float) $item->reservations()->active()->sum('quantity') < $item->quantity)) {
+                    throw ValidationException::withMessages(['order' => 'Срок резерва истёк или резерв снят. Попросите менеджера подготовить новое предложение.']);
+                }
+            }
             if ($locked->status !== 'awaiting_client') {
                 throw ValidationException::withMessages(['order' => 'Этот заказ сейчас не ожидает подтверждения.']);
             }

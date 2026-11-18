@@ -573,3 +573,9 @@ Schedule::command('orders:notify-control')->everyFiveMinutes()->withoutOverlappi
 
 Schedule::command('requests:check-arrivals')->everyFiveMinutes()->withoutOverlapping(10)
     ->appendOutputTo(storage_path('logs/request-arrivals.log'));
+
+Artisan::command('b2b:expire-reservations', function (\App\Services\B2bOrders\StaffSelectionReservation $reservations): void {
+    $this->info('Снято истёкших резервов: '.$reservations->expire());
+})->purpose('Release expired internal B2B reservations');
+
+Schedule::command('b2b:expire-reservations')->everyFiveMinutes()->withoutOverlapping(10);

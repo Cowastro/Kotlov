@@ -132,6 +132,9 @@ class B2bCabinetController extends Controller
         $documentsQuery = $this->documentsFor($request);
 
         $orders = (clone $ordersQuery)->paginate(12, ['*'], 'orders_page')->withQueryString();
+        $pendingStaffReservations = (clone $ordersQuery)->where('status', 'awaiting_client')
+            ->whereNotNull('commercial_terms_snapshot->staff_reservation')
+            ->whereHas('reservations', fn ($query) => $query->active())->count();
         $documents = (clone $documentsQuery)
             ->with('contracts')
             ->latest('issued_at')
@@ -214,7 +217,7 @@ class B2bCabinetController extends Controller
         $branchCities = $section === 'page' && $client->partner_type !== 'installer'
             ? \App\Models\City::where('is_active', true)->orderBy('name')->get() : collect();
 
-        return view('pages.b2b.cabinet', compact(
+        return view('pages.b2b.cabinet', compact('pendingStaffReservations',
             'installerPage', 'installerEditor', 'partnerBranches', 'clientOrders', 'offeredClientOrders',
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'requestCount', 'specifications',
             'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers', 'creditSummary',
@@ -724,6 +727,9 @@ class B2bCabinetController extends Controller
             && (int) $b2bOrder->b2b_client_id === (int) $client->id, 404);
 
         $order = $workflow->clientConfirm($b2bOrder, $request->user())->load('commercialDocument');
+        if ($order->isStaffReservation()) {
+            return to_route('b2b.cabinet', ['section' => 'orders'])->with('success', 'Заявка '.$order->number.' подтверждена. Менеджер получил подтверждение в системе; дальнейшее оформление — по согласованию.');
+        }
 
         return to_route('b2b.cabinet', ['section' => 'orders'])
             ->with('success', $order->commercialDocument
