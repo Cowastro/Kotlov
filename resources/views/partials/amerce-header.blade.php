@@ -2,6 +2,7 @@
 @php
     $navCategories = $navCategories ?? collect();
     $navBrands = $navBrands ?? collect();
+    $canUseStaffWorkspace = \App\Services\StaffCatalogWorkspace::allowed(auth()->user());
 @endphp
 <div class="tf-topbar bg-dark site-topbar">
     <div class="container">
@@ -40,9 +41,15 @@
                     </a>
                 @endif
 
+                @if($canUseStaffWorkspace)
+                <a href="{{ route('b2b.workspace') }}" class="site-topbar__b2b text-white" aria-label="B2B · подбор и заявки" title="Рабочий B2B-подбор">
+                    <span class="site-topbar__b2b-label">Рабочий подбор / </span>B2B
+                </a>
+                @else
                 <a href="/partners" class="site-topbar__b2b text-white">
                     <span class="site-topbar__b2b-label">Партнёрам / </span>B2B
                 </a>
+                @endif
             </div>
 
         </div>
@@ -420,11 +427,18 @@
                                     data-bs-toggle="dropdown" aria-expanded="false"
                                     style="text-decoration:none;">
                                     <i class="icon icon-User"></i>
-                                    <span class="d-none d-md-block" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                                        {{ Str::limit(Auth::user()->name, 12) }}
+                                    <span class="d-none d-md-block header-account-identity">
+                                        <span>{{ Str::limit(Auth::user()->name, 12) }}</span>
+                                        @if($canUseStaffWorkspace)<small>{{ Auth::user()->isAdmin() ? 'Администратор' : 'Менеджер CRM' }}</small>@endif
                                     </span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end account-quick-menu">
+                                    @if($canUseStaffWorkspace)
+                                        <li class="account-workspace-role">{{ Auth::user()->isAdmin() ? 'Администратор' : 'Менеджер CRM' }}</li>
+                                        <li><a class="dropdown-item account-workspace-entry" href="{{ route('b2b.workspace') }}"><i class="icon icon-SquaresFour me-2" aria-hidden="true"></i> B2B · подбор и заявки</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('selections.index') }}"><i class="icon icon-Handbag me-2" aria-hidden="true"></i> Мои заявки</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    @endif
                                     @if (Auth::user()->is_active && Auth::user()->isManager())
                                         <li>
                                             <a class="dropdown-item" href="/admin">
