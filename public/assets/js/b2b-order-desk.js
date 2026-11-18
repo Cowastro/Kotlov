@@ -103,7 +103,7 @@
             row.classList.toggle('is-postponed', state.excluded.includes(item.id));
             row.querySelector('[data-desk-quantity]').value = item.quantity;
             row.querySelector('[data-desk-unit-price]').textContent = item.price > 0 ? money(item.price).replace(' BYN', '') : 'Уточняется';
-            row.querySelector('[data-desk-price-label]').textContent = item.client_pricing ? 'Цена для клиента' + (item.client_pricing.mode === 'discount' && item.client_pricing.discount_percent > 0 ? ' · −' + Number(item.client_pricing.discount_percent).toLocaleString('ru-RU', {maximumFractionDigits:2}) + '%' : '') : (item.pricing_type === 'b2b' ? 'Ваша B2B-цена' : 'Цена сайта');
+            row.querySelector('[data-desk-price-label]').textContent = item.client_pricing ? 'Цена для клиента' + (item.client_pricing.mode === 'discount' && item.client_pricing.discount_percent > 0 ? ' · −' + Number(item.client_pricing.discount_percent).toLocaleString('ru-RU', {maximumFractionDigits:2}) + '%' : '') : (item.pricing_type === 'b2b' ? 'Ваша B2B-цена' : (root.classList.contains('has-cost') ? 'Розница' : 'Цена сайта'));
             row.querySelector('[data-desk-working-note]').hidden = !item.workspace_note;
             row.querySelector('[data-desk-working-note-text]').textContent = item.workspace_note || '';
             row.querySelector('[data-desk-line-total]').textContent = item.price > 0 ? money(item.price * item.quantity) : 'Уточняется';
