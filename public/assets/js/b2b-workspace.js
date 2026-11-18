@@ -202,6 +202,9 @@
             var select = event.target;
             var option = select.selectedOptions[0];
             var row = select.closest('.b2b-product-row');
+            var supplierCaption = row.querySelector('[data-workspace-supplier-caption]');
+            supplierCaption.textContent = option.dataset.supplierName;
+            supplierCaption.title = option.dataset.supplierName;
             row.querySelector('[data-workspace-stock]').textContent = option.dataset.stockLabel;
             row.querySelector('[data-workspace-stock]').classList.toggle('is-confirmed', option.dataset.confirmed === '1');
             row.querySelector('[data-workspace-cost]').textContent = option.dataset.cost !== '' ? money(option.dataset.cost) : 'Уточняется';
