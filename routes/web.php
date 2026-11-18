@@ -882,6 +882,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/b2b/selections/{selection}/release-reserve', [\App\Http\Controllers\StaffSelectionReservationController::class, 'release'])->middleware('throttle:10,1')->name('b2b.selections.release-reserve');
     Route::post('/b2b/workspace/selections', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'store'])->middleware('throttle:30,1')->name('b2b.workspace.store');
     Route::post('/b2b/workspace/paste', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'paste'])->middleware('throttle:30,1')->name('b2b.workspace.paste');
+    Route::get('/b2b/workspace/analogs/{product}', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'analogs'])->whereNumber('product')->middleware('throttle:60,1')->name('b2b.workspace.analogs');
     Route::put('/b2b/workspace/selections/{selection}/items/{product}', [\App\Http\Controllers\StaffCatalogWorkspaceController::class, 'update'])->whereNumber('product')->middleware('throttle:180,1')->name('b2b.workspace.update');
     Route::get('/b2b/cabinet', [B2bCabinetController::class, 'show'])->name('b2b.cabinet');
     Route::post('/b2b/cabinet/branches', [\App\Http\Controllers\B2bBranchController::class, 'store'])

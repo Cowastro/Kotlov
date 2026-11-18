@@ -47,3 +47,9 @@
     <div data-workspace-paste-rows></div>
     <footer data-workspace-paste-footer hidden><span data-workspace-paste-summary></span><button type="button" class="b2b-workspace-primary" data-workspace-paste-add>Добавить в подбор</button></footer>
 </dialog>
+<dialog class="b2b-workspace-dialog is-analogs" id="workspace-analogs-dialog" aria-labelledby="workspace-analogs-title">
+    <header><div><small>Тот же тип и размер — другая серия, бренд или поставщик</small><h2 id="workspace-analogs-title">Аналоги</h2></div><button type="button" data-dialog-close aria-label="Закрыть">×</button></header>
+    <p data-analogs-source class="b2b-workspace-price-note"></p>
+    <p data-analogs-status role="status" aria-live="polite"></p>
+    <div data-analogs-list></div>
+</dialog>

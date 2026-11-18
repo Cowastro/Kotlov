@@ -327,6 +327,16 @@
     });
     window.KotlovStaffWorkspace = {
         line: function (productId) { return state.items.find(function (item) { return item.id === productId; }); },
+        // Sets the quantity of a line (0 removes it), keeping its supplier.
+        set: function (productId, quantity) {
+            var line = state.items.find(function (item) { return item.id === productId; });
+            return enqueue(function () {
+                return ensureSelection().then(function () {
+                    var url = root.dataset.updateUrl.replace('__selection__', state.id).replace('__product__', productId);
+                    return request(url, 'PUT', {quantity: quantity, revision: state.revision, supplier_key: line && line.workspace_purchase ? line.workspace_purchase.supplier_key : null});
+                }).then(function (data) { state = data; render(); status(pending > 1 ? 'Сохраняем…' : 'Сохранено ' + state.saved_at); });
+            });
+        },
         add: function (productId, quantity, supplierKey) {
             if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return Promise.reject(new Error('Укажите целое количество от 1 до 999.'));
             return enqueue(function () {
