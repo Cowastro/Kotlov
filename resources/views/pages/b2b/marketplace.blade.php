@@ -171,6 +171,7 @@
                     @endif
                 </div>
 
+                @if (! empty($characteristicPanel))@include('pages.b2b.characteristic-filters')@endif
                 @if ($gridView && $diameterGrid)
                     @include('pages.b2b.diameter-grid')
                 @elseif ($products->count())
