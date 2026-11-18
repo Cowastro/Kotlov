@@ -142,7 +142,12 @@ class ImportDealByFileCommand extends Command
     {
         $state = strtolower((string) ($status['status'] ?? ''));
 
-        return $state !== '' && ! in_array($state, ['pending', 'processing', 'in_progress', 'new', 'queued', 'started', 'running'], true);
+        if ($state === '' || in_array($state, ['pending', 'processing', 'in_progress', 'new', 'queued', 'started', 'running'], true)) {
+            return false;
+        }
+
+        // Deal.by answers «success» with nothing read while the file still waits in the queue.
+        return (int) ($status['total'] ?? 0) > 0 || in_array($state, ['fatal', 'error', 'failed', 'partial'], true);
     }
 
     /** @param array<string, mixed> $status */

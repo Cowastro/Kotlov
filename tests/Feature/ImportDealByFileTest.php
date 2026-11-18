@@ -55,10 +55,12 @@ class ImportDealByFileTest extends TestCase
                     : [['id' => 9, 'external_id' => 'kotlov-101'], ['id' => 10, 'external_id' => 'kotlov-102']]]);
             },
             'deal.test/api/v1/products/import_url' => Http::response(['id' => 'imp-77', 'status' => 'success']),
-            'deal.test/api/v1/products/import/status/imp-77' => Http::response(['status' => 'SUCCESS', 'imported' => 1, 'created' => 1, 'errors' => []]),
+            'deal.test/api/v1/products/import/status/imp-77' => Http::sequence()
+                ->push(['status' => 'SUCCESS', 'total' => 0, 'created' => 0])
+                ->push(['status' => 'SUCCESS', 'total' => 1, 'imported' => 1, 'created' => 1, 'errors' => []]),
         ]);
 
-        $this->artisan('deal:import-file', ['file' => 'deal-import-test', '--apply' => true, '--wait' => 0])
+        $this->artisan('deal:import-file', ['file' => 'deal-import-test', '--apply' => true, '--wait' => 30])
             ->expectsOutputToContain('audit.deal_import.id=imp-77')
             ->expectsOutputToContain('audit.deal_import.status=success')
             ->expectsOutputToContain('metric.deal_import.created=1')
@@ -70,6 +72,6 @@ class ImportDealByFileTest extends TestCase
             && $request['mark_missing_product_as'] === 'none'
             && $request['updated_fields'] === ['price']
             && str_ends_with($request['url'], '/exports/deal-import-test.xlsx'));
-        Http::assertSentCount(4);
+        Http::assertSentCount(5);
     }
 }
