@@ -25,6 +25,7 @@ class B2bOrderStockCheck
     {
         return DB::transaction(function () use ($order, $actor): array {
             $locked = B2bOrder::query()->lockForUpdate()->findOrFail($order->id);
+            \App\Models\Product::whereIn('id', $locked->items()->whereNotNull('product_id')->pluck('product_id'))->orderBy('id')->lockForUpdate()->get();
             $summary = ['available' => 0, 'partial' => 0, 'unavailable' => 0, 'manual' => 0];
 
             foreach ($locked->items()->with(['product', 'integrationProduct.source'])->get() as $item) {
@@ -59,6 +60,8 @@ class B2bOrderStockCheck
     public function applyManagerDecision(B2bOrderItem $item, User $actor): void
     {
         DB::transaction(function () use ($item, $actor): void {
+            B2bOrder::whereKey($item->b2b_order_id)->lockForUpdate()->firstOrFail();
+            \App\Models\Product::whereKey($item->product_id)->lockForUpdate()->first();
             $item->refresh();
             $pool = $item->product && $item->stock_key
                 ? $this->locator->poolsForProduct($item->product, $item->b2b_order_id)->firstWhere('key', $item->stock_key)
@@ -222,6 +225,9 @@ class B2bOrderStockCheck
         if (! $pool || $quantity < 1) {
             return;
         }
+        if ($pool['stock'] !== null && $quantity > $pool['free']) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['confirmed_quantity' => 'Свободного остатка уже недостаточно для этого резерва. Повторите проверку.']);
+        }
 
         B2bOrderReservation::query()->create([
             'b2b_order_id' => $item->b2b_order_id,
@@ -235,6 +241,7 @@ class B2bOrderStockCheck
             'warehouse_name' => $pool['warehouse_name'],
             'quantity' => $quantity,
             'reserved_by' => $actor?->id,
+            'expires_at' => data_get($item->order->commercial_terms_snapshot, 'staff_reservation.expires_at'),
         ]);
     }
 

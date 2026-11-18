@@ -250,7 +250,7 @@
     });
     root.querySelectorAll('[data-desk-export]').forEach(function (link) { link.addEventListener('click', function (event) { if (busy) { event.preventDefault(); status('Дождитесь сохранения перед экспортом.'); } }); });
     root.querySelector('[data-desk-export-scope]').addEventListener('change', syncExportScope);
-    root.querySelectorAll('.desk-fulfillment form').forEach(function (form) { form.addEventListener('submit', function (event) {
+    root.querySelectorAll('.desk-fulfillment form, [data-desk-publish]').forEach(function (form) { form.addEventListener('submit', function (event) {
         if (busy) { event.preventDefault(); status('Дождитесь сохранения перед проверкой или оформлением.'); return; }
         root.querySelectorAll('[data-desk-revision]').forEach(function (input) { input.value = state.revision; });
         status('Проверяем актуальные остатки…'); submitting = true; lock(true);

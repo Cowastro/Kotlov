@@ -71,6 +71,7 @@
 
             <section class="b2b-cabinet-content">
                 @if ($section === 'overview')
+                    @if($pendingStaffReservations > 0 && $can('orders.view'))<article class="b2b-cabinet-card"><h3>Заявки от менеджера: {{ $pendingStaffReservations }}</h3><p>Проверьте состав, согласованные цены и срок внутреннего резерва.</p><a href="{{ $sectionUrl('orders') }}">Открыть заявки и резервы →</a></article>@endif
                     @include('partials.b2b.partner-level')
                     <div class="b2b-cabinet-heading"><div><span>Обзор</span><h2>Рабочий стол</h2></div><p>Актуальная информация по вашей компании</p></div>
                     <article class="b2b-profile-progress {{ $profileCompletion === 100 ? 'is-complete' : '' }}">
@@ -325,10 +326,11 @@
                                 <div>
                                     <span>{{ $order->created_at?->format('d.m.Y H:i') }}</span>
                                     <h3>{{ $order->number }}</h3>
+                                    @if($order->isStaffReservation())<p><strong>Заявка от менеджера · внутренний резерв KOTLOV</strong></p><p>{{ $order->status === 'cancelled' ? 'Резерв снят менеджером' : ($order->reservationExpired() ? 'Срок резерва истёк. Обратитесь к менеджеру для нового предложения.' : 'Резерв до '.\Carbon\Carbon::parse(data_get($order->commercial_terms_snapshot,'staff_reservation.expires_at'))->format('d.m.Y H:i')) }}. Резерв на складе поставщика и доставка подтверждаются менеджером отдельно.</p>@endif
                                     <p>{{ $order->items->count() }} позиций · {{ $statusLabels[$order->status] ?? $order->status }} · {{ $order->paymentStatusLabel() }}</p>
                                     @if($order->items->isNotEmpty())
-                                        <details><summary>Состав · подтверждено {{ $order->items->filter->isConfirmed()->count() }} из {{ $order->items->count() }}</summary>
-                                            @foreach($order->items as $line)<p><small>{{ $line->product_name }} — {{ $line->quantity }} шт. · {{ match($line->availability_status) { 'available' => 'в наличии, зарезервировано', 'partial' => 'подтверждено '.$line->confirmed_quantity.' шт.', 'unavailable' => 'нет в наличии', 'replacement' => 'предложена замена', default => 'уточняется' } }}@if($line->isConfirmed() && $line->delivery_days !== null) · срок {{ $line->delivery_days }} дн.@endif</small></p>@endforeach
+                                        <details @if($order->isStaffReservation())open @endif><summary>Состав · подтверждено {{ $order->items->filter->isConfirmed()->count() }} из {{ $order->items->count() }}</summary>
+                                            @foreach($order->items as $line)<p><small>{{ $line->product_name }} — {{ $line->quantity }} шт. · {{ number_format((float)$line->price,2,',',' ') }} BYN/шт. · {{ number_format((float)$line->total,2,',',' ') }} BYN · {{ match($line->availability_status) { 'available' => $order->isStaffReservation() && ($order->reservationExpired() || $order->status === 'cancelled') ? 'резерв не действует' : 'в наличии, зарезервировано', 'partial' => 'подтверждено '.$line->confirmed_quantity.' шт.', 'unavailable' => 'нет в наличии', 'replacement' => 'предложена замена', default => 'уточняется' } }}@if($line->isConfirmed() && $line->delivery_days !== null) · срок {{ $line->delivery_days }} дн.@endif</small></p>@endforeach
                                         </details>
                                     @endif
                                     @foreach($order->comments as $comment)<p><small>{{ $comment->created_at?->format('d.m.Y H:i') }} · {{ $comment->author?->name ?: 'KOTLOV' }}</small><br>{{ $comment->body }}</p>@endforeach
@@ -338,8 +340,8 @@
                                     <small>{{ $order->manager ? 'Менеджер: '.$order->manager->name : 'Ожидает назначения B2B-менеджера' }}</small>
                                     <small>{{ match($order->status) {
                                         'new', 'assigned', 'checking', 'awaiting_supplier', 'proposal_ready' => 'Менеджер проверяет наличие и резервирует товар',
-                                        'awaiting_client' => 'Товар в резерве — подтвердите заказ, счёт сформируется сразу',
-                                        'client_confirmed' => 'Готовим счёт',
+                                        'awaiting_client' => $order->isStaffReservation() ? 'Проверьте состав и согласованные цены, затем подтвердите заявку' : 'Товар в резерве — подтвердите заказ, счёт сформируется сразу',
+                                        'client_confirmed' => $order->isStaffReservation() ? 'Заявка подтверждена. Дальнейшее оформление согласует менеджер.' : 'Готовим счёт',
                                         'invoice_issued', 'awaiting_payment' => 'Ожидаем оплату по счёту',
                                         'credit_approved' => 'Отгрузка с отсрочкой платежа',
                                         'paid' => 'Оплачен — передаём на склад',
@@ -349,8 +351,8 @@
                                         'completed' => 'Закрыт',
                                         default => '',
                                     } }}</small>
-                                    @if($order->status === 'awaiting_client' && $can('orders.create'))
-                                        <form method="POST" action="{{ route('b2b.cabinet.orders.confirm', $order) }}" class="b2b-invoice-form">@csrf<button type="submit">Подтвердить и получить счёт</button></form>
+                                    @if($order->status === 'awaiting_client' && ! $order->reservationExpired() && $can('orders.create'))
+                                        <form method="POST" action="{{ route('b2b.cabinet.orders.confirm', $order) }}" class="b2b-invoice-form">@csrf<button type="submit">{{ $order->isStaffReservation() ? 'Подтвердить заявку и цены' : 'Подтвердить и получить счёт' }}</button></form>
                                     @endif
                                     @if($order->commercialDocument?->type === 'invoice' && $order->commercialDocument?->status !== 'draft' && $can('documents.download'))
                                         <a target="_blank" href="{{ route('b2b.cabinet.documents.pdf', $order->commercialDocument) }}">Открыть счёт PDF →</a>

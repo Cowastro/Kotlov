@@ -47,9 +47,11 @@ class B2bSelectionDeskController extends Controller
         $state = $this->state($selection, $request);
         $targets = CustomerSelection::where('user_id', $request->user()->id)->whereKeyNot($selection->id)->latest('updated_at')->get(['id', 'name', 'revision']);
         $showProcurement = StaffCatalogWorkspace::canViewProcurement($request->user());
+        $reservationClients = $showProcurement ? \App\Models\B2bClient::where('status', 'approved')->whereHas('user', fn ($query) => $query->where('is_active', true))->orderBy('company_name')->get(['id', 'company_name', 'unp']) : collect();
+        $publishedOrder = $showProcurement ? \App\Models\B2bOrder::with('client')->find($selection->meta['published_b2b_order_id'] ?? 0) : null;
         $minimalLayout = true;
 
-        return response()->view('pages.b2b.selection-desk', compact('selection', 'state', 'targets', 'showProcurement', 'minimalLayout'))->header('Cache-Control', 'private, no-store');
+        return response()->view('pages.b2b.selection-desk', compact('selection', 'state', 'targets', 'showProcurement', 'minimalLayout', 'reservationClients', 'publishedOrder'))->header('Cache-Control', 'private, no-store');
     }
 
     public function update(Request $request, CustomerSelection $selection)

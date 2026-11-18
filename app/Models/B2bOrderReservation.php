@@ -17,17 +17,18 @@ class B2bOrderReservation extends Model
     protected $fillable = [
         'b2b_order_id', 'b2b_order_item_id', 'product_id', 'stock_key', 'integration_product_id',
         'warehouse_stock_id', 'supplier_product_id', 'supplier_id', 'warehouse_name', 'quantity',
-        'status', 'reserved_by', 'released_at',
+        'status', 'reserved_by', 'released_at', 'expires_at',
     ];
 
     protected $casts = [
         'quantity' => 'decimal:3',
         'released_at' => 'datetime',
+        'expires_at' => 'datetime',
     ];
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'active');
+        return $query->where('status', 'active')->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()));
     }
 
     public function order(): BelongsTo { return $this->belongsTo(B2bOrder::class, 'b2b_order_id'); }

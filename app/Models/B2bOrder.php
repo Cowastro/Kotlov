@@ -84,6 +84,18 @@ class B2bOrder extends Model
     public function comments(): HasMany { return $this->hasMany(B2bOrderComment::class)->latest(); }
     public function reservations(): HasMany { return $this->hasMany(B2bOrderReservation::class); }
 
+    public function isStaffReservation(): bool
+    {
+        return (bool) data_get($this->commercial_terms_snapshot, 'staff_reservation.selection_id');
+    }
+
+    public function reservationExpired(): bool
+    {
+        $expiry = data_get($this->commercial_terms_snapshot, 'staff_reservation.expires_at');
+
+        return $this->isStaffReservation() && $expiry && \Carbon\CarbonImmutable::parse($expiry)->lessThanOrEqualTo(now());
+    }
+
     /** Every line is confirmed or removed with a reason, and something is left to sell. */
     public function stockIsSettled(): bool
     {

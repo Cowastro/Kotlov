@@ -103,10 +103,12 @@ class B2bStockLocator
             ->active()
             ->whereIn('stock_key', array_values(array_unique($keys)))
             ->when($exceptOrderId, fn ($query) => $query->where('b2b_order_id', '!=', $exceptOrderId))
-            ->selectRaw('stock_key, SUM(quantity) as reserved')
+            // A current read after the product lock also sees reservations committed
+            // while a competing transaction waited (MySQL REPEATABLE READ).
+            ->lockForUpdate()
+            ->get(['stock_key', 'quantity'])
             ->groupBy('stock_key')
-            ->pluck('reserved', 'stock_key')
-            ->map(fn ($quantity): float => (float) $quantity)
+            ->map(fn ($rows): float => (float) $rows->sum('quantity'))
             ->all();
     }
 

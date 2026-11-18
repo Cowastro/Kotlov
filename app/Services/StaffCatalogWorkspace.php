@@ -56,7 +56,7 @@ class StaffCatalogWorkspace
         $contextProduct->setRelation('warehouseStocks', $product->warehouseStocks->filter(fn ($stock) => $stock->supplier?->is_active));
         $offers = app(ManagerStorefrontProductContext::class)->offers($contextProduct, $user)->map(function ($offer) {
             // Return only procurement fields, without supplier contact details.
-            return array_intersect_key($offer, array_flip(['supplier_key', 'supplier', 'article', 'catalog_code', 'purchase_price', 'margin', 'margin_percent', 'stock', 'stock_quantity', 'in_stock', 'is_fresh', 'warehouse', 'warehouse_breakdown', 'locations', 'updated_at']));
+            return array_intersect_key($offer, array_flip(['supplier_key', 'stock_key', 'supplier', 'article', 'catalog_code', 'purchase_price', 'margin', 'margin_percent', 'stock', 'stock_quantity', 'in_stock', 'is_fresh', 'warehouse', 'warehouse_breakdown', 'locations', 'updated_at']));
         });
         foreach ($product->usablePurchasePriceSources() as $source) {
             $offers->push([

@@ -41,7 +41,7 @@ class B2bOrderItem extends Model
 
     public function reservedQuantity(): float
     {
-        return (float) $this->reservations->where('status', 'active')->sum('quantity');
+        return (float) $this->reservations->where('status', 'active')->filter(fn ($reserve) => ! $reserve->expires_at || $reserve->expires_at->isFuture())->sum('quantity');
     }
 
     public function isConfirmed(): bool
