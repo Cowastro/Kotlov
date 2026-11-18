@@ -13,6 +13,10 @@ class TdKomplektReviewedSpecs
     {
         $entry = $this->entries()[trim($row['vendor_code'] ?? '')] ?? [];
 
+        if (isset($entry['expected_barcode']) && trim((string) ($row['barcode'] ?? '')) !== $entry['expected_barcode']) {
+            return [];
+        }
+
         return $entry && TdKomplektMatcher::brandKey($entry['brand']) === TdKomplektMatcher::brandKey($row['brand'] ?? '') ? $entry : [];
     }
 }
