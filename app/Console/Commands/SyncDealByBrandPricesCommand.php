@@ -3,9 +3,17 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Models\SupplierProduct;
 use App\Services\Marketplaces\DealByClient;
+use App\Services\Suppliers\AkvateploservisPriceList;
+use App\Services\Suppliers\FirewayTeplodvorCatalog;
+use App\Services\Suppliers\KaminproffPriceList;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use RuntimeException;
 use Throwable;
 
@@ -34,6 +42,7 @@ class SyncDealByBrandPricesCommand extends Command
         {--inspect-id= : Emit safe price and discount fields for one Deal.by product ID}
         {--pair=* : Fireway: a shop item linked by hand, deal id or the slug of its name:card slug (kept on the offer with --apply)}
         {--export-missing= : Fireway: a deal.by import xlsx of the cards missing on the shop, a file name under public/exports}
+        {--export-cards= : With --export-missing: export these card ids (comma separated) instead of the missing ones, e.g. to resend photos}
         {--apply : Update matched Deal.by product prices}';
 
     /** @var array<int, int> deal.by id => card id, linked by hand */
@@ -57,7 +66,9 @@ class SyncDealByBrandPricesCommand extends Command
 
             $this->metrics($localProducts, $remoteProducts, $plan);
             if (filled($this->option('export-missing'))) {
-                $this->exportMissing($localProducts->whereNotIn('id', $plan['matched_local_ids'])->values(), (string) $this->option('export-missing'));
+                $cards = array_filter(array_map('intval', explode(',', (string) $this->option('export-cards'))));
+                $this->exportMissing($cards !== [] ? $localProducts->whereIn('id', $cards)->values()
+                    : $localProducts->whereNotIn('id', $plan['matched_local_ids'])->values(), (string) $this->option('export-missing'));
             }
 
             if ($this->supplierCode === null) {
@@ -162,7 +173,7 @@ class SyncDealByBrandPricesCommand extends Command
         $localById = $localProducts->keyBy('id');
         // The shop keeps the manufacturer's article (ProMetall p0048) as its SKU: the supplier's article of the card.
         $supplierId = $this->supplierCode !== null
-            ? (int) \Illuminate\Support\Facades\DB::table('suppliers')->where('code', $this->supplierCode)->value('id')
+            ? (int) DB::table('suppliers')->where('code', $this->supplierCode)->value('id')
             : 0;
         $localByArticle = $supplierId > 0
             ? $localProducts->flatMap(fn (Product $product) => $product->supplierProducts
@@ -309,6 +320,7 @@ class SyncDealByBrandPricesCommand extends Command
 
             if (! is_numeric($remote['price'] ?? null)) {
                 $invalidRemotePrice++;
+
                 continue;
             }
 
@@ -316,6 +328,7 @@ class SyncDealByBrandPricesCommand extends Command
             $localPrice = round((float) $local->price, 2);
             if (abs($remotePrice - $localPrice) < 0.01) {
                 $unchanged++;
+
                 continue;
             }
 
@@ -358,8 +371,8 @@ class SyncDealByBrandPricesCommand extends Command
         if (! in_array($this->supplierCode, self::MODEL_SUPPLIERS, true)) {
             return [];
         }
-        $supplierId = (int) \Illuminate\Support\Facades\DB::table('suppliers')->where('code', $this->supplierCode)->value('id');
-        $offers = \App\Models\SupplierProduct::query()->where('supplier_id', $supplierId)->whereNotNull('product_id')->get();
+        $supplierId = (int) DB::table('suppliers')->where('code', $this->supplierCode)->value('id');
+        $offers = SupplierProduct::query()->where('supplier_id', $supplierId)->whereNotNull('product_id')->get();
         $pairs = [];
         foreach ($offers as $offer) {
             if ((int) ($offer->raw['deal_by_id'] ?? 0) > 0) {
@@ -370,7 +383,7 @@ class SyncDealByBrandPricesCommand extends Command
             [$dealId, $slug] = array_pad(explode(':', (string) $pair, 2), 2, '');
             // The workflow log may mask digits of a deal.by id: the slug of the shop item name works too.
             if (! ctype_digit(trim($dealId))) {
-                $named = $remoteProducts->filter(fn (array $remote): bool => \Illuminate\Support\Str::slug((string) ($remote['name'] ?? '')) === trim($dealId));
+                $named = $remoteProducts->filter(fn (array $remote): bool => Str::slug((string) ($remote['name'] ?? '')) === trim($dealId));
                 $dealId = $named->count() === 1 ? (string) ($named->first()['id'] ?? '') : '';
             }
             $product = $localProducts->firstWhere('slug', trim($slug));
@@ -397,17 +410,18 @@ class SyncDealByBrandPricesCommand extends Command
      */
     private function exportMissing(Collection $products, string $name): void
     {
-        $name = \Illuminate\Support\Str::slug(pathinfo($name, PATHINFO_FILENAME)) ?: 'deal-export';
+        $name = Str::slug(pathinfo($name, PATHINFO_FILENAME)) ?: 'deal-export';
         $products = Product::query()->with(['category:id,name', 'brand:id,name'])->whereIn('id', $products->pluck('id'))
             ->get()->filter(fn (Product $product): bool => $product->imagePaths() !== [])->values();
-        $book = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+        $book = new Spreadsheet;
         $sheet = $book->getActiveSheet()->setTitle('Export Products Sheet');
         $sheet->fromArray([['Код_товара', 'Название_позиции', 'Поисковые_запросы', 'Описание', 'Тип_товара', 'Цена', 'Валюта', 'Единица_измерения',
             'Ссылка_изображения', 'Наличие', 'Название_группы', 'Идентификатор_товара', 'Производитель', 'Страна_производитель']]);
         $row = 2;
         foreach ($products as $product) {
-            // A photo kept as a full address of the source stays as it is.
-            $images = collect($product->imagePaths())->take(5)->map(fn (string $path) => preg_match('~^https?://~i', $path) ? $path : url('/'.ltrim($path, '/')))->implode(', ');
+            // The address the card page shows: an old card keeps a bare file name served through /proxy-image/.
+            $images = collect(array_keys($product->imagePaths()))->take(5)
+                ->map(fn (int $index) => ($src = $product->imageUrl($index)) && preg_match('~^https?://~i', $src) ? $src : url('/'.ltrim($src, '/')))->implode(', ');
             $sheet->fromArray([[
                 $product->sku ?: 'KOTLOV-'.$product->id,
                 $product->name,
@@ -429,7 +443,7 @@ class SyncDealByBrandPricesCommand extends Command
         if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
-        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save($dir.'/'.$name.'.xlsx');
+        (new Xlsx($book))->save($dir.'/'.$name.'.xlsx');
         $this->line('metric.deal_brand_prices.exported='.$products->count());
         $this->line('audit.deal_brand_prices.export=exports/'.$name.'.xlsx');
     }
@@ -474,8 +488,8 @@ class SyncDealByBrandPricesCommand extends Command
                 }
                 if (preg_match($pattern, (string) ($remote['name'] ?? ''))) {
                     $this->line(sprintf('audit.deal_brand_prices.remote=%d:%s:%s:%d:%s', (int) ($remote['id'] ?? 0),
-                        \Illuminate\Support\Str::slug((string) ($remote['sku'] ?? '')) ?: 'none', \Illuminate\Support\Str::slug((string) ($remote['external_id'] ?? '')) ?: 'none',
-                        (int) round((float) ($remote['price'] ?? 0) * 100), \Illuminate\Support\Str::limit(\Illuminate\Support\Str::slug((string) ($remote['name'] ?? '')), 80, '')));
+                        Str::slug((string) ($remote['sku'] ?? '')) ?: 'none', Str::slug((string) ($remote['external_id'] ?? '')) ?: 'none',
+                        (int) round((float) ($remote['price'] ?? 0) * 100), Str::limit(Str::slug((string) ($remote['name'] ?? '')), 80, '')));
                 }
             }
         }
@@ -522,7 +536,7 @@ class SyncDealByBrandPricesCommand extends Command
     private function modelKeys(string $name): array
     {
         if ($this->supplierCode === 'akvateploservis') {
-            return array_values(array_filter([\App\Services\Suppliers\AkvateploservisPriceList::modelKey($name)]));
+            return array_values(array_filter([AkvateploservisPriceList::modelKey($name)]));
         }
         if ($this->supplierCode === 'metabel') {
             return self::metaKeys($name);
@@ -561,8 +575,8 @@ class SyncDealByBrandPricesCommand extends Command
     private static function firewayKeys(string $name): array
     {
         return array_values(array_unique(array_filter([
-            \App\Services\Suppliers\KaminproffPriceList::modelKey($name),
-            \App\Services\Suppliers\FirewayTeplodvorCatalog::looseKey($name),
+            KaminproffPriceList::modelKey($name),
+            FirewayTeplodvorCatalog::looseKey($name),
         ])));
     }
 
@@ -679,6 +693,7 @@ class SyncDealByBrandPricesCommand extends Command
 
             if (is_array($value)) {
                 $fields += $this->priceFields($value, $path);
+
                 continue;
             }
 
