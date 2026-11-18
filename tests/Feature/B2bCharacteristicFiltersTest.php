@@ -40,17 +40,36 @@ class B2bCharacteristicFiltersTest extends TestCase
         $manager = User::factory()->create(['role' => 'manager', 'is_crm_user' => true, 'is_active' => true]);
         $page = fn (array $query) => $this->actingAs($manager)->get(route('b2b.catalog', ['workspace' => 1, 'mode' => 'reference', 'category' => $parent->id] + $query));
 
-        $page([])->assertOk()->assertSee('Характеристики')->assertSee('Диаметр моно, мм')->assertSee('AISI 304')->assertSee('Угол')
-            ->assertViewHas('characteristicPanel', function (array $panel): bool {
-                $angle = collect($panel)->firstWhere('label', 'Угол');
+        // The brand has its own filter; card attributes of thickness and angle are taken in by the facets of the names.
+        $maker = Attribute::create(['category_id' => $mono->id, 'name' => 'Производитель', 'type' => 'select', 'in_filter' => true]);
+        $thicknessAttribute = Attribute::create(['category_id' => $mono->id, 'name' => 'Толщина металла,  ', 'suffix' => 'мм', 'type' => 'select', 'in_filter' => true]);
+        $black = $card('Колено Фильтрик чёрное 45°, Ø 150', 'char-e', null);
+        foreach ([[$maker, ['Фильтрик', 'Другой']], [$thicknessAttribute, ['0,8', '2']]] as [$attribute, $names]) {
+            foreach ([$a, $black] as $index => $product) {
+                $option = AttributeOption::create(['attribute_id' => $attribute->id, 'name' => $names[$index]]);
+                ProductAttributeValue::create(['product_id' => $product->id, 'attribute_id' => $attribute->id, 'option_id' => $option->id]);
+            }
+        }
 
-                return $angle !== null && collect($angle['options'])->pluck('count', 'label')->all() === ['45°' => 2, '87°' => 1];
+        $page([])->assertOk()->assertSee('Характеристики')->assertSee('Диаметр моно, мм')->assertSee('AISI 304')->assertDontSee('Производитель')
+            ->assertViewHas('characteristicPanel', function (array $panel): bool {
+                $labels = collect($panel)->pluck('label');
+                $options = fn (string $label) => collect(collect($panel)->firstWhere('label', $label)['options'] ?? [])->pluck('count', 'label')->all();
+
+                // The name of a card wins over its attribute (0,5 of «430-0,5»); without it the attribute counts (2 mm).
+                return $labels->filter(fn ($label) => $label === 'Угол')->count() === 1 && $labels->filter(fn ($label) => str_starts_with($label, 'Толщина'))->count() === 1
+                    && $options('Угол') === ['45°' => 4, '87°' => 1] && $options('Толщина металла, мм') === ['0,5' => 1, '0,8' => 3, '2,0' => 1];
             });
 
         $ids = fn ($response) => $response->viewData('products')->getCollection()->pluck('id')->sort()->values()->all();
         $this->assertSame([$a->id, $b->id], $ids($page(['dm' => '115'])));
+        $this->assertSame([$black->id], $ids($page(['thick' => '2,0'])));
         $this->assertSame([$c->id], $ids($page(['steel' => '304'])));
         $this->assertSame([$d->id], $ids($page(['dp' => '150/210'])));
+        // Thickness and angle from the names; the thickness of a sandwich is the inner tube.
+        $this->assertSame([$b->id, $c->id, $d->id], $ids($page(['thick' => '0,8'])));
+        $this->assertSame([$b->id], $ids($page(['angle' => '87'])));
+        $this->assertSame([$a->id], $ids($page(['thick' => '0,5', 'angle' => '45'])));
         // Options of the same name in another category's attribute count as one option.
         $this->assertSame([$a->id, $c->id], $ids($page(['attr' => [$angle->id => [$deg45->id]]])));
         $this->assertSame([$a->id, $b->id, $c->id], $ids($page(['attr' => [$angle->id => [$deg45->id, $deg87->id]]])));

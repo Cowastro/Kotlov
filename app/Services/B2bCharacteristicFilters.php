@@ -24,7 +24,14 @@ class B2bCharacteristicFilters
     private const MAX_OPTIONS = 30;
 
     /** URL parameters of the facets read from the names. */
-    public const NAME_FACETS = ['dm' => 'Диаметр моно, мм', 'dp' => 'Диаметр сэндвич, мм', 'steel' => 'Сталь'];
+    public const NAME_FACETS = ['dm' => 'Диаметр моно, мм', 'dp' => 'Диаметр сэндвич, мм', 'steel' => 'Сталь', 'thick' => 'Толщина металла, мм', 'angle' => 'Угол'];
+
+    /** Attributes that the B2B catalog filters otherwise: the brand filter, the thickness read from the names. */
+    private const HIDDEN_ATTRIBUTES = '/^(производитель|бренд|торговая марка)$/u';
+
+    private const THICKNESS_ATTRIBUTE = '/^толщина( металла| стали| стенки)?(?!\p{L})/u';
+
+    private const ANGLE_ATTRIBUTE = '/^угол( поворота| отвода| колена)?(?!\p{L})/u';
 
     public function __construct(private ChimneyDiameterQuickFilter $names) {}
 
@@ -34,7 +41,7 @@ class B2bCharacteristicFilters
         $names = [];
         foreach (array_keys(self::NAME_FACETS) as $key) {
             $value = mb_substr(trim((string) $request->query($key, '')), 0, 20);
-            if ($value !== '' && preg_match('/^[0-9A-Za-z\/]+$/', $value) === 1) {
+            if ($value !== '' && preg_match('/^[0-9A-Za-z\/,]+$/', $value) === 1) {
                 $names[$key] = $value;
             }
         }
@@ -90,15 +97,24 @@ class B2bCharacteristicFilters
             }
             $facets[] = ['key' => $key, 'param' => $key, 'label' => $label, 'multiple' => false,
                 'options' => $groups->map(fn (Collection $ids, string $value): array => [
-                    'value' => (string) $value, 'label' => $key === 'steel' ? 'AISI '.$value : (string) $value,
+                    'value' => (string) $value, 'label' => match ($key) {
+                        'steel' => 'AISI '.$value, 'angle' => $value.'°', default => (string) $value
+                    },
                     'count' => $ids->count(), 'selected' => ($selected['names'][$key] ?? null) === (string) $value,
                 ])->values()->all()];
         }
 
-        return array_merge($facets, $this->attributeFacets($base, $selected));
+        // Thickness and angle of the names already take in the attributes of the same meaning.
+        $hidden = array_values(array_filter([
+            collect($facets)->contains('key', 'thick') ? self::THICKNESS_ATTRIBUTE : null,
+            collect($facets)->contains('key', 'angle') ? self::ANGLE_ATTRIBUTE : null,
+        ]));
+
+        return array_merge($facets, $this->attributeFacets($base, $selected, $hidden));
     }
 
-    private function attributeFacets(Builder $base, array $selected): array
+    /** @param list<string> $hidden patterns of attribute names already covered by the facets of the names */
+    private function attributeFacets(Builder $base, array $selected, array $hidden = []): array
     {
         $counts = fn (Builder $query) => ProductAttributeValue::query()
             ->join('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
@@ -118,6 +134,8 @@ class B2bCharacteristicFilters
         $selectedOptionNames = collect($selected['attr'])->flatMap(fn ($ids) => $ids)->map(fn (int $id) => $this->normal((string) $options->firstWhere('id', $id)?->name))->filter()->all();
 
         $facets = [];
+        $attributes = $attributes->reject(fn (Attribute $attribute) => preg_match(self::HIDDEN_ATTRIBUTES, $this->normal($attribute->name)) === 1
+            || collect($hidden)->contains(fn (string $pattern) => preg_match($pattern, $this->normal($attribute->name)) === 1));
         foreach ($attributes->groupBy(fn (Attribute $attribute) => $this->normal($attribute->name)) as $group) {
             $ids = $group->pluck('id')->all();
             $primary = $group->sortBy('id')->first();
@@ -136,6 +154,7 @@ class B2bCharacteristicFilters
                 continue;
             }
             $label = trim($primary->name).(filled($primary->suffix) && ! str_contains($primary->name, (string) $primary->suffix) ? ', '.$primary->suffix : '');
+            $label = trim(preg_replace(['/\s+/u', '/\s+,/u', '/,\s*,/u'], [' ', ',', ','], $label) ?? $label, ' ,');
             $facets[] = ['key' => 'attr'.$primary->id, 'param' => 'attr['.$primary->id.']', 'label' => $label, 'multiple' => true,
                 'coverage' => $merged->sum('count'), 'sort' => (int) $primary->sort_order,
                 'options' => $merged->take(self::MAX_OPTIONS)->map(fn (array $option) => array_diff_key($option, ['sort' => true]))->all()];
@@ -167,8 +186,72 @@ class B2bCharacteristicFilters
         return match ($key) {
             'dm' => $this->names->groups($query, mono: true),
             'dp' => $this->names->groups($query),
+            'thick' => $this->thicknessGroups($query),
+            'angle' => $this->group($query, fn (object $product): ?string => $this->angle((string) $product->name), SORT_NUMERIC),
             default => $this->names->steelGroups($query),
         };
+    }
+
+    /** «Отвод … 87°, …» → 87. A sandwich with two angles is left out. */
+    public function angle(string $name): ?string
+    {
+        if (preg_match_all('/(?<![\d.,])(\d{1,3})\s*°(?!\s*[СC])/u', $name, $matches) !== 1) {
+            return null;
+        }
+        $angle = (int) $matches[1][0];
+
+        return $angle >= 5 && $angle <= 180 ? (string) $angle : null;
+    }
+
+    /** «430-0,8/430-0,5» → 0,8 (the inner tube), «AISI 304 0,8» → 0,8. */
+    public function thickness(string $name): ?string
+    {
+        if (preg_match('/(?<![\d.,])(?:201|304|316|321|409|430|439|444)L?\s*[-–,\/]?\s*(\d[.,]\d{1,2})(?!\d)/u', $name, $match) !== 1) {
+            return null;
+        }
+
+        return $this->thicknessValue($match[1]);
+    }
+
+    private function thicknessValue(string $value): ?string
+    {
+        $number = (float) str_replace(',', '.', trim($value));
+
+        return $number > 0 && $number <= 10 ? number_format($number, 1, ',', '') : null;
+    }
+
+    /** From the name, else from a thickness attribute of the card («Толщина металла (мм)»: 2). */
+    private function thicknessGroups(Builder $query): Collection
+    {
+        $products = (clone $query)->get(['products.id', 'products.name']);
+        $attributeIds = Attribute::query()->where('in_filter', true)->get(['id', 'name'])
+            ->filter(fn (Attribute $attribute) => preg_match(self::THICKNESS_ATTRIBUTE, $this->normal($attribute->name)) === 1)->pluck('id');
+        $fromAttributes = $attributeIds->isEmpty() ? collect() : ProductAttributeValue::query()
+            ->whereIn('product_attribute_values.product_id', $products->pluck('id'))->whereIn('product_attribute_values.attribute_id', $attributeIds)
+            ->leftJoin('attribute_options', 'attribute_options.id', '=', 'product_attribute_values.option_id')
+            ->get(['product_attribute_values.product_id', 'product_attribute_values.value', 'attribute_options.name as option_name'])
+            ->mapWithKeys(fn ($row) => [(int) $row->product_id => preg_match('/\d+(?:[.,]\d+)?/u', (string) ($row->option_name ?? $row->value), $m) === 1 ? $this->thicknessValue($m[0]) : null]);
+
+        return $this->groupRows($products, fn (object $product): ?string => $this->thickness((string) $product->name) ?? $fromAttributes->get((int) $product->id), SORT_NUMERIC);
+    }
+
+    private function group(Builder $query, callable $value, int $sort): Collection
+    {
+        return $this->groupRows((clone $query)->get(['products.id', 'products.name']), $value, $sort);
+    }
+
+    private function groupRows(Collection $products, callable $value, int $sort): Collection
+    {
+        $groups = collect();
+        foreach ($products as $product) {
+            $key = $value($product);
+            if ($key !== null) {
+                $groups->has($key) || $groups->put($key, collect());
+                $groups->get($key)->push((int) $product->id);
+            }
+        }
+
+        return $groups->sortKeysUsing(fn ($a, $b): int => (float) str_replace(',', '.', (string) $a) <=> (float) str_replace(',', '.', (string) $b));
     }
 
     private function normal(string $value): string
