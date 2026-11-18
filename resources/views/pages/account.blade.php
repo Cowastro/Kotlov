@@ -5,6 +5,7 @@
     $clientTypeLabel = $user->client_type_label ?? 'Розничный клиент';
     $isB2bPreview = $user->isAdmin() && request()->boolean('b2b-preview');
     $isPartnerView = $user->isB2B() || $isB2bPreview;
+    $canUseStaffWorkspace = \App\Services\StaffCatalogWorkspace::allowed($user);
 @endphp
 
 {{-- Кнопка открытия сайдбара на мобиле --}}
@@ -47,6 +48,12 @@
                 </div>
             @endif
 
+            @if($canUseStaffWorkspace)
+            <section class="account-workspace-access" aria-label="Рабочий B2B-режим">
+                <div><small>{{ $user->isAdmin() ? 'Администратор' : 'Менеджер CRM' }}</small><h4>B2B · подбор и заявки</h4><p>{{ $user->isAdmin() ? 'Розница, входные цены, поставщики, остатки и маржа — в одном рабочем каталоге.' : 'Рабочий каталог для больших заявок и подбора товаров клиенту.' }} Подборы сохраняются в вашем аккаунте.</p></div>
+                <div class="account-workspace-actions"><a class="tf-btn btn-primary" href="{{ route('b2b.workspace') }}">Открыть B2B-подбор →</a><a class="tf-btn btn-stroke" href="{{ route('selections.index') }}">Мои заявки</a></div>
+            </section>
+            @endif
             <div class="row">
 
                 {{-- ===== САЙДБАР ===== --}}

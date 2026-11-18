@@ -44,6 +44,33 @@ class StaffCatalogWorkspaceTest extends TestCase
             ->assertOk()->assertJsonPath('items.0.sku', 'SUP-TEST-150');
     }
 
+    public function test_admin_can_enter_editable_workspace_from_storefront_without_partner_status(): void
+    {
+        $admin = $this->manager(['role' => 'admin', 'is_crm_user' => false]);
+        $this->actingAs($admin);
+        $html = view('partials.amerce-header', ['navCategories' => collect(), 'navCategoryUrls' => [], 'navBrands' => collect()])->render();
+        $this->assertStringContainsString('B2B · подбор и заявки', $html);
+        $this->assertStringContainsString('Администратор', $html);
+        $this->assertStringContainsString('href="'.route('b2b.workspace').'"', $html);
+        $this->get(route('account'))->assertOk()->assertSee('Открыть B2B-подбор')->assertSee('входные цены');
+        $this->get(route('b2b.workspace'))->assertRedirect(route('b2b.catalog', ['workspace' => 1, 'mode' => 'reference']));
+        $this->get(route('b2b.catalog', ['workspace' => 1, 'mode' => 'reference']))->assertOk()
+            ->assertSee('Режим администратора')->assertSee('data-workspace-new', false)->assertDontSee('Только просмотр');
+        $this->assertFalse($admin->fresh()->isB2B());
+    }
+
+    public function test_internal_entry_and_status_are_not_exposed_to_retail_or_inactive_users(): void
+    {
+        foreach ([['role' => 'client', 'is_crm_user' => false], ['role' => 'admin', 'is_active' => false]] as $attributes) {
+            $this->actingAs($this->manager($attributes));
+            $html = view('partials.amerce-header', ['navCategories' => collect(), 'navCategoryUrls' => [], 'navBrands' => collect()])->render();
+            $this->assertStringNotContainsString('B2B · подбор и заявки', $html);
+            $this->assertStringNotContainsString('account-workspace-role', $html);
+            $this->assertStringNotContainsString('href="'.route('b2b.workspace').'"', $html);
+            $this->get(route('b2b.workspace'))->assertForbidden();
+        }
+    }
+
     public function test_workspace_is_not_available_to_retail_partners_inactive_or_non_crm_staff(): void
     {
         foreach ([['role' => 'client', 'is_crm_user' => false], ['role' => 'manager', 'is_crm_user' => false], ['is_active' => false]] as $attributes) {
