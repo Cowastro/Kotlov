@@ -231,4 +231,15 @@ class ConfirmedBeregProductMergeTest extends TestCase
         $this->assertSame(1, DB::table('product_attribute_values')->where('product_id', $master->id)->where('attribute_id', $attribute->id)->count());
         $this->assertDatabaseMissing('product_attribute_values', ['product_id' => $old->id]);
     }
+
+    public function test_review_manifest_uses_original_factory_code_case(): void
+    {
+        $pairs = json_decode(file_get_contents(resource_path('data/chisty-bereg-exact-duplicates-2026-11-18.json')), true);
+        $this->assertCount(13, $pairs);
+        $this->assertSame('КШ.Ц.Ф.040.040.Н/П.02', collect($pairs)->firstWhere('duplicate', 30984)['maker']);
+        $this->assertSame('VT.1831.N.07', collect($pairs)->firstWhere('duplicate', 30862)['maker']);
+        foreach ($pairs as $pair) {
+            $this->assertSame(mb_strtoupper($pair['maker']), $pair['maker']);
+        }
+    }
 }
