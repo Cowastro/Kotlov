@@ -20,6 +20,7 @@ class TeplovSukhovName
 
     /** Kind of item as written => as named. Longer phrases first. */
     private const KINDS = [
+        'Шибер-переход Моно/Термо' => 'Шибер-переход Моно/Термо',
         'Шибер - переход Моно-Термо' => 'Шибер-переход Моно/Термо',
         'Шибер-переход Моно-Термо' => 'Шибер-переход Моно/Термо',
         'Шибер-задвижка' => 'Шибер-задвижка',
@@ -30,6 +31,7 @@ class TeplovSukhovName
         'Отвод' => 'Отвод',
         'Тройник' => 'Тройник',
         'Четверик' => 'Четверик',
+        'Труба телескопическая' => 'Труба телескопическая',
         'Труба Телескоп' => 'Труба телескопическая',
         'Труба телескоп' => 'Труба телескопическая',
         'Труба' => 'Труба',
@@ -76,6 +78,13 @@ class TeplovSukhovName
         if (preg_match('/(?:MC\s+)?Black\s*\(?\s*t\s*(?:краски\s*)?<\s*°?\s*(\d{3})\s*°?\s*[СC]\s*\)?/u', $s, $m)) {
             $paint = 'MC Black до '.$m[1].' °С';
             $s = str_replace($m[0], ' ', $s);
+        } elseif (preg_match('/MC\s+Black\s+до\s+(\d{3})\s*°\s*С/u', $s, $m)) {
+            // Already in the scheme.
+            $paint = 'MC Black до '.$m[1].' °С';
+            $s = str_replace($m[0], ' ', $s);
+        } elseif (preg_match('/ч[её]рный,?\s+до\s+(\d{3})\s*°\s*С/ui', $s, $m)) {
+            $paint = 'чёрный, до '.$m[1].' °С';
+            $s = str_replace($m[0], ' ', $s);
         } elseif (preg_match('/\(\s*Ч[её]рный\s*\(\s*Т\s*(\d{3})\s*[СC]\*?\s*\)\s*\)/u', $s, $m)) {
             $paint = 'чёрный, до '.$m[1].' °С';
             $s = str_replace($m[0], ' ', $s);
@@ -89,7 +98,7 @@ class TeplovSukhovName
 
         $extras = [];
         foreach (['/с\s+хомутом\s+на\s+замке/u' => 'с хомутом на замке', '/с\s+хомутом/u' => 'с хомутом', '/\(?керамоволокно\)?/u' => 'керамоволокно',
-            '/«Энерго»/u' => '«Энерго»', '/\(\s*по\s+наруж\.?\s*диаметру\s*\)/u' => 'по наружному диаметру'] as $pattern => $label) {
+            '/«Энерго»/u' => '«Энерго»', '/\(?\s*по\s+наруж(?:\.|ному)?\s*диаметру\s*\)?/u' => 'по наружному диаметру'] as $pattern => $label) {
             if (preg_match($pattern, $s, $m)) {
                 $extras[] = $label;
                 $s = str_replace($m[0], ' ', $s);
@@ -147,7 +156,7 @@ class TeplovSukhovName
         }
         // The angle goes before a bare trailing number is taken for the diameter («Отвод 45 OM-Р … MC Black»).
         $angle = null;
-        if (in_array($kind, self::ANGLED, true) && preg_match('/(?<![\d.,\/])(45|87)\s*(?:\*|°|"|гр\.?)?(?![\d.,])/u', $s, $m)) {
+        if (in_array($kind, self::ANGLED, true) && preg_match('/(?<![\d.,\/])(45|87)\s*(?:\*|°|"|гр\.?)?(?!\d|[.,]\d)/u', $s, $m)) {
             $angle = $m[1].'°';
             $s = str_replace($m[0], ' ', $s);
         }
