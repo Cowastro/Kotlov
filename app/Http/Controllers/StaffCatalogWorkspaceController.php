@@ -26,6 +26,21 @@ class StaffCatalogWorkspaceController extends Controller
         return response()->json(['rows' => $list->recognise($data['text']), 'limit' => \App\Services\B2bPastedList::MAX_LINES])->header('Cache-Control', 'private, no-store');
     }
 
+    /** What to offer instead of an item: the same element of another series, brand or supplier, in stock first. */
+    public function analogs(Request $request, Product $product, StaffCatalogWorkspace $workspace, \App\Services\B2bAnalogs $analogs)
+    {
+        abort_unless(StaffCatalogWorkspace::allowed($request->user()), 403);
+        $items = collect($analogs->for($product, $request->user(), $workspace))->map(fn (array $row): array => [
+            'id' => (int) $row['product']->id, 'name' => (string) $row['product']->name, 'sku' => (string) ($row['product']->sku ?: ''),
+            'brand' => (string) ($row['product']->brand?->name ?: ''), 'price' => (float) $row['product']->price,
+            'url' => url('/'.($row['product']->category?->slug ?? 'catalog').'/'.$row['product']->slug),
+            'matches' => $row['matches'],
+            'summary' => $row['summary'],
+        ])->all();
+
+        return response()->json(['source' => ['id' => $product->id, 'name' => $product->name], 'items' => $items])->header('Cache-Control', 'private, no-store');
+    }
+
     public function store(Request $request, StaffCatalogWorkspace $workspace)
     {
         abort_unless(StaffCatalogWorkspace::allowed($request->user()), 403);

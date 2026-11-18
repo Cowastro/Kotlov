@@ -192,7 +192,7 @@
                                     <a href="{{ $productUrl }}" class="b2b-product-image" target="_blank" rel="noopener"><img src="{{ $product->image_url }}" alt="" loading="lazy" onerror="this.src='{{ asset('img/products/product-placeholder.jpg') }}'"></a>
                                     <div class="b2b-product-copy">
                                         <div class="b2b-product-meta">@if($product->sku)<span class="b2b-sku">{{ $product->sku }}</span>@endif<span>{{ $product->category?->name }}</span>@if($product->brand)<span>{{ $product->brand->name }}</span>@endif</div>
-                                        <a href="{{ $productUrl }}" target="_blank" rel="noopener" class="b2b-product-name">{{ $product->name }}</a>
+                                        <a href="{{ $productUrl }}" target="_blank" rel="noopener" class="b2b-product-name">{{ $product->name }}</a>@if($staffWorkspace)<button type="button" class="b2b-analogs-open" data-analogs-url="{{ route('b2b.workspace.analogs', $product) }}" data-product-id="{{ $product->id }}" aria-label="Аналоги: {{ $product->name }}">Аналоги</button>@endif
                                         @if($showProcurement)@include('pages.b2b.workspace-offers', ['offers' => $workspaceOffers->get($product->id, collect()), 'savedLine' => $workspaceLines->get($product->id)])@endif
                                     </div>
                                 </div>
@@ -306,5 +306,6 @@
     @if($staffWorkspace)<script src="{{ asset('assets/js/b2b-workspace.js') }}?v={{ filemtime(public_path('assets/js/b2b-workspace.js')) }}" defer></script>@endif
     @if($staffWorkspace)<script src="{{ asset('assets/js/b2b-suggest-add.js') }}?v={{ filemtime(public_path('assets/js/b2b-suggest-add.js')) }}" defer></script>@endif
     @if($staffWorkspace)<script src="{{ asset('assets/js/b2b-paste-list.js') }}?v={{ filemtime(public_path('assets/js/b2b-paste-list.js')) }}" defer></script>@endif
+    @if($staffWorkspace)<script src="{{ asset('assets/js/b2b-analogs.js') }}?v={{ filemtime(public_path('assets/js/b2b-analogs.js')) }}" defer></script>@endif
 @endpush
 @endsection
