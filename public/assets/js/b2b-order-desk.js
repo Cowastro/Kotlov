@@ -8,6 +8,28 @@
     var targetSelect = dialog.querySelector('select');
     var lineDialog = document.getElementById('desk-line-dialog');
     var lineForm = lineDialog.querySelector('form');
+    var pricingControls = lineDialog.querySelector('[data-desk-client-pricing]');
+    function paintClientPrice() {
+        if (!pricingControls) return;
+        var item = state.items.find(function (entry) { return entry.id === Number(lineForm.elements.product_id.value); });
+        if (!item) return;
+        var mode = lineForm.elements.pricing_mode.value;
+        lineDialog.querySelector('[data-desk-client-price-field]').hidden = mode !== 'price';
+        lineDialog.querySelector('[data-desk-discount-field]').hidden = mode !== 'discount';
+        lineForm.elements.client_price.disabled = busy || mode !== 'price'; lineForm.elements.client_price.required = mode === 'price';
+        lineForm.elements.discount_percent.disabled = busy || mode !== 'discount'; lineForm.elements.discount_percent.required = mode === 'discount';
+        var quote = window.KotlovClientPricing.quote(item, mode, lineForm.elements.client_price.value, lineForm.elements.discount_percent.value, Number(lineForm.elements.quantity.value));
+        lineDialog.querySelector('[data-desk-base-price]').textContent = quote.base > 0 ? 'Исходная цена: ' + money(quote.base) : 'Исходная цена не указана';
+        var purchase = item.workspace_purchase && item.workspace_purchase.purchase_price;
+        lineDialog.querySelector('[data-desk-purchase-price]').textContent = purchase !== null && purchase !== undefined ? 'Входная цена: ' + money(purchase) : 'Входная цена уточняется';
+        lineDialog.querySelector('[data-desk-preview-price]').textContent = quote.valid ? money(quote.price) : 'Уточняется';
+        lineDialog.querySelector('[data-desk-preview-total]').textContent = quote.valid ? money(quote.total) : 'Уточняется';
+        var margin = lineDialog.querySelector('[data-desk-preview-margin]');
+        margin.textContent = !quote.valid ? 'Укажите корректную цену и количество' : (quote.margin !== null ? money(quote.margin) + ' / ' + quote.marginPercent.toLocaleString('ru-RU') + '%' : 'Входная цена не указана');
+        margin.classList.toggle('is-negative', quote.belowCost);
+        var warning = lineDialog.querySelector('[data-desk-preview-warning]');
+        warning.hidden = !quote.belowCost; warning.textContent = quote.belowCost ? 'Цена для клиента ниже входной. Маржа отрицательная.' : '';
+    }
     var errorBox = root.querySelector('[data-desk-error]');
     function money(value) { return Number(value || 0).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' BYN'; }
     function chosen() { return state.items.filter(function (item) { return !state.excluded.includes(item.id); }); }
@@ -80,6 +102,8 @@
             row.querySelector('[data-desk-check]').checked = !state.excluded.includes(item.id);
             row.classList.toggle('is-postponed', state.excluded.includes(item.id));
             row.querySelector('[data-desk-quantity]').value = item.quantity;
+            row.querySelector('[data-desk-unit-price]').textContent = item.price > 0 ? money(item.price).replace(' BYN', '') : 'Уточняется';
+            row.querySelector('[data-desk-price-label]').textContent = item.client_pricing ? 'Цена для клиента' + (item.client_pricing.mode === 'discount' && item.client_pricing.discount_percent > 0 ? ' · −' + Number(item.client_pricing.discount_percent).toLocaleString('ru-RU', {maximumFractionDigits:2}) + '%' : '') : (item.pricing_type === 'b2b' ? 'Ваша B2B-цена' : 'Цена сайта');
             row.querySelector('[data-desk-working-note]').hidden = !item.workspace_note;
             row.querySelector('[data-desk-working-note-text]').textContent = item.workspace_note || '';
             row.querySelector('[data-desk-line-total]').textContent = item.price > 0 ? money(item.price * item.quantity) : 'Уточняется';
@@ -95,7 +119,8 @@
     function lock(value) {
         busy = value;
         root.querySelectorAll('button, [data-desk-check], [data-desk-check-all], [data-desk-quantity]').forEach(function (node) { node.disabled = value || (node.matches('[data-desk-remove], [data-desk-transfer]') && chosen().length === 0); });
-        lineDialog.querySelectorAll('button,input,textarea').forEach(function (node) { node.disabled = value; });
+        lineDialog.querySelectorAll('button,input,textarea,select').forEach(function (node) { node.disabled = value; });
+        paintClientPrice();
         dialog.querySelector('[type="submit"]').disabled = value;
         root.querySelectorAll('[data-desk-export]').forEach(function (node) { node.setAttribute('aria-disabled', value ? 'true' : 'false'); });
     }
@@ -158,15 +183,23 @@
         if (button.hasAttribute('data-desk-line-remove')) {
             mutate({action:'remove', ids:[Number(button.closest('[data-desk-row]').dataset.deskRow)]}).catch(function () {});
         }
-        if (button.hasAttribute('data-desk-line-edit')) {
+        if (button.hasAttribute('data-desk-line-edit') || button.hasAttribute('data-desk-price-edit')) {
             var item = state.items.find(function (entry) { return entry.id === Number(button.closest('[data-desk-row]').dataset.deskRow); });
             lineForm.elements.product_id.value = item.id; lineForm.elements.quantity.value = item.quantity;
             lineForm.elements.workspace_note.value = item.workspace_note || '';
+            if (pricingControls) {
+                lineForm.elements.pricing_mode.value = button.hasAttribute('data-desk-price-edit') ? 'price' : 'keep';
+                lineForm.elements.client_price.value = item.price > 0 ? Number(item.price).toFixed(2) : '';
+                lineForm.elements.discount_percent.value = item.client_pricing && item.client_pricing.mode === 'discount' ? item.client_pricing.discount_percent : '0';
+                paintClientPrice();
+            }
             lineDialog.querySelector('[data-desk-edit-name]').textContent = item.name;
             lineDialog.querySelector('[data-desk-line-error]').hidden = true;
             var catalogLink = lineDialog.querySelector('[data-desk-edit-supplier]');
             if (catalogLink) { var catalogUrl = new URL(catalogLink.href); catalogUrl.searchParams.set('q', item.sku || item.name); catalogUrl.searchParams.delete('category'); catalogUrl.searchParams.delete('page'); catalogLink.href = catalogUrl.toString(); }
-            lineDialog.showModal(); lineForm.elements.quantity.focus(); lineForm.elements.quantity.select();
+            lineDialog.showModal();
+            var focusInput = pricingControls && button.hasAttribute('data-desk-price-edit') ? lineForm.elements.client_price : lineForm.elements.quantity;
+            focusInput.focus(); focusInput.select();
         }
         if (button.hasAttribute('data-desk-reset')) {
             root.querySelector('[data-desk-search]').value = ''; selectedOnly = false; availabilityFilter = 'all';
@@ -191,11 +224,19 @@
     function saveLine(nextUrl) {
         if (busy || !lineForm.reportValidity()) return;
         var error = lineDialog.querySelector('[data-desk-line-error]'); error.hidden = true;
-        mutate({action:'line', product_id:Number(lineForm.elements.product_id.value), quantity:Number(lineForm.elements.quantity.value), workspace_note:lineForm.elements.workspace_note.value})
+        var payload = {action:'line', product_id:Number(lineForm.elements.product_id.value), quantity:Number(lineForm.elements.quantity.value), workspace_note:lineForm.elements.workspace_note.value};
+        if (pricingControls && lineForm.elements.pricing_mode.value !== 'keep') {
+            payload.pricing_mode = lineForm.elements.pricing_mode.value;
+            if (payload.pricing_mode === 'price') payload.client_price = lineForm.elements.client_price.value;
+            if (payload.pricing_mode === 'discount') payload.discount_percent = lineForm.elements.discount_percent.value;
+        }
+        mutate(payload)
             .then(function () { lineDialog.close(); if (nextUrl) location.assign(nextUrl); })
             .catch(function (failure) { error.textContent = failure.message; error.hidden = false; });
     }
     lineForm.addEventListener('submit', function (event) { event.preventDefault(); saveLine(); });
+    lineForm.addEventListener('input', paintClientPrice);
+    lineForm.addEventListener('change', paintClientPrice);
     lineDialog.querySelectorAll('[data-desk-line-close]').forEach(function (button) { button.addEventListener('click', function () { if (!busy) lineDialog.close(); }); });
     lineDialog.addEventListener('cancel', function (event) { if (busy) event.preventDefault(); });
     var supplierEdit = lineDialog.querySelector('[data-desk-edit-supplier]');

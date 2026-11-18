@@ -47,3 +47,13 @@
 .desk-dialog header button{display:grid;place-items:center;padding:0;flex:none;line-height:1}
 .desk-bulk-actions .desk-actions{align-items:stretch}
 @media(max-width:760px){.desk-bulk-actions{flex-basis:100%;margin:0}.desk-bulk-actions .desk-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.desk-bulk-actions .desk-button{min-width:0;white-space:normal;line-height:1.3;min-height:42px;height:auto;padding:8px}.desk-row-action{min-height:40px}.desk-row-actions{gap:5px}.desk-dialog{box-sizing:border-box;padding:16px}.desk-dialog h2{font-size:18px}.desk-dialog-actions .desk-button{flex:1;min-width:0}}
+.desk-client-pricing{margin:14px 0;padding:12px;border:1px solid #dbe3eb;border-radius:10px;background:#f7fafc}
+.desk-client-pricing>small{display:block;font-size:11px;line-height:1.45;color:#62717d}
+.desk-price-preview{display:grid;gap:7px;margin:12px 0;padding:10px;background:#fff;border-radius:8px;font-size:11px;color:#62717d}
+.desk-price-preview>span{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.desk-price-preview strong{font-size:13px;font-variant-numeric:tabular-nums;color:#17202a}
+.desk-price-preview [data-desk-preview-margin]{color:#17633f}
+.desk-price-preview .is-negative,.desk-client-pricing [data-desk-preview-warning]{color:#b42318}
+.desk-dialog select{font-size:16px}
+.desk-price-edit{display:inline-flex;align-items:center;gap:5px;max-width:100%;min-height:28px;padding:0;border:0;border-bottom:1px dashed #aab6c2;border-radius:0;background:transparent;color:inherit;cursor:pointer;text-align:left}
+.desk-price-edit svg{flex:none}
