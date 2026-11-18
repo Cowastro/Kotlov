@@ -7,6 +7,7 @@
         @foreach($workspaceSelections as $saved)<option value="{{ $saved->id }}" @selected($workspaceState['id'] === $saved->id)>{{ $saved->name }}</option>@endforeach
     </select></label>
     <button type="button" data-workspace-new>+ Новый подбор</button>
+    <button type="button" data-workspace-paste-open data-paste-url="{{ route('b2b.workspace.paste') }}">Вставить список</button>
     @if($showProcurement)<label class="b2b-margin-threshold">Мин. маржа, %<input type="number" min="0" max="90" step="1" inputmode="numeric" placeholder="не задана" data-workspace-margin-threshold aria-describedby="margin-threshold-hint"></label><span id="margin-threshold-hint" hidden>Строки с маржой ниже порога подсвечиваются. Порог хранится в этом браузере.</span>@endif
     <span class="b2b-workspace-status" data-workspace-status role="status" aria-live="polite">{{ $workspaceState['saved_at'] ? 'Сохранено '.$workspaceState['saved_at'] : 'Добавьте товар — подбор сохранится в аккаунте' }}</span>
 </section>
@@ -33,4 +34,16 @@
     <p data-workspace-dialog-status role="status" aria-live="polite"></p>
     <div data-workspace-lines></div>
     <footer><strong data-workspace-total></strong>@if($showProcurement)<small data-workspace-procurement></small><small data-workspace-suppliers></small>@endif<a data-workspace-edit @if($workspaceState['edit_url'])href="{{ $workspaceState['edit_url'] }}"@else hidden @endif>Название, комментарий и редактирование →</a><a data-workspace-print @if($workspaceState['print_url'])href="{{ $workspaceState['print_url'] }}"@else hidden @endif target="_blank" rel="noopener">Печать / PDF</a></footer>
+</dialog>
+<dialog class="b2b-workspace-dialog is-paste" id="workspace-paste-dialog" aria-labelledby="workspace-paste-title">
+    <header><div><small>Из Excel или письма клиента</small><h2 id="workspace-paste-title">Вставить список</h2></div><button type="button" data-dialog-close aria-label="Закрыть">×</button></header>
+    <form data-workspace-paste-form>
+        <label for="workspace-paste-text">По строке на позицию: артикул или название и количество</label>
+        <textarea id="workspace-paste-text" name="text" rows="7" maxlength="30000" required placeholder="TS.KMP.FRK.0260.79671	4&#10;Отвод Моно ОМ-Р 45° 430-0,8 Ø 150 — 6 шт&#10;Труба ТМ-Р L1000 Ø 150 × 3"></textarea>
+        <p class="b2b-workspace-price-note">Количество берётся из отдельного столбца, «5 шт» или «× 5». Число в конце названия (например, диаметр) количеством не считается — тогда ставим 1.</p>
+        <button type="submit" class="b2b-workspace-primary">Распознать</button>
+    </form>
+    <p data-workspace-paste-status role="status" aria-live="polite"></p>
+    <div data-workspace-paste-rows></div>
+    <footer data-workspace-paste-footer hidden><span data-workspace-paste-summary></span><button type="button" class="b2b-workspace-primary" data-workspace-paste-add>Добавить в подбор</button></footer>
 </dialog>

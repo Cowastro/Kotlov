@@ -17,6 +17,15 @@ class StaffCatalogWorkspaceController extends Controller
         return to_route('b2b.catalog', ['workspace' => 1, 'mode' => 'reference']);
     }
 
+    /** A list pasted from Excel or a letter: what each line is, for the manager to confirm before it goes to the selection. */
+    public function paste(Request $request, \App\Services\B2bPastedList $list)
+    {
+        abort_unless(StaffCatalogWorkspace::allowed($request->user()), 403);
+        $data = $request->validate(['text' => ['required', 'string', 'max:30000']]);
+
+        return response()->json(['rows' => $list->recognise($data['text']), 'limit' => \App\Services\B2bPastedList::MAX_LINES])->header('Cache-Control', 'private, no-store');
+    }
+
     public function store(Request $request, StaffCatalogWorkspace $workspace)
     {
         abort_unless(StaffCatalogWorkspace::allowed($request->user()), 403);

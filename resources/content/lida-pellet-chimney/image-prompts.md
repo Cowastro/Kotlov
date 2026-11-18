@@ -1,0 +1,23 @@
+# Photo processing record
+
+Built-in image_gen was used, not the API/CLI fallback. Outputs were inspected and then encoded as WebP with PHP GD for delivery. Final assets: `public/img/blog/works/lida-pellet-chimney/`.
+
+The user supplied four photos and identified the installation as a Teplov & Sukhov chimney for a pellet boiler, for promotion of the Lida store. Exact equipment models, dimensions, commissioning measurements, installation date and precise object address were not provided; the article does not invent them.
+
+## Photo 2 — chimney-exterior.webp
+
+Edit this exact real installation photo for a regional heating-store case study. Use case: lighting-weather, photographic tonal correction only. Brighten the dark brick walls and steel chimney, neutral natural white balance, gently improve local contrast and detail, retain the overcast sky and original portrait framing. Preserve EVERY physical detail and geometry: pipe diameter, joints, cap, supports, wall penetration, roof and masonry; do not add, remove, rebuild, straighten, move or invent any equipment, brackets or installation detail. Do not clean or repaint the walls. No text, logo, graphical labels or advertising overlays. Authentic documentary photograph, naturally brighter, not a CGI rendering. Output one edited image.
+
+## Photos 1, 3, 4 — boiler-connection.webp, pellet-boiler.webp, chimney-overview.webp
+
+Edit target: this exact supplied installation photograph. Use case: lighting-weather; conservative professional exposure and color correction for a heating-store project gallery. Output one image with original portrait composition. Brighten shadows moderately, correct white balance to natural daylight, subtle contrast and sharpness, realistic colors. Absolutely preserve all original physical geometry and details of boiler, chimney pipe and joints, clamps and brackets, cap, wall penetration, roof, walls, floor and all equipment, clothing and people. Do not remove objects, dust, marks or cables; do not repaint, reconstruct, beautify the installation itself or fabricate a finished renovation. Keep the cloudy sky if outdoors. No text, logos, graphical elements or added objects. Authentic documentary photography, not a render.
+
+## Cover — cover.webp
+
+Use case compositing. Create a landscape 16:9 editorial cover by arranging these two exact documentary photos in two equal-height panels, chimney photo left and boiler photo right, separated by a narrow warm-white gutter, on warm-white background. Keep both complete portrait photos visible, with top and bottom intact: entire chimney from cap to bottom, entire boiler from top to bottom. Letterboxing/padding at sides is acceptable and preferred to cropping. DO NOT reconstruct, redraw, extend or invent any part of either photograph; do not move, add, remove or alter equipment, pipe joints, brackets or room details. No captions, text, logo, illustration or decorative objects. Clean photographic diptych for a heating installation case study. Output one landscape image.
+
+## Cleanup revision requested by the user
+
+Built-in image_gen retouched boiler-connection, pellet-boiler and chimney-overview: removed temporary clutter (partial people/clothing, bags, loose tools/offcuts and the portable ladder) and surface construction dust on the boiler. Permanent equipment, ventilation, wiring, supports and wall finish were to remain. The cover was regenerated using the cleaned boiler image. Original generated files remain under Codex generated_images; project WebP outputs use the same article asset paths.
+
+Final cleanup prompt: Precise photographic retouch of this edit target for a real installation case study. Remove only temporary visual clutter: any partial person or loose clothing at the image edges, plastic bags, portable loose tools, loose metal offcuts, and (if present) the portable ladder at the lower image edge. Remove loose construction dust from the black boiler's top surface. Naturally fill the small areas behind removed clutter with matching existing wall/floor texture, without redesign or renovation. Preserve ALL permanent equipment and installation details EXACTLY: boiler shape, doors, handles, logo, thermometer, chimney pipes, joints, clamps, supports, wall penetration, wiring, electrical boxes and outlets, heating pipes, radiator, window, roof, and the permanent ventilation fan if outdoors. Do not remove any permanent ventilation unit or structural support. Keep existing wall marks, original room layout and chimney geometry; do not repaint walls. Keep the already improved exposure and white balance. Same portrait framing. No text, added objects, advertising graphics or altered technical details. Output one realistically retouched photograph.
