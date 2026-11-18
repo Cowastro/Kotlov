@@ -45,6 +45,28 @@ class B2bSelectionClientPricingTest extends TestCase
         $this->edit($selection, ['quantity' => 4])->assertOk()->assertJsonPath('state.items.0.price', 80)->assertJsonPath('state.items.0.client_pricing.discount_percent', 20);
     }
 
+    public function test_one_rule_prices_the_checked_lines_and_skips_lines_without_a_purchase_price(): void
+    {
+        $selection = $this->draft();
+        $bulk = fn (array $data) => $this->patchJson(route('b2b.selections.update', $selection), array_replace(['action' => 'pricing', 'revision' => $selection->fresh()->revision, 'ids' => [101, 102]], $data));
+        $this->get(route('b2b.selections.show', $selection))->assertOk()->assertSee('data-desk-bulk-pricing', false);
+
+        // +30 % on the purchase price 60 → 78; the line without a purchase price keeps 20.
+        $bulk(['pricing_mode' => 'markup', 'markup_percent' => 30])->assertOk()->assertJsonPath('pricing_skipped', 1)
+            ->assertJsonPath('state.items.0.price', 78)->assertJsonPath('state.items.0.client_pricing.markup_percent', 30)
+            ->assertJsonPath('state.items.0.client_pricing.base_price', 100)->assertJsonPath('state.items.1.price', 20);
+        // A discount counts from the original price, not from the marked-up one.
+        $bulk(['pricing_mode' => 'discount', 'discount_percent' => 10])->assertOk()->assertJsonPath('pricing_skipped', 0)
+            ->assertJsonPath('state.items.0.price', 90)->assertJsonPath('state.items.1.price', 18);
+        $bulk(['pricing_mode' => 'reset'])->assertOk()->assertJsonPath('state.items.0.price', 100)->assertJsonPath('state.items.1.price', 20)
+            ->assertJsonMissingPath('state.items.0.client_pricing');
+
+        $bulk(['pricing_mode' => 'markup', 'markup_percent' => 501])->assertUnprocessable();
+        $bulk(['pricing_mode' => 'price', 'client_price' => 5])->assertUnprocessable();
+        $bulk(['pricing_mode' => 'markup', 'markup_percent' => 10, 'ids' => []])->assertUnprocessable();
+        $this->assertSame(60, $selection->fresh()->items[101]['workspace_purchase']['purchase_price']);
+    }
+
     public function test_manual_price_can_show_a_loss_and_reset_restores_original_price_and_note(): void
     {
         $selection = $this->draft(User::factory()->create(['role' => 'admin', 'is_active' => true]));

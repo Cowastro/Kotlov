@@ -63,3 +63,9 @@
 .desk-partner-reserve label{display:grid;gap:5px;font-size:12px;min-width:0}.desk-reserve-message{grid-column:1/3}
 .desk-partner-reserve .desk-button{white-space:normal;min-height:44px;height:auto;padding:10px}
 @media(max-width:760px){.desk-partner-reserve form{grid-template-columns:minmax(0,1fr)}.desk-reserve-message{grid-column:1}.desk-partner-reserve input,.desk-partner-reserve select{font-size:16px}}
+.desk-bulk-pricing{display:flex;flex-wrap:wrap;align-items:end;gap:8px 12px;margin:10px 0;padding:10px 12px;border:1px solid #dbe6f2;border-radius:10px;background:#f6f9fd}
+.desk-bulk-pricing label{display:grid;gap:4px;font-size:11px;color:#4f5d6b}
+.desk-bulk-pricing select,.desk-bulk-pricing input{height:40px;padding:0 10px;border:1px solid #d4dce5;border-radius:8px;font-size:13px;background:#fff}
+.desk-bulk-pricing input{width:120px}
+.desk-bulk-pricing small{flex-basis:100%;font-size:11px;color:#5d6875}
+@media(max-width:760px){.desk-bulk-pricing{display:grid}.desk-bulk-pricing input,.desk-bulk-pricing select{width:100%;font-size:16px}}
