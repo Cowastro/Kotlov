@@ -176,13 +176,13 @@ class ManagerStorefrontProductContext
                 'retail_price' => $retailPrice,
                 'margin' => $this->margin($retailPrice, $purchasePrice),
                 'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
-                'stock' => $stock->formattedAvailableQuantity(),
-                'stock_quantity' => (float) $stock->available_quantity,
+                'stock' => $stock->isFresh() ? $stock->formattedAvailableQuantity() : 'Остаток уточняется',
+                'stock_quantity' => $stock->isFresh() ? (float) $stock->available_quantity : null,
                 'stock_key' => 'warehouse:'.$stock->id,
                 'warehouse' => $stock->warehouse_name,
                 'delivery_days' => $stock->delivery_days,
-                'in_stock' => (float) $stock->available_quantity > 0,
-                'is_fresh' => true,
+                'in_stock' => $stock->hasFreshPositiveStock(),
+                'is_fresh' => $stock->isFresh(),
                 'updated_at' => $stock->as_of_date ?? $stock->last_synced_at,
             ];
         });
