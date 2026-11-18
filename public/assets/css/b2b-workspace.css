@@ -40,6 +40,7 @@
 .b2b-workspace-save.is-selected{border-color:#a6d7bc;color:#14663b;background:#effaf3}
 .b2b-workspace-quantity small{grid-column:1/-1;min-height:16px;min-width:0;text-align:right;color:#53616f;font-size:11px;line-height:1.4;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .b2b-workspace-supplier{display:block;margin-top:7px;min-width:0;max-width:100%}
+.b2b-workspace-supplier-caption{display:none}
 .b2b-workspace-supplier select{display:block;width:100%;min-width:0;max-width:100%;height:36px;margin:0;padding:0 28px 0 8px;border:1px solid #dae1e8;border-radius:7px;background-color:#f7f9fb;color:#3c4d60;font-size:12px;line-height:1.3;text-overflow:ellipsis}
 .b2b-workspace-selected-stock{display:block;margin-top:5px;font-size:11px;line-height:1.45;color:#87601f;overflow-wrap:anywhere}
 .b2b-workspace-selected-stock.is-confirmed{color:#17633f}
@@ -128,7 +129,12 @@
  .b2b-staff-workspace .b2b-workspace-cost{grid-area:purchase;align-self:stretch;align-content:start;padding:8px}
  .b2b-portal.b2b-staff-workspace .b2b-product-table.is-reference .b2b-price-cell{grid-area:retail;align-self:stretch;align-content:start;padding:8px}
  .b2b-staff-workspace .b2b-price-cell>strong,.b2b-workspace-cost>strong{font-size:14px;line-height:1.4}
- .b2b-staff-workspace .b2b-workspace-supplier select{font-size:16px;height:42px}
+ /* Keep the native picker at 16px for iOS focus; its visible caption is compact. */
+ .b2b-staff-workspace .b2b-workspace-supplier{position:relative;height:36px;margin-top:5px}
+ .b2b-staff-workspace .b2b-workspace-supplier-caption{display:block;height:36px;box-sizing:border-box;padding:8px 28px 8px 9px;border:1px solid #dae1e8;border-radius:7px;background:#f7f9fb;color:#3c4d60;font-size:13px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .b2b-staff-workspace .b2b-workspace-supplier::after{content:'';position:absolute;right:11px;top:13px;width:6px;height:6px;border-right:1.5px solid #62717d;border-bottom:1.5px solid #62717d;transform:rotate(45deg);pointer-events:none}
+ .b2b-staff-workspace .b2b-workspace-supplier select{position:absolute;inset:0;z-index:1;opacity:0;font-size:16px;height:36px;cursor:pointer}
+ .b2b-staff-workspace .b2b-workspace-supplier:focus-within{outline:2px solid var(--b2b-accent);outline-offset:2px;border-radius:7px}
  .b2b-staff-workspace .b2b-workspace-selected-stock{font-size:11px}
  .b2b-portal.b2b-staff-workspace .b2b-product-table.is-reference .b2b-request-cell{grid-area:order;width:100%;min-width:0;justify-self:stretch}
  .b2b-workspace-quantity{grid-template-columns:124px minmax(0,1fr);gap:5px 8px}
