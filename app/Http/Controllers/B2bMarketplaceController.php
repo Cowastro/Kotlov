@@ -50,7 +50,7 @@ class B2bMarketplaceController extends Controller
         if ($priceMin !== null && $priceMax !== null && $priceMin > $priceMax) {
             [$priceMin, $priceMax] = [$priceMax, $priceMin];
         }
-        $supplierId = $staffWorkspace && $user->isAdmin() ? max(0, $request->integer('workspace_supplier')) : 0;
+        $supplierId = $staffWorkspace && StaffCatalogWorkspace::canViewProcurement($user) ? max(0, $request->integer('workspace_supplier')) : 0;
         $filters = app(B2bCatalogFilters::class);
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
         $categoryId = max(0, $request->integer('category'));
@@ -197,7 +197,7 @@ class B2bMarketplaceController extends Controller
                 ->unique('product_id')
                 ->keyBy('product_id');
 
-        $showProcurement = $staffWorkspace && $user->isAdmin();
+        $showProcurement = $staffWorkspace && StaffCatalogWorkspace::canViewProcurement($user);
         $workspaceSuppliers = $showProcurement ? Supplier::query()->where('is_active', true)
             ->where(fn ($supplier) => $supplier->whereHas('supplierProducts', fn ($offer) => $offer->whereHas('product', fn ($product) => $product->active()->notArchived()))
                 ->orWhereHas('integrationSources', fn ($source) => $source->where('is_active', true)->whereHas('products', fn ($offer) => $offer->where('match_status', 'matched')->whereHas('product', fn ($product) => $product->active()->notArchived()))))

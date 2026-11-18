@@ -46,7 +46,7 @@ class B2bSelectionDeskController extends Controller
         $this->authorizeSelection($request, $selection);
         $state = $this->state($selection, $request);
         $targets = CustomerSelection::where('user_id', $request->user()->id)->whereKeyNot($selection->id)->latest('updated_at')->get(['id', 'name', 'revision']);
-        $showProcurement = $request->user()->isAdmin();
+        $showProcurement = StaffCatalogWorkspace::canViewProcurement($request->user());
         $minimalLayout = true;
 
         return response()->view('pages.b2b.selection-desk', compact('selection', 'state', 'targets', 'showProcurement', 'minimalLayout'))->header('Cache-Control', 'private, no-store');
@@ -141,7 +141,7 @@ class B2bSelectionDeskController extends Controller
         $scope = $data['scope'] ?? 'all';
         ['items' => $items, 'name' => $name, 'note' => $note] = app(\App\Services\SelectionExport::class)->prepare($selection, $scope);
         $internal = $request->boolean('internal');
-        abort_if($internal && ! $request->user()->isAdmin(), 403);
+        abort_if($internal && ! StaffCatalogWorkspace::canViewProcurement($request->user()), 403);
         if ($scope !== 'all' && $items === []) return to_route('b2b.selections.show', $selection)->with('error', 'Для этой выгрузки нет отмеченных позиций с подходящим количеством. Проверьте наличие и выбор товаров.');
         if ($request->input('format') === 'print') {
             return response()->view('pages.selections.print', ['name' => $name, 'note' => $note, 'items' => $items, 'date' => $selection->updated_at, 'pumpCalculations' => $selection->meta['pump_calculations'] ?? []])->header('Cache-Control', 'private, no-store');

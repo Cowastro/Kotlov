@@ -26,7 +26,7 @@
                 <span>B2B</span>
             </a>
             <div class="b2b-topbar__company">
-                <small>{{ $staffWorkspace ? ($showProcurement ? 'Режим администратора' : 'Рабочее место менеджера') : 'Оптовый кабинет' }}</small>
+                <small>{{ $staffWorkspace ? (auth()->user()->isAdmin() ? 'Режим администратора' : 'Рабочее место менеджера') : 'Оптовый кабинет' }}</small>
                 <strong>{{ auth()->user()->company_name ?: auth()->user()->name }}</strong>
             </div>
             <nav class="b2b-topbar__actions" aria-label="B2B-навигация">
@@ -65,7 +65,7 @@
             </div>
         @endif
         <section class="b2b-page-heading">
-            <div><p @if($staffWorkspace)class="b2b-staff-role"@endif>{{ $staffWorkspace ? ($showProcurement ? 'Администратор · большие заявки' : 'CRM · большие заявки') : 'B2B · рабочий каталог' }}</p><h1>{{ $staffWorkspace ? 'Подбор для клиента' : 'Быстрый заказ товаров' }}</h1></div>
+            <div><p @if($staffWorkspace)class="b2b-staff-role"@endif>{{ $staffWorkspace ? (auth()->user()->isAdmin() ? 'Администратор · большие заявки' : 'CRM · большие заявки') : 'B2B · рабочий каталог' }}</p><h1>{{ $staffWorkspace ? 'Подбор для клиента' : 'Быстрый заказ товаров' }}</h1></div>
             <button type="button" class="b2b-mobile-catalog-button" data-catalog-open><span>☰</span> Категории</button>
         </section>
         @if($staffWorkspace)@include('pages.b2b.workspace-toolbar')@endif
@@ -94,7 +94,7 @@
                 @unless($staffWorkspace)<div class="b2b-mode-switch" aria-label="Режим каталога">
                     <a href="{{ request()->fullUrlWithQuery(['mode' => 'orderable', 'page' => null]) }}" class="{{ $mode === 'orderable' ? 'active' : '' }}">В наличии и под заказ</a>
                     <a href="{{ request()->fullUrlWithQuery(['mode' => 'reference', 'page' => null, 'source' => null]) }}" class="{{ $mode === 'reference' ? 'active' : '' }}">Справочный каталог</a>
-                </div>@else<p class="b2b-workspace-price-note">{{ $showProcurement ? 'Внутренний подбор · входные цены и маржа видны только администратору' : 'Все товары · цены сайта · наличие и условия поставки уточняются' }}</p>@endunless
+                </div>@else<p class="b2b-workspace-price-note">{{ $showProcurement ? 'Внутренний подбор · входные цены и маржа доступны администраторам и менеджерам CRM' : 'Все товары · цены сайта · наличие и условия поставки уточняются' }}</p>@endunless
                 <div class="b2b-filter-selects">
                     <label><span>Бренд</span><select name="brand" data-auto-submit>
                         <option value="">Все бренды</option>
