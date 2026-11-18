@@ -394,13 +394,7 @@ class CreateChistyBeregCardsCommand extends Command
         if (isset($this->brands[$key])) {
             return $this->brands[$key];
         }
-        $slug = Str::slug($name) ?: 'brand';
-        $base = $slug;
-        for ($i = 2; DB::table('brands')->where('slug', $slug)->exists(); $i++) {
-            $slug = $base.'-'.$i;
-        }
-
-        return $this->brands[$key] = (int) DB::table('brands')->insertGetId(['name' => $name, 'slug' => $slug, 'h1' => $name, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        return $this->brands[$key] = (int) \App\Models\Brand::forImport($name)->id;
     }
 
     private function uniqueSlug(string $name): string

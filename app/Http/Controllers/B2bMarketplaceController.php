@@ -60,7 +60,7 @@ class B2bMarketplaceController extends Controller
         if ($query !== '') {
             $categoryId = 0;
         }
-        $brandId = max(0, $request->integer('brand'));
+        $brandId = Brand::canonicalId(max(0, $request->integer('brand')));
         $perPage = in_array($request->integer('per_page'), [30, 60, 100], true) ? $request->integer('per_page') : 30;
         // A diameter table of a category needs all its items on one page.
         $gridView = $staffWorkspace && $categoryId > 0 && $request->query('view') === 'grid';
