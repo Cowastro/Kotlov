@@ -114,11 +114,11 @@
         });
         visibleRows();
         paintExportSummary();
-        root.querySelectorAll('[data-desk-remove], [data-desk-transfer]').forEach(function (button) { button.disabled = busy || chosen().length === 0; });
+        root.querySelectorAll('[data-desk-remove], [data-desk-transfer], [data-desk-bulk-apply]').forEach(function (button) { button.disabled = busy || chosen().length === 0; });
     }
     function lock(value) {
         busy = value;
-        root.querySelectorAll('button, [data-desk-check], [data-desk-check-all], [data-desk-quantity]').forEach(function (node) { node.disabled = value || (node.matches('[data-desk-remove], [data-desk-transfer]') && chosen().length === 0); });
+        root.querySelectorAll('button, [data-desk-check], [data-desk-check-all], [data-desk-quantity]').forEach(function (node) { node.disabled = value || (node.matches('[data-desk-remove], [data-desk-transfer], [data-desk-bulk-apply]') && chosen().length === 0); });
         lineDialog.querySelectorAll('button,input,textarea,select').forEach(function (node) { node.disabled = value; });
         paintClientPrice();
         dialog.querySelector('[type="submit"]').disabled = value;
@@ -220,6 +220,31 @@
         if (button.hasAttribute('data-desk-undo')) mutate({action:'undo'}).catch(function () {});
         if (button.hasAttribute('data-desk-transfer')) { action = button.dataset.deskTransfer; dialog.querySelector('h2').textContent = action === 'move' ? 'Перенести отмеченные' : 'Копировать отмеченные'; dialog.showModal(); }
     });
+    // One price rule for the checked lines: markup on the purchase price, discount from the original price, or back to it.
+    var bulkPricing = root.querySelector('[data-desk-bulk-pricing]');
+    if (bulkPricing) {
+        var paintBulk = function () {
+            var mode = bulkPricing.elements.pricing_mode.value;
+            bulkPricing.querySelector('[data-desk-bulk-percent]').hidden = mode === 'reset';
+            bulkPricing.elements.percent.required = mode !== 'reset';
+            bulkPricing.elements.percent.max = mode === 'discount' ? '99.99' : '500';
+            bulkPricing.querySelector('[data-desk-bulk-hint]').textContent = mode === 'markup' ? 'Строки без входной цены пропускаются. Цена действует в этой заявке, её печати и Excel.'
+                : (mode === 'discount' ? 'Скидка считается от исходной цены строки, а не от уже изменённой.' : 'Отмеченные строки вернутся к цене, с которой попали в подбор.');
+        };
+        bulkPricing.elements.pricing_mode.addEventListener('change', paintBulk); paintBulk();
+        bulkPricing.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (busy || !bulkPricing.reportValidity()) return;
+            var mode = bulkPricing.elements.pricing_mode.value, ids = chosen().map(function (item) { return item.id; });
+            var payload = {action:'pricing', pricing_mode:mode, ids:ids};
+            if (mode === 'markup') payload.markup_percent = bulkPricing.elements.percent.value;
+            if (mode === 'discount') payload.discount_percent = bulkPricing.elements.percent.value;
+            mutate(payload).then(function (data) {
+                var changed = ids.length - (data.pricing_skipped || 0);
+                status('Цена изменена: ' + changed + ' поз.' + (data.pricing_skipped ? ' · Пропущено без ' + (mode === 'markup' ? 'входной' : 'исходной') + ' цены: ' + data.pricing_skipped : '') + ' · Сохранено ' + state.saved_at);
+            }).catch(function () {});
+        });
+    }
     root.querySelector('[data-desk-details]').addEventListener('submit', function (event) { event.preventDefault(); mutate({action:'details', name:event.target.elements.name.value, note:event.target.elements.note.value}).catch(function () {}); });
     function saveLine(nextUrl) {
         if (busy || !lineForm.reportValidity()) return;
