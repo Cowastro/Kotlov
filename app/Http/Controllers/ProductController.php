@@ -8,22 +8,22 @@ use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Services\ChimneyBundlePromotion;
 use App\Services\HeatPumpProductPresenter;
-use App\Services\SaunaStoveFilterNormalizer;
 use App\Services\ProductPopularityService;
 use App\Services\ProductVariantSelector;
+use App\Services\SaunaStoveFilterNormalizer;
 use App\Services\SeoMetadataBuilder;
-use App\Support\Catalog\ElectricFireplaceNavigation;
-use App\Support\Catalog\FireplaceSpecifications;
-use App\Support\Catalog\FireboxSpecifications;
-use App\Support\Catalog\GasMeterSelectionGuide;
 use App\Support\Catalog\BoilerCatalog;
 use App\Support\Catalog\BoilerSpecifications;
-use App\Support\Catalog\WaterHeaterCatalog;
+use App\Support\Catalog\ElectricFireplaceNavigation;
+use App\Support\Catalog\FireboxSpecifications;
+use App\Support\Catalog\FireplaceSpecifications;
+use App\Support\Catalog\GasMeterSelectionGuide;
 use App\Support\Catalog\HeaterCatalog;
-use App\Support\Catalog\RadiatorCatalog;
 use App\Support\Catalog\HeaterEquipment;
 use App\Support\Catalog\HouseholdPumpFacts;
 use App\Support\Catalog\PumpCatalog;
+use App\Support\Catalog\RadiatorCatalog;
+use App\Support\Catalog\WaterHeaterCatalog;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
@@ -60,6 +60,13 @@ class ProductController extends Controller
                 'reviews' => fn ($q) => $q->where('is_approved', true)->latest()->limit(10),
             ])
             ->firstOrFail();
+
+        if ($product->merged_into_product_id) {
+            $canonicalProduct = Product::with('category:id,slug')->findOrFail($product->merged_into_product_id);
+            abort_unless($canonicalProduct->category, 404);
+
+            return redirect('/'.$canonicalProduct->category->slug.'/'.$canonicalProduct->slug, 301);
+        }
 
         $productCategory = $product->category;
 

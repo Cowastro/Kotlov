@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Brand;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -69,7 +70,7 @@ class CreateChistyBeregCardsCommand extends Command
             ->orderBy('supplier_article')->get()
             ->filter(fn (SupplierProduct $offer) => in_array(Str::slug((string) data_get($offer->raw, 'category')), $groups, true));
 
-        $stats = ['offers' => $offers->count(), 'planned' => 0, 'no_category' => 0, 'markdown' => 0, 'created' => 0, 'with_photo' => 0, 'page_not_found' => 0, 'errors' => 0];
+        $stats = ['offers' => $offers->count(), 'planned' => 0, 'no_category' => 0, 'markdown' => 0, 'created' => 0, 'reused' => 0, 'with_photo' => 0, 'page_not_found' => 0, 'errors' => 0];
         $plan = [];
         $limit = (int) $this->option('limit');
         foreach ($offers as $offer) {
@@ -96,6 +97,11 @@ class CreateChistyBeregCardsCommand extends Command
                 $page = $url ? $bereg->page($url, (string) $offer->supplier_article) : null;
                 $stats['page_not_found'] += (int) ($page === null);
                 $product = $this->createCard($offer, (int) $categories[$slug], $page);
+                if (! $product->wasRecentlyCreated) {
+                    $stats['reused']++;
+
+                    continue; // Never overwrite an existing card with a stale import snapshot.
+                }
                 $stats['created']++;
                 if ($page !== null) {
                     $enricher->enrichFromParsed($product, $url, [
@@ -127,7 +133,7 @@ class CreateChistyBeregCardsCommand extends Command
             $this->line("metric.chisty_bereg_create.{$key}={$value}");
         }
 
-        return self::SUCCESS;
+        return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
     /** The site specs with the card's own ones (maker code, country) the site has not. */
@@ -346,42 +352,67 @@ class CreateChistyBeregCardsCommand extends Command
 
     private function createCard(SupplierProduct $offer, int $categoryId, ?array $page): Product
     {
-        $raw = (array) $offer->raw;
-        $brandName = trim((string) ($raw['brand'] ?? ''));
-        $brandId = in_array(mb_strtolower($brandName), ['', 'без бренда'], true) ? null : $this->brandId($brandName);
-        // The site title has no «… Китай»; the price list name ends with the country of make.
-        $country = preg_match('/\s('.self::COUNTRIES.')$/u', (string) $offer->supplier_name, $m) ? $m[1] : null;
-        $name = trim((string) ($page['title'] ?? '')) ?: trim((string) preg_replace('/\s('.self::COUNTRIES.')$/u', '', (string) $offer->supplier_name));
-        $retail = (float) ($raw['retail'] ?? 0);
-        $sku = 'BEREG-'.$offer->supplier_article;
+        // supplier_id + supplier_article is unique. Lock its current row, not the
+        // collection loaded before HTTP requests. Creation and binding commit together.
+        return DB::transaction(function () use ($offer, $categoryId, $page): Product {
+            $offer = SupplierProduct::query()->whereKey($offer->id)->lockForUpdate()->firstOrFail();
+            if ($offer->product_id) {
+                return Product::query()->findOrFail($offer->product_id);
+            }
+            if ($offer->match_status !== 'unmatched' || trim((string) $offer->supplier_article) === '') {
+                throw new \RuntimeException('Строка поставщика изменена; повторите проверку импорта.');
+            }
+            $sku = 'BEREG-'.$offer->supplier_article;
+            $existing = Product::query()->where('sku', $sku)->whereNull('merged_into_product_id')->lockForUpdate()->get();
+            if ($existing->count() > 1) {
+                throw new \RuntimeException('Несколько карточек с артикулом '.$sku.'; требуется ручная проверка.');
+            }
+            $product = $existing->first();
+            if ($product) {
+                $maker = trim((string) data_get($offer->raw, 'maker_code'));
+                $storedMaker = collect((array) $product->specs)->firstWhere('key', 'Код производителя')['value'] ?? '';
+                if ($product->is_archived || ($maker !== '' && $storedMaker !== '' && $maker !== trim((string) $storedMaker))) {
+                    throw new \RuntimeException('Конфликт существующей карточки '.$sku.'; автоматическая привязка остановлена.');
+                }
+            }
+            $raw = (array) $offer->raw;
+            $brandName = trim((string) ($raw['brand'] ?? ''));
+            $brandId = in_array(mb_strtolower($brandName), ['', 'без бренда'], true) ? null : $this->brandId($brandName);
+            // The site title has no «… Китай»; the price list name ends with the country of make.
+            $country = preg_match('/\s('.self::COUNTRIES.')$/u', (string) $offer->supplier_name, $m) ? $m[1] : null;
+            $name = trim((string) ($page['title'] ?? '')) ?: trim((string) preg_replace('/\s('.self::COUNTRIES.')$/u', '', (string) $offer->supplier_name));
+            $retail = (float) ($raw['retail'] ?? 0);
 
-        $product = Product::query()->create([
-            'category_id' => $categoryId,
-            'brand_id' => $brandId,
-            'name' => $name,
-            'h1' => $name,
-            'slug' => $this->uniqueSlug($name),
-            'sku' => $sku,
-            'price' => $retail,
-            'currency' => 'BYN',
-            'short_description' => Str::limit($name.'. '.collect([$brandName && $brandId ? 'Бренд '.$brandName : null, $country ? 'производство: '.$country : null])->filter()->implode(', '), 250, ''),
-            'images' => [],
-            'specs' => array_values(array_filter([
-                ['key' => 'Код производителя', 'value' => (string) ($raw['maker_code'] ?? '')],
-                ['key' => 'Страна производства', 'value' => (string) $country],
-            ], fn ($spec) => $spec['value'] !== '')),
-            'unit' => 'шт',
-            'is_active' => false,
-            'created_via' => Product::CREATED_VIA_AWAITING_PHOTOS,
-            'is_archived' => false,
-            'is_new' => true,
-            'availability_status' => Product::AVAILABILITY_CHECK,
-            'meta_title' => Str::limit($name, 60, '').' купить в %city%',
-            'meta_description' => Str::limit($name.' — цена, наличие и доставка по Беларуси.', 175, ''),
-        ]);
-        $offer->forceFill(['product_id' => $product->id, 'product_sku' => $sku, 'match_status' => 'matched', 'match_confidence' => 'created_from_price'])->save();
+            if (! $product) {
+                $product = Product::query()->create([
+                    'category_id' => $categoryId,
+                    'brand_id' => $brandId,
+                    'name' => $name,
+                    'h1' => $name,
+                    'slug' => $this->uniqueSlug($name),
+                    'sku' => $sku,
+                    'price' => $retail,
+                    'currency' => 'BYN',
+                    'short_description' => Str::limit($name.'. '.collect([$brandName && $brandId ? 'Бренд '.$brandName : null, $country ? 'производство: '.$country : null])->filter()->implode(', '), 250, ''),
+                    'images' => [],
+                    'specs' => array_values(array_filter([
+                        ['key' => 'Код производителя', 'value' => (string) ($raw['maker_code'] ?? '')],
+                        ['key' => 'Страна производства', 'value' => (string) $country],
+                    ], fn ($spec) => $spec['value'] !== '')),
+                    'unit' => 'шт',
+                    'is_active' => false,
+                    'created_via' => Product::CREATED_VIA_AWAITING_PHOTOS,
+                    'is_archived' => false,
+                    'is_new' => true,
+                    'availability_status' => Product::AVAILABILITY_CHECK,
+                    'meta_title' => Str::limit($name, 60, '').' купить в %city%',
+                    'meta_description' => Str::limit($name.' — цена, наличие и доставка по Беларуси.', 175, ''),
+                ]);
+            }
+            $offer->forceFill(['product_id' => $product->id, 'product_sku' => $sku, 'match_status' => 'matched', 'match_confidence' => 'created_from_price'])->save();
 
-        return $product;
+            return $product;
+        }, 3);
     }
 
     /** @var array<string,int>|null brand key => id */
@@ -394,7 +425,8 @@ class CreateChistyBeregCardsCommand extends Command
         if (isset($this->brands[$key])) {
             return $this->brands[$key];
         }
-        return $this->brands[$key] = (int) \App\Models\Brand::forImport($name)->id;
+
+        return $this->brands[$key] = (int) Brand::forImport($name)->id;
     }
 
     private function uniqueSlug(string $name): string
