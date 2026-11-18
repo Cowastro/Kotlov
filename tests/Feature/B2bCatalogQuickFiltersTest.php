@@ -104,4 +104,55 @@ class B2bCatalogQuickFiltersTest extends TestCase
         $this->actingAs($admin)->get(route('b2b.catalog', ['workspace' => 1, 'flags' => ['in_stock']]))->assertOk()
             ->assertViewHas('navigationTotal', 1)->assertViewHas('products', fn ($products) => $products->total() === 1);
     }
+    public function test_stock_filter_uses_source_validity_and_successful_one_c_confirmation(): void
+    {
+        Product::query()->update(['is_active'=>false]);
+        $this->freezeTime();
+        $admin=User::factory()->create(['role'=>'admin','is_active'=>true]);
+        $supplier=Supplier::create(['code'=>'filter-integration','name'=>'Поставщик интеграций','is_active'=>true]);
+        $moscow=\App\Models\IntegrationSource::create(['code'=>'filter-moscow','name'=>'Москва','driver'=>'warehouse','supplier_id'=>$supplier->id,'is_active'=>true,'settings'=>['stock_validity_minutes'=>20160]]);
+        $api=\App\Models\IntegrationSource::create(['code'=>'filter-api','name'=>'API','driver'=>'csv','supplier_id'=>$supplier->id,'is_active'=>true,'settings'=>['stock_validity_minutes'=>15]]);
+        $oneC=\App\Models\IntegrationSource::create(['code'=>'filter-onec','name'=>'1C','driver'=>'commerceml','supplier_id'=>$supplier->id,'is_active'=>true]);
+        \App\Models\IntegrationExchangeRun::create(['integration_source_id'=>$oneC->id,'direction'=>'import','operation'=>'catalog','status'=>'success','started_at'=>now(),'finished_at'=>now()]);
+        $expected=[];
+        foreach ([['moscow', $moscow,now()->subDays(12),2,true],['moscow-stale',$moscow,now()->subDays(15),2,false],['api',$api,now()->subMinutes(5),3,true],['api-stale',$api,now()->subMinutes(25),3,false],['api-unconfirmed',$api,null,3,false],['one-c',$oneC,now()->subDays(3),4,true],['one-c-zero',$oneC,now(),0,false]] as [$sku,$source,$confirmed,$qty,$available]) {
+            $p=$this->product($sku);
+            $offer=\App\Models\IntegrationProduct::create(['product_id'=>$p->id,'integration_source_id'=>$source->id,'external_id'=>$sku,'name'=>$p->name,'match_status'=>'matched','stock_quantity'=>$qty,'stock_confirmed_at'=>$confirmed,'last_seen_at'=>now()]);
+            $this->assertSame($available,$offer->fresh()->hasFreshPositiveStock(),$sku);
+            $this->assertSame($available,\App\Models\IntegrationProduct::whereKey($offer->id)->freshPositiveStock()->exists(),$sku);
+            if($available)$expected[]=$p->id;
+        }
+        $this->actingAs($admin)->get(route('b2b.catalog',['workspace'=>1,'flags'=>['in_stock']]))->assertOk()
+            ->assertViewHas('products',fn($products)=>$products->pluck('id')->sort()->values()->all()===collect($expected)->sort()->values()->all())
+            ->assertViewHas('navigationTotal',count($expected));
+        $oneC->update(['is_active'=>false]);
+        $this->assertSame(2,Product::whereIn('id',$expected)->whereHas('integrationProducts',fn($q)=>$q->freshPositiveStock())->count());
+    }
+
+    public function test_warehouse_filter_and_staff_labels_share_freshness_and_do_not_refresh_old_balances(): void
+    {
+        Product::query()->update(['is_active'=>false]);
+        $this->freezeTime();
+        $admin=User::factory()->create(['role'=>'admin','is_active'=>true]);
+        $supplier=Supplier::create(['code'=>'filter-warehouse','name'=>'Складской поставщик','is_active'=>true]);
+        $expected=[];
+        foreach ([['moscow-fresh','ecokamin-moscow',12,2,true],['moscow-expired','ecokamin-moscow',15,2,false],['local-fresh','local',0,3,true],['local-expired','local',2,3,false],['moscow-empty','ecokamin-moscow',0,0,false]] as [$sku,$code,$days,$qty,$available]) {
+            $p=$this->product($sku);
+            $time=now()->subDays($days);
+            $stock=\App\Models\ProductWarehouseStock::create(['product_id'=>$p->id,'supplier_id'=>$supplier->id,'warehouse_code'=>$code,'warehouse_name'=>$code,'available_quantity'=>$qty,'last_synced_at'=>$time]);
+            $this->assertSame($available,$stock->hasFreshPositiveStock(),$sku);
+            $this->assertSame($available,\App\Models\ProductWarehouseStock::whereKey($stock->id)->available()->fresh()->exists(),$sku);
+            $offer=app(\App\Services\StaffCatalogWorkspace::class)->offers($p,$admin)->first();
+            $this->assertSame($available,$offer['in_stock'],$sku);
+            $this->assertSame($time->format('Y-m-d H:i:s'),$stock->fresh()->last_synced_at->format('Y-m-d H:i:s'));
+            if($available)$expected[]=$p->id;
+        }
+        $this->actingAs($admin)->get(route('b2b.catalog',['workspace'=>1,'flags'=>['in_stock'],'workspace_supplier'=>$supplier->id]))->assertOk()
+            ->assertViewHas('products',fn($products)=>$products->pluck('id')->sort()->values()->all()===collect($expected)->sort()->values()->all())
+            ->assertViewHas('navigationTotal',count($expected));
+        $supplier->update(['is_active'=>false]);
+        $query=Product::whereIn('id',$expected);app(\App\Services\B2bCatalogFilters::class)->stock($query);
+        $this->assertSame(0,$query->count());
+    }
+
 }

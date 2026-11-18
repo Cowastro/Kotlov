@@ -183,7 +183,7 @@ class B2bCatalogOfferResolver
         $warehouseStock = collect($offer->product?->warehouseStocks)
             ->filter(fn ($stock): bool => $supplierId > 0
                 && (int) $stock->supplier_id === $supplierId
-                && (float) $stock->available_quantity > 0)
+                && $stock->hasFreshPositiveStock())
             ->sortBy(fn ($stock): array => [(int) ($stock->delivery_days ?? 0), -(float) $stock->available_quantity])
             ->first();
 
@@ -230,6 +230,7 @@ class B2bCatalogOfferResolver
         return collect($warehouseStocks)->contains(
             fn ($stock): bool => $supplierId > 0
                 && (int) $stock->supplier_id === $supplierId
+                && $stock->hasFreshPositiveStock()
                 && (float) $stock->available_quantity >= $quantity,
         );
     }
@@ -316,7 +317,7 @@ class B2bCatalogOfferResolver
                     || $this->hasFreshStock($offer)
                     || $offer->product?->warehouseStocks->contains(
                         fn ($stock): bool => (int) $stock->supplier_id === (int) $offer->source?->supplier_id
-                            && (float) $stock->available_quantity > 0,
+                            && $stock->hasFreshPositiveStock(),
                     ))
                 && $this->sourceAllowsCategory($offer))
             ->values();

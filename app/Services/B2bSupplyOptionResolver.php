@@ -29,7 +29,9 @@ class B2bSupplyOptionResolver
     public function optionsForUser(?User $user, int|array|null $productId = null): Collection
     {
         $cacheKey = $user ? 'user:'.$user->id : 'guest';
-        if ($productId !== null) $cacheKey .= ':product:'.implode(',', (array) $productId);
+        if ($productId !== null) {
+            $cacheKey .= ':product:'.implode(',', (array) $productId);
+        }
         if (isset($this->optionsCache[$cacheKey])) {
             return $this->optionsCache[$cacheKey];
         }
@@ -94,6 +96,7 @@ class B2bSupplyOptionResolver
     {
         // Reuse a loaded catalog, but a single-line edit must not load it all.
         $cacheKey = $user ? 'user:'.$user->id : 'guest';
+
         return ($this->optionsCache[$cacheKey] ?? $this->optionsForUser($user, (int) $product->id))
             ->where('product_id', (int) $product->id)
             ->values();
@@ -139,7 +142,7 @@ class B2bSupplyOptionResolver
         if ($supplierId > 0 && ($source?->code === EcokaminB2bOfferPublisher::SOURCE_CODE || ! $offer->hasFreshPositiveStock())) {
             $warehouseStock = collect($offer->product?->warehouseStocks)
                 ->first(fn (ProductWarehouseStock $stock): bool => (int) $stock->supplier_id === $supplierId
-                    && (float) $stock->available_quantity > 0);
+                    && $stock->hasFreshPositiveStock());
         }
 
         $procurement = $source?->isProcurementMode() === true;

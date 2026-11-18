@@ -126,6 +126,29 @@ class IntegrationProduct extends Model
         ) ?? false;
     }
 
+    /** SQL equivalent of hasFreshPositiveStock(), including each source's validity window. */
+    public function scopeFreshPositiveStock(Builder $query): Builder
+    {
+        $sources = IntegrationSource::query()->where('is_active', true)->get();
+
+        return $query->where('stock_quantity', '>', 0)->where(function (Builder $stock) use ($sources): void {
+            // An empty source list must never turn this into an unrestricted OR.
+            $stock->whereRaw('1 = 0');
+            foreach ($sources as $source) {
+                $cutoff = now()->subMinutes($source->stockValidityMinutes());
+                $stock->orWhere(function (Builder $channel) use ($source, $cutoff): void {
+                    $channel->where('integration_source_id', $source->id)
+                        ->where(function (Builder $confirmed) use ($source, $cutoff): void {
+                            $confirmed->where('stock_confirmed_at', '>=', $cutoff);
+                            if ($source->code === 'onec' || $source->driver === 'commerceml') {
+                                $confirmed->orWhereHas('source.latestSuccessfulCatalogExchangeRun', fn (Builder $run) => $run->where('finished_at', '>=', $cutoff));
+                            }
+                        });
+                });
+            }
+        });
+    }
+
     public function normalizedPriceByn(): ?float
     {
         $normalized = (float) $this->price_byn;

@@ -47,7 +47,7 @@ class EcokaminB2bOfferPublisher
                 'warehouse_label' => 'Склад Москва',
                 'price_tax_mode' => IntegrationSource::PRICE_TAX_INCLUSIVE,
                 'vat_rate' => 20,
-                'stock_validity_minutes' => 20160,
+                'stock_validity_minutes' => ProductWarehouseStock::ECOKAMIN_VALIDITY_MINUTES,
                 'zero_missing_stock_on_complete' => true,
                 'allow_order_export' => false,
                 'order_pricing_types' => ['b2b'],

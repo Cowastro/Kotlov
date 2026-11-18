@@ -45,11 +45,10 @@ class B2bCatalogFilters
                     ->where(fn ($matched) => $matched->where('match_status', 'matched')->orWhereIn('match_confidence', ['manual_price_list', 'official_source', 'brand_assignment']))
                     ->where(fn ($available) => $available->where(fn ($numeric) => $numeric->where('stock_quantity', '>', 0)->whereRaw('COALESCE(last_stock_synced_at, last_synced_at, updated_at) >= ?', [$fresh]))
                         ->orWhere(fn ($always) => $always->where('stock_status', 'always_available')->where('in_stock', true))))
-                ->orWhereHas('integrationProducts', fn (Builder $offers) => $offers->where('match_status', 'matched')->where('stock_quantity', '>', 0)
-                    ->whereRaw('COALESCE(stock_confirmed_at, last_offer_seen_at, last_seen_at) >= ?', [$fresh])
+                ->orWhereHas('integrationProducts', fn (Builder $offers) => $offers->where('match_status', 'matched')->freshPositiveStock()
                     ->whereHas('source', fn ($source) => $source->when($supplierId > 0, fn ($supplier) => $supplier->where('supplier_id', $supplierId))->where('is_active', true)->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true))))
                 ->orWhereHas('warehouseStocks', fn (Builder $warehouses) => $warehouses->when($supplierId > 0, fn ($supplier) => $supplier->where('supplier_id', $supplierId))->where('available_quantity', '>', 0)->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true))
-                    ->whereRaw('COALESCE(last_synced_at, as_of_date, updated_at) >= ?', [$fresh]));
+                    ->fresh());
         });
     }
 
