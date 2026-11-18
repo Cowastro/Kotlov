@@ -24,6 +24,72 @@ class TdKomplektSyncTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_external_cards_receive_only_missing_explicit_specs_with_backups_and_review(): void
+    {
+        Storage::fake('local');
+        $row = $this->row(['description' => "Материал: латунь\nВнутренняя трубка: EPDM-резина\nДавление: 10 бар\nМощность: 12"]);
+        $file = $this->csv([$row]);
+        $this->artisan('supplier:sync-td-komplekt', ['--file'=>$file, '--apply'=>true, '--create-new'=>true])->assertSuccessful();
+        $p = Product::where('sku', 'TDK-12345')->firstOrFail();
+        $specs = [['key'=>'Код производителя','value'=>'AV-12345'], ['key'=>'Материал корпуса','value'=>'сталь'], ['key'=>'Мощность','value'=>'0']];
+        $p->update(['supplier_id'=>null, 'specs'=>$specs, 'content'=>'Описание редактора', 'price'=>99]);
+        $p->allAttributeValues()->delete();
+        $attribute = \App\Models\Attribute::create(['category_id'=>$p->category_id,'name'=>'Давление','type'=>'value','suffix'=>'бар','in_product'=>true]);
+        $value = \App\Models\ProductAttributeValue::create(['product_id'=>$p->id,'attribute_id'=>$attribute->id,'value'=>'20']);
+        $this->artisan('supplier:complete-td-specs')->assertSuccessful();
+        $this->assertSame($specs, $p->fresh()->specs);
+        $this->assertCount(0, Storage::disk('local')->files(TdKomplektFeed::DIRECTORY.'/spec-backups'));
+        $this->artisan('supplier:complete-td-specs', ['--apply'=>true])->assertSuccessful();
+        $after = $p->fresh()->specs;
+        $this->assertCount(4, $after);
+        $this->assertSame(['key'=>'Внутренняя трубка','value'=>'EPDM-резина'], $after[3]);
+        $this->assertSame($specs, array_slice($after,0,3));
+        $this->assertSame('20', $value->fresh()->value);
+        $this->assertSame('Описание редактора', $p->fresh()->content);
+        $this->assertEquals(99, $p->fresh()->price);
+        $this->assertCount(1, Storage::disk('local')->files(TdKomplektFeed::DIRECTORY.'/spec-backups'));
+        $this->assertDatabaseHas('product_attribute_values',['product_id'=>$p->id,'value'=>'EPDM-резина']);
+        $this->artisan('supplier:complete-td-specs', ['--apply'=>true])->assertSuccessful();
+        $this->assertSame($after, $p->fresh()->specs);
+        $this->assertCount(1, Storage::disk('local')->files(TdKomplektFeed::DIRECTORY.'/spec-backups'));
+        $reports = Storage::disk('local')->files(TdKomplektFeed::DIRECTORY.'/spec-reports');
+        $report = json_decode(Storage::disk('local')->get(end($reports)), true);
+        $this->assertCount(3, $report['items'][0]['conflicts']);
+        $this->assertSame([], $report['items'][0]['added']);
+    }
+
+    public function test_recurring_sync_completes_external_cards_but_quarantines_changed_identity(): void
+    {
+        Storage::fake('local');
+        $row = $this->row(['description'=>'Внутренняя трубка: EPDM-резина']);
+        $file = $this->csv([$row]);
+        $this->artisan('supplier:sync-td-komplekt', ['--file'=>$file, '--apply'=>true, '--create-new'=>true])->assertSuccessful();
+        $p = Product::where('sku','TDK-12345')->firstOrFail();
+        $p->update(['supplier_id'=>null,'specs'=>[]]);
+        $p->allAttributeValues()->delete();
+        $this->artisan('supplier:sync-td-komplekt', ['--file'=>$file, '--apply'=>true])->assertSuccessful();
+        $this->assertSame([['key'=>'Внутренняя трубка','value'=>'EPDM-резина']], $p->fresh()->specs);
+        $changed = $this->csv([$this->row(['vendor_code'=>'CHANGED','description'=>'Новое поле: нельзя переносить'])]);
+        $this->artisan('supplier:sync-td-komplekt', ['--file'=>$changed, '--apply'=>true])->assertSuccessful();
+        $this->assertCount(1, $p->fresh()->specs);
+    }
+
+    public function test_completion_uses_explicit_units_and_excludes_other_model_tables(): void
+    {
+        Storage::fake('local');
+        $row = $this->row(['description'=>"Внутренний диаметр: 8,2 мм\nWRV 100: 100 л\nПример: ничего не переносить\nДиаметр резьбы: 34\nНоминальная температура срабатывания: : (9010) С\nЯркий дизайн: удобно\nДиаметр бака: 12"]);
+        $this->artisan('supplier:sync-td-komplekt', ['--file'=>$this->csv([$row]), '--apply'=>true, '--create-new'=>true])->assertSuccessful();
+        $p = Product::where('sku','TDK-12345')->firstOrFail();
+        $p->update(['supplier_id'=>null,'specs'=>[]]);
+        $p->allAttributeValues()->delete();
+        foreach (['Внутренний диаметр','Диаметр бака'] as $name) {
+            \App\Models\Attribute::where('category_id',$p->category_id)->where('name',$name)->update(['suffix'=>'мм']);
+        }
+        $this->artisan('supplier:complete-td-specs', ['--apply'=>true])->assertSuccessful();
+        $this->assertSame([['key'=>'Внутренний диаметр','value'=>'8,2 мм']],$p->fresh()->specs);
+        $this->assertDatabaseHas('product_attribute_values',['product_id'=>$p->id,'value'=>'8.2']);
+    }
+
     private function row(array $changes = []): array
     {
         return array_replace(['id' => '12345', 'okdp' => 'ЦБ-12345', 'name' => 'Тройник латунный AV Engineering 1/2', 'vendor_code' => 'AV-12345', 'brand' => 'AV Engineering', 'price' => '12,50', 'price_wholesale' => '8,10', 'warehouse_all' => '10 дней', 'warehouse_main' => '0', 'warehouse_add' => '10 дней', 'warehouse_rb' => '0', 'parentid_name3' => 'Резьбовые латунные фитинги и краны. AV Engineering', 'parentid_name4' => '', 'barcode' => '1234567890123', 'country' => 'Китай', 'description_short' => 'Латунный тройник', 'description' => "Размер: 1/2\nТест: <script>alert(1)</script>", 'media_img' => 'https://content.tools.by/images/products/test/photo.jpg', 'prop_unit' => 'шт.', 'prop_quantity_min' => '3', 'prop_multiplicity' => '1', 'prop_multiplicity_box' => '100', 'prop_manufacturer' => 'Завод', 'prop_importer' => 'ТД Комплект', 'vat' => '20'], $changes);

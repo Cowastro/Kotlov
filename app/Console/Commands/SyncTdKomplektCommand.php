@@ -13,6 +13,7 @@ use App\Services\ProductSourceEnricher;
 use App\Services\SupplierProductAvailabilityService;
 use App\Services\Suppliers\TdKomplektFeed;
 use App\Services\Suppliers\TdKomplektMatcher;
+use App\Services\Suppliers\TdKomplektSpecCompletion;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -142,6 +143,9 @@ class SyncTdKomplektCommand extends Command
                                 app(ProductSourceEnricher::class)->syncSpecsToAttributeValues($p);
                             }
                         } // Preserve manual editorial changes.
+                    }
+                    if ((int) $p->supplier_id !== (int) $supplier->id) {
+                        $report[$id]['spec_completion'] = app(TdKomplektSpecCompletion::class)->complete($p, $row, true);
                     }
                     if ((int) $p->supplier_id === (int) $supplier->id && $data['retail'] > 0 && $data['retail'] >= $data['wholesale'] && abs((float) $p->price - $data['retail']) > .005) {
                         if ((float) $p->price > 0 && abs($data['retail'] / (float) $p->price - 1) > .3) {
