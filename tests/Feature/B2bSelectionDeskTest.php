@@ -103,4 +103,28 @@ class B2bSelectionDeskTest extends TestCase
         $this->actingAs($user)->get(route('b2b.selections.show', $selection))->assertForbidden();
         $this->patchJson(route('b2b.selections.update', $selection), ['action' => 'remove', 'revision' => 1, 'ids' => [101]])->assertForbidden();
     }
+
+    public function test_crm_manager_internal_export_is_explicit_and_client_export_stays_public(): void
+    {
+        $user = User::factory()->create(['role' => 'manager', 'is_crm_user' => true, 'is_active' => true]);
+        $selection = $this->selection($user);
+        $this->actingAs($user);
+        foreach ([false, true] as $internal) {
+            $response = $this->get(route('b2b.selections.export', [$selection, 'internal' => $internal ? 1 : 0]))->assertOk();
+            $file = tempnam(sys_get_temp_dir(), 'kotlov-crm-export-');
+            try {
+                file_put_contents($file, $response->streamedContent());
+                $sheet = IOFactory::load($file)->getActiveSheet();
+                $this->assertSame($internal ? 'I' : 'F', $sheet->getHighestDataColumn());
+                $values = json_encode($sheet->toArray(), JSON_UNESCAPED_UNICODE);
+                if ($internal) {
+                    $this->assertStringContainsString('Закрытый поставщик', $values);
+                } else {
+                    $this->assertStringNotContainsString('Закрытый поставщик', $values);
+                }
+            } finally {
+                @unlink($file);
+            }
+        }
+    }
 }

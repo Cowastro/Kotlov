@@ -158,11 +158,11 @@ class StaffCatalogWorkspaceTest extends TestCase
             ->assertJsonPath('procurement.total', 562.5)->assertJsonPath('procurement.margin', 1312.5)->assertJsonPath('procurement.margin_percent', 70)->json();
         $this->get($saved['print_url'])->assertOk()->assertDontSee('Второй поставщик')->assertDontSee('562,50');
         $selection = CustomerSelection::find($draft['id']);
-        $sanitized = app(StaffCatalogWorkspace::class)->state($selection, $this->manager());
+        $sanitized = app(StaffCatalogWorkspace::class)->state($selection, $this->manager(['is_crm_user' => false]));
         $this->assertNull($sanitized['procurement']);
         $this->assertArrayNotHasKey('workspace_purchase', $sanitized['items'][0]);
         $this->actingAs($this->manager())->get(route('b2b.catalog', ['workspace' => 1, 'q' => 'SUP-TEST-150']))->assertOk()
-            ->assertDontSee('Первый поставщик')->assertDontSee('data-workspace-cost', false);
+            ->assertSee('Первый поставщик')->assertSee('data-workspace-cost', false)->assertSee('Рабочее место менеджера')->assertDontSee('Режим администратора');
     }
 
     public function test_a_large_selection_keeps_all_positions_when_one_line_changes(): void
@@ -185,6 +185,44 @@ class StaffCatalogWorkspaceTest extends TestCase
         $this->assertCount(151, $selection->items);
         $this->assertSame('LARGE-150', $selection->items[$line->id]['sku']);
         $this->get(route('selections.show', [$selection, 'print' => 1]))->assertOk()->assertSee('LARGE-150');
+    }
+
+    public function test_both_crm_manager_roles_can_choose_a_supplier_and_reopen_procurement_data(): void
+    {
+        $product = $this->product();
+        $supplier = Supplier::create(['code' => 'crm-procurement', 'name' => 'Поставщик для CRM', 'is_active' => true]);
+        SupplierProduct::create(['supplier_id' => $supplier->id, 'product_id' => $product->id, 'supplier_article' => 'CRM-SUP-1', 'price_byn' => 4, 'stock_quantity' => 30, 'in_stock' => true, 'stock_status' => 'in_stock', 'match_confidence' => 'official_source', 'last_synced_at' => now(), 'last_stock_synced_at' => now()]);
+        foreach (['manager', 'sales_manager'] as $role) {
+            $manager = $this->manager(['role' => $role]);
+            $this->actingAs($manager)->get(route('b2b.catalog', ['workspace' => 1, 'q' => $product->sku, 'workspace_supplier' => $supplier->id]))
+                ->assertOk()->assertViewHas('supplierId', $supplier->id)->assertViewHas('showProcurement', true)
+                ->assertSee('Поставщик для CRM')->assertSee('data-workspace-cost', false)->assertSee('data-workspace-margin', false)
+                ->assertSee('Рабочее место менеджера')->assertDontSee('Режим администратора');
+            $offer = app(StaffCatalogWorkspace::class)->offers($product->fresh(), $manager)->first();
+            $draft = $this->postJson(route('b2b.workspace.store'), ['name' => 'Подбор '.$role])->assertOk()->json();
+            $saved = $this->putJson(route('b2b.workspace.update', ['selection' => $draft['id'], 'product' => $product->id]), ['revision' => 1, 'quantity' => 2, 'supplier_key' => $offer['supplier_key'], 'purchase_price' => 0.01])
+                ->assertOk()->assertJsonPath('items.0.workspace_purchase.purchase_price', 4)
+                ->assertJsonPath('items.0.workspace_purchase.supplier', 'Поставщик для CRM')
+                ->assertJsonPath('items.0.workspace_purchase.stock_quantity', 30)
+                ->assertJsonPath('procurement.total', 8)->assertJsonPath('procurement.margin', 17)->json();
+            $this->flushSession();
+            $this->get(route('b2b.catalog', ['workspace' => 1, 'selection_id' => $draft['id']]))->assertOk()
+                ->assertViewHas('workspaceState', fn ($state) => $state['procurement']['total'] === 8.0);
+            $this->get($saved['desk_url'])->assertOk()->assertSee('Поставщик для CRM')->assertSee('class="desk-cost"', false);
+            $this->get($saved['print_url'])->assertOk()->assertDontSee('Поставщик для CRM')->assertDontSee('workspace_purchase');
+            $this->get(route('b2b.catalog', ['b2b-preview' => 1]))->assertOk()->assertViewHas('showProcurement', false)->assertDontSee('data-workspace-cost', false);
+        }
+    }
+
+    public function test_procurement_policy_excludes_non_crm_inactive_and_client_roles_even_with_crm_flag(): void
+    {
+        $product = $this->product();
+        foreach ([['role' => 'manager', 'is_crm_user' => false], ['role' => 'sales_manager', 'is_active' => false], ['role' => 'admin', 'is_active' => false], ['role' => 'client'], ['role' => 'supplier']] as $attributes) {
+            $user = $this->manager($attributes);
+            $this->assertFalse(StaffCatalogWorkspace::canViewProcurement($user));
+            $this->assertTrue(app(StaffCatalogWorkspace::class)->offers($product, $user)->isEmpty());
+            $this->actingAs($user)->get(route('b2b.catalog', ['workspace' => 1]))->assertForbidden();
+        }
     }
 
     public function test_missing_retail_price_is_not_treated_as_a_free_product_or_a_confirmed_loss(): void

@@ -17,6 +17,11 @@ class StaffCatalogWorkspace
             || ($user->is_crm_user && $user->isOperationalManager())));
     }
 
+    public static function canViewProcurement(?User $user): bool
+    {
+        return self::allowed($user);
+    }
+
     public function current(Request $request): ?CustomerSelection
     {
         $query = CustomerSelection::query()->where('user_id', $request->user()->id);
@@ -41,7 +46,7 @@ class StaffCatalogWorkspace
 
     public function offers(Product $product, User $user): Collection
     {
-        if (! $user->isAdmin()) {
+        if (! self::canViewProcurement($user)) {
             return collect();
         }
         $product->loadMissing(['supplierProducts.supplier.latestChannelTransition', 'integrationProducts.source.supplier', 'warehouseStocks.supplier', 'purchasePriceSources.supplier']);
@@ -89,7 +94,7 @@ class StaffCatalogWorkspace
     public function state(?CustomerSelection $selection, ?User $user = null): array
     {
         $items = array_values($selection?->items ?? []);
-        if (! $user?->isAdmin()) {
+        if (! self::canViewProcurement($user)) {
             $items = array_map(fn ($item) => array_diff_key($item, ['workspace_purchase' => true]), $items);
         }
         $items = array_map(function (array $item): array {
@@ -109,7 +114,7 @@ class StaffCatalogWorkspace
             'id' => $selection?->id, 'revision' => $selection?->revision,
             'name' => $selection?->name ?? 'Новый подбор',
             'items' => $items,
-            'procurement' => $user?->isAdmin() ? [
+            'procurement' => self::canViewProcurement($user) ? [
                 'total' => round($purchaseTotal, 2), 'margin' => round($matchedRetail - $marginCost, 2),
                 'margin_percent' => $matchedRetail > 0 ? round(($matchedRetail - $marginCost) / $matchedRetail * 100, 1) : null,
                 'unconfirmed' => count($items) - $knownCosts->count(),

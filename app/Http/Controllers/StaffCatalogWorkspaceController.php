@@ -39,7 +39,7 @@ class StaffCatalogWorkspaceController extends Controller
             'revision' => ['required', 'integer', 'min:1'],
             'supplier_key' => ['nullable', 'string', 'max:100'],
         ]);
-        abort_if(filled($data['supplier_key'] ?? null) && ! $request->user()->isAdmin(), 403);
+        abort_if(filled($data['supplier_key'] ?? null) && ! StaffCatalogWorkspace::canViewProcurement($request->user()), 403);
         $selection = DB::transaction(function () use ($selection, $product, $data, $workspace, $request) {
             $locked = CustomerSelection::whereKey($selection->id)->lockForUpdate()->firstOrFail();
             abort_unless($locked->revision === (int) $data['revision'], 409,
@@ -58,7 +58,7 @@ class StaffCatalogWorkspaceController extends Controller
                         ? 'Цена сайта на момент подбора. Условия поставки уточняются.'
                         : 'Цена и условия поставки требуют уточнения.',
                 ];
-                if ($request->user()->isAdmin()) {
+                if (StaffCatalogWorkspace::canViewProcurement($request->user())) {
                     $offers = $workspace->offers($model, $request->user());
                     $key = $data['supplier_key'] ?? ($locked->items[$product]['workspace_purchase']['supplier_key'] ?? null);
                     $offer = filled($key) ? $offers->firstWhere('supplier_key', $key) : $offers->first();
