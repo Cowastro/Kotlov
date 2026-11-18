@@ -41,9 +41,15 @@
                     </a>
                 @endif
 
-                <a href="{{ $canUseStaffWorkspace ? route('b2b.workspace') : '/partners' }}" class="site-topbar__b2b text-white" @if($canUseStaffWorkspace)aria-label="B2B · подбор и заявки" title="Рабочий B2B-подбор"@endif>
-                    <span class="site-topbar__b2b-label">{{ $canUseStaffWorkspace ? 'Рабочий подбор / ' : 'Партнёрам / ' }}</span>B2B
+                @if($canUseStaffWorkspace)
+                <a href="{{ route('b2b.workspace') }}" class="site-topbar__b2b text-white" aria-label="B2B · подбор и заявки" title="Рабочий B2B-подбор">
+                    <span class="site-topbar__b2b-label">Рабочий подбор / </span>B2B
                 </a>
+                @else
+                <a href="/partners" class="site-topbar__b2b text-white">
+                    <span class="site-topbar__b2b-label">Партнёрам / </span>B2B
+                </a>
+                @endif
             </div>
 
         </div>
