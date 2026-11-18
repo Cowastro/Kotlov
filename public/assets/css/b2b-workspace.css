@@ -1,4 +1,6 @@
 /* Editable staff catalog: desktop columns and mobile cards have separate grids. */
+.b2b-workspace-supply{min-width:0}
+.b2b-staff-workspace .b2b-density{display:inline-flex;align-items:center;justify-content:center}
 .b2b-staff-workspace{font-size:13px;line-height:1.45}
 .b2b-staff-workspace :is(input,select,button){box-sizing:border-box;font-family:inherit}
 .b2b-staff-workspace .b2b-page-heading{gap:12px;align-items:center}
@@ -198,4 +200,37 @@
  .b2b-staff-workspace.has-procurement :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin){padding:6px 5px}
  .b2b-staff-workspace.has-procurement :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin)>strong{font-size:clamp(10px,3vw,13px)}
  .b2b-staff-workspace.has-procurement :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin)>:is(small,span){font-size:9px}
+}
+/* Dense staff rows: one supply strip and one aligned financial/action band. */
+.b2b-offers-short-label{display:none}
+.b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supply{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:4px}
+.b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supply>.b2b-workspace-supplier{flex:1 1 110px;min-width:0;margin:0}
+.b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supply>.b2b-stock-meter{flex:none;margin:0;white-space:nowrap}
+.b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supply>.b2b-workspace-offers{flex:none;margin:0}
+.b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-offers[open]{flex:1 0 100%}
+.b2b-portal.b2b-staff-workspace.is-dense .b2b-offers-full-label{display:none}
+.b2b-portal.b2b-staff-workspace.is-dense .b2b-offers-short-label{display:inline}
+.b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-offers>summary{min-height:28px;line-height:28px;padding:0;white-space:nowrap}
+@media(min-width:1201px){
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-product-row{align-items:start;padding:8px 12px}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supplier{position:relative;height:28px}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supplier-caption{display:block;box-sizing:border-box;height:28px;padding:5px 22px 5px 7px;border:1px solid #dae1e8;border-radius:5px;background:#f7f9fb;color:#3c4d60;font-size:11px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supplier::after{content:'';position:absolute;right:9px;top:9px;width:5px;height:5px;border-right:1px solid #62717d;border-bottom:1px solid #62717d;transform:rotate(45deg);pointer-events:none}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supplier select{position:absolute;inset:0;width:100%;height:28px;opacity:0;cursor:pointer}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supplier:focus-within{outline:2px solid var(--b2b-accent);outline-offset:2px;border-radius:5px}
+ .b2b-portal.b2b-staff-workspace.has-procurement.is-dense :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin){height:44px;min-height:44px;grid-template-rows:18px 12px;gap:0;align-content:center;padding:5px 8px}
+ .b2b-portal.b2b-staff-workspace.has-procurement.is-dense :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin)>:first-child{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-product-table__head>span:nth-child(n+2):nth-last-child(n+2)::after{content:' · BYN';font-size:8px}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-product-table__head{align-items:center}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-request-cell{align-self:start}
+ .b2b-portal.b2b-staff-workspace.is-dense [data-workspace-line-total]:empty{display:none}
+}
+@media(min-width:1101px){
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-command-bar>.b2b-search{align-self:end}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-command-bar__filters{align-self:end}
+}
+@media(max-width:1200px){
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supply>.b2b-workspace-supplier{flex-basis:100%}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supply>.b2b-workspace-offers:not([open]){margin-left:auto}
+ .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-offers>summary{min-height:32px;line-height:32px}
 }
