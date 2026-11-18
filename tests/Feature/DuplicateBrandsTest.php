@@ -8,10 +8,8 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\MergeDuplicateBrands;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -23,8 +21,7 @@ class DuplicateBrandsTest extends TestCase
     public function test_merge_preserves_products_suppliers_metadata_old_filters_and_urls(): void
     {
         Storage::fake('local');
-        // Reproduce a legacy database before the new unique constraint existed.
-        Schema::table('brands', fn (Blueprint $t) => $t->dropUnique('brands_name_unique'));
+        // A raw legacy row with a leading space bypasses model normalization.
         $first = Brand::create(['name' => 'Test LD', 'slug' => 'test-ld', 'is_active' => false, 'producer' => 'Factory']);
         $secondId = DB::table('brands')->insertGetId(['name' => ' test ld ', 'slug' => 'test-ld-2', 'is_active' => true, 'content' => 'Editorial description', 'created_at' => now(), 'updated_at' => now()]);
         $category = Category::create(['name' => 'Brand test', 'slug' => 'brand-dedup-test', 'is_active' => true]);
