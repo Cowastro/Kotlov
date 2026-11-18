@@ -6,6 +6,8 @@
     var rows = Array.from(root.querySelectorAll('[data-desk-row]'));
     var dialog = document.getElementById('desk-transfer-dialog');
     var targetSelect = dialog.querySelector('select');
+    var lineDialog = document.getElementById('desk-line-dialog');
+    var lineForm = lineDialog.querySelector('form');
     var errorBox = root.querySelector('[data-desk-error]');
     function money(value) { return Number(value || 0).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' BYN'; }
     function chosen() { return state.items.filter(function (item) { return !state.excluded.includes(item.id); }); }
@@ -78,6 +80,8 @@
             row.querySelector('[data-desk-check]').checked = !state.excluded.includes(item.id);
             row.classList.toggle('is-postponed', state.excluded.includes(item.id));
             row.querySelector('[data-desk-quantity]').value = item.quantity;
+            row.querySelector('[data-desk-working-note]').hidden = !item.workspace_note;
+            row.querySelector('[data-desk-working-note-text]').textContent = item.workspace_note || '';
             row.querySelector('[data-desk-line-total]').textContent = item.price > 0 ? money(item.price * item.quantity) : 'Уточняется';
             var warning = row.querySelector('[data-desk-stock-warning]');
             if (warning) warning.hidden = item.quantity <= item.workspace_purchase.stock_quantity;
@@ -86,10 +90,12 @@
         });
         visibleRows();
         paintExportSummary();
+        root.querySelectorAll('[data-desk-remove], [data-desk-transfer]').forEach(function (button) { button.disabled = busy || chosen().length === 0; });
     }
     function lock(value) {
         busy = value;
-        root.querySelectorAll('button, [data-desk-check], [data-desk-check-all], [data-desk-quantity]').forEach(function (node) { node.disabled = value; });
+        root.querySelectorAll('button, [data-desk-check], [data-desk-check-all], [data-desk-quantity]').forEach(function (node) { node.disabled = value || (node.matches('[data-desk-remove], [data-desk-transfer]') && chosen().length === 0); });
+        lineDialog.querySelectorAll('button,input,textarea').forEach(function (node) { node.disabled = value; });
         dialog.querySelector('[type="submit"]').disabled = value;
         root.querySelectorAll('[data-desk-export]').forEach(function (node) { node.setAttribute('aria-disabled', value ? 'true' : 'false'); });
     }
@@ -100,6 +106,8 @@
             .then(function (response) { return response.json().then(function (data) { if (!response.ok) throw new Error(data.message || 'Не удалось сохранить изменения.'); return data; }); })
             .then(function (data) {
                 state = data.state; paint(); status('Сохранено ' + state.saved_at);
+                // After a refresh, deleted rows have no DOM left to unhide on undo.
+                if (state.items.some(function (item) { return !rows.some(function (row) { return Number(row.dataset.deskRow) === item.id; }); })) { submitting = true; location.reload(); }
                 if (data.target) {
                     var option = Array.from(targetSelect.options).find(function (entry) { return Number(entry.value) === data.target.id; });
                     if (!option) { option = new Option(data.target.name, data.target.id); targetSelect.add(option); }
@@ -147,6 +155,19 @@
     root.addEventListener('keydown', function (event) { if (event.key === 'Enter' && event.target.matches('[data-desk-quantity]')) { event.preventDefault(); saveQuantity(event.target, true); } });
     root.addEventListener('click', function (event) {
         var button = event.target.closest('button'); if (!button || busy) return;
+        if (button.hasAttribute('data-desk-line-remove')) {
+            mutate({action:'remove', ids:[Number(button.closest('[data-desk-row]').dataset.deskRow)]}).catch(function () {});
+        }
+        if (button.hasAttribute('data-desk-line-edit')) {
+            var item = state.items.find(function (entry) { return entry.id === Number(button.closest('[data-desk-row]').dataset.deskRow); });
+            lineForm.elements.product_id.value = item.id; lineForm.elements.quantity.value = item.quantity;
+            lineForm.elements.workspace_note.value = item.workspace_note || '';
+            lineDialog.querySelector('[data-desk-edit-name]').textContent = item.name;
+            lineDialog.querySelector('[data-desk-line-error]').hidden = true;
+            var catalogLink = lineDialog.querySelector('[data-desk-edit-supplier]');
+            if (catalogLink) { var catalogUrl = new URL(catalogLink.href); catalogUrl.searchParams.set('q', item.sku || item.name); catalogUrl.searchParams.delete('category'); catalogUrl.searchParams.delete('page'); catalogLink.href = catalogUrl.toString(); }
+            lineDialog.showModal(); lineForm.elements.quantity.focus(); lineForm.elements.quantity.select();
+        }
         if (button.hasAttribute('data-desk-reset')) {
             root.querySelector('[data-desk-search]').value = ''; selectedOnly = false; availabilityFilter = 'all';
             root.querySelector('[data-desk-filter-selected]').setAttribute('aria-pressed', 'false');
@@ -167,6 +188,18 @@
         if (button.hasAttribute('data-desk-transfer')) { action = button.dataset.deskTransfer; dialog.querySelector('h2').textContent = action === 'move' ? 'Перенести отмеченные' : 'Копировать отмеченные'; dialog.showModal(); }
     });
     root.querySelector('[data-desk-details]').addEventListener('submit', function (event) { event.preventDefault(); mutate({action:'details', name:event.target.elements.name.value, note:event.target.elements.note.value}).catch(function () {}); });
+    function saveLine(nextUrl) {
+        if (busy || !lineForm.reportValidity()) return;
+        var error = lineDialog.querySelector('[data-desk-line-error]'); error.hidden = true;
+        mutate({action:'line', product_id:Number(lineForm.elements.product_id.value), quantity:Number(lineForm.elements.quantity.value), workspace_note:lineForm.elements.workspace_note.value})
+            .then(function () { lineDialog.close(); if (nextUrl) location.assign(nextUrl); })
+            .catch(function (failure) { error.textContent = failure.message; error.hidden = false; });
+    }
+    lineForm.addEventListener('submit', function (event) { event.preventDefault(); saveLine(); });
+    lineDialog.querySelectorAll('[data-desk-line-close]').forEach(function (button) { button.addEventListener('click', function () { if (!busy) lineDialog.close(); }); });
+    lineDialog.addEventListener('cancel', function (event) { if (busy) event.preventDefault(); });
+    var supplierEdit = lineDialog.querySelector('[data-desk-edit-supplier]');
+    if (supplierEdit) supplierEdit.addEventListener('click', function (event) { event.preventDefault(); saveLine(supplierEdit.href); });
     dialog.querySelector('[data-desk-close]').addEventListener('click', function () { dialog.close(); });
     targetSelect.addEventListener('change', function () { var fresh = targetSelect.value === ''; dialog.querySelector('[data-desk-new-target]').hidden = !fresh; dialog.querySelector('input[name="name"]').required = fresh; });
     dialog.querySelector('form').addEventListener('submit', function (event) {

@@ -104,6 +104,37 @@ class B2bSelectionDeskTest extends TestCase
         $this->patchJson(route('b2b.selections.update', $selection), ['action' => 'remove', 'revision' => 1, 'ids' => [101]])->assertForbidden();
     }
 
+    public function test_line_edit_keeps_prices_supplier_and_other_positions_and_note_out_of_client_export(): void
+    {
+        $user = User::factory()->create(['role' => 'manager', 'is_crm_user' => true, 'is_active' => true]);
+        $selection = $this->selection($user);
+        $this->actingAs($user)->get(route('b2b.selections.show', $selection))->assertOk()
+            ->assertSee('data-desk-line-edit', false)->assertSee('data-desk-line-remove', false)->assertSee('Действия с отмеченными');
+        $url = route('b2b.selections.update', $selection);
+        $this->patchJson($url, ['action' => 'line', 'revision' => 1, 'product_id' => 101, 'quantity' => 7, 'workspace_note' => 'Рабочая заметка менеджера', 'price' => 0.01])
+            ->assertOk()->assertJsonPath('state.items.0.quantity', 7)->assertJsonPath('state.items.0.price', 50)
+            ->assertJsonPath('state.items.0.workspace_note', 'Рабочая заметка менеджера')->assertJsonPath('state.items.0.workspace_purchase.purchase_price', 13.37);
+        $this->assertSame(1, $selection->fresh()->items[102]['quantity']);
+        $this->get(route('b2b.selections.show', $selection))->assertOk()->assertSee('Рабочая заметка менеджера');
+        $this->get(route('b2b.selections.export', [$selection, 'format' => 'print']))->assertOk()->assertDontSee('Рабочая заметка менеджера');
+        $this->patchJson($url, ['action' => 'line', 'revision' => 1, 'product_id' => 101, 'quantity' => 2])->assertConflict();
+        $this->patchJson($url, ['action' => 'line', 'revision' => 2, 'product_id' => 101, 'quantity' => 0])->assertUnprocessable();
+        $this->patchJson($url, ['action' => 'line', 'revision' => 2, 'product_id' => 999, 'quantity' => 2])->assertNotFound();
+        $this->actingAs($this->admin())->patchJson($url, ['action' => 'line', 'revision' => 2, 'product_id' => 101, 'quantity' => 2])->assertNotFound();
+    }
+
+    public function test_single_row_removal_and_undo_keep_other_rows_and_previous_checkbox_state(): void
+    {
+        $user = $this->admin();
+        $selection = $this->selection($user);
+        $url = route('b2b.selections.update', $selection);
+        $this->actingAs($user)->patchJson($url, ['action' => 'select', 'revision' => 1, 'ids' => [102]])->assertOk();
+        $this->patchJson($url, ['action' => 'remove', 'revision' => 2, 'ids' => [101]])->assertOk()->assertJsonCount(1, 'state.items');
+        $this->get(route('b2b.selections.show', $selection))->assertOk()->assertSee('Отменить удаление');
+        $this->patchJson($url, ['action' => 'undo', 'revision' => 3])->assertOk()->assertJsonCount(2, 'state.items')->assertJsonPath('state.excluded.0', 101);
+        $this->assertSame(13.37, $selection->fresh()->items[101]['workspace_purchase']['purchase_price']);
+    }
+
     public function test_crm_manager_internal_export_is_explicit_and_client_export_stays_public(): void
     {
         $user = User::factory()->create(['role' => 'manager', 'is_crm_user' => true, 'is_active' => true]);
