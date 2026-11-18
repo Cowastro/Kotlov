@@ -57,8 +57,8 @@ class StaffCatalogWorkspaceController extends Controller
                     'price' => (float) $model->price, 'quantity' => (int) $data['quantity'],
                     'image' => $model->image_url, 'pricing_type' => 'retail',
                     'selection_note' => (float) $model->price > 0
-                        ? 'Цена сайта на момент подбора. Условия поставки уточняются.'
-                        : 'Цена и условия поставки требуют уточнения.',
+                        ? 'Розничная цена на момент подбора.'
+                        : 'Розничная цена не задана.',
                 ];
                 if ($previousNote !== null) {
                     $items[$product]['workspace_note'] = $previousNote;

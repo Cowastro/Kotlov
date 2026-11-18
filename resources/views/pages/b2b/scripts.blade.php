@@ -77,10 +77,11 @@
                 var price = document.createElement('span');
                 price.className = 'b2b-suggest-item__price';
                 var amount = document.createElement('b');
-                amount.textContent = Number(item.price).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) + ' BYN';
+                amount.textContent = (item.price_label ? item.price_label + ' · ' : '') + (item.price_label && Number(item.price) <= 0 ? 'не задана' : Number(item.price).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) + ' BYN');
                 var stock = document.createElement('small');
-                stock.textContent = item.stock;
-                price.append(amount, stock);
+                stock.textContent = item.stock || '';
+                price.append(amount);
+                if (item.stock) price.append(stock);
                 link.append(image, copy, price);
                 suggest.appendChild(link);
             });

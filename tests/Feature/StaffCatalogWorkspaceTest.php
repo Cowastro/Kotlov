@@ -41,7 +41,8 @@ class StaffCatalogWorkspaceTest extends TestCase
         $this->get(route('b2b.catalog', ['b2b-preview' => 1]))->assertOk()->assertDontSee('class="b2b-workspace-save"', false);
         $this->assertStringContainsString(route('b2b.workspace'), view('filament.admin.workspace-switch')->render());
         $this->getJson(route('b2b.catalog.suggest', ['workspace' => 1, 'q' => 'SUP-TEST-150']))
-            ->assertOk()->assertJsonPath('items.0.sku', 'SUP-TEST-150');
+            ->assertOk()->assertJsonPath('items.0.sku', 'SUP-TEST-150')
+            ->assertJsonPath('items.0.price_label', 'Розница')->assertJsonPath('items.0.stock', null);
     }
 
     public function test_admin_can_enter_editable_workspace_from_storefront_without_partner_status(): void

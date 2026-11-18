@@ -269,7 +269,8 @@ class B2bMarketplaceController extends Controller
                     'brand' => (string) ($product->brand?->name ?: ''),
                     'image' => (string) $product->image_url,
                     'price' => (float) $product->price,
-                    'stock' => $staffWorkspace ? 'Цена сайта · условия уточняются' : 'Запросить оптовую цену',
+                    'price_label' => $staffWorkspace ? 'Розница' : null,
+                    'stock' => $staffWorkspace ? null : 'Запросить оптовую цену',
                     'url' => route('b2b.catalog', array_filter([
                         'mode' => 'reference',
                         'q' => $product->sku ?: $product->name,
