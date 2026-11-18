@@ -205,10 +205,14 @@
             var supplierCaption = row.querySelector('[data-workspace-supplier-caption]');
             supplierCaption.textContent = option.dataset.supplierName;
             supplierCaption.title = option.dataset.supplierName;
-            row.querySelector('[data-workspace-stock]').textContent = option.dataset.stockLabel;
+            var stockIndicator = JSON.parse(option.dataset.stockIndicator);
+            var stockMeter = row.querySelector('[data-workspace-stock-meter]');
+            stockMeter.className = 'b2b-stock-meter is-' + stockIndicator.state;
+            stockMeter.dataset.level = stockIndicator.level; stockMeter.title = stockIndicator.title;
+            row.querySelector('[data-workspace-stock]').textContent = stockIndicator.label;
             row.querySelector('[data-workspace-stock]').classList.toggle('is-confirmed', option.dataset.confirmed === '1');
-            row.querySelector('[data-workspace-cost]').textContent = option.dataset.cost !== '' ? money(option.dataset.cost) : 'Уточняется';
-            row.querySelector('[data-workspace-margin]').textContent = option.dataset.margin !== '' ? money(option.dataset.margin) : 'Уточняется';
+            row.querySelector('[data-workspace-cost]').textContent = option.dataset.cost !== '' ? money(option.dataset.cost).replace(' BYN', '') : 'Уточняется';
+            row.querySelector('[data-workspace-margin]').textContent = option.dataset.margin !== '' ? money(option.dataset.margin).replace(' BYN', '') : 'Уточняется';
             row.querySelector('[data-workspace-margin-percent]').textContent = option.dataset.marginPercent !== '' ? Number(option.dataset.marginPercent).toLocaleString('ru-RU', {maximumFractionDigits:1}) + '%' : '';
             row.querySelector('[data-workspace-margin]').classList.toggle('is-negative', Number(option.dataset.margin) < 0);
             row.querySelector('[data-workspace-margin]').classList.toggle('is-unknown', option.dataset.margin === '');

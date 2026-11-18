@@ -176,3 +176,26 @@
  .b2b-staff-workspace.has-procurement .b2b-workspace-margin{grid-area:margin;display:flex;align-items:baseline;gap:8px;min-height:0;padding:6px 8px}
  .b2b-workspace-margin>small{margin-right:auto}
 }
+/* Equal financial cells: currency belongs to the label, never wraps the amount. */
+.b2b-portal.b2b-staff-workspace.has-procurement .b2b-product-table.is-reference :is(.b2b-product-table__head,.b2b-product-row){grid-template-columns:minmax(180px,1fr) repeat(3,116px) 232px}
+.b2b-staff-workspace.has-procurement :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin){display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:12px 18px 12px;align-content:start;gap:2px;min-height:58px;height:58px;padding:6px 8px;box-sizing:border-box;border-radius:6px}
+.b2b-staff-workspace.has-procurement :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin)>:is(small,span){margin:0;font-size:10px;line-height:12px;white-space:nowrap}
+.b2b-staff-workspace.has-procurement :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin)>strong{font-size:13px;line-height:18px;white-space:nowrap;overflow-wrap:normal}
+.b2b-stock-meter{display:inline-flex;align-items:center;gap:5px;margin-top:5px;font-size:11px;line-height:16px;color:#87601f}
+.b2b-stock-meter.is-known,.b2b-stock-meter.is-available{color:#17633f}
+.b2b-stock-meter.is-empty{color:#717b87}
+.b2b-stock-bars{display:inline-flex;align-items:flex-end;gap:2px;width:20px;height:14px;flex:none}
+.b2b-stock-bars i{width:5px;background:#cbd2da;border-radius:1px}
+.b2b-stock-bars i:nth-child(1){height:5px}.b2b-stock-bars i:nth-child(2){height:9px}.b2b-stock-bars i:nth-child(3){height:13px}
+.b2b-stock-meter[data-level='1'] i:first-child{background:#bd7b13}
+.b2b-stock-meter[data-level='2'] i:nth-child(-n+2),.b2b-stock-meter[data-level='3'] i{background:#23865a}
+.b2b-stock-meter.is-available .b2b-stock-bars{width:8px;align-items:center}.b2b-stock-meter.is-available i{display:none}.b2b-stock-meter.is-available .b2b-stock-bars::before{content:'';width:7px;height:7px;background:#23865a;border-radius:50%}
+@media(min-width:761px) and (max-width:1200px){
+ .b2b-portal.b2b-staff-workspace.has-procurement .b2b-product-table.is-reference .b2b-product-row{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ .b2b-portal.b2b-staff-workspace.has-procurement .b2b-product-table.is-reference .b2b-product-row{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:'product product product' 'purchase retail margin' 'order order order'}
+ .b2b-staff-workspace.has-procurement :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin){padding:6px 5px}
+ .b2b-staff-workspace.has-procurement :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin)>strong{font-size:clamp(10px,3vw,13px)}
+ .b2b-staff-workspace.has-procurement :is(.b2b-workspace-cost,.b2b-price-cell,.b2b-workspace-margin)>:is(small,span){font-size:9px}
+}

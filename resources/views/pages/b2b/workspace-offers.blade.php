@@ -4,11 +4,13 @@
         <span class="b2b-workspace-supplier-caption" data-workspace-supplier-caption aria-hidden="true" title="{{ $displayOffer['supplier'] }}">{{ $displayOffer['supplier'] }}</span>
         <select data-workspace-offer data-product-id="{{ $product->id }}" aria-label="Поставщик: {{ $product->name }}">
             @foreach($offers as $offer)
-                <option value="{{ $offer['supplier_key'] }}" data-supplier-name="{{ $offer['supplier'] }}" data-order-rules='@json($offer['order_rules'] ?? [])' data-rules-label="{{ \App\Services\Suppliers\SupplierOrderRules::label($offer['order_rules'] ?? []) }}" data-confirmed="{{ $offer['is_fresh'] && $offer['in_stock'] ? 1 : 0 }}" data-stock-label="{{ $offer['stock'].($offer['warehouse'] ? ' · '.$offer['warehouse'] : '').(! $offer['is_fresh'] ? ' · проверить остаток' : '') }}" data-cost="{{ $offer['purchase_price'] }}" data-margin="{{ $offer['margin'] }}" data-margin-percent="{{ $offer['margin_percent'] }}" @selected(data_get($savedLine, 'workspace_purchase.supplier_key') === $offer['supplier_key'])>{{ $offer['supplier'] }} · {{ $offer['stock'] }}{{ ! $offer['is_fresh'] ? ' · проверить остаток' : '' }}</option>
+                @php $stockIndicator = \App\Services\Suppliers\SupplierStockIndicator::fromOffer($offer); @endphp
+                <option data-stock-indicator='@json($stockIndicator)' value="{{ $offer['supplier_key'] }}" data-supplier-name="{{ $offer['supplier'] }}" data-order-rules='@json($offer['order_rules'] ?? [])' data-rules-label="{{ \App\Services\Suppliers\SupplierOrderRules::label($offer['order_rules'] ?? []) }}" data-confirmed="{{ $offer['is_fresh'] && $offer['in_stock'] ? 1 : 0 }}" data-stock-label="{{ $offer['stock'].($offer['warehouse'] ? ' · '.$offer['warehouse'] : '').(! $offer['is_fresh'] ? ' · проверить остаток' : '') }}" data-cost="{{ $offer['purchase_price'] }}" data-margin="{{ $offer['margin'] }}" data-margin-percent="{{ $offer['margin_percent'] }}" @selected(data_get($savedLine, 'workspace_purchase.supplier_key') === $offer['supplier_key'])>{{ $offer['supplier'] }} · {{ $offer['stock'] }}{{ ! $offer['is_fresh'] ? ' · проверить остаток' : '' }}</option>
             @endforeach
         </select>
     </label>
-    <small class="b2b-workspace-selected-stock {{ $displayOffer['is_fresh'] && $displayOffer['in_stock'] ? 'is-confirmed' : '' }}" data-workspace-stock>{{ $displayOffer['stock'] }}@if($displayOffer['warehouse']) · {{ $displayOffer['warehouse'] }}@endif{{ ! $displayOffer['is_fresh'] ? ' · проверить остаток' : '' }}</small>
+    @php $stockIndicator = \App\Services\Suppliers\SupplierStockIndicator::fromOffer($displayOffer); @endphp
+    <span class="b2b-stock-meter is-{{ $stockIndicator['state'] }}" data-workspace-stock-meter data-level="{{ $stockIndicator['level'] }}" title="{{ $stockIndicator['title'] }}"><span class="b2b-stock-bars" aria-hidden="true"><i></i><i></i><i></i></span><span data-workspace-stock>{{ $stockIndicator['label'] }}</span></span>
     <details class="b2b-workspace-offers">
         <summary>Поставщики и склады · {{ $offers->count() }}</summary>
         @foreach($offers as $offer)
