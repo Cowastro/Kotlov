@@ -56,6 +56,20 @@ class B2bPastedListTest extends TestCase
         $this->assertSame(['none', []], [$rows[4]['status'], $rows[4]['candidates']]);
     }
 
+    public function test_the_card_with_most_words_of_the_line_comes_first(): void
+    {
+        $category = Category::create(['name' => 'Отводы', 'slug' => 'paste-rank', 'is_active' => true]);
+        foreach (['0,8' => 'paste-rank-08', '0,5' => 'paste-rank-05'] as $thickness => $slug) {
+            Product::create(['category_id' => $category->id, 'name' => "Отвод Квазимодо Теплов и Сухов ОК-Р 45°, 430-{$thickness}, Ø 150", 'slug' => $slug, 'price' => 30, 'is_active' => true, 'is_archived' => false]);
+        }
+        $manager = User::factory()->create(['role' => 'manager', 'is_crm_user' => true, 'is_active' => true]);
+
+        $row = $this->actingAs($manager)->postJson(route('b2b.workspace.paste'), ['text' => 'Отвод Квазимодо ТиС 45 ОК-Р 430-0,5 Ø150 — 6 шт'])->assertOk()->json('rows.0');
+
+        $this->assertSame('found', $row['status']);
+        $this->assertSame('Отвод Квазимодо Теплов и Сухов ОК-Р 45°, 430-0,5, Ø 150', $row['candidates'][0]['name']);
+    }
+
     public function test_only_the_staff_workspace_can_recognise_a_list(): void
     {
         $this->postJson(route('b2b.workspace.paste'), ['text' => 'KOTLOV-1'])->assertUnauthorized();

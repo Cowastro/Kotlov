@@ -20,6 +20,8 @@ class B2bPastedList
 
     private const CANDIDATES = 5;
 
+    private const POOL = 40;
+
     /** Share of the words and numbers of a line a card must carry: to be offered at all, to be taken without a choice. */
     private const LIKELY = 0.34;
 
@@ -42,11 +44,13 @@ class B2bPastedList
             }
             [$by, $products] = $this->find($term);
             // By name the search is fuzzy: one candidate is «found» only when it carries most words of the line.
-            $sure = $by === 'article' || ($products->count() === 1 && $this->overlap($term, $products->first()) >= self::SURE);
+            // The best card is taken without a choice when it carries most words and clearly more than the next one.
+            $scores = $products->map(fn (Product $product): float => $this->overlap($term, $product))->values();
+            $sure = $by === 'article' || ($scores->isNotEmpty() && $scores[0] >= self::SURE && ($scores->count() === 1 || $scores[0] - $scores[1] >= 0.1));
             $rows[] = [
                 'line' => mb_substr($line, 0, 300), 'term' => $term, 'quantity' => $quantity, 'quantity_given' => $given,
                 'status' => match (true) {
-                    $products->isEmpty() => 'none', $products->count() === 1 && $sure => 'found', default => 'choose'
+                    $products->isEmpty() => 'none', $sure => 'found', default => 'choose'
                 },
                 'by' => $products->isEmpty() ? null : $by,
                 'candidates' => $products->map(fn (Product $product): array => [
@@ -102,18 +106,26 @@ class B2bPastedList
             }
         }
 
-        $base = fn (): Builder => $this->live(Product::query());
-        $ids = $this->search->applyForSuggestions($base(), $term, true)->limit(self::CANDIDATES)->pluck('id');
-        if ($ids->isEmpty()) {
-            $ids = $this->search->applyBestMatch($base(), $term)->limit(self::CANDIDATES)->pluck('id');
+        // The search ranks loosely («0,8» before «0,5»): take a wide pool and order it by the words of the line.
+        $pool = fn (Builder $ranked): Collection => $this->ranked($term, $ranked->limit(self::POOL)->pluck('id'));
+        $products = $pool($this->search->applyForSuggestions($this->live(Product::query()), $term, true));
+        if ($products->isEmpty()) {
+            $products = $pool($this->search->applyBestMatch($this->live(Product::query()), $term));
         }
-        $order = $ids->flip();
-
-        $products = $this->live(Product::query()->whereIn('id', $ids))->get()
-            ->filter(fn (Product $product): bool => $this->overlap($term, $product) >= self::LIKELY)
-            ->sortBy(fn (Product $product) => $order[$product->id])->values();
 
         return ['name', $products];
+    }
+
+    /** Cards of the pool that carry at least a third of the line, most words first, the search order next. @return Collection<int, Product> */
+    private function ranked(string $term, Collection $ids): Collection
+    {
+        $order = $ids->values()->flip();
+
+        return $this->live(Product::query()->whereIn('id', $ids))->get()
+            ->map(fn (Product $product): array => [$product, $this->overlap($term, $product)])
+            ->filter(fn (array $row): bool => $row[1] >= self::LIKELY)
+            ->sort(fn (array $a, array $b): int => [$b[1], $order[$a[0]->id]] <=> [$a[1], $order[$b[0]->id]])
+            ->take(self::CANDIDATES)->map(fn (array $row): Product => $row[0])->values();
     }
 
     /** Share of the words and numbers of the line found among the words of the card name and article. */
@@ -134,7 +146,13 @@ class B2bPastedList
         $value = str_replace('ё', 'е', mb_strtolower($value));
         preg_match_all('/\p{L}+|\d+/u', $value, $matches);
 
-        return array_values(array_unique(array_filter($matches[0], fn (string $token): bool => mb_strlen($token) >= 2 || ctype_digit($token))));
+        $tokens = $matches[0];
+        // «ТиС» is how managers and clients write «Теплов и Сухов».
+        if (in_array('теплов', $tokens, true) && in_array('сухов', $tokens, true)) {
+            $tokens[] = 'тис';
+        }
+
+        return array_values(array_unique(array_filter($tokens, fn (string $token): bool => mb_strlen($token) >= 2 || ctype_digit($token))));
     }
 
     private function live(Builder $query): Builder
