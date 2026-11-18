@@ -234,3 +234,30 @@
  .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-supply>.b2b-workspace-offers:not([open]){margin-left:auto}
  .b2b-portal.b2b-staff-workspace.is-dense .b2b-workspace-offers>summary{min-height:32px;line-height:32px}
 }
+/* Column titles stay in view while scrolling a long list. */
+.b2b-portal.b2b-staff-workspace .b2b-product-table{overflow:visible}
+.b2b-portal.b2b-staff-workspace .b2b-product-table__head{position:sticky;top:0;z-index:6;background:#f7f8f9;border-radius:11px 11px 0 0;box-shadow:0 1px 0 var(--b2b-line)}
+/* A thumbnail grows on hover: 45° and 87° elbows look alike at 48 px. */
+@media (hover:hover) and (min-width:761px){
+ .b2b-portal.b2b-staff-workspace .b2b-product-image{position:relative;overflow:visible}
+ .b2b-portal.b2b-staff-workspace .b2b-product-image img{transition:transform .12s ease}
+ .b2b-portal.b2b-staff-workspace .b2b-product-image:hover{z-index:7}
+ .b2b-portal.b2b-staff-workspace .b2b-product-image:hover img{position:absolute;left:0;top:0;width:220px;height:220px;max-width:none;object-fit:contain;background:#fff;border:1px solid var(--b2b-line);border-radius:10px;box-shadow:0 12px 32px #17202a33}
+}
+/* One supplier: plain text instead of a one-option list. */
+.b2b-workspace-supply.is-single{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.b2b-workspace-supply.is-single .b2b-workspace-supplier{margin-top:5px;height:auto}
+.b2b-staff-workspace .b2b-workspace-supply.is-single .b2b-workspace-supplier select{display:none}
+.b2b-staff-workspace .b2b-workspace-supply.is-single .b2b-workspace-supplier::after{display:none}
+.b2b-staff-workspace .b2b-workspace-supply.is-single .b2b-workspace-supplier-caption{display:block;height:auto;padding:0;border:0;background:none;color:#3c4d60;font-size:12px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b2b-workspace-supply.is-single .b2b-stock-meter{margin-top:5px}
+/* Margin below the manager's threshold. */
+.b2b-margin-threshold input{width:110px;height:44px;margin:0;padding:0 10px;border:1px solid var(--b2b-line);border-radius:9px;font-size:13px}
+.b2b-workspace-margin.is-low{border-color:#f1c27d;background:#fff7e8}
+.b2b-workspace-margin.is-low>strong,.b2b-workspace-margin.is-low>span{color:#9a5b00}
+.b2b-staff-workspace .b2b-product-row.is-low-margin{box-shadow:inset 3px 0 0 #f0a33a}
+.b2b-workspace-summary>[data-workspace-suppliers]{flex-basis:100%;color:#c3cdd6;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.b2b-workspace-dialog footer>[data-workspace-suppliers]{display:block;color:#5d6875;font-size:11px}
+@media(max-width:760px){.b2b-workspace-summary>[data-workspace-suppliers]{grid-column:1/-1;font-size:10px}.b2b-margin-threshold input{width:100%;font-size:16px}}
+.b2b-workspace-toolbar:has(.b2b-margin-threshold){grid-template-columns:minmax(180px,340px) auto auto minmax(0,1fr)}
+@media(max-width:760px){.b2b-workspace-toolbar:has(.b2b-margin-threshold){grid-template-columns:1fr 1fr}.b2b-workspace-toolbar:has(.b2b-margin-threshold)>:is(label:first-child,.b2b-workspace-status){grid-column:1/-1}}

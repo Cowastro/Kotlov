@@ -170,7 +170,8 @@ class StaffCatalogWorkspaceTest extends TestCase
         $admin = $this->manager(['role' => 'admin']);
         $this->actingAs($admin)->get(route('b2b.catalog', ['workspace' => 1, 'q' => 'SUP-TEST-150']))->assertOk()
             ->assertSee('Входная')->assertSee('Маржа / шт.')->assertSee('Первый поставщик')->assertSee('Второй поставщик')
-            ->assertSee('Остаток уточняется')->assertSee('Минск, склад тест')->assertSee('30 шт.');
+            ->assertSee('Остаток уточняется')->assertSee('Минск, склад тест')->assertSee('30 шт.')
+            ->assertSee('data-workspace-margin-threshold', false)->assertSee('data-margin-percent=', false)->assertDontSee('b2b-workspace-supply is-single', false);
         $offers = app(StaffCatalogWorkspace::class)->offers($product->fresh(), $admin);
         $offer = $offers->firstWhere('supplier', 'Второй поставщик');
         $draft = $this->postJson(route('b2b.workspace.store'), ['name' => 'Подбор для клиента'])->json();
@@ -178,7 +179,8 @@ class StaffCatalogWorkspaceTest extends TestCase
             'quantity' => 150, 'revision' => 1, 'supplier_key' => $offer['supplier_key'], 'purchase_price' => 0.01,
         ])->assertOk()->assertJsonPath('items.0.workspace_purchase.purchase_price', 3.75)
             ->assertJsonPath('items.0.workspace_purchase.stock_quantity', null)
-            ->assertJsonPath('procurement.total', 562.5)->assertJsonPath('procurement.margin', 1312.5)->assertJsonPath('procurement.margin_percent', 70)->json();
+            ->assertJsonPath('procurement.total', 562.5)->assertJsonPath('procurement.margin', 1312.5)->assertJsonPath('procurement.margin_percent', 70)
+            ->assertJsonPath('procurement.suppliers', [['name' => 'Второй поставщик', 'positions' => 1, 'unconfirmed' => 0, 'purchase' => 562.5]])->json();
         $this->get($saved['print_url'])->assertOk()->assertDontSee('Второй поставщик')->assertDontSee('562,50');
         $selection = CustomerSelection::find($draft['id']);
         $sanitized = app(StaffCatalogWorkspace::class)->state($selection, $this->manager(['is_crm_user' => false]));
