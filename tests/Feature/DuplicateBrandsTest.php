@@ -30,6 +30,8 @@ class DuplicateBrandsTest extends TestCase
         $category = Category::create(['name' => 'Brand test', 'slug' => 'brand-dedup-test', 'is_active' => true]);
         $supplier = Supplier::create(['name' => 'Brand supplier', 'code' => 'brand-dedup', 'is_active' => true]);
         DB::table('brand_supplier')->insert(['brand_id' => $secondId, 'supplier_id' => $supplier->id, 'created_at' => now(), 'updated_at' => now()]);
+        $rule = \App\Models\B2bPricingRule::create(['supplier_id' => $supplier->id, 'name' => 'Brand rule', 'scope_type' => 'brand', 'scope_id' => $secondId, 'calculation_type' => 'markup', 'value' => 20]);
+        $ruleBefore = $rule->fresh()->getAttributes();
         $products = collect([$first->id, $secondId])->map(fn ($id) => Product::create(['name' => 'Test '.$id, 'sku' => 'BRAND-'.$id, 'slug' => 'brand-product-'.$id, 'brand_id' => $id, 'category_id' => $category->id, 'is_active' => true, 'is_archived' => false, 'price' => 123, 'stock_qty' => 7]));
         $before = $products->mapWithKeys(fn ($p) => [$p->id => $p->fresh()->getAttributes()]);
         $migration = require database_path('migrations/2026_11_18_190000_merge_exact_duplicate_brands.php');
@@ -44,6 +46,8 @@ class DuplicateBrandsTest extends TestCase
         $this->assertSame('Editorial description', $first->fresh()->content);
         $this->assertTrue($first->fresh()->is_active);
         $this->assertSame('Factory', $first->fresh()->producer);
+        $this->assertSame($first->id, (int) $rule->fresh()->scope_id);
+        $this->assertSame(array_diff_key($ruleBefore, ['scope_id' => true]), array_diff_key($rule->fresh()->getAttributes(), ['scope_id' => true]));
         $this->assertSame($first->id, Brand::canonicalId($secondId));
         $this->assertNotEmpty(Storage::disk('local')->files('private/brand-merges'));
         $this->assertSame([], app(MergeDuplicateBrands::class)->run());

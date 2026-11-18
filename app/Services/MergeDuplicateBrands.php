@@ -22,8 +22,9 @@ class MergeDuplicateBrands
                 $duplicates = $ids->reject(fn ($id) => $id === $canonical->id)->values();
                 $products = DB::table('products')->whereIn('brand_id', $ids)->get();
                 $links = DB::table('brand_supplier')->whereIn('brand_id', $ids)->get();
+                $pricingRules = DB::table('b2b_pricing_rules')->where('scope_type', 'brand')->whereIn('scope_id', $ids)->get();
                 $path = 'private/brand-merges/exact-'.$canonical->id.'-'.now()->format('Ymd-His-u').'.json';
-                if (! Storage::disk('local')->put($path, json_encode(['brands' => $brands, 'products' => $products, 'supplier_links' => $links], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR))) {
+                if (! Storage::disk('local')->put($path, json_encode(['brands' => $brands, 'products' => $products, 'supplier_links' => $links, 'pricing_rules' => $pricingRules], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR))) {
                     throw new \RuntimeException('Не удалось сохранить резервную копию брендов.');
                 }
                 $updates = ['name' => Brand::displayName($canonical->name), 'is_active' => $brands->contains(fn ($b) => (bool) $b->is_active), 'is_featured' => $brands->contains(fn ($b) => (bool) $b->is_featured)];
@@ -43,6 +44,7 @@ class MergeDuplicateBrands
                 }
                 // Only this foreign key changes: no prices, stock, SKU, specs or timestamps.
                 DB::table('products')->whereIn('brand_id', $duplicates)->update(['brand_id' => $canonical->id]);
+                DB::table('b2b_pricing_rules')->where('scope_type', 'brand')->whereIn('scope_id', $duplicates)->update(['scope_id' => $canonical->id]);
                 DB::table('brand_supplier')->whereIn('brand_id', $duplicates)->delete();
                 DB::table('brands')->whereIn('id', $duplicates)->delete();
                 DB::table('brands')->where('id', $canonical->id)->update($updates);
