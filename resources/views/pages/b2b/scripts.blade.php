@@ -68,6 +68,7 @@
                 image.loading = 'lazy';
 
                 var copy = document.createElement('span');
+                copy.className = 'b2b-suggest-item__copy';
                 var name = document.createElement('strong');
                 name.textContent = item.name;
                 var meta = document.createElement('small');
@@ -82,7 +83,33 @@
                 stock.textContent = item.stock || '';
                 price.append(amount);
                 if (item.stock) price.append(stock);
-                link.append(image, copy, price);
+                link.append(image, copy);
+                if (item.procurement) {
+                    link.classList.add('is-staff');
+                    var procurement = item.procurement;
+                    var finance = document.createElement('span');
+                    finance.className = 'b2b-suggest-finance';
+                    finance.setAttribute('role', 'group');
+                    finance.setAttribute('aria-label', 'Цены в BYN');
+                    [
+                        ['Входная', procurement.purchase_price],
+                        ['Розница', Number(item.price) > 0 ? item.price : null],
+                        ['Маржа' + (procurement.margin_percent !== null ? ' · ' + Number(procurement.margin_percent).toLocaleString('ru-RU', {maximumFractionDigits:1}) + '%' : ''), procurement.margin],
+                    ].forEach(function (entry, index) {
+                        var metric = document.createElement('span');
+                        var label = document.createElement('small'); label.textContent = entry[0];
+                        var value = document.createElement('b');
+                        value.textContent = entry[1] !== null ? Number(entry[1]).toLocaleString('ru-RU', {minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+                        metric.className = index === 0 ? 'is-purchase' : (index === 2 && entry[1] !== null ? (Number(entry[1]) < 0 ? 'is-negative' : 'is-margin') : '');
+                        metric.append(label, value); finance.appendChild(metric);
+                    });
+                    var supply = document.createElement('span'); supply.className = 'b2b-suggest-supply';
+                    var supplier = document.createElement('span'); supplier.textContent = procurement.supplier || 'Поставщик не привязан'; supplier.title = supplier.textContent;
+                    var available = document.createElement('span'); available.textContent = procurement.stock_label; available.dataset.state = procurement.stock_state;
+                    supply.append(supplier, available); link.append(finance, supply);
+                } else {
+                    link.appendChild(price);
+                }
                 suggest.appendChild(link);
             });
         }
