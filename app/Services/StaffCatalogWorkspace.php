@@ -92,6 +92,13 @@ class StaffCatalogWorkspace
         if (! $user?->isAdmin()) {
             $items = array_map(fn ($item) => array_diff_key($item, ['workspace_purchase' => true]), $items);
         }
+        $items = array_map(function (array $item): array {
+            $rules = $item['order_rules'] ?? $item['workspace_purchase']['order_rules'] ?? [];
+            $item['order_rules_label'] = SupplierOrderRules::label($rules);
+            $item['order_rules_warning'] = SupplierOrderRules::warning($rules, (float) $item['quantity']);
+
+            return $item;
+        }, $items);
         $knownCosts = collect($items)->filter(fn ($item) => isset($item['workspace_purchase']['purchase_price']));
         $purchaseTotal = $knownCosts->sum(fn ($item) => $item['workspace_purchase']['purchase_price'] * $item['quantity']);
         $marginLines = $knownCosts->filter(fn ($item) => $item['price'] > 0);

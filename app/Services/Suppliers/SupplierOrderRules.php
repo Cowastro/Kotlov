@@ -37,4 +37,34 @@ class SupplierOrderRules
 
         return implode(' · ', $parts);
     }
+
+    /** Draft demand may be smaller; show the constraint without rewriting it. */
+    public static function warning(array $rules, float $quantity): string
+    {
+        if ($quantity <= 0) {
+            return '';
+        }
+        if (isset($rules['minimum']) && $quantity + 0.00000001 < (float) $rules['minimum']) {
+            return 'Количество меньше минимума поставщика: '.rtrim(self::label(array_intersect_key($rules, array_flip(['minimum', 'unit']))), '.').'.';
+        }
+        $multiple = (float) ($rules['multiple'] ?? 0);
+        if ($multiple > 0 && abs($quantity / $multiple - round($quantity / $multiple)) > 0.00000001) {
+            return 'Проверьте кратность заказа: '.rtrim(self::label(array_intersect_key($rules, array_flip(['multiple', 'unit']))), '.').'.';
+        }
+
+        return '';
+    }
+
+    /** A proposal for a new integer quantity, never a change to saved demand. */
+    public static function initialQuantity(array $rules): int
+    {
+        $minimum = min(999, max(1, (int) ceil((float) ($rules['minimum'] ?? 1))));
+        for ($quantity = $minimum; $quantity <= 999; $quantity++) {
+            if (self::warning($rules, $quantity) === '') {
+                return $quantity;
+            }
+        }
+
+        return $minimum;
+    }
 }
