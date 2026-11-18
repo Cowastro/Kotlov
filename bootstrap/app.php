@@ -1,10 +1,17 @@
 <?php
 
 use App\Http\Middleware\AdminNoIndex;
+use App\Http\Middleware\CapturePartnerAttribution;
 use App\Http\Middleware\CitySubdomain;
 use App\Http\Middleware\HandleRedirects;
+use App\Http\Middleware\PersistCustomerCart;
+use App\Http\Middleware\ProtectCitySelection;
 use App\Http\Middleware\ProtectPublicForm;
+use App\Http\Middleware\ProtectStorefrontPagination;
+use App\Http\Middleware\RejectMissingStaticAsset;
 use App\Http\Middleware\RequireRecentB2bPassword;
+use App\Http\Middleware\ResolveMergedCartProducts;
+use App\Http\Middleware\ServeRobots;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -27,12 +34,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ])
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->prepend([
-            \App\Http\Middleware\ServeRobots::class,
-            \App\Http\Middleware\RejectMissingStaticAsset::class,
-            \App\Http\Middleware\ProtectStorefrontPagination::class,
-            \App\Http\Middleware\ProtectCitySelection::class,
+            ServeRobots::class,
+            RejectMissingStaticAsset::class,
+            ProtectStorefrontPagination::class,
+            ProtectCitySelection::class,
         ]);
-        $middleware->web(append: [\App\Http\Middleware\CapturePartnerAttribution::class, \App\Http\Middleware\PersistCustomerCart::class]);
+        $middleware->web(append: [CapturePartnerAttribution::class, ResolveMergedCartProducts::class, PersistCustomerCart::class]);
         // The preference contains only a validated public city slug. Keeping
         // it plain lets global middleware read it before the web stack runs.
         $middleware->encryptCookies(except: ['selected_city', 'selected_city_source']);

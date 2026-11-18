@@ -171,38 +171,48 @@ class SyncChistyBeregCommand extends Command
         foreach ($rows as $row) {
             $seen[] = $row['code'];
             try {
-                $link = SupplierProduct::query()->firstOrNew(['supplier_id' => $supplier->id, 'supplier_article' => $row['code']]);
-                $product = $row['product_id'] ? Product::query()->find($row['product_id']) : null;
-                $market = (array) $link->raw;
-                $link->fill([
-                    'supplier_sync_id' => $sync->id,
-                    'product_id' => $product?->id,
-                    'product_sku' => $product?->sku,
-                    'supplier_article_normalized' => $row['code'],
-                    'supplier_article_compact' => $row['code'],
-                    'supplier_name' => $row['name'],
-                    'source_url' => 'https://www.bereg.by/search/?q='.$row['code'],
-                    'price' => $row['wholesale'] ?: null,
-                    'price_byn' => $row['wholesale'] ?: null,
-                    'currency' => 'BYN',
-                    'currency_rate' => 1,
-                    'in_stock' => $row['free'] > 0,
-                    'stock_quantity' => $row['free'],
-                    'stock_status' => $row['free'] > 0 ? 'in_stock' : 'out_of_stock',
-                    'stock_text' => $row['free'] > 0 ? 'На складе Чистого берега: '.rtrim(rtrim(number_format($row['free'], 2, '.', ''), '0'), '.').' '.$row['unit'] : 'Нет на складе',
-                    'warehouse_name' => 'Чистый берег',
-                    'last_stock_synced_at' => now(),
-                    // A manual link made in the admin keeps its mark.
-                    'match_status' => $product ? 'matched' : ($row['suggested_product_id'] ? 'suggested' : 'unmatched'),
-                    'match_confidence' => $product ? ($link->match_confidence === 'manual_admin' ? 'manual_admin' : $row['match_reason']) : null,
-                    'raw' => ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'maker_code' => $row['maker_code'], 'brand' => $row['brand'], 'category' => $row['category'], 'unit' => $row['unit'],
-                        'pack' => $row['pack'], 'stock' => $row['stock'], 'reserve' => $row['reserve'], 'retail' => $row['rrc'] ?: null,
-                        'market_price' => $market['market_price'] ?? null, 'market_checked_at' => $market['market_checked_at'] ?? null,
-                        // Marks of the background jobs: a new file must not send the cards back to their queues.
-                        'photo_searched_at' => $market['photo_searched_at'] ?? null, 'specs_refilled_at' => $market['specs_refilled_at'] ?? null,
-                        'model' => trim(($row['maker_code'] !== '' ? 'Код произв. '.$row['maker_code'] : '').' · '.$row['brand'].' · '.$row['category'], ' ·')],
-                    'last_synced_at' => now(),
-                ])->save();
+                $linkId = SupplierProduct::query()->firstOrCreate(['supplier_id' => $supplier->id, 'supplier_article' => $row['code']])->id;
+                [$link, $product, $market] = DB::transaction(function () use ($linkId, $row, $sync): array {
+                    $link = SupplierProduct::query()->whereKey($linkId)->lockForUpdate()->firstOrFail();
+                    // Classification may predate another job's completed binding.
+                    $productId = $link->product_id ?: $row['product_id'];
+                    $product = $productId ? Product::query()->find($productId) : null;
+                    if ($product?->merged_into_product_id) {
+                        $product = Product::findOrFail($product->merged_into_product_id);
+                    }
+                    $market = (array) $link->raw;
+                    $link->fill([
+                        'supplier_sync_id' => $sync->id,
+                        'product_id' => $product?->id,
+                        'product_sku' => $product?->sku,
+                        'supplier_article_normalized' => $row['code'],
+                        'supplier_article_compact' => $row['code'],
+                        'supplier_name' => $row['name'],
+                        'source_url' => 'https://www.bereg.by/search/?q='.$row['code'],
+                        'price' => $row['wholesale'] ?: null,
+                        'price_byn' => $row['wholesale'] ?: null,
+                        'currency' => 'BYN',
+                        'currency_rate' => 1,
+                        'in_stock' => $row['free'] > 0,
+                        'stock_quantity' => $row['free'],
+                        'stock_status' => $row['free'] > 0 ? 'in_stock' : 'out_of_stock',
+                        'stock_text' => $row['free'] > 0 ? 'На складе Чистого берега: '.rtrim(rtrim(number_format($row['free'], 2, '.', ''), '0'), '.').' '.$row['unit'] : 'Нет на складе',
+                        'warehouse_name' => 'Чистый берег',
+                        'last_stock_synced_at' => now(),
+                        // A manual link made in the admin keeps its mark.
+                        'match_status' => $product ? 'matched' : ($row['suggested_product_id'] ? 'suggested' : 'unmatched'),
+                        'match_confidence' => $product ? ($link->match_confidence ?: $row['match_reason']) : null,
+                        'raw' => ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'maker_code' => $row['maker_code'], 'brand' => $row['brand'], 'category' => $row['category'], 'unit' => $row['unit'],
+                            'pack' => $row['pack'], 'stock' => $row['stock'], 'reserve' => $row['reserve'], 'retail' => $row['rrc'] ?: null,
+                            'market_price' => $market['market_price'] ?? null, 'market_checked_at' => $market['market_checked_at'] ?? null,
+                            // Marks of the background jobs: a new file must not send the cards back to their queues.
+                            'photo_searched_at' => $market['photo_searched_at'] ?? null, 'specs_refilled_at' => $market['specs_refilled_at'] ?? null,
+                            'model' => trim(($row['maker_code'] !== '' ? 'Код произв. '.$row['maker_code'] : '').' · '.$row['brand'].' · '.$row['category'], ' ·')],
+                        'last_synced_at' => now(),
+                    ])->save();
+
+                    return [$link, $product, $market];
+                }, 3);
                 $stats['offers']++;
                 if (! $product) {
                     continue;
