@@ -128,19 +128,19 @@ class B2bMarketplaceController extends Controller
                 ->active()
                 ->notArchived()
                 ->whereNotIn('id', $orderableProductIds);
+            // Navigation shares the listing's conditions, except the current
+            // category and search (category links start a new category search).
+            $filters->apply($referenceBaseQuery, $flags, $priceMin, $priceMax, $selectedProductIds, $supplierId);
+            $this->applyProductFilters($referenceBaseQuery, '', 0, [], $brandId);
             $availableCategoryIds = (clone $referenceBaseQuery)->pluck('category_id');
             $productsQuery = $referenceBaseQuery->with(['category', 'brand']);
 
-            $this->applyProductFilters($productsQuery, $query, $categoryId, $categoryFilterIds, $brandId);
-            $filters->apply($productsQuery, $flags, $priceMin, $priceMax, $selectedProductIds, $supplierId);
+            $this->applyProductFilters($productsQuery, $query, $categoryId, $categoryFilterIds, 0);
             if ($sort === 'price_asc' || $sort === 'price_desc') {
                 $productsQuery->orderBy('price', $sort === 'price_asc' ? 'asc' : 'desc');
             }
             $products = $productsQuery->orderBy('name')->paginate($perPage)->withQueryString();
         } else {
-            $availableCategoryIds = $listingOptions
-                ->unique('product_id')
-                ->pluck('product.category_id');
             $rows = $listingOptions->groupBy('product_id')->map(function (Collection $options): array {
                 $option = $options->first();
                 $product = $option['product'];
@@ -155,14 +155,15 @@ class B2bMarketplaceController extends Controller
                     'stock_label' => $option['stock_label'],
                 ];
             });
+            $rows = $rows->filter(fn (array $row): bool => ($brandId === 0 || (int) $row['product']->brand_id === $brandId)
+                && $filters->rowMatches($row, $flags, $priceMin, $priceMax));
+            $availableCategoryIds = $rows->pluck('product.category_id');
             $matchIds = $query === '' ? [] : array_flip($this->smartMatches($query, $rows->keys()->all(), false));
-            $rows = $rows->filter(function (array $row) use ($query, $matchIds, $categoryId, $categoryFilterIds, $brandId, $filters, $flags, $priceMin, $priceMax): bool {
+            $rows = $rows->filter(function (array $row) use ($query, $matchIds, $categoryId, $categoryFilterIds): bool {
                 $product = $row['product'];
 
                 return ($query === '' || isset($matchIds[(int) $product->id]))
-                    && ($categoryId === 0 || in_array((int) $product->category_id, $categoryFilterIds, true))
-                    && ($brandId === 0 || (int) $product->brand_id === $brandId)
-                    && $filters->rowMatches($row, $flags, $priceMin, $priceMax);
+                    && ($categoryId === 0 || in_array((int) $product->category_id, $categoryFilterIds, true));
             });
 
             $rows = (match ($sort) {
@@ -175,6 +176,7 @@ class B2bMarketplaceController extends Controller
             $products = $this->paginate($rows, $request, $perPage);
         }
 
+        $navigationTotal = $availableCategoryIds->count();
         $representativeProducts = $mode === 'reference'
             ? $products->getCollection()
             : $listingOptions->unique('product_id')->pluck('product')->filter();
@@ -217,7 +219,7 @@ class B2bMarketplaceController extends Controller
 
         return response()->view('pages.b2b.marketplace', compact(
             'flags', 'priceMin', 'priceMax', 'supplierId', 'workspaceSuppliers', 'showProcurement', 'workspaceOffers', 'staffWorkspace', 'workspaceState', 'workspaceSelections', 'perPage', 'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceKey', 'sort',
-            'categoryTree', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests', 'minimalLayout', 'staffPreview',
+            'categoryTree', 'navigationTotal', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests', 'minimalLayout', 'staffPreview',
         ))->header('Cache-Control', 'private, no-store');
     }
 

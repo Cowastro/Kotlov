@@ -615,6 +615,24 @@ class B2bMarketplaceTest extends TestCase
             ->assertDontSeeText('pagination.next');
     }
 
+    public function test_partner_navigation_uses_the_same_quick_filters_as_available_rows(): void
+    {
+        $a = Category::create(['name' => 'Новая складская группа', 'slug' => 'partner-filter-a', 'is_active' => true]);
+        $b = Category::create(['name' => 'Обычная складская группа', 'slug' => 'partner-filter-b', 'is_active' => true]);
+        $new = $this->product($a, 'Новая модель', 'PARTNER-FILTER-NEW');
+        $new->update(['is_new' => true]);
+        $regular = $this->product($b, 'Обычная модель', 'PARTNER-FILTER-REGULAR');
+        $sourceA = $this->source('partner-filter-a', $a);
+        $sourceB = $this->source('partner-filter-b', $b);
+        $this->offer($sourceA, $new, 100, 3);
+        $this->offer($sourceB, $regular, 120, 4);
+        $user = $this->approvedUser([$sourceA->id, $sourceB->id]);
+        $this->actingAs($user)->get(route('b2b.catalog', ['flags' => ['in_stock', 'new']]))->assertOk()
+            ->assertViewHas('navigationTotal', 1)
+            ->assertViewHas('categoryTree', fn ($tree) => $tree->pluck('id')->all() === [$a->id] && $tree->first()['count'] === 1)
+            ->assertViewHas('products', fn ($products) => $products->total() === 1);
+    }
+
     private function product(Category $category, string $name, string $sku): Product
     {
         return Product::query()->create([
