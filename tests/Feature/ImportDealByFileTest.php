@@ -74,4 +74,16 @@ class ImportDealByFileTest extends TestCase
             && str_ends_with($request['url'], '/exports/deal-import-test.xlsx'));
         Http::assertSentCount(5);
     }
+
+    public function test_a_refused_import_shows_the_reason(): void
+    {
+        Http::fake([
+            'deal.test/api/v1/products/list*' => Http::response(['products' => [['id' => 9, 'external_id' => 'kotlov-101'], ['id' => 10, 'external_id' => 'kotlov-102']]]),
+            'deal.test/api/v1/products/import_url' => Http::response(['errors' => ['updated_fields' => ['Not a valid choice: images']]], 400),
+        ]);
+
+        $this->artisan('deal:import-file', ['file' => 'deal-import-test', '--apply' => true, '--fields' => 'images', '--wait' => 0])
+            ->expectsOutputToContain('audit.deal_import.rejected=updated-fields-not-a-valid-choice-images')
+            ->assertFailed();
+    }
 }

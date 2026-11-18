@@ -3,6 +3,7 @@
 namespace App\Services\Marketplaces;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use LogicException;
 use RuntimeException;
@@ -100,7 +101,17 @@ class DealByClient
     private function send(string $path, array $body): array
     {
         // One attempt: a repeated import request would start a second import.
-        $payload = $this->request()->retry(1)->post($this->url($path), $body)->throw()->json();
+        try {
+            $response = $this->request()->retry(1)->post($this->url($path), $body);
+        } catch (RequestException $exception) {
+            $response = $exception->response;
+        }
+        $payload = $response->json();
+        // A refused request (4xx) comes back with its reason for the caller; other failures throw.
+        if ($response->clientError() && is_array($payload)) {
+            return ['error' => $payload['error'] ?? $payload['errors'] ?? $payload['message'] ?? $payload];
+        }
+        $response->throw();
         if (! is_array($payload)) {
             throw new RuntimeException('Deal.by вернул ответ не в формате JSON.');
         }
