@@ -48,11 +48,13 @@ class ReviewTdKomplektSpecsCommand extends Command
                 $items[] = DB::transaction(function () use ($offer, $raw, $article, $entry, $backups, $completion, $disk) {
                     $p = Product::lockForUpdate()->findOrFail($offer->product_id);
                     $removed = [];
+                    $corrected = [];
+                    $fieldKey = fn ($name) => $entry['equivalent_fields'][$completion->key($name)] ?? $completion->key($name);
                     foreach ($backups->get($p->id, collect()) as $backup) {
                         foreach ($backup['added'] ?? [] as $added) {
                             // Only reverse an unchanged addition proven by our earlier backup.
                             $prior = collect($backup['before_specs'] ?? []);
-                            $existing = $prior->first(fn ($s) => trim((string) ($s['value'] ?? '')) !== '' && $completion->key($s['key'] ?? '') === $completion->key($added['key']));
+                            $existing = $prior->first(fn ($s) => trim((string) ($s['value'] ?? '')) !== '' && $fieldKey($s['key'] ?? '') === $fieldKey($added['key']));
                             if (! $existing || $prior->contains(fn ($s) => $s === $added) || ! in_array($added, $p->specs ?? [], true)) {
                                 continue;
                             }
@@ -74,13 +76,41 @@ class ReviewTdKomplektSpecsCommand extends Command
                         }
                     }
 
-                    return ['article' => (string) $article, 'name' => $p->name, 'removed_proven_duplicates' => $removed, 'review' => $entry['review']] + $completion->complete($p, $raw, (bool) $this->option('apply'));
+                    foreach ($entry['corrections'] ?? [] as $correction) {
+                        $specs = $p->specs ?? [];
+                        foreach ($specs as $index => $spec) {
+                            if (($spec['key'] ?? '') !== $correction['key'] || ($spec['value'] ?? null) !== $correction['from']) {
+                                continue;
+                            }
+                            $manualAttribute = $p->allAttributeValues()->whereHas('attribute', fn ($q) => $q->where('name', $correction['key']))->whereNotNull('value')->whereNotIn('value', [$correction['from'], $correction['to'], ''])->exists();
+                            if ($manualAttribute) {
+                                continue;
+                            }
+                            $corrected[] = $correction;
+                            if (! $this->option('apply')) {
+                                continue;
+                            }
+                            $path = TdKomplektFeed::DIRECTORY.'/spec-repair-backups/'.now()->format('Ymd-His-u').'-'.$p->id.'-correction.json';
+                            if (! $disk->put($path, json_encode(['product_id' => $p->id, 'specs' => $p->specs, 'attributes' => $p->allAttributeValues()->get()->toArray(), 'correction' => $correction, 'sources' => $entry['sources']], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR))) {
+                                throw new \RuntimeException('Не удалось сохранить резервную копию.');
+                            }
+                            foreach ($p->allAttributeValues()->with('attribute')->get() as $value) {
+                                if ($value->attribute?->name === $correction['key'] && $value->value === $correction['from'] && $value->option_id === null && $value->is_checked === null) {
+                                    $value->update(['value' => $correction['to']]);
+                                }
+                            }
+                            $specs[$index]['value'] = $correction['to'];
+                            $p->update(['specs' => $specs]);
+                        }
+                    }
+
+                    return ['article' => (string) $article, 'name' => $p->name, 'removed_proven_duplicates' => $removed, 'corrected_verified_values' => $corrected, 'review' => $entry['review']] + $completion->complete($p, $raw, (bool) $this->option('apply'));
                 });
             }
             $path = TdKomplektFeed::DIRECTORY.'/spec-reports/review-'.now()->format('Ymd-His-u').'.json';
             $disk->put($path, json_encode(['apply' => (bool) $this->option('apply'), 'items' => $items], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
             $this->line('products='.count($items));
-            foreach (['added', 'removed_proven_duplicates', 'conflicts', 'skipped'] as $key) {
+            foreach (['added', 'removed_proven_duplicates', 'corrected_verified_values', 'conflicts', 'skipped'] as $key) {
                 $this->line($key.'='.array_sum(array_map(fn ($item) => count($item[$key] ?? []), $items)));
             }
             $this->line('private_report='.$path);

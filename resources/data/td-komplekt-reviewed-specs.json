@@ -349,8 +349,10 @@
     "brand": "AV Engineering",
     "name": "Фильтр латунный самоочищающийся промывной 3/4\" 100 микрон (с манометром) арт. AVE115702 AV Engineering",
     "facts": [],
-    "sources": [],
-    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+    "sources": [
+      "https://ecogr.kz/product/1677691"
+    ],
+    "review": "ECO Group exact article and EAN 8320905197561 confirm brass CW617N, 110 C, 10 bar, 33.4 l/min."
   },
   "AVE34009100": {
     "brand": "AV Engineering",
@@ -370,8 +372,24 @@
     "brand": "ENERGOFLEX",
     "name": "Трубка теплоизоляционная Energoflex Super Protect BK 16/6 2 м чёрная",
     "facts": [],
-    "sources": [],
-    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+    "sources": [
+      "https://www.energoflex.com/catalog/energoflex-super/trubki-energoflex-super-protect-black/"
+    ],
+    "review": "Exact manufacturer article EFXT016062SUPRBK-400 is 16/6-2: insulation thickness 6 mm. Correct only the known stale value 2 mm and remove the backed-up duplicate 6 mm field.",
+    "equivalent_fields": {
+      "толщинастенки": "insulation_thickness",
+      "толщинаизоляции": "insulation_thickness"
+    },
+    "ignored_source_keys": [
+      "толщинаизоляции"
+    ],
+    "corrections": [
+      {
+        "key": "Толщина стенки, мм",
+        "from": "2",
+        "to": "6"
+      }
+    ]
   },
   "EFXT0180411SUPRK": {
     "brand": "ENERGOFLEX",

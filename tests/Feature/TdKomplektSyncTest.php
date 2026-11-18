@@ -174,6 +174,31 @@ class TdKomplektSyncTest extends TestCase
         $this->assertSame($before,$p->fresh()->specs);
     }
 
+    public function test_review_corrects_exact_verified_energoflex_thickness_and_removes_backed_up_duplicate(): void
+    {
+        Storage::fake('local');
+        $this->artisan('supplier:sync-td-komplekt',['--file'=>$this->csv([$this->row()]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $offer=SupplierProduct::where('supplier_article','AV-12345')->firstOrFail();
+        $row=$this->row(['vendor_code'=>'EFXT016062SUPRBK-400','brand'=>'ENERGOFLEX','description'=>'Толщина изоляции: 6 мм']);
+        $offer->update(['supplier_article'=>'EFXT016062SUPRBK-400','raw'=>$row+['identity_vendor_code'=>'EFXT016062SUPRBK-400','identity_brand'=>'ENERGOFLEX']]);
+        $p=$offer->product;$p->allAttributeValues()->delete();
+        $before=[['key'=>'Толщина стенки, мм','value'=>'2']];$added=['key'=>'Толщина изоляции','value'=>'6 мм'];
+        $p->update(['supplier_id'=>null,'specs'=>array_merge($before,[$added])]);
+        $oldAttr=\App\Models\Attribute::firstOrCreate(['category_id'=>$p->category_id,'name'=>'Толщина стенки, мм'],['type'=>'value','in_product'=>true]);
+        $oldValue=\App\Models\ProductAttributeValue::create(['product_id'=>$p->id,'attribute_id'=>$oldAttr->id,'value'=>'2']);
+        $dupAttr=\App\Models\Attribute::firstOrCreate(['category_id'=>$p->category_id,'name'=>'Толщина изоляции'],['type'=>'value','in_product'=>true,'suffix'=>'мм']);
+        $dupValue=\App\Models\ProductAttributeValue::create(['product_id'=>$p->id,'attribute_id'=>$dupAttr->id,'value'=>'6']);
+        Storage::disk('local')->put(TdKomplektFeed::DIRECTORY.'/spec-backups/black.json',json_encode(['product_id'=>$p->id,'before_specs'=>$before,'before_attributes'=>[$oldValue->toArray()],'added'=>[$added]]));
+        $this->artisan('supplier:review-td-specs')->assertSuccessful();
+        $this->assertSame('2',$oldValue->fresh()->value);
+        $this->artisan('supplier:review-td-specs',['--apply'=>true])->assertSuccessful();
+        $this->assertSame([['key'=>'Толщина стенки, мм','value'=>'6']],$p->fresh()->specs);
+        $this->assertSame('6',$oldValue->fresh()->value);
+        $this->assertDatabaseMissing('product_attribute_values',['id'=>$dupValue->id]);
+        $this->artisan('supplier:review-td-specs',['--apply'=>true])->assertSuccessful();
+        $this->assertCount(1,$p->fresh()->specs);
+    }
+
     private function row(array $changes = []): array
     {
         return array_replace(['id' => '12345', 'okdp' => 'ЦБ-12345', 'name' => 'Тройник латунный AV Engineering 1/2', 'vendor_code' => 'AV-12345', 'brand' => 'AV Engineering', 'price' => '12,50', 'price_wholesale' => '8,10', 'warehouse_all' => '10 дней', 'warehouse_main' => '0', 'warehouse_add' => '10 дней', 'warehouse_rb' => '0', 'parentid_name3' => 'Резьбовые латунные фитинги и краны. AV Engineering', 'parentid_name4' => '', 'barcode' => '1234567890123', 'country' => 'Китай', 'description_short' => 'Латунный тройник', 'description' => "Размер: 1/2\nТест: <script>alert(1)</script>", 'media_img' => 'https://content.tools.by/images/products/test/photo.jpg', 'prop_unit' => 'шт.', 'prop_quantity_min' => '3', 'prop_multiplicity' => '1', 'prop_multiplicity_box' => '100', 'prop_manufacturer' => 'Завод', 'prop_importer' => 'ТД Комплект', 'vat' => '20'], $changes);
