@@ -35,7 +35,14 @@ class CustomerSelectionController extends Controller
                 $query->whereNotIn('status', ['cancelled', 'completed', 'shipped']);
             })->latest('id')->paginate(20, ['*'], 'reserves_page', (int) ($data['reserves_page'] ?? 1))
             ->withPath(route('selections.index'))->appends($request->only(['q', 'page']));
-        return response()->view('pages.selections.index', compact('selections', 'legacyCarts', 'reservations', 'search'))->header('Cache-Control', 'private, no-store');
+        $arrivals = collect();
+        $unreadArrivals = 0;
+        if (B2bSelectionDeskController::canUse($user)) {
+            $alerts = \App\Models\SelectionStockAlert::whereHas('watch.selection', fn ($q) => $q->where('user_id', $user->id));
+            $unreadArrivals = (clone $alerts)->whereNull('read_at')->count();
+            $arrivals = $alerts->with('watch.selection')->orderByRaw('read_at IS NOT NULL')->latest('id')->limit(20)->get();
+        }
+        return response()->view('pages.selections.index', compact('selections', 'legacyCarts', 'reservations', 'search', 'arrivals', 'unreadArrivals'))->header('Cache-Control', 'private, no-store');
     }
 
     public function store(Request $request, CustomerCartStore $store)

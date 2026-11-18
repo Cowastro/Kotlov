@@ -570,3 +570,6 @@ Artisan::command('orders:notify-control', function (\App\Services\Orders\OrderDe
 })->purpose('Remind responsible managers about due order follow-ups');
 
 Schedule::command('orders:notify-control')->everyFiveMinutes()->withoutOverlapping();
+
+Schedule::command('requests:check-arrivals')->everyFiveMinutes()->withoutOverlapping(10)
+    ->appendOutputTo(storage_path('logs/request-arrivals.log'));

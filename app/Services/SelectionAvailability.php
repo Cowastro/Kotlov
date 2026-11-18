@@ -41,6 +41,7 @@ class SelectionAvailability
             }
             $result[$id] = [
                 'ready' => $ready, 'waiting' => $quantity - $ready,
+                'stock_capacity' => $stock === null ? 0 : max(0, (int) floor($stock)),
                 'fingerprint' => $this->fingerprint($item),
                 'unknown' => $stock === null, 'checked_at' => now()->toIso8601String(),
                 'stock_key' => $offer['stock_key'] ?? null,

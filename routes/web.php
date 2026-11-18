@@ -624,6 +624,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/account/requests/import/{savedCart}', [\App\Http\Controllers\SelectionFulfillmentController::class, 'importCart'])->name('requests.import-cart');
     Route::post('/account/requests/{selection}/check', [\App\Http\Controllers\SelectionFulfillmentController::class, 'check'])->block(30, 10)->name('requests.check');
     Route::post('/account/requests/{selection}/prepare', [\App\Http\Controllers\SelectionFulfillmentController::class, 'prepare'])->block(30, 10)->name('requests.prepare');
+    Route::post('/account/requests/{selection}/add-ready', [\App\Http\Controllers\SelectionFulfillmentController::class, 'addReady'])->block(30, 10)->name('requests.add-ready');
+    Route::post('/account/requests/{selection}/watch', [\App\Http\Controllers\RequestArrivalController::class, 'toggle'])->block(30, 10)->name('requests.watch');
+    Route::post('/account/request-arrivals/{alert}/read', [\App\Http\Controllers\RequestArrivalController::class, 'read'])->name('requests.arrivals.read');
     Route::post('/account/selections', [\App\Http\Controllers\CustomerSelectionController::class, 'store'])->name('selections.store');
     Route::get('/account/selections/{selection}', [\App\Http\Controllers\CustomerSelectionController::class, 'show'])->name('selections.show');
     Route::put('/account/selections/{selection}', [\App\Http\Controllers\CustomerSelectionController::class, 'update'])->name('selections.update');
