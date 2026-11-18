@@ -35,4 +35,17 @@ class ApplyCardContentCommandTest extends TestCase
         $this->artisan('catalog:apply-card-content', ['file' => 'gamma_san_lyuki_content', '--apply' => true])
             ->expectsOutputToContain('metric.card_content.updated=0')->assertSuccessful();
     }
+
+    public function test_a_card_gets_a_new_name(): void
+    {
+        $category = Category::query()->firstOrCreate(['slug' => 'dymokhody-test'], ['name' => 'Дымоходы', 'is_active' => true]);
+        $card = Product::query()->create(['name' => 'Труба 1 м', 'slug' => 'truba-1-m', 'category_id' => $category->id, 'price' => 180]);
+
+        $this->artisan('catalog:apply-card-content', ['file' => 'metabel_names_2026_11', '--apply' => true])
+            ->expectsOutputToContain("audit.card_content.card={$card->id}:truba-1-m:name")
+            ->expectsOutputToContain('metric.card_content.updated=1')->assertSuccessful();
+
+        $this->assertSame('Труба Мета-Бел 1 м', $card->fresh()->name);
+        $this->assertSame('truba-1-m', $card->fresh()->slug);
+    }
 }
