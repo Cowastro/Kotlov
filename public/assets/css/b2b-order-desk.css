@@ -31,3 +31,19 @@
 .desk-stock-summary{font-size:12px;line-height:1.5;color:#62717d;margin:10px 0}.desk-export-scope{display:grid;gap:6px;width:100%;font-size:12px}.desk-export-scope select{width:100%;min-width:0}.desk-export-scope small{font-size:11px;color:#62717d;line-height:1.5}@media(max-width:760px){.desk-export{width:100%}.desk-command>[data-desk-reset]{grid-column:1/-1;width:100%}}
 
 .desk-export-preview{font-size:12px;font-weight:650;color:#21805d;line-height:1.5;overflow-wrap:anywhere}
+/* Actions are visible without opening a details disclosure. */
+.desk-bulk-actions{min-width:0;margin-left:auto;padding:6px 0}
+.desk-row-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:7px}
+.desk-row-action{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:4px 10px;border:1px solid #dbe3eb;border-radius:7px;background:#f6f8fa;color:#274768;font-size:12px;line-height:1.3;cursor:pointer}
+.desk-row-action.is-danger{color:#b12d36;background:#fff6f6;border-color:#edcfd2}
+.desk-working-note{margin-top:6px;padding:6px 8px;background:#f4f7fa;border-radius:6px;overflow-wrap:anywhere}
+.desk-working-note p{font-size:12px;line-height:1.4;white-space:pre-wrap;margin:3px 0 0}
+.desk-dialog textarea{display:block;box-sizing:border-box;width:100%;min-height:90px;padding:10px;border:1px solid #dbe3eb;border-radius:9px;font:inherit;resize:vertical}
+.desk-dialog input,.desk-dialog textarea{font-size:16px}
+.desk-dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px}
+.desk-dialog :is(button,input,textarea,a):focus-visible{outline:2px solid #d93f46;outline-offset:2px}
+.desk-dialog button:disabled{opacity:.5;cursor:wait}
+.desk-dialog{--desk-line:#e0e5e9;--desk-muted:#6f7b87;color:#17202a}
+.desk-dialog header button{display:grid;place-items:center;padding:0;flex:none;line-height:1}
+.desk-bulk-actions .desk-actions{align-items:stretch}
+@media(max-width:760px){.desk-bulk-actions{flex-basis:100%;margin:0}.desk-bulk-actions .desk-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.desk-bulk-actions .desk-button{min-width:0;white-space:normal;line-height:1.3;min-height:42px;height:auto;padding:8px}.desk-row-action{min-height:40px}.desk-row-actions{gap:5px}.desk-dialog{box-sizing:border-box;padding:16px}.desk-dialog h2{font-size:18px}.desk-dialog-actions .desk-button{flex:1;min-width:0}}

@@ -209,6 +209,9 @@ class StaffCatalogWorkspaceTest extends TestCase
             $this->get(route('b2b.catalog', ['workspace' => 1, 'selection_id' => $draft['id']]))->assertOk()
                 ->assertViewHas('workspaceState', fn ($state) => $state['procurement']['total'] === 8.0);
             $this->get($saved['desk_url'])->assertOk()->assertSee('Поставщик для CRM')->assertSee('class="desk-cost"', false);
+            $this->patchJson(route('b2b.selections.update', $draft['id']), ['action' => 'line', 'revision' => 2, 'product_id' => $product->id, 'quantity' => 2, 'workspace_note' => 'Сохранить заметку при смене поставщика'])->assertOk();
+            $this->putJson(route('b2b.workspace.update', ['selection' => $draft['id'], 'product' => $product->id]), ['revision' => 3, 'quantity' => 3, 'supplier_key' => $offer['supplier_key']])
+                ->assertOk()->assertJsonPath('items.0.workspace_note', 'Сохранить заметку при смене поставщика');
             $this->get($saved['print_url'])->assertOk()->assertDontSee('Поставщик для CRM')->assertDontSee('workspace_purchase');
             $this->get(route('b2b.catalog', ['b2b-preview' => 1]))->assertOk()->assertViewHas('showProcurement', false)->assertDontSee('data-workspace-cost', false);
         }

@@ -56,11 +56,12 @@ class B2bSelectionDeskController extends Controller
     {
         $this->authorizeSelection($request, $selection);
         $data = $request->validate([
-            'action' => ['required', Rule::in(['quantity', 'select', 'details', 'copy', 'move', 'remove', 'undo'])],
+            'action' => ['required', Rule::in(['quantity', 'line', 'select', 'details', 'copy', 'move', 'remove', 'undo'])],
             'revision' => ['required', 'integer', 'min:1'],
             'ids' => ['sometimes', 'array', 'max:2000'], 'ids.*' => ['integer', 'distinct'],
-            'product_id' => ['required_if:action,quantity', 'integer'],
-            'quantity' => ['required_if:action,quantity', 'integer', 'min:1', 'max:999'],
+            'product_id' => ['required_if:action,quantity,line', 'integer'],
+            'quantity' => ['required_if:action,quantity,line', 'integer', 'min:1', 'max:999'],
+            'workspace_note' => ['nullable', 'string', 'max:1000'],
             'name' => ['required_if:action,details', 'nullable', 'string', 'max:160'],
             'note' => ['nullable', 'string', 'max:1000'],
             'target_id' => ['nullable', 'integer'],
@@ -79,8 +80,12 @@ class B2bSelectionDeskController extends Controller
             abort_if(array_diff($ids, array_map('intval', array_keys($items))) !== [], 422, 'В подборе уже нет одной из отмеченных позиций.');
             switch ($data['action']) {
                 case 'quantity':
+                case 'line':
                     abort_unless(isset($items[$data['product_id']]), 404);
                     $items[$data['product_id']]['quantity'] = (int) $data['quantity'];
+                    if ($data['action'] === 'line') {
+                        $items[$data['product_id']]['workspace_note'] = trim($data['workspace_note'] ?? '');
+                    }
                     break;
                 case 'select':
                     $meta['desk_excluded_ids'] = array_values(array_diff(array_map('intval', array_keys($items)), $ids));
@@ -92,6 +97,7 @@ class B2bSelectionDeskController extends Controller
                 case 'remove':
                     abort_if($ids === [], 422, 'Отметьте позиции для удаления.');
                     $meta['desk_undo'] = array_intersect_key($items, array_flip($ids));
+                    $meta['desk_undo_excluded_ids'] = array_values(array_intersect($meta['desk_excluded_ids'] ?? [], $ids));
                     $items = array_diff_key($items, array_flip($ids));
                     break;
                 case 'undo':
@@ -99,7 +105,9 @@ class B2bSelectionDeskController extends Controller
                     abort_if(array_intersect_key($items, $restore) !== [], 409, 'Некоторые удалённые товары уже добавлены заново.');
                     abort_if(count($items) + count($restore) > 2000, 422, 'В подборе не может быть больше 2000 позиций.');
                     $items += $restore;
+                    $meta['desk_excluded_ids'] = array_values(array_unique(array_merge($meta['desk_excluded_ids'] ?? [], $meta['desk_undo_excluded_ids'] ?? [])));
                     unset($meta['desk_undo']);
+                    unset($meta['desk_undo_excluded_ids']);
                     break;
                 case 'copy':
                 case 'move':
