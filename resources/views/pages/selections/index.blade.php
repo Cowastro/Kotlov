@@ -9,6 +9,22 @@
     <form class="request-search" method="get" action="{{ route('selections.index') }}"><label for="request-search">Найти заявку по названию клиента или объекта</label><div><input id="request-search" type="search" name="q" value="{{ $search }}" maxlength="100" placeholder="Например, котельная на Лесной"><button class="tf-btn btn-primary small">Найти</button>@if($search !== '')<a href="{{ route('selections.index') }}">Сбросить</a>@endif</div></form>
     <p class="request-intro">Корзины и подборы для клиентов и объектов в одном месте. Сохранённая потребность и ожидаемые товары не являются резервом.</p>
     @foreach(['success'=>'success','error'=>'danger'] as $key=>$style) @if(session($key))<p role="status" class="alert alert-{{ $style }}">{{ session($key) }}</p>@endif @endforeach
+    @if($canUseDesk)
+    <section class="request-arrivals" aria-labelledby="request-arrivals-title">
+        <h2 id="request-arrivals-title">Поступления ожидаемых товаров @if($unreadArrivals)<span>Новых: {{ $unreadArrivals }}</span>@endif</h2>
+        <p>Проверяем доступное количество каждые 5 минут по данным выбранного поставщика. Уведомления — здесь; это не резерв. Перед добавлением повторно проверяем цену и остаток.</p>
+        @forelse($arrivals as $arrival)
+        @php $source = $arrival->watch->selection; @endphp
+        <article class="request-arrival {{ $arrival->read_at ? '' : 'is-new' }}">
+            <header><a href="{{ route('b2b.selections.show', $source) }}"><strong>{{ $source->name }}</strong></a><small>{{ $arrival->created_at->format('d.m.Y H:i') }}</small></header>
+            <ul>@foreach(array_slice($arrival->items,0,3) as $line)<li>{{ $line['name'] }} <small>{{ $line['sku'] }}</small><b>Доступно {{ $line['ready'] }} шт. (+{{ $line['newly_available'] }})</b></li>@endforeach</ul>
+            @if(count($arrival->items)>3)<details><summary>Ещё {{ count($arrival->items)-3 }} позиций</summary><ul>@foreach(array_slice($arrival->items,3) as $line)<li>{{ $line['name'] }} <small>{{ $line['sku'] }}</small><b>Доступно {{ $line['ready'] }} шт. (+{{ $line['newly_available'] }})</b></li>@endforeach</ul></details>@endif
+            <div class="request-arrival-actions"><form method="post" action="{{ route('requests.add-ready',$source) }}">@csrf<input type="hidden" name="revision" value="{{ $source->revision }}"><input type="hidden" name="alert_id" value="{{ $arrival->id }}"><button class="tf-btn btn-primary small">Добавить доступное в корзину</button></form>@unless($arrival->read_at)<form method="post" action="{{ route('requests.arrivals.read',$arrival) }}">@csrf<button class="tf-btn btn-stroke small">Прочитано</button></form>@endunless</div>
+        </article>
+        @empty<p>Новых поступлений пока нет. Включите слежение в заявке с ожидаемыми товарами.</p>@endforelse
+        @if($arrivals->count()===20)<p>Показаны 20 последних уведомлений, сначала непрочитанные.</p>@endif
+    </section>
+    @endif
     <div class="request-grid">
         @forelse($selections as $selection)
         @php $allocation = collect(app(\App\Services\SelectionAvailability::class)->annotate(array_values($selection->items), $selection->meta['availability'] ?? []))->pluck('allocation')->filter(); @endphp

@@ -40,6 +40,7 @@ class SelectionFulfillmentController extends Controller
             abort_unless($locked->revision === (int) $data['revision'], 409, 'Заявка изменена. Обновите страницу.');
             $meta = $locked->meta ?? [];
             $meta['availability'] = $availability->check($locked, $request->user());
+            app(\App\Services\SelectionStockMonitor::class)->observe($locked, $meta['availability']);
             $locked->update(['meta' => $meta, 'revision' => $locked->revision + 1]);
         });
 
@@ -56,6 +57,7 @@ class SelectionFulfillmentController extends Controller
             $meta = $locked->meta ?? [];
             // Always recheck the source; never trust quantities or prices sent by a browser.
             $meta['availability'] = $availability->check($locked, $request->user());
+            app(\App\Services\SelectionStockMonitor::class)->observe($locked, $meta['availability']);
             $cart = [];
             foreach ($locked->items as $id => $item) {
                 $allocation = $meta['availability'][$id];
@@ -90,6 +92,49 @@ class SelectionFulfillmentController extends Controller
         $store->save($request, $request->user()->id);
 
         return to_route('cart')->with('success', 'Доступное количество открыто в корзине с актуальными ценами. Полная потребность и недостающее остаются в «Моих заявках». Это ещё не резерв.');
+    }
+
+    public function addReady(Request $request, CustomerSelection $selection, SelectionAvailability $availability, CustomerCartStore $store)
+    {
+        $this->authorizeSelection($request, $selection);
+        $data = $request->validate(['revision' => ['required', 'integer', 'min:1'], 'alert_id' => ['nullable', 'integer', 'min:1']]);
+        $result = DB::transaction(function () use ($request, $selection, $data, $availability) {
+            $locked = CustomerSelection::whereKey($selection->id)->lockForUpdate()->firstOrFail();
+            abort_unless($locked->revision === (int) $data['revision'], 409, 'Заявка изменена. Обновите страницу.');
+            $only = null;
+            if (!empty($data['alert_id'])) {
+                $alert = \App\Models\SelectionStockAlert::whereKey($data['alert_id'])->whereHas('watch', fn ($q) => $q->where('customer_selection_id', $locked->id))->firstOrFail();
+                $only = array_map('intval', array_keys($alert->items));
+            }
+            $snapshot = $availability->check($locked, $request->user());
+            $currentCart = $request->session()->get('cart', []);
+            // Restoring the full request already placed its lines in this cart.
+            if ((int) $request->session()->get('cart_selection_id') === (int) $locked->id) {
+                foreach ($currentCart as $id => &$line) {
+                    if (isset($locked->items[$id]) && ($line['supply_option'] ?? null) === ($snapshot[$id]['offer']['key'] ?? null)) {
+                        $line['request_origins'] = [$locked->id => (int) $line['quantity']];
+                    }
+                }
+                unset($line);
+            }
+            $result = app(\App\Services\SelectionCartMerge::class)->merge($locked, $snapshot, $currentCart, $only);
+            app(\App\Services\SelectionStockMonitor::class)->observe($locked, $snapshot);
+            $meta = $locked->meta ?? [];
+            $meta['availability'] = $snapshot;
+            $locked->update(['meta' => $meta, 'revision' => $locked->revision + 1]);
+            return $result;
+        });
+        if ($result['added'] > 0) {
+            $request->session()->put('cart', $result['cart']);
+            // A mixed/partial cart must never overwrite its full source request.
+            $request->session()->forget(['cart_selection_id', 'cart_selection_revision']);
+            $request->session()->put(CartSelection::KEY, array_values(array_diff($request->session()->get(CartSelection::KEY, []), $result['processed'])));
+            $store->save($request, $request->user()->id);
+        }
+        $message = $result['added'] > 0 ? 'Добавлено в корзину: '.$result['added'].' шт. Полная заявка сохранена. Это ещё не резерв.'
+            : 'Новых доступных единиц для добавления нет: количество уже в корзине либо наличие изменилось. Заявка сохранена.';
+        if ($result['conflicts']) $message .= ' Позиций с другим источником в корзине: '.$result['conflicts'].'. Они сохранены без изменений.';
+        return back()->with('success', $message);
     }
 
     private function authorizeSelection(Request $request, CustomerSelection $selection): void
