@@ -183,9 +183,11 @@
             var option = select.selectedOptions[0];
             var row = select.closest('.b2b-product-row');
             row.querySelector('[data-workspace-stock]').textContent = option.dataset.stockLabel;
+            row.querySelector('[data-workspace-stock]').classList.toggle('is-confirmed', option.dataset.confirmed === '1');
             row.querySelector('[data-workspace-cost]').textContent = option.dataset.cost !== '' ? money(option.dataset.cost) : 'Уточняется';
             row.querySelector('[data-workspace-margin]').textContent = option.dataset.margin !== '' ? 'Маржа ' + money(option.dataset.margin) + ' · ' + Number(option.dataset.marginPercent).toLocaleString('ru-RU') + '%' : 'Маржа не рассчитана';
             row.querySelector('[data-workspace-margin]').classList.toggle('is-negative', Number(option.dataset.margin) < 0);
+            row.querySelector('[data-workspace-margin]').classList.toggle('is-unknown', option.dataset.margin === '');
             var box = row.querySelector('[data-workspace-product]');
             if (state.items.some(function (item) { return item.id === Number(box.dataset.workspaceProduct); })) save(box, Number(box.querySelector('input').value)).catch(function () {});
             return;
