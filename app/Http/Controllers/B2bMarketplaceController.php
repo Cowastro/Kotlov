@@ -260,8 +260,21 @@ class B2bMarketplaceController extends Controller
                     ->whereNotIn('id', $orderableProductIds)->select('id'), true))
                 ->orderBy('name')
                 ->limit(8)
-                ->get()
-                ->map(fn (Product $product): array => [
+                ->get();
+            $workspace = app(StaffCatalogWorkspace::class);
+            $selection = $staffWorkspace ? $workspace->current($request) : null;
+            if ($staffWorkspace) {
+                $items->loadMissing([
+                    'supplierProducts.supplier.latestChannelTransition',
+                    'supplierProducts.supplier.crmCounterparty.contactPoints',
+                    'integrationProducts.source.supplier.crmCounterparty.contactPoints',
+                    'integrationProducts.source.latestSuccessfulCatalogExchangeRun',
+                    'warehouseStocks.supplier.crmCounterparty.contactPoints',
+                    'purchasePriceSources.supplier',
+                ]);
+            }
+            $items = $items->map(function (Product $product) use ($staffWorkspace, $workspace, $selection, $user, $preview, $request): array {
+                $item = [
                     'id' => (int) $product->id,
                     'name' => (string) $product->name,
                     'sku' => (string) ($product->sku ?: ''),
@@ -278,9 +291,15 @@ class B2bMarketplaceController extends Controller
                         'workspace' => $staffWorkspace ? 1 : null,
                         'selection_id' => $staffWorkspace ? $request->integer('selection_id') ?: null : null,
                     ])),
-                ]);
+                ];
+                if ($staffWorkspace) {
+                    $item['procurement'] = $workspace->searchSummary($product, $user, data_get($selection?->items, $product->id.'.workspace_purchase.supplier_key'));
+                }
 
-            return response()->json(['items' => $items]);
+                return $item;
+            });
+
+            return response()->json(['items' => $items])->header('Cache-Control', 'private, no-store');
         }
 
         $options = $staffPreview

@@ -6,6 +6,7 @@ use App\Models\CustomerSelection;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Suppliers\SupplierOrderRules;
+use App\Services\Suppliers\SupplierStockIndicator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -97,6 +98,27 @@ class StaffCatalogWorkspace
 
             return $offer['is_fresh'] && $offer['in_stock'] ? 1 : 2;
         })->values();
+    }
+
+    public function searchSummary(Product $product, User $user, ?string $supplierKey = null): array
+    {
+        abort_unless(self::canViewProcurement($user), 403);
+        $offers = $this->offers($product, $user);
+        $offer = $offers->firstWhere('supplier_key', $supplierKey) ?? $offers->first();
+        $indicator = SupplierStockIndicator::fromOffer($offer ?? []);
+
+        return [
+            'supplier' => $offer['supplier'] ?? null,
+            'purchase_price' => $offer['purchase_price'] ?? null,
+            'margin' => $offer['margin'] ?? null,
+            'margin_percent' => $offer['margin_percent'] ?? null,
+            'stock_state' => $indicator['state'],
+            'stock_label' => match ($indicator['state']) {
+                'known', 'empty' => $indicator['label'],
+                'available' => 'Есть · количество не передано',
+                default => 'Остаток не подтверждён',
+            },
+        ];
     }
 
     public function state(?CustomerSelection $selection, ?User $user = null): array
