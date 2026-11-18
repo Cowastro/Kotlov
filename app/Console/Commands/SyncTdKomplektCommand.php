@@ -237,14 +237,7 @@ class SyncTdKomplektCommand extends Command
 
     private function createProduct(array $row, int $categoryId, Supplier $supplier, TdKomplektFeed $feed, bool $draft = false): Product
     {
-        $brand = Brand::whereRaw('LOWER(name) = ?', [mb_strtolower($row['brand'])])->first();
-        if (! $brand && $row['brand'] !== '') {
-            $slug = Str::slug($row['brand']) ?: 'td-brand-'.substr(sha1($row['brand']), 0, 8);
-            if (Brand::where('slug', $slug)->exists()) {
-                $slug .= '-td';
-            }
-            $brand = Brand::create(['name' => $row['brand'], 'slug' => $slug, 'is_active' => true]);
-        }
+        $brand = trim($row['brand']) !== '' ? Brand::forImport($row['brand']) : null;
         $slug = Str::limit(Str::slug($row['name']), 180, '').'-td-'.$row['id'];
 
         return Product::create(['supplier_id' => $supplier->id, 'category_id' => $categoryId, 'brand_id' => $brand?->id, 'sku' => 'TDK-'.$row['id'], 'slug' => $slug, 'name' => $row['name'], 'h1' => $row['name'],

@@ -71,6 +71,9 @@ class CatalogController extends Controller
             return redirect()->to(url('/'.WaterHeaterCatalog::GAS).(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301);
         }
 
+        if (request('brand')) {
+            request()->merge(['brand' => Brand::canonicalId((int) request('brand'))]);
+        }
         $selectedBrandId = request('brand') ? (int) request('brand') : null;
 
         $category = Category::where('slug', $categorySlug)

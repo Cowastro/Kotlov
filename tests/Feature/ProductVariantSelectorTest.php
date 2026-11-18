@@ -126,11 +126,9 @@ class ProductVariantSelectorTest extends TestCase
             'parent_id' => 0,
             'is_active' => true,
         ]);
-        $brand = Brand::query()->create([
-            'name' => 'Теплов и Сухов',
-            'slug' => 'teplov-i-suhov-selector-test',
-            'is_active' => true,
-        ]);
+        // Isolate the selector examples from any seeded catalogue of the same maker.
+        Product::where('category_id', $category->id)->update(['is_active' => false]);
+        $brand = Brand::forImport('Теплов и Сухов');
         $current = $this->tisChimney($category, $brand, '115');
         $second = $this->tisChimney($category, $brand, '150');
         $this->tisChimney($category, $brand, '200', 'Труба моно L500 ТМ-Р (304-0.8)');
@@ -150,11 +148,9 @@ class ProductVariantSelectorTest extends TestCase
             'parent_id' => 0,
             'is_active' => true,
         ]);
-        $brand = Brand::query()->create([
-            'name' => 'Теплов и Сухов',
-            'slug' => 'teplov-i-suhov-standard-30-selector-test',
-            'is_active' => true,
-        ]);
+        // Isolate the selector examples from any seeded catalogue of the same maker.
+        Product::where('category_id', $category->id)->update(['is_active' => false]);
+        $brand = Brand::forImport('Теплов и Сухов');
         $current = $this->tisChimney($category, $brand, '80', standard: 30);
         $this->tisChimney($category, $brand, '120', standard: 30);
         $this->tisChimney($category, $brand, '150');
@@ -166,7 +162,8 @@ class ProductVariantSelectorTest extends TestCase
 
     public function test_chimney_parts_switch_between_diameters_of_the_same_element_whatever_the_naming(): void
     {
-        $category = Category::query()->create(['name' => 'Трубы моно', 'slug' => 'truby-mono', 'is_active' => true]);
+        $category = Category::query()->firstOrCreate(['slug' => 'truby-mono'], ['name' => 'Трубы моно', 'is_active' => true]);
+        Product::where('category_id', $category->id)->update(['is_active' => false]);
         $card = fn (string $name, string $slug) => Product::query()->create([
             'category_id' => $category->id, 'name' => $name, 'slug' => $slug, 'price' => 50, 'is_active' => true, 'is_archived' => false,
             'availability_status' => Product::AVAILABILITY_CHECK,
