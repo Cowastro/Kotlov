@@ -13,6 +13,7 @@ use App\Services\B2bCompanyAccess;
 use App\Services\B2bSupplyOptionResolver;
 use App\Services\StaffCatalogWorkspace;
 use App\Services\StorefrontProductSearch;
+use App\Support\DiameterGrid;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -61,6 +62,11 @@ class B2bMarketplaceController extends Controller
         }
         $brandId = max(0, $request->integer('brand'));
         $perPage = in_array($request->integer('per_page'), [30, 60, 100], true) ? $request->integer('per_page') : 30;
+        // A diameter table of a category needs all its items on one page.
+        $gridView = $staffWorkspace && $categoryId > 0 && $request->query('view') === 'grid';
+        if ($gridView) {
+            $perPage = 300;
+        }
         $sourceKey = mb_substr(trim($request->string('source')->toString()), 0, 40);
         $sort = in_array($request->string('sort')->toString(), ['name', 'price_asc', 'price_desc', 'stock'], true)
             ? $request->string('sort')->toString()
@@ -215,11 +221,14 @@ class B2bMarketplaceController extends Controller
             $workspaceOffers = $products->getCollection()->mapWithKeys(fn ($product) => [$product->id => $workspace->offers($product, $user)]);
         }
         $workspaceState = $workspace->state($workspaceSelection, $user);
+        // Offered only where the items of the category differ by diameter.
+        $diameterGrid = $staffWorkspace && $categoryId > 0 ? DiameterGrid::build($products->getCollection()) : null;
         $workspaceSelections = $staffWorkspace ? $workspace->selections($request)->latest('updated_at')->limit(100)->get(['id', 'name']) : collect();
 
         return response()->view('pages.b2b.marketplace', compact(
             'flags', 'priceMin', 'priceMax', 'supplierId', 'workspaceSuppliers', 'showProcurement', 'workspaceOffers', 'staffWorkspace', 'workspaceState', 'workspaceSelections', 'perPage', 'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceKey', 'sort',
             'categoryTree', 'navigationTotal', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests', 'minimalLayout', 'staffPreview',
+            'diameterGrid', 'gridView',
         ))->header('Cache-Control', 'private, no-store');
     }
 

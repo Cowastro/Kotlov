@@ -162,6 +162,7 @@
             <section class="b2b-catalog-results">
                 <div class="b2b-results-toolbar">
                     <div><strong>{{ number_format($products->total(), 0, ',', ' ') }}</strong><span>товаров</span>@if ($query !== '')<em>по запросу «{{ $query }}»</em>@endif</div>
+                    @if($staffWorkspace && ($gridView || $diameterGrid))<a class="b2b-grid-toggle" href="{{ request()->fullUrlWithQuery(['view' => $gridView ? null : 'grid', 'page' => null]) }}">{{ $gridView ? '☰ Списком' : '▦ Сетка по диаметрам' }}</a>@endif
                     @if($staffWorkspace)<p>Enter — сохранить и перейти к следующей строке</p>
                     @elseif ($mode === 'reference')
                         <p>Нет оптовой цены? Отправьте запрос менеджеру из строки товара.</p>
@@ -170,7 +171,9 @@
                     @endif
                 </div>
 
-                @if ($products->count())
+                @if ($gridView && $diameterGrid)
+                    @include('pages.b2b.diameter-grid')
+                @elseif ($products->count())
                     <div class="b2b-product-table {{ $mode === 'reference' ? 'is-reference' : '' }}">
                         <div class="b2b-product-table__head" aria-hidden="true">
                             <span>Товар</span>

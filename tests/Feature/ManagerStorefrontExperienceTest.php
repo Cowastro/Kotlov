@@ -291,6 +291,25 @@ class ManagerStorefrontExperienceTest extends TestCase
         $this->assertSame(476.0, $first['margin']);
     }
 
+    public function test_teplov_purchase_from_sanbusinessgroup_is_the_wholesale_of_our_price_list(): void
+    {
+        [$product, $offer] = $this->makeProductWithSupplierOffer();
+        $product->update(['price' => 49.63]);
+        $sbg = Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail();
+        // The 1C row carries no price for this item.
+        $offer->forceFill(['supplier_id' => $sbg->id, 'price_byn' => null])->save();
+        $teplov = Supplier::query()->updateOrCreate(['code' => 'teplov'], ['name' => 'Теплов и Сухов', 'currency' => 'BYN', 'is_active' => true]);
+        SupplierProduct::create(['supplier_id' => $teplov->id, 'product_id' => $product->id, 'supplier_article' => 'TS.009.129',
+            'supplier_name' => $product->name, 'match_status' => 'matched', 'raw' => ['wholesale' => 34.74]]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        $offers = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager);
+
+        $this->assertCount(1, $offers);
+        $this->assertSame(34.74, $offers->first()['purchase_price']);
+        $this->assertSame(14.89, $offers->first()['margin']);
+    }
+
     public function test_internal_supplier_markup_is_not_rendered_for_guests(): void
     {
         [$product] = $this->makeProductWithSupplierOffer();
