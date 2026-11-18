@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 class DiameterGrid
 {
     /** «Ø 150», «Ø150/210», «D 115», «Д120», «d=200» */
-    private const PATTERN = '/(?:Ø|⌀|\bD|\bД|\bd)\s*=?\s*(\d{2,4}(?:\s*[\/хx×]\s*\d{2,4})?)(?![\d.,])/u';
+    private const PATTERN = '/(?:Ø|⌀|\bD|\bД|\bd)\s*=?\s*(\d{2,4}(?:\s*[\/хx×]\s*\d{2,4})?)(?!\d|[.,]\d)/u';
 
     /**
      * @param  Collection<int, mixed>  $products  models with id and name
@@ -61,7 +61,7 @@ class DiameterGrid
         [$token, $offset] = $matches[0][0];
         $diameter = preg_replace('/\s*[\/хx×]\s*/u', '/', $matches[1][0][0]);
         $row = substr($name, 0, $offset).substr($name, $offset + strlen($token));
-        $row = trim(preg_replace(['/\s+/u', '/\s+([,.;)])/u', '/[\s,;.\-–—]+$/u', '/\(\s*\)/u'], [' ', '$1', '', ''], $row));
+        $row = trim(preg_replace(['/\s+/u', '/\s+([,.;)])/u', '/,{2,}/u', '/[\s,;.\-–—]+$/u', '/\(\s*\)/u'], [' ', '$1', ',', '', ''], $row));
 
         return $row === '' ? null : ['row' => $row, 'diameter' => $diameter];
     }

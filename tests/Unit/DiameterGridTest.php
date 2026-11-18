@@ -14,6 +14,9 @@ class DiameterGridTest extends TestCase
         $this->assertSame(['row' => 'Отвод Теплов и Сухов ОТ-Р 45* 430, 0.8/430, 0.5', 'diameter' => '150/210'],
             DiameterGrid::parse('Отвод Теплов и Сухов ОТ-Р 45* 430, 0.8/430, 0.5, Ø 150/210'));
         $this->assertSame(['row' => 'Труба Ferrum 1 м', 'diameter' => '115'], DiameterGrid::parse('Труба Ferrum D115 1 м'));
+        // A comma after the diameter («…, Ø 150/250, с хомутом») is not a decimal.
+        $this->assertSame(['row' => 'Отвод Термо Теплов и Сухов Стандарт 50 ОТ-Р 45°, 304-0,8/304, с хомутом', 'diameter' => '150/250'],
+            DiameterGrid::parse('Отвод Термо Теплов и Сухов Стандарт 50 ОТ-Р 45°, 304-0,8/304, Ø 150/250, с хомутом'));
         $this->assertNull(DiameterGrid::parse('Darco Колено универс. KNSR 150/45-CZ2 (ML) 2сек'));
         $this->assertNull(DiameterGrid::parse('Хомут Ø 150 на трубу Ø 200'));
     }
