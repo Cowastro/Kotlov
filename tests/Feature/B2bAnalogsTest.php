@@ -77,6 +77,25 @@ class B2bAnalogsTest extends TestCase
         $this->assertSame(['кВт ≈'], $rows[1]['matches']);
     }
 
+    public function test_a_size_kept_in_the_card_attributes_counts_like_one_in_the_name(): void
+    {
+        $category = Category::create(['name' => 'Бойлеры аналоги', 'slug' => 'analog-boilers-water', 'is_active' => true]);
+        $volume = Attribute::create(['category_id' => $category->id, 'name' => 'Объём, л', 'type' => 'value', 'in_product' => true]);
+        $volumeOf = fn (Product $product, string $value) => ProductAttributeValue::create(['product_id' => $product->id, 'attribute_id' => $volume->id, 'value' => $value]);
+        $source = $this->card($category, 'Бойлер косвенного нагрева AQUASTAR INOX 100 напольный', 900);
+        $volumeOf($source, '100');
+        $same = $this->card($category, 'Водонагреватель косвенный Drazice OKC 100 NTR', 950);
+        $volumeOf($same, '100');
+        $unknown = $this->card($category, 'Водонагреватель косвенный Другой', 900);
+        $volumeOf($this->card($category, 'Водонагреватель косвенный Drazice OKC 250 NTR', 1500), '250');
+
+        $rows = $this->actingAs($this->manager())->getJson(route('b2b.workspace.analogs', $source))->assertOk()->json('items');
+
+        // 250 л is another boiler; one of unknown volume comes after the same volume.
+        $this->assertSame([$same->id, $unknown->id], array_column($rows, 'id'));
+        $this->assertSame(['объём, л'], $rows[0]['matches']);
+    }
+
     public function test_units_are_read_from_names(): void
     {
         $analogs = app(B2bAnalogs::class);
@@ -84,6 +103,7 @@ class B2bAnalogsTest extends TestCase
         $this->assertSame(['л' => 100.0, 'квт' => 1.5], $analogs->units('Бойлер Drazice OKC 100 л, ТЭН 1,5 kW'));
         $this->assertSame(['вт' => 2000.0], $analogs->units('Конвектор Ballu BEC/EVU-2000 2000 Вт'));
         $this->assertSame([], $analogs->units('Отвод Моно ОМ-Р 45°, 430-0,8, Ø 150'));
+        $this->assertSame(['секц' => 4.0], $analogs->units('Радиатор биметаллический Royal Thermo MONOBLOCK B 500 - 4 секц.'));
     }
 
     public function test_only_the_staff_workspace_sees_analogs(): void
