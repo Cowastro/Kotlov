@@ -525,6 +525,12 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         return TeplovSukhovPriceList::parse($path);
     }
 
+    /** Whether a card of this name still passes the link check against a price list row (catalog:normalize-teplov-names). */
+    public function cardNameMatches(string $cardName, string $supplierName): bool
+    {
+        return $this->findMatches(collect([new Product(['name' => $cardName])]), $supplierName)->isNotEmpty();
+    }
+
     private function findMatches($products, string $supplierName)
     {
         $needleWords = $this->words($supplierName);
