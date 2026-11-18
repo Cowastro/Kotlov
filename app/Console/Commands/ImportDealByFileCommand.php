@@ -69,7 +69,9 @@ class ImportDealByFileCommand extends Command
             $started = $client->importUrl(url('/exports/'.$name.'.xlsx'), $fields ?: ['price']);
             $importId = (string) ($started['id'] ?? $started['import_id'] ?? '');
             if (filled($started['error'] ?? null) || $importId === '') {
-                $this->line('audit.deal_import.rejected='.(Str::slug((string) ($started['error'] ?? $started['message'] ?? 'no-id')) ?: 'no-id'));
+                $reason = $started['error'] ?? $started['message'] ?? 'no-id';
+                $reason = is_array($reason) ? json_encode($reason, JSON_UNESCAPED_UNICODE) : (string) $reason;
+                $this->line('audit.deal_import.rejected='.(Str::slug(preg_replace('/[^\p{L}\p{N}]+/u', ' ', Str::limit($reason, 300, ''))) ?: 'no-id'));
                 throw new RuntimeException('Deal.by не принял импорт.');
             }
             $this->line('audit.deal_import.id='.Str::slug($importId));
