@@ -90,6 +90,90 @@ class TdKomplektSyncTest extends TestCase
         $this->assertDatabaseHas('product_attribute_values',['product_id'=>$p->id,'value'=>'8.2']);
     }
 
+    public function test_supplier_article_reuses_offer_when_feed_id_changes_without_creating_products(): void
+    {
+        $initialProducts=Product::count();
+        $initialOffers=SupplierProduct::count();
+        $row = $this->row();
+        $this->artisan('supplier:sync-td-komplekt', ['--file'=>$this->csv([$row]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $offer = SupplierProduct::where('supplier_article','AV-12345')->firstOrFail();
+        $productId = $offer->product_id;
+        $row['id'] = '77777';
+        $this->artisan('supplier:sync-td-komplekt', ['--file'=>$this->csv([$row]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $this->assertDatabaseCount('products',$initialProducts+1);
+        $this->assertDatabaseCount('supplier_products',$initialOffers+1);
+        $this->assertEquals(77777,$offer->fresh()->source_wp_id);
+        $this->assertEquals($productId,$offer->fresh()->product_id);
+        $this->artisan('supplier:sync-td-komplekt', ['--file'=>$this->csv([$row]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $this->assertDatabaseCount('supplier_products',$initialOffers+1);
+        $duplicate = array_replace($row,['id'=>'88888']);
+        $this->artisan('supplier:sync-td-komplekt', ['--file'=>$this->csv([$row,$duplicate]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $this->assertDatabaseCount('products',$initialProducts+1);
+        $this->assertDatabaseCount('supplier_products',$initialOffers+1);
+        $this->assertSame('review',$offer->fresh()->match_status);
+    }
+
+    public function test_aliases_block_duplicate_facts_and_ambiguous_material_definitions_use_one_field(): void
+    {
+        Storage::fake('local');
+        $row=$this->row(['description'=>"Макс. рабочая температура: 90 C\nДлина: 2 метра\n- Материал: Полипропилен"]);
+        $this->artisan('supplier:sync-td-komplekt', ['--file'=>$this->csv([$row]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $p=Product::where('sku','TDK-12345')->firstOrFail();
+        $p->update(['supplier_id'=>null,'specs'=>[['key'=>'Максимальная температура рабочей среды, °С','value'=>'95'],['key'=>'Длина трубки, м','value'=>'2']]]);
+        $p->allAttributeValues()->delete();
+        \App\Models\Attribute::firstOrCreate(['category_id'=>$p->category_id,'name'=>'Материал корпуса'],['type'=>'value','in_product'=>true]);
+        $this->artisan('supplier:complete-td-specs',['--apply'=>true])->assertSuccessful();
+        $this->assertCount(3,$p->fresh()->specs);
+        $this->assertSame('Полипропилен',$p->fresh()->specs[2]['value']);
+        $this->assertDatabaseHas('product_attribute_values',['product_id'=>$p->id,'attribute_id'=>\App\Models\Attribute::where('category_id',$p->category_id)->where('name','Материал корпуса')->value('id'),'value'=>'Полипропилен']);
+    }
+
+    public function test_review_repairs_only_backed_up_unchanged_additions_and_saves_verified_wilo_select(): void
+    {
+        Storage::fake('local');
+        $row=$this->row(['vendor_code'=>'4232694','brand'=>'WILO','name'=>'WILO Atmos PICO 25/1-6','description'=>'Монтажная длина: 180 мм']);
+        $this->artisan('supplier:sync-td-komplekt',['--file'=>$this->csv([$this->row()]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $offer=SupplierProduct::where('supplier_article','AV-12345')->firstOrFail();
+        $offer->update(['supplier_article'=>'4232694','raw'=>$row+['identity_vendor_code'=>'4232694','identity_brand'=>'WILO']]);
+        $p=$offer->product;
+        $p->update(['supplier_id'=>null,'specs'=>[]]);$p->allAttributeValues()->delete();
+        $a=\App\Models\Attribute::firstOrCreate(['category_id'=>$p->category_id,'name'=>'Монтажная длина'],['type'=>'value','in_product'=>true]);
+        $a->update(['type'=>'select','suffix'=>'мм']);
+        $option=\App\Models\AttributeOption::create(['attribute_id'=>$a->id,'name'=>'180','sort_order'=>0]);
+        $this->artisan('supplier:review-td-specs')->assertSuccessful();
+        $this->assertSame([],$p->fresh()->specs);
+        $this->artisan('supplier:review-td-specs',['--apply'=>true])->assertSuccessful();
+        $this->assertDatabaseHas('product_attribute_values',['product_id'=>$p->id,'attribute_id'=>$a->id,'option_id'=>$option->id]);
+        $this->assertTrue(collect($p->fresh()->specs)->contains(fn($s)=>$s['key']==='Макс. напор' && $s['value']==='6,1 м'));
+        $before=$p->fresh()->specs;
+        $this->artisan('supplier:review-td-specs',['--apply'=>true])->assertSuccessful();
+        $this->assertSame($before,$p->fresh()->specs);
+    }
+
+    public function test_review_removes_only_import_additions_proven_by_backup_in_specs_and_attributes(): void
+    {
+        Storage::fake('local');
+        $this->artisan('supplier:sync-td-komplekt',['--file'=>$this->csv([$this->row()]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $offer=SupplierProduct::where('supplier_article','AV-12345')->firstOrFail();
+        $row=$this->row(['vendor_code'=>'121884','brand'=>'VIEGA','description'=>'Макс. рабочая температура: 90 C']);
+        $offer->update(['supplier_article'=>'121884','raw'=>$row+['identity_vendor_code'=>'121884','identity_brand'=>'VIEGA']]);
+        $p=$offer->product;$p->allAttributeValues()->delete();
+        $before=[['key'=>'Максимальная температура рабочей среды, °С','value'=>'95']];
+        $added=['key'=>'Макс. рабочая температура','value'=>'90 C'];
+        $p->update(['supplier_id'=>null,'specs'=>array_merge($before,[$added])]);
+        $a=\App\Models\Attribute::firstOrCreate(['category_id'=>$p->category_id,'name'=>$added['key']],['type'=>'value','in_product'=>true]);
+        $v=\App\Models\ProductAttributeValue::create(['product_id'=>$p->id,'attribute_id'=>$a->id,'value'=>'90 C']);
+        Storage::disk('local')->put(TdKomplektFeed::DIRECTORY.'/spec-backups/test.json',json_encode(['product_id'=>$p->id,'before_specs'=>$before,'before_attributes'=>[],'added'=>[$added]]));
+        $this->artisan('supplier:review-td-specs')->assertSuccessful();
+        $this->assertCount(2,$p->fresh()->specs);
+        $this->artisan('supplier:review-td-specs',['--apply'=>true])->assertSuccessful();
+        $this->assertSame($before,$p->fresh()->specs);
+        $this->assertDatabaseMissing('product_attribute_values',['id'=>$v->id]);
+        $this->assertCount(1,Storage::disk('local')->files(TdKomplektFeed::DIRECTORY.'/spec-repair-backups'));
+        $this->artisan('supplier:review-td-specs',['--apply'=>true])->assertSuccessful();
+        $this->assertSame($before,$p->fresh()->specs);
+    }
+
     private function row(array $changes = []): array
     {
         return array_replace(['id' => '12345', 'okdp' => 'ЦБ-12345', 'name' => 'Тройник латунный AV Engineering 1/2', 'vendor_code' => 'AV-12345', 'brand' => 'AV Engineering', 'price' => '12,50', 'price_wholesale' => '8,10', 'warehouse_all' => '10 дней', 'warehouse_main' => '0', 'warehouse_add' => '10 дней', 'warehouse_rb' => '0', 'parentid_name3' => 'Резьбовые латунные фитинги и краны. AV Engineering', 'parentid_name4' => '', 'barcode' => '1234567890123', 'country' => 'Китай', 'description_short' => 'Латунный тройник', 'description' => "Размер: 1/2\nТест: <script>alert(1)</script>", 'media_img' => 'https://content.tools.by/images/products/test/photo.jpg', 'prop_unit' => 'шт.', 'prop_quantity_min' => '3', 'prop_multiplicity' => '1', 'prop_multiplicity_box' => '100', 'prop_manufacturer' => 'Завод', 'prop_importer' => 'ТД Комплект', 'vat' => '20'], $changes);

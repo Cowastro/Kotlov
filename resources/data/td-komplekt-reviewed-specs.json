@@ -1,0 +1,446 @@
+{
+  "121884": {
+    "brand": "VIEGA",
+    "name": "Крестовина бронзовая 22 под пайку арт. 121884 VIEGA",
+    "facts": [],
+    "sources": [],
+    "review": "Remove only proven enrichment duplicates. Preserve original 95 C pending manufacturer confirmation; do not choose 90/95/110 C from resellers."
+  },
+  "4232694": {
+    "brand": "WILO",
+    "name": "Насос WILO atmos PICO 25/1-6",
+    "facts": [
+      {
+        "key": "Макс. напор",
+        "value": "6,1 м"
+      },
+      {
+        "key": "Макс. расход",
+        "value": "3,0 м³/ч"
+      },
+      {
+        "key": "Максимальное рабочее давление",
+        "value": "10 бар"
+      },
+      {
+        "key": "Монтажная длина",
+        "value": "180 мм"
+      },
+      {
+        "key": "Подключение",
+        "value": "G 1½"
+      },
+      {
+        "key": "Номинальный диаметр DN",
+        "value": "25"
+      },
+      {
+        "key": "Минимальная температура жидкости",
+        "value": "-10 °C"
+      },
+      {
+        "key": "Максимальная температура жидкости",
+        "value": "95 °C"
+      },
+      {
+        "key": "Электропитание",
+        "value": "1~230 В, 50/60 Гц"
+      },
+      {
+        "key": "Потребляемая мощность, мин.",
+        "value": "4 Вт"
+      },
+      {
+        "key": "Потребляемая мощность, макс.",
+        "value": "40 Вт"
+      },
+      {
+        "key": "Номинальная мощность P2",
+        "value": "30 Вт"
+      },
+      {
+        "key": "Материал корпуса",
+        "value": "Серый чугун"
+      },
+      {
+        "key": "Материал рабочего колеса",
+        "value": "PP-GF40"
+      },
+      {
+        "key": "Материал вала",
+        "value": "Нержавеющая сталь"
+      },
+      {
+        "key": "Степень защиты",
+        "value": "IPX2D"
+      }
+    ],
+    "sources": [
+      "https://wilo.com/ie/en/Products-and-expertise/en/products/atmos-pico_id189/4232694"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "61004": {
+    "brand": "САНТЕХМАСТЕР",
+    "name": "Набор паста AquaflaxNano 30 гр. туба +15 гр. лён",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "A391": {
+    "brand": "ALCA",
+    "name": "Донный клапан сифона для умывальника Click-Clack 5/4\", цельнометаллический с переливом и малой заглушкой арт. A391 ALCA",
+    "facts": [
+      {
+        "key": "Покрытие",
+        "value": "Хромированное"
+      }
+    ],
+    "sources": [
+      "https://techlist.alcadrain.cz/pdf_products_lang.php?ean=8594045935387&lang=de"
+    ],
+    "review": "Preserve existing brass material; manufacturer confirms chromium finish. Do not conflate base material with coating.",
+    "ignored_source_keys": [
+      "material"
+    ]
+  },
+  "A431": {
+    "brand": "ALCA",
+    "name": "Сифон для умывальника Ду 32 цельнометаллический с накидной гайкой 5/4\" арт. A431 ALCA",
+    "facts": [
+      {
+        "key": "Материал корпуса",
+        "value": "Латунь"
+      },
+      {
+        "key": "Покрытие",
+        "value": "Хромированное"
+      }
+    ],
+    "sources": [
+      "https://www.alcadrain.com/downloads?catid=275&id=11891%3Aproduct-catalogue&task=download.send"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "A432": {
+    "brand": "ALCA",
+    "name": "Сифон для умывальника Ду 32 цельнометал. U-форма с накидной гайкой 5/4\" A432 ALCA",
+    "facts": [
+      {
+        "key": "Материал корпуса",
+        "value": "Латунь"
+      },
+      {
+        "key": "Покрытие",
+        "value": "Хромированное"
+      },
+      {
+        "key": "Гидрозатвор",
+        "value": "62 мм"
+      },
+      {
+        "key": "Производительность",
+        "value": "36 л/мин"
+      },
+      {
+        "key": "Термическая устойчивость",
+        "value": "95 °C"
+      }
+    ],
+    "sources": [
+      "https://www.alcadrain.com/metal-programs/metal-program/a432-detail",
+      "https://www.alcadrain.com/downloads?catid=275&id=11891%3Aproduct-catalogue&task=download.send"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "A434": {
+    "brand": "ALCA",
+    "name": "Сифон для умывальника Ду 40 с накидной гайкой 5/4\" арт. A434 ALCA",
+    "facts": [
+      {
+        "key": "Материал корпуса",
+        "value": "Полипропилен"
+      },
+      {
+        "key": "Гидрозатвор",
+        "value": "64 мм"
+      },
+      {
+        "key": "Производительность",
+        "value": "60 л/мин"
+      },
+      {
+        "key": "Термическая устойчивость",
+        "value": "95 °C"
+      },
+      {
+        "key": "Диаметр подключения к канализационной трубе, мм",
+        "value": "40"
+      }
+    ],
+    "sources": [
+      "https://www.alcadrain.com/wastes-and-traps/wash-basin-wastes-and-traps/umyvadlove-sifony-s-prevlecnou-matici/a434-detail"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "A45A": {
+    "brand": "ALCA",
+    "name": "Сифон для писсуара с манжетой вертикальный арт. A45A ALCA",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "A55K-80-VE-01": {
+    "brand": "ALCA",
+    "name": "Сифон для ванны автомат комплект металл (длина 80 см) арт. A55K-80-VE-01 ALCA",
+    "facts": [
+      {
+        "key": "Термическая устойчивость",
+        "value": "95 °C"
+      }
+    ],
+    "sources": [
+      "https://techlist.alcaplast.info/pdf_products_lang.php?ean=8595580513740&lang=ru"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "A90-90": {
+    "brand": "ALCA",
+    "name": "Колено для унитаза 90° A90-90 ALCA",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "A91-250": {
+    "brand": "ALCA",
+    "name": "Насадка для унитаза 250 мм A91-250 ALCA",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "AKS1Z": {
+    "brand": "ALCA",
+    "name": "Воронка с сифоном для сбора конденсата с шариком арт. AKS1Z ALCA",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "AKS6": {
+    "brand": "ALCA",
+    "name": "Сифон для сбора конденсата+Переходная муфта НТ 40/50хG1/2\" арт. AKS6 ALCA",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "APS1": {
+    "brand": "ALCA",
+    "name": "Сифон для стиральной машины наружный хром арт. APS1 ALCA",
+    "facts": [
+      {
+        "key": "Материал корпуса",
+        "value": "ABS-пластик"
+      },
+      {
+        "key": "Покрытие",
+        "value": "Хромированное"
+      }
+    ],
+    "sources": [
+      "https://www.alcadrain.ru/sifony/sifony-dla-bytovyh-priborov/aps1-detail"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "APS3": {
+    "brand": "ALCA",
+    "name": "Сифон для стиральной машины под штукатурку хром арт. APS3 ALCA",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "APZ1S-1050": {
+    "brand": "ALCA",
+    "name": "Желоб водоотводящий с порогами для перфорированной решетки арт. APZ1S-1050 ALCA",
+    "facts": [],
+    "sources": [
+      "https://www.alcadrain.com/downloads?catid=277&id=12049%3Ainfo-1-2019-en&task=download.send"
+    ],
+    "review": "Do not use APZ1 data: manufacturer 2019 APZ1S-950 EAN 8595580562250 differs from this feed 8595580537937. Exact older technical sheet needed for flow/height."
+  },
+  "APZ1S-950": {
+    "brand": "ALCA",
+    "name": "Желоб водоотводящий с порогами для перф. решетки APZ1S-950 ALCA",
+    "facts": [],
+    "sources": [
+      "https://www.alcadrain.com/downloads?catid=277&id=12049%3Ainfo-1-2019-en&task=download.send"
+    ],
+    "review": "Do not use APZ1 data: manufacturer 2019 APZ1S-950 EAN 8595580562250 differs from this feed 8595580537937. Exact older technical sheet needed for flow/height."
+  },
+  "APZ9-550M": {
+    "brand": "ALCA",
+    "name": "Желоб водоотводящий с порогами для перфорированной решетки Simple арт. APZ9-550M ALCA",
+    "facts": [
+      {
+        "key": "Материал корпуса",
+        "value": "Полипропилен"
+      },
+      {
+        "key": "Наполнитель материала",
+        "value": "Тальк"
+      },
+      {
+        "key": "Монтажный комплект",
+        "value": "Шурупы Ø4,2×38 — 8 шт.; дюбели Ø8 — 8 шт."
+      },
+      {
+        "key": "Крепление регулируемых ножек",
+        "value": "Шурупы 4,2×9,5 — 8 шт."
+      }
+    ],
+    "sources": [
+      "https://www.alcadrain.com/shower-drains-and-grids/plastic-shower-drains/apz9-simple-detail"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "APZ9-750M": {
+    "brand": "ALCA",
+    "name": "Желоб водоотводящий с порогами для перфорированной решетки Simple арт. APZ9-750M ALCA",
+    "facts": [
+      {
+        "key": "Материал корпуса",
+        "value": "Полипропилен"
+      },
+      {
+        "key": "Наполнитель материала",
+        "value": "Тальк"
+      },
+      {
+        "key": "Монтажный комплект",
+        "value": "Шурупы Ø4,2×38 — 8 шт.; дюбели Ø8 — 8 шт."
+      },
+      {
+        "key": "Крепление регулируемых ножек",
+        "value": "Шурупы 4,2×9,5 — 8 шт."
+      }
+    ],
+    "sources": [
+      "https://www.alcadrain.com/shower-drains-and-grids/plastic-shower-drains/apz9-simple-detail"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "ATS001": {
+    "brand": "ALCA",
+    "name": "Кран кнопочный сливной для писсуара ALCA",
+    "facts": [
+      {
+        "key": "Материал корпуса",
+        "value": "Металл"
+      },
+      {
+        "key": "Покрытие",
+        "value": "Хромированное"
+      }
+    ],
+    "sources": [
+      "https://www.alcadrain.com/flush-plates-and-sensors/special/sensors-and-urinal-flushing-systems/ats001-detail"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "AVE115702": {
+    "brand": "AV Engineering",
+    "name": "Фильтр латунный самоочищающийся промывной 3/4\" 100 микрон (с манометром) арт. AVE115702 AV Engineering",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "AVE34009100": {
+    "brand": "AV Engineering",
+    "name": "Трос сантехнический 9 мм L= 10 м пружинный AV Engineering",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "AVEMC3250": {
+    "brand": "AV Engineering",
+    "name": "Манжета ТЭП канализационная 50х32 серая AV Engineering",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "EFXT016062SUPRBK-400": {
+    "brand": "ENERGOFLEX",
+    "name": "Трубка теплоизоляционная Energoflex Super Protect BK 16/6 2 м чёрная",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "EFXT0180411SUPRK": {
+    "brand": "ENERGOFLEX",
+    "name": "Трубка теплоизоляционная Energoflex Super Protect 18/4 11 м красная (бухта)",
+    "facts": [
+      {
+        "key": "Длина трубки, м",
+        "value": "11"
+      }
+    ],
+    "sources": [
+      "https://www.energoflex.ru/catalog/energoflex-super/trubki-energoflex-super-protect/"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "EFXT0180411SUPRS": {
+    "brand": "ENERGOFLEX",
+    "name": "Трубка теплоизоляционная Energoflex Super Protect 18/4 11 м синяя (бухта)",
+    "facts": [
+      {
+        "key": "Длина трубки, м",
+        "value": "11"
+      }
+    ],
+    "sources": [
+      "https://www.energoflex.ru/catalog/energoflex-super/trubki-energoflex-super-protect/"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "EFXT018062SU": {
+    "brand": "ENERGOFLEX",
+    "name": "Трубка теплоизоляционная Energoflex Super 018/6 2 м",
+    "facts": [
+      {
+        "key": "Длина трубки, м",
+        "value": "2"
+      }
+    ],
+    "sources": [
+      "https://rols-isomarket.ru/download.php?file=1096"
+    ],
+    "review": "Manufacturer confirms 18/6-2, 2 m. Supplier description 1,2 metres is not a valid replacement."
+  },
+  "EFXT018092SU": {
+    "brand": "ENERGOFLEX",
+    "name": "Трубка теплоизоляционная Energoflex Super 018/9 2 м",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "EFXT018092SUPRS-284": {
+    "brand": "ENERGOFLEX",
+    "name": "Трубка теплоизол. Energoflex Super Protect 18/9 2 м синяя арт. EFXT018092SUPRS-284",
+    "facts": [
+      {
+        "key": "Длина трубки, м",
+        "value": "2"
+      }
+    ],
+    "sources": [
+      "https://www.energoflex.ru/catalog/energoflex-super/trubki-energoflex-super-protect/"
+    ],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  },
+  "EFXT020062SUPRBK-320": {
+    "brand": "ENERGOFLEX",
+    "name": "Трубка теплоизоляционная Energoflex Super Protect BK 20/6 2 м чёрная",
+    "facts": [],
+    "sources": [],
+    "review": "Existing facts preserved; irrelevant text and unresolved conflicts retained in audit report."
+  }
+}
