@@ -135,7 +135,7 @@ class CustomerSelectionController extends Controller
         $this->own($request, $selection);
         $copy = CustomerSelection::create([
             'user_id' => $request->user()->id, 'name' => mb_substr($selection->name, 0, 145).' · копия',
-            'items' => $selection->items, 'meta' => $selection->meta, 'note' => $selection->note,
+            'items' => $selection->items, 'meta' => array_diff_key($selection->meta ?? [], array_flip(['published_b2b_order_id'])), 'note' => $selection->note,
         ]);
         return to_route('selections.show', $copy)->with('success', 'Копия подбора сохранена.');
     }

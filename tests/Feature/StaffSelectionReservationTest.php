@@ -164,4 +164,18 @@ class StaffSelectionReservationTest extends TestCase
         $this->publish($draft, $client, ['b2b_client_id' => $client->id + 100])->assertUnprocessable();
         $this->assertSame(1, B2bOrder::count());
     }
+
+    public function test_copy_of_published_selection_can_be_used_for_a_new_proposal(): void
+    {
+        [, , $client, , , $draft] = $this->fixture();
+        $this->publish($draft, $client)->assertRedirect();
+        $this->post(route('selections.duplicate', $draft))->assertRedirect();
+        $copy = CustomerSelection::where('id', '!=', $draft->id)->sole();
+        $this->assertArrayNotHasKey('published_b2b_order_id', $copy->meta);
+        $this->assertSame($draft->items, $copy->items);
+        $this->post(route('b2b.selections.release-reserve', $draft))->assertRedirect();
+        $this->publish($copy, $client)->assertRedirect();
+        $this->assertSame(2, B2bOrder::count());
+        $this->assertSame(1, B2bOrderReservation::active()->count());
+    }
 }
