@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -59,6 +60,7 @@ class MergeConfirmedBeregProducts
                         $backup['references'][$table.'.'.$column] = $rows;
                     }
                 }
+                $backup['reviews'] = DB::table('reviews')->where('reviewable_type', Product::class)->whereIn('reviewable_id', [$old->id, $canonical->id])->lockForUpdate()->get();
                 $backup['product_pricing_rules'] = DB::table('b2b_pricing_rules')->where('scope_type', 'product')->whereIn('scope_id', [$old->id, $canonical->id])->lockForUpdate()->get();
                 $jsonUpdates = [];
                 foreach (['customer_carts', 'customer_selections', 'b2b_saved_carts'] as $table) {
@@ -117,6 +119,7 @@ class MergeConfirmedBeregProducts
                     // offer IDs and captured order procurement snapshots (no model save hooks).
                     DB::table($table)->where($column, $old->id)->update([$column => $canonical->id]);
                 }
+                DB::table('reviews')->where('reviewable_type', Product::class)->where('reviewable_id', $old->id)->update(['reviewable_id' => $canonical->id]);
                 DB::table('b2b_pricing_rules')->where('scope_type', 'product')->where('scope_id', $old->id)->update(['scope_id' => $canonical->id]);
                 foreach ($jsonUpdates as [$table, $id, $update]) {
                     DB::table($table)->where('id', $id)->update($update);

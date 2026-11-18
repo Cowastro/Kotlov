@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Console\Commands\CreateChistyBeregCardsCommand;
 use App\Console\Commands\SyncChistyBeregCommand;
 use App\Http\Middleware\ResolveMergedCartProducts;
+use App\Models\Attribute;
 use App\Models\B2bSavedCart;
 use App\Models\Category;
 use App\Models\CustomerCart;
@@ -212,5 +213,22 @@ class ConfirmedBeregProductMergeTest extends TestCase
         $this->assertTrue($old->fresh()->is_active);
         $this->assertDatabaseMissing('redirects', ['from_url' => '/merge-fixture/merge-old']);
         $this->assertSame($master->id, $offer->fresh()->product_id);
+    }
+
+    public function test_matching_attributes_and_reviews_follow_canonical_card(): void
+    {
+        Storage::fake('local');
+        [$old, $master, $offer, $pair] = $this->fixture();
+        $attribute = Attribute::create(['category_id' => $old->category_id, 'name' => 'Test material', 'type' => 'value']);
+        foreach ([$old, $master] as $card) {
+            DB::table('product_attribute_values')->insert(['product_id' => $card->id, 'attribute_id' => $attribute->id, 'value' => 'brass']);
+        }
+        $reviewId = DB::table('reviews')->insertGetId(['reviewable_type' => Product::class, 'reviewable_id' => $old->id, 'author_name' => 'Fixture', 'rating' => 5, 'text' => 'Original review', 'is_approved' => true]);
+        $before = (array) DB::table('reviews')->find($reviewId);
+        app(MergeConfirmedBeregProducts::class)->run([$pair]);
+        $before['reviewable_id'] = $master->id;
+        $this->assertEquals($before, (array) DB::table('reviews')->find($reviewId));
+        $this->assertSame(1, DB::table('product_attribute_values')->where('product_id', $master->id)->where('attribute_id', $attribute->id)->count());
+        $this->assertDatabaseMissing('product_attribute_values', ['product_id' => $old->id]);
     }
 }
