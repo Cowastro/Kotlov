@@ -1,5 +1,6 @@
 /* Editable staff catalog: desktop columns and mobile cards have separate grids. */
 .b2b-workspace-supply{min-width:0}
+.b2b-staff-workspace .b2b-density{display:inline-flex;align-items:center;justify-content:center}
 .b2b-staff-workspace{font-size:13px;line-height:1.45}
 .b2b-staff-workspace :is(input,select,button){box-sizing:border-box;font-family:inherit}
 .b2b-staff-workspace .b2b-page-heading{gap:12px;align-items:center}
