@@ -155,7 +155,7 @@ class TdKomplektSyncTest extends TestCase
         Storage::fake('local');
         $this->artisan('supplier:sync-td-komplekt',['--file'=>$this->csv([$this->row()]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
         $offer=SupplierProduct::where('supplier_article','AV-12345')->firstOrFail();
-        $row=$this->row(['vendor_code'=>'121884','brand'=>'VIEGA','description'=>'Макс. рабочая температура: 90 C']);
+        $row=$this->row(['vendor_code'=>'121884','brand'=>'VIEGA','barcode'=>'4015211121884','description'=>'Макс. рабочая температура: 90 C']);
         $offer->update(['supplier_article'=>'121884','raw'=>$row+['identity_vendor_code'=>'121884','identity_brand'=>'VIEGA']]);
         $p=$offer->product;$p->allAttributeValues()->delete();
         $before=[['key'=>'Максимальная температура рабочей среды, °С','value'=>'95']];
@@ -167,11 +167,11 @@ class TdKomplektSyncTest extends TestCase
         $this->artisan('supplier:review-td-specs')->assertSuccessful();
         $this->assertCount(2,$p->fresh()->specs);
         $this->artisan('supplier:review-td-specs',['--apply'=>true])->assertSuccessful();
-        $this->assertSame($before,$p->fresh()->specs);
+        $this->assertSame([['key'=>'Максимальная температура рабочей среды, °С','value'=>'105 (только водяное отопление)']],$p->fresh()->specs);
         $this->assertDatabaseMissing('product_attribute_values',['id'=>$v->id]);
-        $this->assertCount(1,Storage::disk('local')->files(TdKomplektFeed::DIRECTORY.'/spec-repair-backups'));
+        $this->assertCount(2,Storage::disk('local')->files(TdKomplektFeed::DIRECTORY.'/spec-repair-backups'));
         $this->artisan('supplier:review-td-specs',['--apply'=>true])->assertSuccessful();
-        $this->assertSame($before,$p->fresh()->specs);
+        $this->assertSame([['key'=>'Максимальная температура рабочей среды, °С','value'=>'105 (только водяное отопление)']],$p->fresh()->specs);
     }
 
     public function test_review_corrects_exact_verified_energoflex_thickness_and_removes_backed_up_duplicate(): void
@@ -197,6 +197,38 @@ class TdKomplektSyncTest extends TestCase
         $this->assertDatabaseMissing('product_attribute_values',['id'=>$dupValue->id]);
         $this->artisan('supplier:review-td-specs',['--apply'=>true])->assertSuccessful();
         $this->assertCount(1,$p->fresh()->specs);
+    }
+
+    public function test_exact_viega_evidence_requires_matching_barcode_and_never_replaces_manual_temperature(): void
+    {
+        $review = app(\App\Services\Suppliers\TdKomplektReviewedSpecs::class);
+        $this->assertSame([], $review->forRow($this->row(['vendor_code'=>'121884','brand'=>'VIEGA'])));
+        $row=$this->row(['vendor_code'=>'121884','brand'=>'VIEGA','barcode'=>'4015211121884']);
+        $this->assertNotEmpty($review->forRow($row));
+        Storage::fake('local');
+        $this->artisan('supplier:sync-td-komplekt',['--file'=>$this->csv([$this->row()]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $offer=SupplierProduct::where('supplier_article','AV-12345')->firstOrFail();
+        $offer->update(['supplier_article'=>'121884','raw'=>$row+['identity_vendor_code'=>'121884','identity_brand'=>'VIEGA']]);
+        $p=$offer->product;
+        $before=[['key'=>'Максимальная температура рабочей среды, °С','value'=>'99 (проверено редактором)']];
+        $p->update(['supplier_id'=>null,'specs'=>$before]);
+        $this->artisan('supplier:review-td-specs',['--apply'=>true])->assertSuccessful();
+        $this->assertSame('99 (проверено редактором)', $p->fresh()->specs[0]['value']);
+    }
+
+    public function test_unconfirmed_legacy_alca_flow_and_height_are_not_filled_from_similar_models(): void
+    {
+        Storage::fake('local');
+        $this->artisan('supplier:sync-td-komplekt',['--file'=>$this->csv([$this->row()]),'--apply'=>true,'--create-new'=>true])->assertSuccessful();
+        $p=SupplierProduct::where('supplier_article','AV-12345')->firstOrFail()->product;
+        $p->update(['supplier_id'=>null,'specs'=>[]]);
+        $p->allAttributeValues()->delete();
+        foreach (['APZ1S-950'=>'8595580537937','APZ1S-1050'=>'8595580537869'] as $article=>$ean) {
+            $result=app(\App\Services\Suppliers\TdKomplektSpecCompletion::class)->complete($p->fresh(),$this->row(['vendor_code'=>$article,'brand'=>'ALCA','barcode'=>$ean,'description'=>"Сток воды: 60 л/мин\nОбщая высота монтажа: 100–158 мм"]),true);
+            $this->assertSame([], $result['added']);
+            $this->assertSame([], $p->fresh()->specs);
+            $this->assertSame(0, $p->allAttributeValues()->count());
+        }
     }
 
     private function row(array $changes = []): array

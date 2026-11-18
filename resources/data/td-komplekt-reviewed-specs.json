@@ -2,9 +2,25 @@
   "121884": {
     "brand": "VIEGA",
     "name": "Крестовина бронзовая 22 под пайку арт. 121884 VIEGA",
-    "facts": [],
-    "sources": [],
-    "review": "Remove only proven enrichment duplicates. Preserve original 95 C pending manufacturer confirmation; do not choose 90/95/110 C from resellers."
+    "facts": [
+      {
+        "key": "Максимальная температура рабочей среды, °С",
+        "value": "105 (только водяное отопление)"
+      }
+    ],
+    "sources": [
+      "https://www.viega.de/de/article/121884",
+      "https://product-certificates.viega.com/documents/73568843-85f7-4dce-a62d-b0b9fc2e0b9f.pdf?sv=2019-02-02&sr=b&sig=rWuqTtbVcoRYK0DPx4vOUj3hURe1ySSqkNF4klCS%2FRc%3D&se=9999-12-31T23%3A59%3A59Z&sp=r"
+    ],
+    "review": "Exact article 121884, model 94180, solder crosspiece d22, EAN 4015211121884. VIK-HR inspection certificate IP-L2-250224-1 (2025-02-24, valid until 2027-02-24), linked by Viega for this model: R4 copper/bronze solder fittings, heating water maximum 105 C, 16 bar for d <=34 mm. Temperature is explicitly qualified for heating water; no universal limit for potable water or other media is asserted. Preserve manually changed values.",
+    "expected_barcode": "4015211121884",
+    "corrections": [
+      {
+        "key": "Максимальная температура рабочей среды, °С",
+        "from": "95",
+        "to": "105 (только водяное отопление)"
+      }
+    ]
   },
   "4232694": {
     "brand": "WILO",
@@ -262,18 +278,38 @@
     "name": "Желоб водоотводящий с порогами для перфорированной решетки арт. APZ1S-1050 ALCA",
     "facts": [],
     "sources": [
-      "https://www.alcadrain.com/downloads?catid=277&id=12049%3Ainfo-1-2019-en&task=download.send"
+      "https://www.alcadrain.com/shower-drains-and-grids/stainless-steel-shower-drains/apz1-detail",
+      "https://techlist.alcadrain.cz/pdf_products_lang.php?ean=8595580562250&lang=en"
     ],
-    "review": "Do not use APZ1 data: manufacturer 2019 APZ1S-950 EAN 8595580562250 differs from this feed 8595580537937. Exact older technical sheet needed for flow/height."
+    "review": "Exact supplier article APZ1S-1050, EAN 8595580537869. No exact manufacturer technical sheet found for this EAN. Keep flow and installation height pending confirmation; do not reconstruct malformed feed ranges. Current APZ1-950/1050 EANs 8594045932959/8594045932966 differ. Manufacturer-generated sheet for EAN 8595580562250 identifies APZ1SO-950, not this item. No model equivalence established. Request legacy factory sheet and an explicit EAN/article mapping.",
+    "ignored_source_keys": [
+      "flow",
+      "расходводы",
+      "расход",
+      "общаявысотамонтажа",
+      "монтажнаявысота",
+      "строительнаявысота",
+      "высота"
+    ]
   },
   "APZ1S-950": {
     "brand": "ALCA",
     "name": "Желоб водоотводящий с порогами для перф. решетки APZ1S-950 ALCA",
     "facts": [],
     "sources": [
-      "https://www.alcadrain.com/downloads?catid=277&id=12049%3Ainfo-1-2019-en&task=download.send"
+      "https://www.alcadrain.com/shower-drains-and-grids/stainless-steel-shower-drains/apz1-detail",
+      "https://techlist.alcadrain.cz/pdf_products_lang.php?ean=8595580562250&lang=en"
     ],
-    "review": "Do not use APZ1 data: manufacturer 2019 APZ1S-950 EAN 8595580562250 differs from this feed 8595580537937. Exact older technical sheet needed for flow/height."
+    "review": "Exact supplier article APZ1S-950, EAN 8595580537937. No exact manufacturer technical sheet found for this EAN. Keep flow and installation height pending confirmation; do not reconstruct malformed feed ranges. Current APZ1-950/1050 EANs 8594045932959/8594045932966 differ. Manufacturer-generated sheet for EAN 8595580562250 identifies APZ1SO-950, not this item. No model equivalence established. Request legacy factory sheet and an explicit EAN/article mapping.",
+    "ignored_source_keys": [
+      "flow",
+      "расходводы",
+      "расход",
+      "общаявысотамонтажа",
+      "монтажнаявысота",
+      "строительнаявысота",
+      "высота"
+    ]
   },
   "APZ9-550M": {
     "brand": "ALCA",
