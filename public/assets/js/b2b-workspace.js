@@ -131,8 +131,23 @@
             if (item && document.activeElement !== box.querySelector('input') && !box.dataset.dirty) box.querySelector('input').value = item.quantity;
             paintRules(box);
         });
+        // Diameter table: a cell shows the quantity of its item in the selection.
+        document.querySelectorAll('.b2b-grid-cell').forEach(function (cell) {
+            var item = state.items.find(function (line) { return line.id === Number(cell.dataset.workspaceProduct); });
+            cell.classList.toggle('is-selected', !!item);
+            var input = cell.querySelector('input');
+            if (document.activeElement !== input && !cell.dataset.dirty) input.value = item ? item.quantity : '';
+        });
         if (dialog.open && !dialog.querySelector('[data-workspace-quantity]:focus')) drawLines();
         document.dispatchEvent(new CustomEvent('kotlov:workspace-updated'));
+    }
+
+    function saveGridCell(input) {
+        var cell = input.closest('.b2b-grid-cell');
+        var quantity = input.value === '' ? 0 : Number(input.value);
+        var known = state.items.some(function (item) { return item.id === Number(cell.dataset.workspaceProduct); });
+        if (quantity === 0 && !known) { delete cell.dataset.dirty; return Promise.resolve(); }
+        return save(cell, quantity);
     }
 
     function enqueue(task) {
@@ -224,6 +239,7 @@
             if (state.items.some(function (item) { return item.id === Number(box.dataset.workspaceProduct); })) save(box, Number(box.querySelector('input').value)).catch(function () {});
             return;
         }
+        if (event.target.matches('.b2b-grid-cell [data-workspace-quantity]')) { saveGridCell(event.target).catch(function () {}); return; }
         if (!event.target.matches('.b2b-workspace-quantity [data-workspace-quantity]')) return;
         var box = event.target.closest('[data-workspace-product]');
         if (box.dataset.dirty && state.items.some(function (item) { return item.id === Number(box.dataset.workspaceProduct); })) save(box, Number(event.target.value)).catch(function () {});
@@ -232,6 +248,14 @@
         if (event.target.matches('[data-workspace-quantity]')) save(event.target.closest('[data-workspace-product]'), Number(event.target.value)).catch(function () {});
     });
     document.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' && event.target.matches('.b2b-grid-cell [data-workspace-quantity]')) {
+            event.preventDefault();
+            var cells = Array.from(document.querySelectorAll('.b2b-grid-cell [data-workspace-quantity]'));
+            var next = cells[cells.indexOf(event.target) + 1];
+            // Leaving the field fires «change», which saves the cell.
+            if (next) { next.focus(); next.select(); } else { event.target.blur(); }
+            return;
+        }
         if (event.key !== 'Enter' || !event.target.matches('.b2b-workspace-quantity [data-workspace-quantity]')) return;
         event.preventDefault();
         var input = event.target;
