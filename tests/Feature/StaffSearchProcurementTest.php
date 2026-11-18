@@ -107,6 +107,8 @@ class StaffSearchProcurementTest extends TestCase
         $this->assertStringNotContainsString('purchase_price', $response->getContent());
         $this->assertStringNotContainsString('margin', $response->getContent());
         $this->assertStringNotContainsString('Внутренний поставщик', $response->getContent());
+        $this->get(route('b2b.catalog', ['mode' => 'reference', 'q' => $product->sku]))->assertOk()
+            ->assertDontSee('purchase_price', false)->assertDontSee('item.procurement', false);
         $this->suggest()->assertForbidden();
         $this->actingAs($this->staff(['role' => 'admin']));
         $preview = $this->suggest(['workspace' => 0, 'b2b-preview' => 1])->assertOk();
