@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Services\Shipping\Evropochta;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -26,11 +27,13 @@ class ShipmentResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
 
+    protected static ?string $navigationLabel = 'Европочта';
+
     protected static ?string $pluralModelLabel = 'Отправления Европочты';
 
     public static function getNavigationGroup(): ?string
     {
-        return OrderResource::getNavigationGroup();
+        return 'Доставки';
     }
 
     public static function getEloquentQuery(): Builder
@@ -56,68 +59,8 @@ class ShipmentResource extends Resource
                     ->searchable()->placeholder('Ожидает оформления'),
             ])
             ->recordActions([
-                Action::make('quoteEvropochta')
-                    ->label('Рассчитать пересылку')
-                    ->visible(fn (): bool => app(Evropochta::class)->configured())
-                    ->authorize(fn (Order $record): bool => OrderResource::canView($record))
-                    ->schema(static::parcelFields())
-                    ->action(function (array $data): void {
-                        try {
-                            $price = app(Evropochta::class)->quote($data);
-                            Notification::make()
-                                ->title('Базовая пересылка: '.number_format($price, 2, ',', ' ').' BYN')
-                                ->body('Стоимость доставки в заказе можно изменить в карточке заказа.')
-                                ->persistent()->success()->send();
-                        } catch (RuntimeException $exception) {
-                            Notification::make()->title($exception->getMessage())->danger()->send();
-                        }
-                    }),
-                Action::make('createEvropochta')
-                    ->label('Создать заявку')
-                    ->visible(fn (Order $record): bool => app(Evropochta::class)->configured()
-                        && blank($record->evropochta_tracking_number))
-                    ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
-                    ->fillForm(fn (Order $record): array => [
-                        'receiver_phone_number' => preg_replace('/\D/', '', (string) $record->customer_phone),
-                    ])
-                    ->modalDescription('Заявка до отделения без наложенного платежа. Проверьте вес и данные получателя.')
-                    ->schema([
-                        ...static::parcelFields(),
-                        TextInput::make('receiver_surname')->label('Фамилия')->trim()->required()->maxLength(100),
-                        TextInput::make('receiver_name')->label('Имя')->trim()->required()->maxLength(100),
-                        TextInput::make('receiver_phone_number')->label('Телефон, только цифры')
-                            ->required()->regex('/^375\d{9}$/'),
-                    ])
-                    ->action(function (Order $record, array $data): void {
-                        $error = DB::transaction(function () use ($record, $data): ?string {
-                            $order = static::getEloquentQuery()->lockForUpdate()->find($record->getKey());
-
-                            if (! $order || ! OrderResource::canEdit($order) || filled($order->evropochta_tracking_number)) {
-                                return 'Заказ уже имеет трек-номер или больше недоступен для отправки.';
-                            }
-
-                            try {
-                                $number = app(Evropochta::class)->create($data + [
-                                    'external_id' => 'kotlov-order-'.$order->getKey(),
-                                ]);
-                            } catch (RuntimeException $exception) {
-                                return $exception->getMessage();
-                            }
-
-                            $order->evropochta_tracking_number = $number;
-                            $order->save();
-
-                            return null;
-                        });
-
-                        if ($error !== null) {
-                            Notification::make()->title($error)->persistent()->danger()->send();
-
-                            return;
-                        }
-
-                        Notification::make()->title('Заявка создана, трек-номер сохранён')->success()->send();
-                    }),
+                static::quoteAction()
+                    ->authorize(fn (Order $record): bool => OrderResource::canView($record)),
                 Action::make('saveTrackingNumber')
                     ->label('Записать трек-номер')
                     ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
@@ -152,14 +95,51 @@ class ShipmentResource extends Resource
             ]);
     }
 
-    private static function parcelFields(): array
+    public static function quoteAction(): Action
     {
-        return [
-            TextInput::make('store_id_start')->label('ID отделения отправления')->required()->integer()->minValue(1),
-            TextInput::make('store_id_finish')->label('ID отделения выдачи')->required()->integer()->minValue(1),
-            TextInput::make('weight')->label('Вес упакованной посылки, кг')
-                ->required()->numeric()->minValue(0.01)->step(0.01)->rule('decimal:0,2'),
-        ];
+        return Action::make('quoteEvropochta')
+            ->label('Рассчитать тариф')
+            ->visible(fn (): bool => app(Evropochta::class)->configured())
+            ->modalDescription('До отделения, без наложенного платежа. Укажите вес и размеры с упаковкой.')
+            ->modalSubmitActionLabel('Рассчитать')
+            ->schema(function (): array {
+                try {
+                    $branches = collect(app(Evropochta::class)->branches())->map(fn (array $branch): string => $branch['label'])->all();
+                } catch (RuntimeException $exception) {
+                    Notification::make()->title($exception->getMessage())->danger()->persistent()->send();
+
+                    $branches = [];
+                }
+
+                return [
+                    Select::make('store_id_start')->label('Отделение отправления')
+                        ->options($branches)->searchable()->required()->placeholder('Город или адрес'),
+                    Select::make('store_id_finish')->label('Отделение получения')
+                        ->options($branches)->searchable()->required()->placeholder('Город или адрес'),
+                    TextInput::make('weight')->label('Вес, кг')->required()->numeric()
+                        ->minValue(0.01)->maxValue(50)->step(0.01)->rule('decimal:0,2'),
+                    TextInput::make('length')->label('Длина, см')->required()->numeric()
+                        ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
+                    TextInput::make('width')->label('Ширина, см')->required()->numeric()
+                        ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
+                    TextInput::make('height')->label('Высота, см')->required()->numeric()
+                        ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
+                ];
+            })
+            ->action(function (array $data, Action $action): void {
+                try {
+                    $quote = app(Evropochta::class)->quote($data);
+                    $tariff = $quote['oversize'] ? 'Громоздкая посылка' : 'Стандартная посылка';
+
+                    Notification::make()
+                        ->title('Тариф Европочты — '.number_format($quote['total'], 2, ',', ' ').' BYN')
+                        ->body($tariff.' · отделение → отделение')
+                        ->persistent()->success()->send();
+                } catch (RuntimeException $exception) {
+                    Notification::make()->title($exception->getMessage())->danger()->persistent()->send();
+                    $action->halt();
+                }
+            });
     }
 
     public static function getPages(): array
