@@ -13,6 +13,8 @@ class Evropochta
 {
     public const STATUS_CREATED = 0;
 
+    public const STATUS_CANCELLED = 90;
+
     public const LABEL_FORMATS = [
         'thermal' => '10 × 10 см',
         'address' => 'A5',
@@ -186,15 +188,29 @@ class Evropochta
     /** @return array{code: int, status: string} */
     public function shipmentStatus(string $number): array
     {
+        return $this->statusFromResponse($this->shipmentResponse($number), $number, 'Не удалось подтвердить статус отправления.');
+    }
+
+    public function shipmentReceiverPhone(string $number): ?string
+    {
+        $response = $this->shipmentResponse($number);
+        $this->statusFromResponse($response, $number, 'Не удалось подтвердить получателя отправления.');
+        $phone = $response->json('receiver.phone_number');
+
+        return is_string($phone) && preg_match('/^\+?\d{7,15}$/D', $phone)
+            ? ltrim($phone, '+')
+            : null;
+    }
+
+    private function shipmentResponse(string $number): Response
+    {
         $this->validateShipmentNumber($number);
 
         try {
-            $response = $this->request()->get("postal/{$number}");
+            return $this->request()->get("postal/{$number}");
         } catch (ConnectionException) {
             throw new EvropochtaShipmentException('Европочта не ответила на запрос статуса.');
         }
-
-        return $this->statusFromResponse($response, $number, 'Не удалось подтвердить статус отправления.');
     }
 
     /** @return array{code: int, status: string} */
@@ -213,8 +229,8 @@ class Evropochta
         }
 
         $status = $this->statusFromResponse($response, $number, 'Европочта не подтвердила отмену. Дождитесь обновления статуса.');
-        if ($status['code'] === self::STATUS_CREATED) {
-            throw new EvropochtaShipmentException('Европочта пока показывает статус «Заявка создана». Дождитесь обновления статуса.');
+        if ($status['code'] !== self::STATUS_CANCELLED) {
+            throw new EvropochtaShipmentException('Европочта пока не показала статус отмены. Дождитесь обновления статуса.');
         }
 
         return $status;
@@ -249,6 +265,37 @@ class Evropochta
     /** @return list<array{time: string, status: string, detail: string}> */
     public function trackingHistory(string $number): array
     {
+        return collect($this->historyResponse($number))
+            ->filter(fn (mixed $event): bool => is_array($event) && is_string(data_get($event, 'status_to.name')))
+            ->sortByDesc('created_at')
+            ->map(fn (array $event): array => [
+                'time' => is_string($event['created_at'] ?? null) ? $event['created_at'] : '',
+                'status' => data_get($event, 'status_to.name'),
+                'detail' => is_string($event['info'] ?? null) ? $event['info'] : '',
+            ])->values()->all();
+    }
+
+    /** @return list<array{key: string, status: string}> */
+    public function notificationHistory(string $number): array
+    {
+        return collect($this->historyResponse($number))
+            ->filter(function (mixed $event): bool {
+                $code = data_get($event, 'status_to.value');
+                $name = data_get($event, 'status_to.name');
+
+                return is_int(data_get($event, 'id')) && is_int($code)
+                    && $code !== self::STATUS_CREATED && $code !== data_get($event, 'status_from.value')
+                    && is_string($name) && filled($name);
+            })
+            ->sortBy('id')
+            ->map(fn (array $event): array => [
+                'key' => $event['status_to']['value'] === self::STATUS_CANCELLED ? 'cancelled' : 'history:'.$event['id'],
+                'status' => $event['status_to']['name'],
+            ])->values()->all();
+    }
+
+    private function historyResponse(string $number): array
+    {
         try {
             $response = $this->request()->get('postal/history', ['number' => $number]);
         } catch (ConnectionException) {
@@ -266,14 +313,7 @@ class Evropochta
             throw new EvropochtaShipmentException('Не удалось получить историю. Проверьте трек-номер или повторите позже.');
         }
 
-        return collect($events)
-            ->filter(fn (mixed $event): bool => is_array($event) && is_string(data_get($event, 'status_to.name')))
-            ->sortByDesc('created_at')
-            ->map(fn (array $event): array => [
-                'time' => is_string($event['created_at'] ?? null) ? $event['created_at'] : '',
-                'status' => data_get($event, 'status_to.name'),
-                'detail' => is_string($event['info'] ?? null) ? $event['info'] : '',
-            ])->values()->all();
+        return $events;
     }
 
     public function shipmentLabel(string $number, string $format): string

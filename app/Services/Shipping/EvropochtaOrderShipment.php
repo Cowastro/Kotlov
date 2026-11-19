@@ -229,6 +229,7 @@ final class EvropochtaOrderShipment
             };
             $lockedOrder->evropochta_tracking_number = $number;
             $lockedOrder->evropochta_sms_status = $smsStatus;
+            $lockedOrder->evropochta_status_sms_started_at = $notify ? now() : null;
             if (! $lockedOrder->save()) {
                 throw new EvropochtaShipmentException('Трек-номер получен, но не сохранён. Повторите действие для восстановления номера.');
             }

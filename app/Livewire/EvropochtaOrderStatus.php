@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Services\Shipping\Evropochta;
 use App\Services\Shipping\EvropochtaCheckout;
 use App\Services\Shipping\EvropochtaShipmentException;
+use App\Services\Shipping\EvropochtaStatusNotifications;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
@@ -34,11 +35,15 @@ final class EvropochtaOrderStatus extends Component
     #[Locked]
     public ?string $smsStatus = null;
 
-    public function refreshStatus(Evropochta $carrier): void
+    #[Locked]
+    public array $statusMessages = [];
+
+    public function refreshStatus(Evropochta $carrier, EvropochtaStatusNotifications $notifications): void
     {
         $order = $this->trackingOrder();
         $this->canEditShipment = OrderResource::canEdit($order);
         $this->smsStatus = $order->evropochta_sms_status;
+        $this->loadStatusMessages($order, $notifications);
         $this->loaded = true;
         $this->unavailable = ! $carrier->configured();
         if ($this->unavailable) {
@@ -63,7 +68,7 @@ final class EvropochtaOrderStatus extends Component
         $this->unavailable = Cache::get($key.':unavailable', false);
     }
 
-    public function cancelShipment(Evropochta $carrier): void
+    public function cancelShipment(Evropochta $carrier, EvropochtaStatusNotifications $notifications): void
     {
         $order = $this->trackingOrder();
         abort_unless(OrderResource::canEdit($order), 403);
@@ -77,7 +82,7 @@ final class EvropochtaOrderStatus extends Component
 
         $number = $order->evropochta_tracking_number;
         $key = 'evropochta.order-status.v2.'.$number;
-        $handled = Cache::lock($key.':request', 45)->get(function () use ($carrier, $key, $number): bool {
+        $handled = Cache::lock($key.':request', 45)->get(function () use ($carrier, $key, $number, $order, $notifications): bool {
             try {
                 $status = $carrier->shipmentStatus($number);
                 $this->rememberStatus($key, $status);
@@ -87,7 +92,10 @@ final class EvropochtaOrderStatus extends Component
                     return true;
                 }
 
-                $this->rememberStatus($key, $carrier->cancelShipment($number));
+                $cancelled = $carrier->cancelShipment($number);
+                $this->rememberStatus($key, $cancelled);
+                $notifications->recordCancellation($order, $cancelled);
+                $this->loadStatusMessages($order, $notifications);
                 Notification::make()->success()->title('Отправление Европочты отменено')->send();
             } catch (EvropochtaShipmentException $failure) {
                 $this->unavailable = true;
@@ -102,6 +110,11 @@ final class EvropochtaOrderStatus extends Component
         if (! $handled) {
             Notification::make()->warning()->title('Европочта обрабатывает другой запрос. Повторите позже.')->send();
         }
+    }
+
+    private function loadStatusMessages(Order $order, EvropochtaStatusNotifications $notifications): void
+    {
+        $this->statusMessages = $notifications->messages($order)->map(fn (object $message): array => (array) $message)->all();
     }
 
     private function trackingOrder(): Order
