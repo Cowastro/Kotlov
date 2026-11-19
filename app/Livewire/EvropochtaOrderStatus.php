@@ -3,10 +3,12 @@
 namespace App\Livewire;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Models\Order;
 use App\Services\Shipping\Evropochta;
 use App\Services\Shipping\EvropochtaCheckout;
 use App\Services\Shipping\EvropochtaShipmentException;
 use Filament\Facades\Filament;
+use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Locked;
@@ -26,7 +28,79 @@ final class EvropochtaOrderStatus extends Component
     #[Locked]
     public bool $unavailable = false;
 
+    #[Locked]
+    public bool $canEditShipment = false;
+
     public function refreshStatus(Evropochta $carrier): void
+    {
+        $order = $this->trackingOrder();
+        $this->canEditShipment = OrderResource::canEdit($order);
+        $this->loaded = true;
+        $this->unavailable = ! $carrier->configured();
+        if ($this->unavailable) {
+            return;
+        }
+
+        $number = $order->evropochta_tracking_number;
+        $key = 'evropochta.order-status.v2.'.$number;
+        Cache::lock($key.':request', 45)->get(function () use ($carrier, $key, $number): void {
+            if (! Cache::add($key.':refreshing', true, now()->addMinutes(3))) {
+                return;
+            }
+
+            try {
+                $this->rememberStatus($key, $carrier->shipmentStatus($number));
+            } catch (EvropochtaShipmentException) {
+                Cache::put($key.':unavailable', true, now()->addMinutes(3));
+            }
+        });
+
+        $this->latest = Cache::get($key.':latest');
+        $this->unavailable = Cache::get($key.':unavailable', false);
+    }
+
+    public function cancelShipment(Evropochta $carrier): void
+    {
+        $order = $this->trackingOrder();
+        abort_unless(OrderResource::canEdit($order), 403);
+
+        if (! $carrier->configured()) {
+            $this->unavailable = true;
+            Notification::make()->danger()->title('Ключ API Европочты не настроен.')->send();
+
+            return;
+        }
+
+        $number = $order->evropochta_tracking_number;
+        $key = 'evropochta.order-status.v2.'.$number;
+        $handled = Cache::lock($key.':request', 45)->get(function () use ($carrier, $key, $number): bool {
+            try {
+                $status = $carrier->shipmentStatus($number);
+                $this->rememberStatus($key, $status);
+                if ($status['code'] !== Evropochta::STATUS_CREATED) {
+                    Notification::make()->warning()->title('Отмена доступна только в статусе «Заявка создана».')->send();
+
+                    return true;
+                }
+
+                $this->rememberStatus($key, $carrier->cancelShipment($number));
+                Notification::make()->success()->title('Отправление Европочты отменено')->send();
+            } catch (EvropochtaShipmentException $failure) {
+                $this->unavailable = true;
+                Cache::put($key.':unavailable', true, now()->addMinutes(3));
+                Cache::forget($key.':refreshing');
+                Notification::make()->danger()->title($failure->getMessage())->send();
+            }
+
+            return true;
+        });
+
+        if (! $handled) {
+            Notification::make()->warning()->title('Европочта обрабатывает другой запрос. Повторите позже.')->send();
+        }
+    }
+
+    private function trackingOrder(): Order
     {
         abort_unless(auth()->user()?->canAccessPanel(Filament::getPanel('admin')), 403);
 
@@ -34,27 +108,17 @@ final class EvropochtaOrderStatus extends Component
         abort_unless(OrderResource::canView($order), 403);
         abort_unless($order->delivery_type === EvropochtaCheckout::METHOD && filled($order->evropochta_tracking_number), 404);
 
+        return $order;
+    }
+
+    private function rememberStatus(string $key, array $status): void
+    {
         $this->loaded = true;
-        $this->unavailable = ! $carrier->configured();
-        if ($this->unavailable) {
-            return;
-        }
-
-        $key = 'evropochta.order-status.'.$order->evropochta_tracking_number;
-        if (Cache::add($key.':refreshing', true, now()->addMinutes(3))) {
-            try {
-                $history = $carrier->trackingHistory($order->evropochta_tracking_number);
-                if ($latest = $history[0] ?? null) {
-                    Cache::put($key.':latest', $latest, now()->addDays(30));
-                }
-                Cache::forget($key.':unavailable');
-            } catch (EvropochtaShipmentException) {
-                Cache::put($key.':unavailable', true, now()->addMinutes(3));
-            }
-        }
-
-        $this->latest = Cache::get($key.':latest');
-        $this->unavailable = Cache::get($key.':unavailable', false);
+        $this->latest = $status;
+        $this->unavailable = false;
+        Cache::put($key.':latest', $status, now()->addDays(30));
+        Cache::put($key.':refreshing', true, now()->addMinutes(3));
+        Cache::forget($key.':unavailable');
     }
 
     public function render(): View

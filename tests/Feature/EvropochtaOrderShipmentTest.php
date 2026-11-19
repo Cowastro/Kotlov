@@ -119,14 +119,105 @@ class EvropochtaOrderShipmentTest extends TestCase
         Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
     }
 
-    public function test_status_refreshes_and_preserves_the_last_event_if_the_carrier_is_unavailable(): void
+    public function test_manager_cancels_a_created_shipment_and_keeps_the_order_and_track(): void
     {
         $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
         $this->signIn();
         Http::fake([
-            self::API.'postal/history*' => Http::sequence()
-                ->push([['created_at' => '2026-11-19 14:00:00', 'status_to' => ['name' => 'Заявка создана']]])
-                ->push([['created_at' => '2026-11-19 14:30:00', 'status_to' => ['name' => 'В пути']]])
+            self::API.'postal/'.self::TRACK => Http::response($this->carrierStatus(0, 'Заявка создана')),
+            self::API.'postal/'.self::TRACK.'/cancel' => Http::response($this->carrierStatus(90, 'Отменено')),
+        ]);
+
+        $page = Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()]);
+        $page->assertSee('Статус Европочты');
+        $page->assertDontSee('Отменить отправление Европочты');
+        $component = Livewire::test(EvropochtaOrderStatus::class, ['orderId' => $order->id])
+            ->call('refreshStatus')
+            ->assertSee('Отменить отправление Европочты')
+            ->assertSee('wire:confirm=', false)
+            ->call('cancelShipment')
+            ->assertSee('Отменено')
+            ->assertDontSee('Отменить отправление Европочты');
+        $component->call('refreshStatus')->assertSee('Отменено');
+
+        $requestLog = Http::recorded()->map(fn (array $exchange): array => [$exchange[0]->method(), $exchange[0]->url()])->all();
+        $this->assertSame([
+            ['GET', self::API.'postal/'.self::TRACK],
+            ['GET', self::API.'postal/'.self::TRACK],
+            ['POST', self::API.'postal/'.self::TRACK.'/cancel'],
+        ], $requestLog);
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && $request->hasHeader('Token', 'evropochta-test'));
+        $this->assertSame(self::TRACK, $order->fresh()->evropochta_tracking_number);
+        $this->assertSame('confirmed', $order->fresh()->status);
+    }
+
+    public function test_cancellation_checks_the_current_status_even_if_the_button_was_visible(): void
+    {
+        $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
+        $this->signIn();
+        Http::fake([
+            self::API.'postal/'.self::TRACK => Http::sequence()
+                ->push($this->carrierStatus(0, 'Заявка создана'))
+                ->push($this->carrierStatus(10, 'Принято в отделении')),
+        ]);
+
+        Livewire::test(EvropochtaOrderStatus::class, ['orderId' => $order->id])
+            ->call('refreshStatus')
+            ->assertSee('Отменить отправление Европочты')
+            ->call('cancelShipment')
+            ->assertSee('Принято в отделении')
+            ->assertDontSee('Отменить отправление Европочты');
+
+        Http::assertSentCount(2);
+        Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
+    }
+
+    public function test_carrier_rejection_hides_cancellation_until_the_status_is_checked_again(): void
+    {
+        $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
+        $this->signIn();
+        Http::fake([
+            self::API.'postal/'.self::TRACK => Http::sequence()
+                ->push($this->carrierStatus(0, 'Заявка создана'))
+                ->push($this->carrierStatus(0, 'Заявка создана'))
+                ->push($this->carrierStatus(10, 'Принято в отделении')),
+            self::API.'postal/'.self::TRACK.'/cancel' => Http::response(['message' => 'Недопустимый статус'], 422),
+        ]);
+
+        Livewire::test(EvropochtaOrderStatus::class, ['orderId' => $order->id])
+            ->call('refreshStatus')
+            ->call('cancelShipment')
+            ->assertSee('Обновление временно недоступно')
+            ->assertDontSee('Отменить отправление Европочты')
+            ->call('refreshStatus')
+            ->assertSee('Принято в отделении')
+            ->assertDontSee('Отменить отправление Европочты');
+        Http::assertSentCount(4);
+        $this->assertSame(self::TRACK, $order->fresh()->evropochta_tracking_number);
+    }
+
+    public function test_customer_cannot_request_shipment_cancellation(): void
+    {
+        $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
+        $this->actingAs(User::factory()->create(['role' => 'client', 'is_active' => true]));
+        Http::fake([]);
+
+        Livewire::test(EvropochtaOrderStatus::class, ['orderId' => $order->id])
+            ->call('cancelShipment')
+            ->assertForbidden();
+
+        Http::assertNothingSent();
+    }
+
+    public function test_status_refreshes_and_preserves_the_last_status_if_the_carrier_is_unavailable(): void
+    {
+        $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
+        $this->signIn();
+        Http::fake([
+            self::API.'postal/'.self::TRACK => Http::sequence()
+                ->push($this->carrierStatus(0, 'Заявка создана'))
+                ->push($this->carrierStatus(10, 'В пути'))
                 ->pushStatus(503),
         ]);
 
@@ -204,6 +295,11 @@ class EvropochtaOrderShipmentTest extends TestCase
         } finally {
             Http::assertNothingSent();
         }
+    }
+
+    private function carrierStatus(int $code, string $name): array
+    {
+        return ['number' => self::TRACK, 'status' => ['value' => $code, 'name' => $name]];
     }
 
     private function signIn(): void
