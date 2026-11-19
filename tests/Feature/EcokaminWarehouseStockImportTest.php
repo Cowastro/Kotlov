@@ -167,4 +167,30 @@ class EcokaminWarehouseStockImportTest extends TestCase
             'available_quantity' => 3,
         ]);
     }
+
+    public function test_a_prepared_snapshot_can_be_checked_on_the_server_without_writing(): void
+    {
+        $category = Category::create(['name' => 'Топки', 'slug' => 'topki-preview']);
+        $brand = Brand::create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        Supplier::query()->updateOrCreate(['code' => 'sanbusinessgroup'], ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true]);
+        $card = fn (string $name, string $slug, string $sku) => Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => $name, 'slug' => $slug, 'sku' => $sku, 'price' => 100, 'is_active' => true]);
+        $alfa = $card('Топка АЛЬФА 1000ТРВ', 'preview-alfa', 'TAN1000TPB');
+        $first = $card('Топка ДЕЛЬТА 800B', 'preview-delta-b', 'TDN800B');
+        $second = $card('Топка ДЕЛЬТА 800PВ', 'preview-delta-pb', 'TDN800B');
+        $path = storage_path('framework/testing-ecokamin-preview.json');
+        file_put_contents($path, json_encode(['as_of_date' => '2026-11-19', 'items' => [
+            ['article' => 'TAN1000TPB', 'name' => 'Топка АЛЬФА 1000ТРВ туннельная', 'available' => 2],
+            ['article' => 'TDN800B', 'name' => 'Топка ДЕЛЬТА 800B три стекла', 'available' => 1],
+            ['article' => 'KR226', 'name' => 'Камин РИО керамика', 'available' => 1],
+        ]], JSON_UNESCAPED_UNICODE));
+
+        $this->artisan('supplier:import-ecokamin-moscow-stock', ['file' => $path, '--show' => ['TAN1000TPB']])
+            ->expectsOutputToContain('metric.ecokamin_stock.unmatched=2')
+            ->expectsOutputToContain('audit.ecokamin_stock.row=TAN1000TPB:2:'.$alfa->id.':article')
+            ->expectsOutputToContain('audit.ecokamin_stock.ambiguous=TDN800B:1:'.$first->id.','.$second->id)
+            ->expectsOutputToContain('audit.ecokamin_stock.unmatched=KR226:1')
+            ->assertSuccessful();
+        @unlink($path);
+        $this->assertSame(0, ProductWarehouseStock::query()->count());
+    }
 }
