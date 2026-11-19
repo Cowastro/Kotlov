@@ -74,7 +74,7 @@
                     <span class="delivery-page__icon"><x-heroicon-o-cube aria-hidden="true"/></span>
                     <div>
                         <h3>Европочта до отделения</h3>
-                        <p>Для заказов из одной единицы товара с подтверждёнными весом и размерами в упаковке. В оформлении доступны стандартные посылки до {{ \App\Services\Shipping\EvropochtaCheckout::MAX_CHECKOUT_WEIGHT }} кг в регионы.</p>
+                        <p>Для одного или нескольких товаров с подтверждёнными весом и размерами, если они помещаются в одну коробку. В оформлении доступны стандартные посылки до {{ \App\Services\Shipping\EvropochtaCheckout::MAX_CHECKOUT_WEIGHT }} кг в регионы.</p>
                         <p>Выберите отделение и проверьте тариф. Доступны наложенный платёж при получении и предоплата на расчётный счёт.</p>
                     </div>
                     <a class="delivery-button delivery-button--primary" href="{{ route('evropochta.calculator') }}">

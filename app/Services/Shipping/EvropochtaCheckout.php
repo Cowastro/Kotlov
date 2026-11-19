@@ -36,16 +36,57 @@ class EvropochtaCheckout
             return ['parcel' => null, 'message' => 'Европочта сейчас недоступна при оформлении.'];
         }
 
-        $item = reset($cart);
-        if (count($cart) !== 1 || (int) ($item['quantity'] ?? 0) !== 1) {
-            return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для одной единицы товара.'];
+        if ($cart === []) {
+            return ['parcel' => null, 'message' => 'Добавьте товары в корзину.'];
         }
 
-        if (($item['pricing_type'] ?? 'retail') !== 'retail') {
-            return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для розничных заказов.'];
+        $quantities = [];
+        foreach ($cart as $item) {
+            if (($item['pricing_type'] ?? 'retail') !== 'retail') {
+                return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для розничных заказов.'];
+            }
+
+            $id = (int) ($item['id'] ?? 0);
+            $quantity = (int) ($item['quantity'] ?? 0);
+            if ($id < 1 || $quantity < 1) {
+                return ['parcel' => null, 'message' => 'Проверьте состав корзины.'];
+            }
+
+            $quantities[$id] = ($quantities[$id] ?? 0) + $quantity;
         }
 
-        $product = Product::query()->active()->find($item['id'], ['id', 'shipping_parcel', 'specs', 'weight']);
+        $origin = ['store_id_start' => config('services.evropochta.checkout_origin')];
+        if (array_sum($quantities) === 1) {
+            return $this->assessSingle((int) array_key_first($quantities), $origin);
+        }
+
+        ksort($quantities, SORT_NUMERIC);
+        $products = Product::query()->active()->notArchived()->whereKey(array_keys($quantities))
+            ->get(['id', 'shipping_parcel'])->keyBy('id');
+        $lines = [];
+        $items = [];
+        foreach ($quantities as $id => $quantity) {
+            $saved = $products->get($id)?->shipping_parcel ?? [];
+            $confirmed = $this->confirmedMeasurements($saved);
+            if ($confirmed === null) {
+                return ['parcel' => null, 'message' => 'Для общей коробки нужны подтверждённые вес и размеры всех товаров в упаковке.'];
+            }
+
+            $lines[] = ['quantity' => $quantity, 'parcel' => $confirmed + $saved];
+            $items[] = ['product_id' => $id, 'quantity' => $quantity];
+        }
+
+        $box = $this->packaging->combine($lines, self::MAX_CHECKOUT_WEIGHT);
+        if ($box === null || Evropochta::isOversize($box)) {
+            return ['parcel' => null, 'message' => 'Товары не помещаются в одну доступную коробку Европочты с допустимым весом.'];
+        }
+
+        return ['parcel' => $origin + $box + ['items' => $items], 'message' => null];
+    }
+
+    private function assessSingle(int $id, array $origin): array
+    {
+        $product = Product::query()->active()->notArchived()->find($id, ['id', 'shipping_parcel', 'specs', 'weight']);
         $dimensions = $product?->shipping_parcel ?? [];
         $weight = $dimensions['weight'] ?? null;
         if ($product && (! is_numeric($weight) || (float) $weight <= 0)) {
@@ -56,16 +97,12 @@ class EvropochtaCheckout
             return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для посылок до '.self::MAX_CHECKOUT_WEIGHT.' кг. Этот товар превышает лимит по весу.'];
         }
 
-        $parcel = ['product_id' => (int) $item['id'], 'store_id_start' => config('services.evropochta.checkout_origin')];
-        foreach (['weight', 'length', 'width', 'height'] as $field) {
-            $value = $dimensions[$field] ?? null;
-            if (! is_numeric($value) || (float) $value < 0.01 || (float) $value > 250) {
-                return ['parcel' => null, 'message' => 'Для Европочты при оформлении нужны подтверждённые вес и размеры товара в упаковке.'];
-            }
-
-            $parcel[$field] = round((float) $value, 2);
+        $confirmed = $this->confirmedMeasurements($dimensions);
+        if ($confirmed === null) {
+            return ['parcel' => null, 'message' => 'Для Европочты при оформлении нужны подтверждённые вес и размеры товара в упаковке.'];
         }
 
+        $parcel = ['product_id' => $id] + $origin + $confirmed;
         if (isset($dimensions['box']) && ($dimensions['weight_mode'] ?? null) === 'band') {
             $parcel['box'] = $dimensions['box'];
             $parcel['weight_mode'] = 'band';
@@ -82,11 +119,27 @@ class EvropochtaCheckout
         return ['parcel' => null, 'message' => 'Размеры упаковки выходят за пределы, доступные для Европочты при оформлении.'];
     }
 
+    private function confirmedMeasurements(array $dimensions): ?array
+    {
+        $measurements = [];
+        foreach (['weight', 'length', 'width', 'height'] as $field) {
+            $value = $dimensions[$field] ?? null;
+            if (! is_numeric($value) || ! is_finite((float) $value) || $value < 0.01 || $value > 250) {
+                return null;
+            }
+
+            $measurements[$field] = round((float) $value, 2);
+        }
+
+        return $measurements;
+    }
+
     /** @return list<string> */
     public function paymentMethods(array $parcel): array
     {
+        $products = isset($parcel['items']) ? array_column($parcel['items'], 'product_id') : [$parcel['product_id']];
         $paymentOnReceiptOnly = Product::query()
-            ->whereKey($parcel['product_id'])
+            ->whereKey($products)
             ->whereHas('category', fn ($category) => $category->whereIn('slug', self::PAYMENT_ON_RECEIPT_CATEGORIES))
             ->exists();
 
@@ -120,7 +173,7 @@ class EvropochtaCheckout
     {
         $snapshot = $this->estimate($parcel, $destination);
 
-        return [
+        $quote = [
             'price' => $snapshot['customer_price'],
             'token' => Crypt::encrypt([
                 'session' => $sessionId,
@@ -128,6 +181,14 @@ class EvropochtaCheckout
                 'quote' => $snapshot,
             ]),
         ];
+        if (isset($parcel['items'])) {
+            $quote['box'] = [
+                'dimensions' => [$parcel['length'], $parcel['width'], $parcel['height']],
+                'weight' => $parcel['weight'],
+            ];
+        }
+
+        return $quote;
     }
 
     public function confirmedQuote(?array $parcel, int $destination, string $token, string $sessionId): ?array

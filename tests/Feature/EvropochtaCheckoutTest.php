@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
+use App\Services\Shipping\EvropochtaCheckout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
@@ -149,15 +150,87 @@ class EvropochtaCheckoutTest extends TestCase
         Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/create'));
     }
 
-    public function test_multiple_units_and_missing_package_measurements_are_ineligible(): void
+    public function test_two_elekhant_meters_get_one_box_and_one_quote_to_soligorsk(): void
+    {
+        $this->mockCarrier(8.83);
+        $category = Category::query()->firstOrCreate(['slug' => 'schetchiki-gaza'], ['name' => 'Счётчики газа', 'parent_id' => 0]);
+        $meter = $this->product();
+        $meter->update([
+            'category_id' => $category->id,
+            'sku' => 'PS-007.059',
+            'slug' => 'schetchik-gaza-bytovoj-yelexant-sgb-18',
+            'shipping_parcel' => null,
+        ]);
+        $pilot = require database_path('migrations/2026_11_19_152000_enable_evropochta_elekhant_packaging_pilot.php');
+        $pilot->up();
+
+        $session = $this->cart($meter, 2);
+        $this->withSession($session)->get(route('checkout'))->assertOk()
+            ->assertSee('Европочта до отделения')
+            ->assertSee('Солигорск')
+            ->assertDontSee('name="delivery_type" value="transport"', false)
+            ->assertDontSee('id="pay-bank_transfer"', false);
+
+        $this->postJson(route('checkout.evropochta.quote'), ['branch_id' => 40930011])
+            ->assertOk()
+            ->assertJsonPath('price', 11)
+            ->assertJsonPath('box.dimensions', [50, 30, 30])
+            ->assertJsonPath('box.weight', 2.75);
+
+        $checkout = app(EvropochtaCheckout::class);
+        $parcel = $checkout->parcel($session['cart']);
+        $this->assertSame([['product_id' => $meter->id, 'quantity' => 2]], $parcel['items']);
+        $quote = $checkout->quote($parcel, 40930011, 'session-for-two-meters');
+        $changedParcel = $checkout->parcel($this->cart($meter, 1)['cart']);
+        $this->assertNull($checkout->confirmedQuote($changedParcel, 40930011, $quote['token'], 'session-for-two-meters'));
+        $snapshot = $checkout->confirmedQuote($parcel, 40930011, $quote['token'], 'session-for-two-meters');
+        $this->assertSame($parcel, $snapshot['parcel']);
+        $this->assertSame('Солигорск', $snapshot['city']);
+        Http::assertSent(function (Request $request): bool {
+            $fields = collect($request->data())->pluck('contents', 'name');
+
+            return str_ends_with($request->url(), '/payment/calculate')
+                && (float) $fields->get('weight') === 2.75
+                && (int) $fields->get('is_oversize') === 0;
+        });
+        Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/create'));
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_different_products_share_the_smallest_box_only_when_all_measurements_are_confirmed(): void
+    {
+        $this->mockCarrier();
+        $first = $this->product();
+        $first->update(['shipping_parcel' => [
+            'weight' => 1, 'length' => 20, 'width' => 15, 'height' => 10, 'weight_mode' => 'band',
+            'item_dimensions' => [8, 5, 3], 'item_weight' => 0.31,
+        ]]);
+        $second = $first->replicate(['slug', 'sku']);
+        $second->fill(['slug' => 'other-small-part', 'sku' => 'PARCEL-2']);
+        $second->save();
+        $cart = $this->cart($first)['cart'] + $this->cart($second)['cart'];
+        $checkout = app(EvropochtaCheckout::class);
+
+        $parcel = $checkout->parcel($cart);
+        $this->assertSame('box-20-15-10', $parcel['box']);
+        $this->assertSame(0.87, $parcel['weight']);
+        $this->assertSame($parcel, $checkout->parcel(array_reverse($cart, true)));
+
+        $second->update(['shipping_parcel' => null]);
+        $this->assertNull($checkout->parcel($cart));
+        Http::assertNothingSent();
+    }
+
+    public function test_multi_item_baskets_without_a_suitable_box_keep_other_delivery_methods(): void
     {
         $product = $this->product();
         $this->mockCarrier();
+        $product->update(['shipping_parcel' => ['weight' => 2, 'length' => 70, 'width' => 30, 'height' => 25]]);
         $this->withSession($this->cart($product, 2))
             ->get(route('checkout'))->assertOk()
             ->assertDontSee('Европочта до отделения')
             ->assertDontSee('name="delivery_type" value="evropochta"', false)
-            ->assertSee('Европочта при оформлении доступна для одной единицы товара.')
+            ->assertSee('Товары не помещаются в одну доступную коробку Европочты с допустимым весом.')
             ->assertSee('Транспортная компания по Беларуси')
             ->assertSee('60.00 BYN');
         $this->postJson(route('checkout.evropochta.quote'), ['branch_id' => 40930010])
@@ -325,6 +398,8 @@ class EvropochtaCheckoutTest extends TestCase
                     'city' => 'г. Минск', 'street' => 'Монтажников', 'house' => '2'],
                 ['id' => 40930010, 'type' => 1, 'ops_number' => 23, 'ops_name' => 'Отделение №23',
                     'city' => 'г. Лида', 'street' => 'Красноармейская', 'house' => '63', 'region' => 'Гродненская область'],
+                ['id' => 40930011, 'type' => 1, 'ops_number' => 567, 'ops_name' => 'Отделение №567',
+                    'city' => 'г. Солигорск', 'street' => 'Ленинского Комсомола', 'house' => '43', 'region' => 'Минская область'],
             ]),
             'https://api-kassa.evropochta.by/api/external/postal/payment/calculate' => Http::response([
                 'sender_pays' => $carrierPrice, 'receiver_pays' => 0,

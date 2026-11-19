@@ -274,6 +274,7 @@
                                                 ])
                                                 <input type="hidden" id="evropochta-token" name="evropochta_token">
                                                 <p id="evropochta-status" class="text-caption-01" role="status"></p>
+                                                <p id="evropochta-box" class="text-caption-01 cl-text-2" hidden></p>
                                                 <button type="button" id="evropochta-retry" class="link text-caption-01" hidden>Пересчитать тариф</button>
                                                 @error('evropochta_branch') <div class="text-danger text-caption-01">{{ $message }}</div> @enderror
                                                 @error('evropochta_token') <div class="text-danger text-caption-01">{{ $message }}</div> @enderror
@@ -773,6 +774,7 @@
         var branchSearch = picker.search;
         var quoteToken = document.getElementById('evropochta-token');
         var quoteStatus = document.getElementById('evropochta-status');
+        var boxInfo = document.getElementById('evropochta-box');
         var retry = document.getElementById('evropochta-retry');
         var quoteRequest;
         var active = null;
@@ -808,6 +810,8 @@
             var destination = branchField.value;
             branchSearch.setCustomValidity(active && !destination ? 'Выберите отделение из списка.' : '');
             quoteStatus.textContent = '';
+            boxInfo.hidden = true;
+            boxInfo.textContent = '';
             if (!active || !destination) return;
 
             var request = new AbortController();
@@ -834,6 +838,11 @@
                 quoteToken.value = result.token;
                 branchSearch.setCustomValidity('');
                 quoteStatus.textContent = 'Доставка до отделения — ' + fmtByn(evropochtaPrice);
+                if (result.box) {
+                    boxInfo.textContent = 'Одна коробка ' + result.box.dimensions.join(' × ') + ' см · расчётный вес '
+                        + result.box.weight.toLocaleString('ru-RU') + ' кг';
+                    boxInfo.hidden = false;
+                }
                 updateTotals();
             } catch (error) {
                 if (request.signal.aborted) return;
