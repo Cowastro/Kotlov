@@ -197,7 +197,7 @@
                                                             — Бесплатно
                                                         @elseif ($methodPrice !== null)
                                                             — {{ number_format($methodPrice, 2, '.', ' ') }} BYN
-                                                        @else
+                                                        @elseif ($key !== 'evropochta')
                                                             — стоимость уточняется
                                                         @endif
                                                     </option>
@@ -205,6 +205,33 @@
                                             </select>
                                         </div>
                                     </fieldset>
+
+                                    @if (!empty($evropochtaDestinations))
+                                        <div id="evropochta-fields" class="tf-grid-layout" style="display:none;"
+                                            data-quote-url="{{ route('checkout.evropochta.quote') }}">
+                                            <fieldset class="tf-field">
+                                                <label class="tf-lable fw-medium" for="evropochta-search">Поиск отделения</label>
+                                                <input type="search" id="evropochta-search" placeholder="Город, улица или номер" autocomplete="off">
+                                            </fieldset>
+                                            <fieldset class="tf-field">
+                                                <label class="tf-lable fw-medium" for="evropochta-branch">Отделение получения</label>
+                                                <div class="tf-select">
+                                                    <select id="evropochta-branch" name="evropochta_branch" aria-describedby="evropochta-status" disabled>
+                                                        <option value="">Выберите отделение</option>
+                                                        @foreach ($evropochtaDestinations as $id => $branch)
+                                                            <option value="{{ $id }}" @selected((string) old('evropochta_branch') === (string) $id)>{{ $branch['label'] }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <input type="hidden" id="evropochta-token" name="evropochta_token">
+                                                <p id="evropochta-status" class="text-caption-01" role="status"></p>
+                                                <button type="button" id="evropochta-retry" class="link text-caption-01" hidden>Пересчитать тариф</button>
+                                                @error('evropochta_branch') <div class="text-danger text-caption-01">{{ $message }}</div> @enderror
+                                                @error('evropochta_token') <div class="text-danger text-caption-01">{{ $message }}</div> @enderror
+                                            </fieldset>
+                                            <p class="text-caption-01 cl-text-2">Менеджер пришлёт реквизиты для предоплаты после подтверждения заказа.</p>
+                                        </div>
+                                    @endif
 
                                     @if($isB2bCheckout ?? false)
                                         <a class="b2b-checkout-settings" href="{{ route('b2b.cabinet', ['section' => 'profile']) }}">Изменить основной адрес в настройках компании →</a>
@@ -508,6 +535,7 @@
     var deliveryMethods = @json(collect($checkoutDeliveryMethods ?? config('shop.checkout_delivery_methods', []))->mapWithKeys(fn($k) => [$k => config("shop.delivery_methods.$k")])->filter());
     var isB2bCheckout = @json((bool) ($isB2bCheckout ?? false));
     var subtotal = {{ (float) $subtotal }};
+    var evropochtaPrice = null;
     var couponDiscount = {{ (float) $coupon['coupon_discount'] }};
     var bundleDiscount = {{ (float) $coupon['bundle_discount'] }};
     var onlineOrderDiscountCoupon = @json($onlineOrderDiscountCoupon);
@@ -522,7 +550,9 @@
         function toggleAddress() {
             var isPickup = deliverySelect.value === 'pickup';
             // The address stays visible above (it is asked first); for pickup it is just not required.
-            addressInputs.forEach(function(el) { el.required = !isPickup; });
+            var isEvropochta = deliverySelect.value === 'evropochta';
+            addressFields.hidden = isEvropochta;
+            addressInputs.forEach(function(el) { el.required = !isPickup && !isEvropochta; el.disabled = isEvropochta; });
             if (ownTransportSchedule) ownTransportSchedule.style.display = deliverySelect.value === 'own_transport' ? '' : 'none';
             requiredMarks.forEach(function(el) { el.style.display = isPickup ? 'none' : ''; });
             if (ownTransportSchedule && deliverySelect.value === 'own_transport') {
@@ -552,8 +582,8 @@
     function allowedFor(city) {
         var pick = deliveryForCity(city);
         if (pick === 'courier') return ['pickup', 'courier'];
-        if (pick === 'own_transport') return ['pickup', 'own_transport', 'transport'];
-        if (pick === 'transport') return ['pickup', 'transport'];
+        if (pick === 'own_transport') return ['pickup', 'own_transport', 'transport', 'evropochta'];
+        if (pick === 'transport') return ['pickup', 'transport', 'evropochta'];
         return null;
     }
     function applyCity() {
@@ -621,6 +651,7 @@
     }
 
     function calcDelivery(key) {
+        if (key === 'evropochta') return evropochtaPrice;
         var method = deliveryMethods[key];
         if (!method) return null;
         var price    = method.price;     // number | null
@@ -651,6 +682,11 @@
         var cost  = calcDelivery(deliverySelect.value);
         var total = subtotal - effectiveDiscount() + (cost !== null ? cost : 0);
 
+        if (cost === null && deliverySelect.value === 'evropochta') {
+            deliveryCostEl.textContent = 'Выберите отделение';
+            totalEl.textContent = '—';
+            return;
+        }
         if (cost === null) {
             deliveryCostEl.innerHTML = '<span class="cl-text-2">уточняется</span>';
         } else if (cost === 0) {
@@ -669,6 +705,105 @@
 
     // ── Показ/скрытие реквизитов при оплате по счёту ──
     var paymentRadios = document.querySelectorAll('input[name="payment_type"]');
+
+    var evropochtaFields = document.getElementById('evropochta-fields');
+    if (evropochtaFields && deliverySelect && checkoutForm) {
+        var branchField = document.getElementById('evropochta-branch');
+        var branchSearch = document.getElementById('evropochta-search');
+        var quoteToken = document.getElementById('evropochta-token');
+        var quoteStatus = document.getElementById('evropochta-status');
+        var retry = document.getElementById('evropochta-retry');
+        var quoteRequest;
+        var active = false;
+        var onlyForEvropochta = @json((bool) ($evropochtaPaymentOnly ?? false));
+
+        function updateEvropochtaPayment() {
+            var selected = null;
+            paymentRadios.forEach(function (radio) {
+                var isTransfer = radio.value === 'bank_transfer';
+                var show = active ? isTransfer : (!isTransfer || !onlyForEvropochta);
+                radio.disabled = !show;
+                radio.closest('.payment_accordion').style.display = show ? '' : 'none';
+                if (show && (!selected || radio.checked)) selected = radio;
+            });
+            if (selected && !selected.checked) {
+                selected.checked = true;
+                selected.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        branchSearch.addEventListener('input', function () {
+            var terms = branchSearch.value.trim().toLowerCase().split(/\s+/);
+            Array.prototype.forEach.call(branchField.options, function (option) {
+                var label = option.textContent.toLowerCase();
+                var matches = !option.value || option.selected || terms.every(function (term) { return label.includes(term); });
+                option.hidden = !matches;
+                option.disabled = !matches;
+            });
+        });
+
+        async function loadEvropochtaQuote() {
+            if (quoteRequest) quoteRequest.abort();
+            quoteToken.value = '';
+            evropochtaPrice = null;
+            retry.hidden = true;
+            updateTotals();
+            var destination = branchField.value;
+            branchField.setCustomValidity('');
+            quoteStatus.textContent = '';
+            if (!active || !destination) return;
+
+            var request = new AbortController();
+            quoteRequest = request;
+            branchField.setCustomValidity('Дождитесь расчёта тарифа.');
+            quoteStatus.textContent = 'Рассчитываем тариф…';
+            try {
+                var response = await fetch(evropochtaFields.dataset.quoteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': checkoutForm.querySelector('input[name="_token"]').value
+                    },
+                    body: JSON.stringify({ branch_id: destination }),
+                    signal: request.signal
+                });
+                var result = await response.json();
+                if (request.signal.aborted) return;
+                if (!response.ok || typeof result.price !== 'number' || typeof result.token !== 'string') {
+                    throw new Error('Quote unavailable');
+                }
+                evropochtaPrice = result.price;
+                quoteToken.value = result.token;
+                branchField.setCustomValidity('');
+                quoteStatus.textContent = 'Доставка до отделения — ' + fmtByn(evropochtaPrice);
+                updateTotals();
+            } catch (error) {
+                if (request.signal.aborted) return;
+                branchField.setCustomValidity('Пересчитайте тариф или смените способ доставки.');
+                quoteStatus.textContent = 'Не удалось рассчитать тариф. Попробуйте ещё раз или выберите другой способ доставки.';
+                retry.hidden = false;
+            }
+        }
+
+        function toggleEvropochta() {
+            var selected = deliverySelect.value === 'evropochta';
+            if (selected === active) return;
+            active = selected;
+            evropochtaFields.style.display = active ? '' : 'none';
+            branchField.disabled = !active;
+            branchField.required = active;
+            updateEvropochtaPayment();
+            loadEvropochtaQuote();
+        }
+
+        branchField.addEventListener('change', loadEvropochtaQuote);
+        retry.addEventListener('click', loadEvropochtaQuote);
+        deliverySelect.addEventListener('change', toggleEvropochta);
+        updateEvropochtaPayment();
+        toggleEvropochta();
+    }
+
     var invoiceFields = document.getElementById('invoice-fields');
     function updatePaymentDiscount() {
         var hideOnlineDiscount = onlineOrderDiscountCoupon && installmentSelected();

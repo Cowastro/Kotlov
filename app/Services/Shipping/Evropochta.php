@@ -22,7 +22,7 @@ class Evropochta
             throw new RuntimeException('Настройте ключ API Европочты на сервере.');
         }
 
-        return Cache::remember('evropochta.branches.v1', now()->addHours(6), function (): array {
+        return Cache::remember('evropochta.branches.v2', now()->addHours(6), function (): array {
             try {
                 $response = $this->request()->get('stores');
             } catch (ConnectionException) {
@@ -41,6 +41,8 @@ class Evropochta
                             $branch['house'] ?? null,
                             isset($branch['ops_number']) ? '№'.$branch['ops_number'] : $branch['ops_name'],
                         ])),
+                        'city' => trim((string) ($branch['city'] ?? '')),
+                        'region' => trim((string) ($branch['region'] ?? '')),
                         'heavy' => filter_var($branch['is_large_weight_limit'] ?? false, FILTER_VALIDATE_BOOL),
                     ],
                 ])->all();
@@ -60,20 +62,7 @@ class Evropochta
             throw new RuntimeException('Допустимый вес упакованной посылки — от 0,01 до 50 кг.');
         }
 
-        $sides = array_map(fn (string $side): int => (int) round((float) ($parcel[$side] ?? 0) * 100), ['length', 'width', 'height']);
-        rsort($sides);
-        [$longest, $middle, $shortest] = $sides;
-
-        if ($middle < 1000 || $shortest < 1) {
-            throw new RuntimeException('Укажите три размера. Две стороны посылки должны быть не короче 10 см.');
-        }
-
-        if ($longest > 25000 || array_sum($sides) > 35000) {
-            throw new RuntimeException('Для юрлиц максимальная сторона — 250 см, сумма трёх сторон — 350 см.');
-        }
-
-        // Размеры в сотых долях сантиметра. Обхват считается поперёк длинной стороны.
-        $oversize = $longest > 10500 || $longest + 2 * ($middle + $shortest) > 20000;
+        $oversize = self::isOversize($parcel);
 
         $branches = $this->branches();
         $from = $branches[$parcel['store_id_start'] ?? 0] ?? null;
@@ -107,6 +96,24 @@ class Evropochta
         }
 
         return ['total' => round($sender + $receiver, 2), 'oversize' => $oversize];
+    }
+
+    public static function isOversize(array $parcel): bool
+    {
+        $sides = array_map(fn (string $side): int => (int) round((float) ($parcel[$side] ?? 0) * 100), ['length', 'width', 'height']);
+        rsort($sides);
+        [$longest, $middle, $shortest] = $sides;
+
+        if ($middle < 1000 || $shortest < 1) {
+            throw new RuntimeException('Укажите три размера. Две стороны посылки должны быть не короче 10 см.');
+        }
+
+        if ($longest > 25000 || array_sum($sides) > 35000) {
+            throw new RuntimeException('Для юрлиц максимальная сторона — 250 см, сумма трёх сторон — 350 см.');
+        }
+
+        // Размеры в сотых долях сантиметра. Обхват считается поперёк длинной стороны.
+        return $longest > 10500 || $longest + 2 * ($middle + $shortest) > 20000;
     }
 
     private function request(): PendingRequest

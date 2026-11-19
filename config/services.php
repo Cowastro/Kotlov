@@ -4,6 +4,8 @@ return [
 
     'evropochta' => [
         'token' => env('EVROPOCHTA_API_TOKEN'),
+        'checkout_enabled' => (bool) env('EVROPOCHTA_CHECKOUT_ENABLED', true),
+        'checkout_origin' => (int) env('EVROPOCHTA_CHECKOUT_ORIGIN', 70130010),
     ],
     'accounting' => [
         'email' => env('ACCOUNTING_EMAIL', 'buh-sbg@yandex.ru'),
