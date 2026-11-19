@@ -1,10 +1,11 @@
 @php
+    $categorySlug = str($slug);
     $icon = match (true) {
-        IlluminateSupportStr::contains($slug, ['otopl', 'kotel', 'kotly', 'radiator', 'dymohod', 'dymokhod']) => 'fire',
-        IlluminateSupportStr::contains($slug, ['nasos', 'vod', 'filtr', 'santeh', 'santekh']) => 'beaker',
-        IlluminateSupportStr::contains($slug, ['schetchik', 'schyotchik', 'izmer', 'manometr']) => 'adjustments-horizontal',
-        IlluminateSupportStr::contains($slug, ['fiting', 'fitting', 'trub', 'armatur', 'montazh', 'instrument']) => 'wrench-screwdriver',
-        IlluminateSupportStr::contains($slug, ['elektr', 'avtomat']) => 'bolt',
+        $categorySlug->contains(['otopl', 'kotel', 'kotly', 'radiator', 'dymohod', 'dymokhod']) => 'fire',
+        $categorySlug->contains(['nasos', 'vod', 'filtr', 'santeh', 'santekh']) => 'beaker',
+        $categorySlug->contains(['schetchik', 'schyotchik', 'izmer', 'manometr']) => 'adjustments-horizontal',
+        $categorySlug->contains(['fiting', 'fitting', 'trub', 'armatur', 'montazh', 'instrument']) => 'wrench-screwdriver',
+        $categorySlug->contains(['elektr', 'avtomat']) => 'bolt',
         default => 'rectangle-stack',
     };
 @endphp
