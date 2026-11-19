@@ -12,6 +12,7 @@ class ImportEcokaminWarehouseStockCommand extends Command
     protected $signature = 'supplier:import-ecokamin-moscow-stock
         {file : XLSX/XLS-файл остатков ЭкоКамин или подготовленный JSON (database/data/ecokamin_moscow_stock_*.json)}
         {--show=* : Артикулы, для которых показать, к какой карточке привяжется строка}
+        {--link=* : АРТИКУЛ=id или slug карточки: привязать артикул остатков к карточке (без --apply — только показать результат)}
         {--apply : Записать сопоставленные остатки в базу}
         {--date= : Дата остатков YYYY-MM-DD; иначе берётся из имени файла или текущая дата}';
 
@@ -41,14 +42,37 @@ class ImportEcokaminWarehouseStockCommand extends Command
             number_format((float) collect($payload['items'])->sum('available'), 0, ',', ' '),
         ));
 
+        $links = $this->links();
+        if ($links === null) {
+            return self::FAILURE;
+        }
+        $names = collect($payload['items'])->mapWithKeys(fn (array $item) => [(string) $item['article'] => (string) ($item['name'] ?? '')]);
+        $applyLinks = function () use ($links, $importer, $names): void {
+            foreach ($links as $article => $product) {
+                $done = $importer->link($article, $product, $names->get($article, ''));
+                $this->line('audit.ecokamin_stock.link='.preg_replace('/[^A-Za-z0-9.\/_-]/', '', $article).':'.$product->id.':'.$done);
+            }
+        };
+
         if (! $this->option('apply')) {
-            $this->printPreview($importer->preview($payload));
+            // The links are tried in a transaction that is rolled back: the preview shows the result, nothing is kept.
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                $applyLinks();
+                $this->printPreview($importer->preview($payload));
+            } finally {
+                \Illuminate\Support\Facades\DB::rollBack();
+            }
             $this->warn('Предпросмотр: база не изменена. Для записи добавьте --apply.');
 
             return self::SUCCESS;
         }
 
+        \Illuminate\Support\Facades\DB::transaction($applyLinks);
         $result = $importer->importPayload($payload);
+        foreach (['matched', 'unmatched', 'zeroed'] as $key) {
+            $this->line("metric.ecokamin_stock_apply.{$key}=".$result[$key]);
+        }
         $this->table(['Результат', 'Количество'], [
             ['Привязано карточек', $result['matched']],
             ['Не найдено в каталоге', $result['unmatched']],
@@ -186,6 +210,24 @@ class ImportEcokaminWarehouseStockCommand extends Command
     private function quantity(mixed $value): float
     {
         return max(0, (float) str_replace(',', '.', trim((string) $value)));
+    }
+
+    /** @return array<string, \App\Models\Product>|null the cards of --link, null when one is not found */
+    private function links(): ?array
+    {
+        $links = [];
+        foreach ((array) $this->option('link') as $pair) {
+            [$article, $reference] = array_map('trim', explode('=', (string) $pair, 2) + [1 => '']);
+            $product = $reference === '' ? null : \App\Models\Product::query()->where(ctype_digit($reference) ? 'id' : 'slug', $reference)->first();
+            if ($article === '' || ! $product) {
+                $this->error('Не найдена карточка для привязки: '.$pair);
+
+                return null;
+            }
+            $links[$article] = $product;
+        }
+
+        return $links;
     }
 
     /** Safe lines for the server log: rows without a card, rows that reach several, and the articles asked with --show. */

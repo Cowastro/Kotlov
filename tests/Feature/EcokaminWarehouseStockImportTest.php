@@ -193,4 +193,42 @@ class EcokaminWarehouseStockImportTest extends TestCase
         @unlink($path);
         $this->assertSame(0, ProductWarehouseStock::query()->count());
     }
+
+    public function test_a_stock_article_is_tied_to_a_card_tried_first_then_kept(): void
+    {
+        $category = Category::create(['name' => 'Камины', 'slug' => 'kaminy-link']);
+        $brand = Brand::create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        $sbg = Supplier::query()->updateOrCreate(['code' => 'sanbusinessgroup'], ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true]);
+        $card = fn (string $name, string $slug) => Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => $name, 'slug' => $slug, 'price' => 100, 'is_active' => true]);
+        $black = $card('Камин Прага угловой правый, шамот чёрный', 'link-black');
+        $white = $card('Камин Прага угловой правый, шамот белый', 'link-white');
+        $alfa = $card('Топка Альфа 700K с контргрузом', 'link-alfa');
+        // The articles of the two Prague cards are swapped.
+        \App\Models\SupplierProduct::create(['supplier_id' => $sbg->id, 'product_id' => $white->id, 'supplier_article' => 'KP197RB', 'match_status' => 'matched']);
+        \App\Models\SupplierProduct::create(['supplier_id' => $sbg->id, 'product_id' => $black->id, 'supplier_article' => 'KP196R', 'match_status' => 'matched']);
+        $path = storage_path('framework/testing-ecokamin-link.json');
+        file_put_contents($path, json_encode(['as_of_date' => '2026-11-19', 'warehouse_code' => 'ecokamin-moscow', 'items' => [
+            ['article' => 'KP197RB', 'name' => 'Камин ПРАГА УГЛОВОЙ правый черный, шамот черный', 'available' => 2],
+            ['article' => 'TA700K', 'name' => 'Топка АЛЬФА 700K с контргрузом', 'available' => 20],
+        ]], JSON_UNESCAPED_UNICODE));
+        $links = ['--link' => ['KP197RB='.$black->id, 'KP196R='.$white->id, 'TA700K=link-alfa']];
+
+        $this->artisan('supplier:import-ecokamin-moscow-stock', ['file' => $path] + $links)
+            ->expectsOutputToContain('audit.ecokamin_stock.link=TA700K:'.$alfa->id.':created')
+            ->expectsOutputToContain('metric.ecokamin_stock.unmatched=0')->assertSuccessful();
+        // The preview keeps nothing.
+        $this->assertSame($white->id, \App\Models\SupplierProduct::query()->where('supplier_article', 'KP197RB')->value('product_id'));
+        $this->assertSame(0, ProductWarehouseStock::query()->count());
+
+        $this->artisan('supplier:import-ecokamin-moscow-stock', ['file' => $path, '--apply' => true] + $links)
+            ->expectsOutputToContain('metric.ecokamin_stock_apply.matched=2')->assertSuccessful();
+        $this->assertSame($black->id, \App\Models\SupplierProduct::query()->where('supplier_article', 'KP197RB')->value('product_id'));
+        $this->assertSame($white->id, \App\Models\SupplierProduct::query()->where('supplier_article', 'KP196R')->value('product_id'));
+        $this->assertSame('manual_link', \App\Models\SupplierProduct::query()->where('supplier_article', 'TA700K')->value('match_confidence'));
+        $this->assertEquals(2, ProductWarehouseStock::query()->where('product_id', $black->id)->value('available_quantity'));
+        $this->assertEquals(20, ProductWarehouseStock::query()->where('product_id', $alfa->id)->value('available_quantity'));
+
+        $this->artisan('supplier:import-ecokamin-moscow-stock', ['file' => $path, '--link' => ['KP197RB=no-such-card']])->assertFailed();
+        @unlink($path);
+    }
 }
