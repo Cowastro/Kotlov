@@ -141,6 +141,12 @@
                                 $checkoutDelivery = collect($checkoutDeliveryMethods ?? config('shop.checkout_delivery_methods', []))
                                     ->mapWithKeys(fn($key) => [$key => config("shop.delivery_methods.$key")])
                                     ->filter();
+                                $selectedDelivery = old('delivery_type', ($isB2bCheckout ?? false) ? 'b2b_delivery' : ($lastOrder?->delivery_type ?: 'courier'));
+                                if (! is_string($selectedDelivery) || ! $checkoutDelivery->has($selectedDelivery)) {
+                                    $selectedDelivery = $checkoutDelivery->keys()->first() ?? 'courier';
+                                }
+                                $evropochtaMethod = \App\Services\Shipping\EvropochtaCheckout::METHOD;
+                                $isEvropochtaSelected = $selectedDelivery === $evropochtaMethod;
                             @endphp
                             <div class="box-ip-checkout estimate-shipping">
                                 <div class="h5 title">{{ ($isB2bCheckout ?? false) ? 'Получение заказа' : 'Куда доставить' }}</div>
@@ -189,7 +195,7 @@
                                                         $methodPrice = \App\Http\Controllers\CheckoutController::calcDelivery($key, (float) $subtotal);
                                                     @endphp
                                                     <option value="{{ $key }}"
-                                                        {{ old('delivery_type', ($isB2bCheckout ?? false) ? 'b2b_delivery' : ($lastOrder?->delivery_type ?: 'courier')) === $key ? 'selected' : '' }}>
+                                                        @selected($selectedDelivery === $key)>
                                                         {{ $method['checkout_name'] ?? $method['name'] }}
                                                         @if ($key === 'pickup')
                                                             @if ($cityContact['online_only'] ?? false) — после подтверждения менеджером @endif
@@ -204,6 +210,11 @@
                                                 @endforeach
                                             </select>
                                         </div>
+                                        @if ($checkoutDelivery->has($evropochtaMethod))
+                                            <p class="text-caption-01 cl-text-2" id="evropochta-payment-hint" @if($isEvropochtaSelected) hidden @endif>
+                                                С Европочтой можно оплатить заказ при получении в отделении.
+                                            </p>
+                                        @endif
                                     </fieldset>
 
                                     @if (!empty($evropochtaUnavailable))
@@ -251,7 +262,16 @@
                                         $paymentOverrides[$key] ?? [],
                                     )])
                                     ->filter();
-                                $firstPayment = $checkoutPayment->keys()->first();
+                                $codPayment = \App\Services\Shipping\EvropochtaCheckout::COD_PAYMENT;
+                                $transferPayment = \App\Services\Shipping\EvropochtaCheckout::PAYMENT;
+                                $hiddenPayments = $isEvropochtaSelected
+                                    ? $checkoutPayment->keys()->diff([$codPayment, $transferPayment])->all()
+                                    : (($evropochtaPaymentOnly ?? false) ? [$codPayment, $transferPayment] : [$codPayment]);
+                                $visiblePayments = $checkoutPayment->except($hiddenPayments);
+                                $currentPayment = old('payment_type', $selectedPayment);
+                                if (! is_string($currentPayment) || ! $visiblePayments->has($currentPayment)) {
+                                    $currentPayment = $isEvropochtaSelected ? $codPayment : $visiblePayments->keys()->first();
+                                }
                             @endphp
                             <div class="box-ip-payment">
                                 <h5 class="title">Способ оплаты</h5>
@@ -271,17 +291,16 @@
 
                                     @foreach ($checkoutPayment as $key => $method)
                                     @php
-                                        $hideCod = $key === \App\Services\Shipping\EvropochtaCheckout::COD_PAYMENT
-                                            && old('delivery_type') !== \App\Services\Shipping\EvropochtaCheckout::METHOD;
+                                        $hidePayment = in_array($key, $hiddenPayments, true);
                                     @endphp
-                                    <div class="payment_accordion" @if($hideCod) style="display: none" @endif>
+                                    <div class="payment_accordion" @if($hidePayment) style="display: none" @endif>
                                         <label for="pay-{{ $key }}" class="payment_check checkbox-wrap">
                                             <input type="radio" name="payment_type"
                                                 class="tf-check-rounded style-2"
                                                 id="pay-{{ $key }}"
                                                 value="{{ $key }}"
-                                                @disabled($hideCod)
-                                                {{ old('payment_type', $selectedPayment ?? $firstPayment) === $key ? 'checked' : '' }}>
+                                                @disabled($hidePayment)
+                                                @checked($currentPayment === $key)>
                                             <span class="pay-title fw-medium lh-24">
                                                 {{ $method['name'] }}
                                                 @if (!empty($method['desc']))
@@ -478,7 +497,6 @@
 
                             {{-- Итоги --}}
                             @php
-                                $selectedDelivery = old('delivery_type', ($isB2bCheckout ?? false) ? 'b2b_delivery' : 'courier');
                                 $deliveryCost     = \App\Http\Controllers\CheckoutController::calcDelivery($selectedDelivery, $subtotal);
                                 $effectiveDiscount = ($onlineOrderDiscountExcludedByPayment ? 0 : $coupon['coupon_discount']) + $coupon['bundle_discount'];
                                 $total            = $subtotal - $effectiveDiscount + ($deliveryCost ?? 0);
@@ -719,21 +737,27 @@
         var quoteToken = document.getElementById('evropochta-token');
         var quoteStatus = document.getElementById('evropochta-status');
         var retry = document.getElementById('evropochta-retry');
+        var paymentHint = document.getElementById('evropochta-payment-hint');
+        var carrierOption = deliverySelect.querySelector('option[value="evropochta"]');
         var quoteRequest;
-        var active = false;
+        var active = null;
         var transferOnlyForEvropochta = @json((bool) ($evropochtaPaymentOnly ?? false));
         var codPayment = @json(\App\Services\Shipping\EvropochtaCheckout::COD_PAYMENT);
 
         function updateEvropochtaPayment() {
             var selected = null;
+            var fallback = null;
             paymentRadios.forEach(function (radio) {
                 var isTransfer = radio.value === 'bank_transfer';
                 var isCod = radio.value === codPayment;
                 var show = active ? (isTransfer || isCod) : (!isCod && (!isTransfer || !transferOnlyForEvropochta));
                 radio.disabled = !show;
                 radio.closest('.payment_accordion').style.display = show ? '' : 'none';
-                if (show && (!selected || radio.checked)) selected = radio;
+                if (!show) return;
+                if (radio.checked) selected = radio;
+                if (!fallback || (active && isCod)) fallback = radio;
             });
+            selected = selected ?? fallback;
             if (selected && !selected.checked) {
                 selected.checked = true;
                 selected.dispatchEvent(new Event('change', { bubbles: true }));
@@ -786,6 +810,7 @@
 
         function toggleEvropochta() {
             var selected = deliverySelect.value === 'evropochta';
+            paymentHint.hidden = selected || carrierOption.disabled;
             if (selected === active) return;
             active = selected;
             evropochtaFields.style.display = active ? '' : 'none';
@@ -797,7 +822,6 @@
         branchField.addEventListener('change', loadEvropochtaQuote);
         retry.addEventListener('click', loadEvropochtaQuote);
         deliverySelect.addEventListener('change', toggleEvropochta);
-        updateEvropochtaPayment();
         toggleEvropochta();
     }
 
