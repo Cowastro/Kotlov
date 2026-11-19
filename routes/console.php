@@ -579,3 +579,9 @@ Artisan::command('b2b:expire-reservations', function (\App\Services\B2bOrders\St
 })->purpose('Release expired internal B2B reservations');
 
 Schedule::command('b2b:expire-reservations')->everyFiveMinutes()->withoutOverlapping(10);
+
+Artisan::command('orders:send-status-sms', function (\App\Services\Orders\OrderStatusSmsNotifier $notifier): void {
+    $this->info('СМС о заказах принято SMS.BY: '.$notifier->sendPending());
+})->purpose('Send order status SMS to customers');
+
+Schedule::command('orders:send-status-sms')->everyMinute()->withoutOverlapping(15)->runInBackground();
