@@ -307,5 +307,6 @@
     @if($staffWorkspace)<script src="{{ asset('assets/js/b2b-suggest-add.js') }}?v={{ filemtime(public_path('assets/js/b2b-suggest-add.js')) }}" defer></script>@endif
     @if($staffWorkspace)<script src="{{ asset('assets/js/b2b-paste-list.js') }}?v={{ filemtime(public_path('assets/js/b2b-paste-list.js')) }}" defer></script>@endif
     @if($staffWorkspace)<script src="{{ asset('assets/js/b2b-analogs.js') }}?v={{ filemtime(public_path('assets/js/b2b-analogs.js')) }}" defer></script>@endif
+    @if($staffWorkspace)<script src="{{ asset('assets/js/b2b-client-history.js') }}?v={{ filemtime(public_path('assets/js/b2b-client-history.js')) }}" defer></script>@endif
 @endpush
 @endsection

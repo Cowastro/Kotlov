@@ -326,6 +326,15 @@
         if (pending || dirty) { event.preventDefault(); event.returnValue = ''; }
     });
     window.KotlovStaffWorkspace = {
+        state: function () { return state; },
+        // Attaches a client («crm:ID», «b2b:ID») to the selection, or detaches it with null.
+        setClient: function (client) {
+            return enqueue(function () {
+                return ensureSelection().then(function () {
+                    return request(state.client_url, 'PUT', {client: client});
+                }).then(function (data) { state = data; render(); status('Сохранено ' + state.saved_at); return state; });
+            });
+        },
         line: function (productId) { return state.items.find(function (item) { return item.id === productId; }); },
         // Sets the quantity of a line (0 removes it), keeping its supplier.
         set: function (productId, quantity) {

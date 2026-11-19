@@ -41,6 +41,49 @@ class StaffCatalogWorkspaceController extends Controller
         return response()->json(['source' => ['id' => $product->id, 'name' => $product->name], 'items' => $items])->header('Cache-Control', 'private, no-store');
     }
 
+    /** Clients to attach to a selection: CRM counterparties and B2B clients by name or УНП. */
+    public function clients(Request $request, \App\Services\ClientPurchaseHistory $history)
+    {
+        abort_unless(StaffCatalogWorkspace::allowed($request->user()), 403);
+
+        return response()->json(['items' => $history->search(mb_substr((string) $request->query('q', ''), 0, 100))])->header('Cache-Control', 'private, no-store');
+    }
+
+    /** The client of the selection (or none): its purchase history is shown while the selection is made. */
+    public function client(Request $request, CustomerSelection $selection, StaffCatalogWorkspace $workspace, \App\Services\ClientPurchaseHistory $history)
+    {
+        abort_unless(StaffCatalogWorkspace::allowed($request->user()), 403);
+        abort_unless((int) $selection->user_id === (int) $request->user()->id, 404);
+        $data = $request->validate(['client' => ['nullable', 'string', 'max:40', 'regex:/^(crm|b2b):\d+$/']]);
+        $client = filled($data['client'] ?? null) ? $history->describe($data['client']) : null;
+        abort_if(filled($data['client'] ?? null) && ! $client, 422, 'Клиент не найден.');
+        DB::transaction(function () use ($selection, $client): void {
+            $locked = CustomerSelection::whereKey($selection->id)->lockForUpdate()->firstOrFail();
+            $meta = $locked->meta ?? [];
+            if ($client) {
+                $meta['client'] = $client;
+            } else {
+                unset($meta['client']);
+            }
+            // The client does not change the positions: the revision of the items stays.
+            $locked->meta = $meta;
+            $locked->save();
+        });
+
+        return response()->json($workspace->state($selection->fresh(), $request->user()))->header('Cache-Control', 'private, no-store');
+    }
+
+    /** What the client of the selection bought before. */
+    public function history(Request $request, CustomerSelection $selection, \App\Services\ClientPurchaseHistory $history)
+    {
+        abort_unless(StaffCatalogWorkspace::allowed($request->user()), 403);
+        abort_unless((int) $selection->user_id === (int) $request->user()->id, 404);
+        $client = $selection->meta['client'] ?? null;
+
+        return response()->json(['client' => $client, ...($client ? $history->for($client['key']) : ['orders' => [], 'products' => []])])
+            ->header('Cache-Control', 'private, no-store');
+    }
+
     public function store(Request $request, StaffCatalogWorkspace $workspace)
     {
         abort_unless(StaffCatalogWorkspace::allowed($request->user()), 403);
