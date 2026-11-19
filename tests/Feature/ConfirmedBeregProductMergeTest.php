@@ -16,6 +16,7 @@ use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\MergeConfirmedBeregProducts;
 use App\Services\MergedProductIdentity;
+use App\Services\StorefrontProductSearch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -241,5 +242,64 @@ class ConfirmedBeregProductMergeTest extends TestCase
         foreach ($pairs as $pair) {
             $this->assertSame(mb_strtoupper($pair['maker']), $pair['maker']);
         }
+    }
+
+    public function test_reviewed_different_internal_skus_keep_all_supplier_terms_and_old_sku_search(): void
+    {
+        Storage::fake('local');
+        [$old, $master, $offer, $pair] = $this->fixture();
+        $old->update(['sku' => 'BEREG-00147226']);
+        $master->update(['sku' => 'BEREG-00113672']);
+        $offer->update(['product_sku' => $master->sku]);
+        $extra = SupplierProduct::create(['supplier_id' => $offer->supplier_id, 'supplier_article' => '00147226',
+            'supplier_article_normalized' => '00147226', 'supplier_name' => $old->name, 'product_id' => $old->id,
+            'product_sku' => $old->sku, 'price_byn' => 37.41, 'stock_quantity' => 23, 'stock_status' => 'in_stock',
+            'match_status' => 'matched', 'warehouse_name' => 'Original warehouse', 'last_stock_synced_at' => now(),
+            'raw' => ['maker_code' => 'MAKER-EXACT', 'unit' => 'шт.', 'retail' => 88.88]]);
+        $before = $extra->fresh()->getAttributes();
+        $pair['sku'] = $master->sku;
+        $pair['duplicate_sku'] = $old->sku;
+        app(MergeConfirmedBeregProducts::class)->run([$pair]);
+        $before['product_id'] = $master->id;
+        $before['product_sku'] = $master->sku;
+        $this->assertSame($before, $extra->fresh()->getAttributes());
+        $this->assertSame(2, $master->supplierProducts()->count());
+        $this->assertSame('BEREG-00147226', $old->fresh()->sku);
+        foreach (['apply', 'applyForSuggestions', 'applyForResults'] as $method) {
+            $query = Product::query()->active()->notArchived();
+            $this->assertSame([$master->id], app(StorefrontProductSearch::class)->$method($query, 'BEREG-00147226')->pluck('id')->all());
+        }
+        $this->assertSame([$master->id], app(StorefrontProductSearch::class)->applyForResults(Product::query()->active()->notArchived(), '00147226')->pluck('id')->all());
+    }
+
+    public function test_different_internal_skus_do_not_relax_factory_identity_guard(): void
+    {
+        Storage::fake('local');
+        [$old, $master, $offer, $pair] = $this->fixture();
+        $old->update(['sku' => 'ANOTHER-SKU', 'specs' => [['key' => 'Код производителя', 'value' => 'OTHER-MODEL']]]);
+        $pair['duplicate_sku'] = $old->sku;
+        try {
+            app(MergeConfirmedBeregProducts::class)->run([$pair]);
+            $this->fail('A different manufacturer model must never merge');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('Идентификация', $e->getMessage());
+        }
+        $this->assertNull($old->fresh()->merged_into_product_id);
+        $this->assertTrue($old->fresh()->is_active);
+    }
+
+    public function test_six_pair_review_contains_only_one_confirmed_merge(): void
+    {
+        $review = json_decode(file_get_contents(resource_path('data/ld-six-pair-review-2026-11-19.json')), true);
+        $this->assertCount(6, $review['pairs']);
+        $this->assertCount(3, array_filter($review['pairs'], fn ($p) => $p['decision'] === 'unresolved'));
+        $confirmed = array_values(array_filter($review['pairs'], fn ($p) => $p['decision'] === 'confirmed_duplicate'));
+        $this->assertCount(1, $confirmed);
+        $manifest = json_decode(file_get_contents(resource_path('data/ld-reviewed-duplicates-2026-11-19.json')), true);
+        $this->assertCount(1, $manifest);
+        $this->assertSame([35777, 38337], $confirmed[0]['ids']);
+        $this->assertSame(38337, $manifest[0]['duplicate']);
+        $this->assertSame(35777, $manifest[0]['canonical']);
+        $this->assertSame(['LD.65.501.15', 'LD.65.501.15'], $confirmed[0]['manufacturer_articles']);
     }
 }
