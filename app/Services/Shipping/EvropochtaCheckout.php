@@ -32,13 +32,13 @@ class EvropochtaCheckout
             return ['parcel' => null, 'message' => 'Европочта сейчас недоступна при оформлении.'];
         }
 
-        if (count($cart) !== 1) {
+        $item = reset($cart);
+        if (count($cart) !== 1 || (int) ($item['quantity'] ?? 0) !== 1) {
             return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для одной единицы товара.'];
         }
 
-        $item = reset($cart);
-        if ((int) ($item['quantity'] ?? 0) !== 1 || ($item['pricing_type'] ?? 'retail') !== 'retail') {
-            return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для одной единицы товара по розничной цене.'];
+        if (($item['pricing_type'] ?? 'retail') !== 'retail') {
+            return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для розничных заказов.'];
         }
 
         $product = Product::query()->active()->find($item['id'], ['id', 'shipping_parcel', 'specs', 'weight']);
