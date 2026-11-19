@@ -117,7 +117,7 @@
     font-size: 16px;
 }
 .parcel-calculator .parcel-calculator__input input { padding-right: 36px; }
-.parcel-calculator #evropochta-box { max-width: 300px; }
+.parcel-calculator #evropochta-box { max-width: 300px; appearance: auto; }
 .parcel-calculator :is(input, select, button, #evropochta-estimate-result):focus-visible {
     outline: 2px solid var(--delivery-red);
     outline-offset: 2px;
