@@ -1,6 +1,10 @@
 <?php
 
 return [
+
+    'evropochta' => [
+        'token' => env('EVROPOCHTA_API_TOKEN'),
+    ],
     'accounting' => [
         'email' => env('ACCOUNTING_EMAIL', 'buh-sbg@yandex.ru'),
     ],

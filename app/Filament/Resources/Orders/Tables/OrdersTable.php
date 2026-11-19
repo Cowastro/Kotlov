@@ -68,6 +68,7 @@ class OrdersTable
             'transport' => 'ТК по Беларуси',
             'transport_company' => 'ТК по Беларуси',
             'kit' => 'ТК КИТ / международная доставка',
+            'evropochta' => Order::DELIVERY_TYPES['evropochta'],
         ] + collect(config('shop.delivery_methods', []))
             ->mapWithKeys(fn ($m, $k) => [$k => $m['name'] ?? $k])
             ->toArray();
