@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\DB;
 
 class EvropochtaPackaging
 {
+    // Geometry uses whole millimetres to keep clearances conservative.
+    private const SEPARATION_MM = 50;
+
     public function suggest(Product $product): ?array
     {
         $measurements = $this->measurements($product);
@@ -92,12 +95,124 @@ class EvropochtaPackaging
         });
     }
 
+    /**
+     * @param list<array{quantity: int, parcel: array}> $lines Approved package data, one line per product.
+     */
+    public function combine(array $lines, float $maxWeight): ?array
+    {
+        $weight = 0;
+        $volume = 0;
+        $parts = [];
+        foreach ($lines as $line) {
+            [$dimensions, $unitWeight] = $this->unitForCombinedBox($line['parcel']);
+            $size = array_map(static fn ($side): int => (int) ceil(round($side * 10, 8)), $dimensions);
+            $quantity = $line['quantity'];
+            $weight += $unitWeight * $quantity;
+            $volume += array_product($size) * $quantity;
+            $parts[] = ['size' => $size, 'quantity' => $quantity];
+        }
+
+        usort($parts, static fn (array $a, array $b): int => array_product($b['size']) <=> array_product($a['size']));
+        $boxes = config('evropochta_packaging', []);
+        uasort($boxes, static fn (array $a, array $b): int => array_product($a['outer']) <=> array_product($b['outer']));
+
+        foreach ($boxes as $box => $profile) {
+            $packedWeight = ceil(round(($weight + $profile['extra_kg']) * 100, 8)) / 100;
+            $space = array_map(static fn ($side): int => (int) floor($side * 10), $profile['fit']);
+            if ($packedWeight > $maxWeight || $volume > array_product($space) || ! $this->fitsTogether($parts, $space)) {
+                continue;
+            }
+
+            [$length, $width, $height] = $profile['outer'];
+
+            return ['box' => $box, 'weight' => (float) $packedWeight, 'length' => $length, 'width' => $width, 'height' => $height];
+        }
+
+        return null;
+    }
+
+    private function unitForCombinedBox(array $parcel): array
+    {
+        $outer = [$parcel['length'], $parcel['width'], $parcel['height']];
+        rsort($outer);
+        $dimensions = $parcel['item_dimensions'] ?? [];
+        $weight = $parcel['item_weight'] ?? null;
+
+        if (($parcel['weight_mode'] ?? null) === 'band'
+            && is_array($dimensions) && count($dimensions) === 3
+            && collect($dimensions)->every(static fn ($side): bool => is_numeric($side) && $side >= 0.01 && $side <= 250)
+            && is_numeric($weight) && $weight >= 0.01 && $weight <= $parcel['weight']) {
+            rsort($dimensions);
+            if ($dimensions[0] <= $outer[0] && $dimensions[1] <= $outer[1] && $dimensions[2] <= $outer[2]) {
+                return [$dimensions, (float) $weight];
+            }
+        }
+
+        // With only shipping measurements available, allow room for the entire individual box.
+        return [$outer, (float) $parcel['weight']];
+    }
+
+    private function fitsTogether(array $parts, array $space): bool
+    {
+        // Try different cut directions so long or flat items can share the same carton.
+        foreach ($this->orientations($space) as $orientation) {
+            $free = [$orientation];
+            foreach ($parts as $part) {
+                $sizes = $this->orientations($part['size']);
+                for ($placed = 0; $placed < $part['quantity']; $placed++) {
+                    if (! $this->placePiece($free, $sizes)) {
+                        continue 3;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private function placePiece(array &$free, array $sizes): bool
+    {
+        foreach ($free as $index => [$length, $width, $height]) {
+            foreach ($sizes as [$x, $y, $z]) {
+                if ($x > $length || $y > $width || $z > $height) {
+                    continue;
+                }
+
+                // The three remaining spaces do not overlap.
+                unset($free[$index]);
+                foreach ([
+                    [$length - $x - self::SEPARATION_MM, $width, $height],
+                    [$x, $width - $y - self::SEPARATION_MM, $height],
+                    [$x, $y, $height - $z - self::SEPARATION_MM],
+                ] as $remaining) {
+                    if (min($remaining) > 0) {
+                        $free[] = $remaining;
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function orientations(array $sides): array
+    {
+        sort($sides);
+        [$x, $y, $z] = $sides;
+
+        return array_unique([[$x, $y, $z], [$x, $z, $y], [$y, $x, $z], [$y, $z, $x], [$z, $x, $y], [$z, $y, $x]], SORT_REGULAR);
+    }
+
     private function fit(array $measurements): ?array
     {
         [$largest, $mid, $smallest] = $measurements['item_dimensions'];
         foreach (config('evropochta_packaging', []) as $box => $profile) {
             [$long, $middle, $short] = $profile['fit'];
-            if ($largest > $long || $mid > $middle || $smallest > $short) {
+            if (($profile['combined_only'] ?? false) || $largest > $long || $mid > $middle || $smallest > $short) {
                 continue;
             }
 

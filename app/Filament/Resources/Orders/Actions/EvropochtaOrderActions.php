@@ -46,7 +46,14 @@ final class EvropochtaOrderActions
                         $parcel = $record->evropochta_quote['parcel'];
                         $sides = implode(' × ', [$parcel['length'], $parcel['width'], $parcel['height']]);
 
-                        return str_replace('.', ',', (string) $parcel['weight']).' кг · '.str_replace('.', ',', $sides).' см';
+                        $dimensions = str_replace('.', ',', (string) $parcel['weight']).' кг · '.str_replace('.', ',', $sides).' см';
+                        if (isset($parcel['items'])) {
+                            $quantity = array_sum(array_column($parcel['items'], 'quantity'));
+
+                            return $quantity.' шт. в одной коробке · '.$dimensions;
+                        }
+
+                        return $dimensions;
                     }),
                 TextEntry::make('ep_cod')
                     ->label('К оплате в отделении')
