@@ -331,10 +331,17 @@ html,body{overflow-x:clip}
 /* Keep the selection alongside the catalog when there is room to work in three columns. */
 @media (min-width: 1100px) {
     .b2b-portal.b2b-staff-workspace .b2b-workspace { width: min(1540px, calc(100% - 40px)); }
-    .b2b-staff-workspace .b2b-catalog-layout { grid-template-columns: clamp(180px, 14vw, 218px) minmax(0, 1fr) clamp(220px, 18vw, 264px); }
+    .b2b-staff-workspace .b2b-catalog-layout { grid-template-columns: clamp(190px, 15vw, 226px) minmax(0, 1fr) clamp(220px, 18vw, 264px); }
+    .b2b-portal.b2b-staff-workspace :is(.b2b-command-bar,.b2b-command-bar__filters) { display: block; }
+    .b2b-portal.b2b-staff-workspace .b2b-command-bar__filters { margin-top: 8px; }
+    .b2b-staff-workspace .b2b-filter-selects { justify-content: flex-start; flex-wrap: wrap; }
+    .b2b-staff-workspace .b2b-filter-selects label { flex: 0 1 155px; min-width: 120px; }
+    .b2b-staff-workspace :is(.b2b-quick-flags,.b2b-extra-filters) { margin-top: 8px; }
+    .b2b-portal.b2b-staff-workspace .b2b-workspace-toolbar>label:first-child { flex: 0 1 280px; }
+    .b2b-portal.b2b-staff-workspace .b2b-client-pick { flex-basis: 255px; }
     .b2b-workspace-summary { position: sticky; top: 82px; max-height: calc(100vh - 98px); overflow: auto; }
 }
-@media (min-width: 1100px) and (max-width: 1320px) {
+@media (min-width: 1100px) and (max-width: 1340px) {
     .b2b-portal.b2b-staff-workspace.has-procurement .b2b-product-table.is-reference .b2b-product-table__head { display: none; }
     .b2b-portal.b2b-staff-workspace.has-procurement .b2b-product-table.is-reference .b2b-product-row {
         grid-template-columns: repeat(3, minmax(0, 1fr));
