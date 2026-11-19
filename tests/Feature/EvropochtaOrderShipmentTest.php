@@ -237,6 +237,67 @@ class EvropochtaOrderShipmentTest extends TestCase
         $this->assertSame('confirmed', $order->fresh()->status);
     }
 
+    public function test_every_new_carrier_history_status_sends_one_sms_without_opening_the_order(): void
+    {
+        $this->enableTrackingSms();
+        $order = $this->order([
+            'evropochta_tracking_number' => self::TRACK,
+            'evropochta_sms_status' => 'accepted',
+            'evropochta_status_sms_started_at' => now(),
+        ]);
+        $names = ['Принято', 'В пути', 'Прибыло в отделение', 'Вручено', 'Отменено'];
+        $history = array_map(fn (int $id, int $code, string $name): array => [
+            'id' => $id,
+            'status_to' => ['value' => $code, 'name' => $name],
+        ], range(1, 6), [0, 10, 20, 30, 40, 90], ['Заявка создана', ...$names]);
+        $sent = [];
+        Http::fake([
+            self::API.'postal/history*' => Http::response(array_reverse($history)),
+            self::API.'postal/'.self::TRACK => Http::response($this->carrierStatus(90, 'Отменено')
+                + ['receiver' => ['phone_number' => '375291234567']]),
+            'https://app.sms.by/api/v1/sendQuickSMS' => function (Request $request) use (&$sent) {
+                $this->assertSame('375291234567', $request['phone']);
+                $sent[] = $request['message'];
+
+                return Http::response(['sms_id' => 'status-'.count($sent)]);
+            },
+        ]);
+
+        $this->artisan('evropochta:notify-statuses')->assertSuccessful();
+        $this->travel(6)->minutes();
+        $this->artisan('evropochta:notify-statuses')->assertSuccessful();
+
+        $this->assertSame(array_map(fn (string $name): string => 'KOTLOV: '.$name.' · '.self::TRACK, $names), $sent);
+        $this->assertDatabaseHas('evropochta_status_messages', [
+            'order_id' => $order->id, 'carrier_event' => 'cancelled', 'sms_status' => 'accepted', 'sms_id' => 'status-5',
+        ]);
+        $this->assertSame('confirmed', $order->fresh()->status);
+    }
+
+    public function test_confirmed_cancellation_queues_status_sms_for_an_existing_opted_in_shipment(): void
+    {
+        $this->enableTrackingSms();
+        $this->signIn();
+        $order = $this->order(['evropochta_tracking_number' => self::TRACK, 'evropochta_sms_status' => 'accepted']);
+        Http::fake([
+            self::API.'postal/'.self::TRACK => Http::sequence()
+                ->push($this->carrierStatus(0, 'Заявка создана'))
+                ->push($this->carrierStatus(90, 'Отменено') + ['receiver' => ['phone_number' => '375291234567']]),
+            self::API.'postal/'.self::TRACK.'/cancel' => Http::response($this->carrierStatus(90, 'Отменено')),
+            'https://app.sms.by/api/v1/sendQuickSMS' => Http::response(['sms_id' => 'status-cancel']),
+        ]);
+
+        $component = Livewire::test(EvropochtaOrderStatus::class, ['orderId' => $order->id])
+            ->call('cancelShipment')
+            ->assertSee('Отменено · Ожидает отправки');
+        $this->artisan('evropochta:notify-statuses')->assertSuccessful();
+        $component->call('refreshStatus')->assertSee('Отменено · Принято SMS.BY');
+        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), 'sendQuickSMS')
+            && $request['phone'] === '375291234567'
+            && $request['message'] === 'KOTLOV: Отменено · '.self::TRACK);
+        $this->assertSame('confirmed', $order->fresh()->status);
+    }
+
     public function test_cancellation_checks_the_current_status_even_if_the_button_was_visible(): void
     {
         $order = $this->order(['evropochta_tracking_number' => self::TRACK]);

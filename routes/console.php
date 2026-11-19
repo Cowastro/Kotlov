@@ -579,3 +579,9 @@ Artisan::command('b2b:expire-reservations', function (\App\Services\B2bOrders\St
 })->purpose('Release expired internal B2B reservations');
 
 Schedule::command('b2b:expire-reservations')->everyFiveMinutes()->withoutOverlapping(10);
+
+Artisan::command('evropochta:notify-statuses', function (\App\Services\Shipping\EvropochtaStatusNotifications $notifications): void {
+    $this->info('СМС о статусах Европочты принято: '.$notifications->run());
+})->purpose('Notify recipients about Evropochta shipment status changes');
+
+Schedule::command('evropochta:notify-statuses')->everyFiveMinutes()->withoutOverlapping(10)->runInBackground();

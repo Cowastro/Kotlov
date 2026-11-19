@@ -20,6 +20,23 @@
             } }}
         </div>
     @endif
+    @if ($statusMessages)
+        <div class="mt-2 text-xs">
+            <div class="font-medium">СМС об изменениях доставки</div>
+            <ul class="mt-1 space-y-1 text-gray-500 dark:text-gray-400">
+                @foreach ($statusMessages as $message)
+                    <li>{{ $message['carrier_status'] }} · {{ match ($message['sms_status']) {
+                        'accepted' => 'Принято SMS.BY',
+                        'unconfirmed' => 'Отправка не подтверждена',
+                        'no_phone' => 'Европочта не предоставила телефон получателя',
+                        default => 'Ожидает отправки',
+                    } }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @elseif (($latest['code'] ?? null) === \App\Services\Shipping\Evropochta::STATUS_CANCELLED)
+        <p class="mt-2 text-gray-500 dark:text-gray-400">СМС об отмене отправления не зарегистрирована.</p>
+    @endif
     @if ($canEditShipment && ! $unavailable && ($latest['code'] ?? null) === \App\Services\Shipping\Evropochta::STATUS_CREATED)
         <div class="mt-2">
             <x-filament::button type="button" color="danger" size="sm" outlined
