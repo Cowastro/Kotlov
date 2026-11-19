@@ -12,6 +12,10 @@
 .payment-info-list--disc { list-style-type: disc; }
 .tf-field input.is-invalid,
 .tf-field select.is-invalid { border-color: #dc3545 !important; }
+#evropochta-results:not([hidden]) { max-height: 16rem; overflow-y: auto; border: 1px solid #e7e2dc; border-radius: 8px; }
+#evropochta-results button { display: block; width: 100%; padding: 10px 12px; text-align: left; }
+#evropochta-results button + button { border-top: 1px solid #e7e2dc; }
+#evropochta-results button:hover, #evropochta-results button:focus-visible { background: #f5f3f2; }
 .b2b-checkout-intro { margin-bottom:20px; padding:24px; border-radius:16px; color:#fff; background:#162231; }
 .b2b-checkout-intro span { color:#ff6268; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
 .b2b-checkout-intro h1 { margin:5px 0 8px; color:#fff; font-size:30px; }
@@ -208,21 +212,16 @@
 
                                     @if (!empty($evropochtaDestinations))
                                         <div id="evropochta-fields" class="tf-grid-layout" style="display:none;"
-                                            data-quote-url="{{ route('checkout.evropochta.quote') }}">
+                                            data-quote-url="{{ route('checkout.evropochta.quote') }}"
+                                            data-branches="{{ json_encode(array_map(fn (array $branch) => $branch['label'], $evropochtaDestinations), JSON_UNESCAPED_UNICODE) }}">
                                             <fieldset class="tf-field">
-                                                <label class="tf-lable fw-medium" for="evropochta-search">Поиск отделения</label>
-                                                <input type="search" id="evropochta-search" placeholder="Город, улица или номер" autocomplete="off">
-                                            </fieldset>
-                                            <fieldset class="tf-field">
-                                                <label class="tf-lable fw-medium" for="evropochta-branch">Отделение получения</label>
-                                                <div class="tf-select">
-                                                    <select id="evropochta-branch" name="evropochta_branch" aria-describedby="evropochta-status" disabled>
-                                                        <option value="">Выберите отделение</option>
-                                                        @foreach ($evropochtaDestinations as $id => $branch)
-                                                            <option value="{{ $id }}" @selected((string) old('evropochta_branch') === (string) $id)>{{ $branch['label'] }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
+                                                <label class="tf-lable fw-medium" for="evropochta-search">Отделение получения</label>
+                                                <input type="search" id="evropochta-search" placeholder="Город, улица или номер отделения"
+                                                    autocomplete="off" aria-controls="evropochta-results" aria-describedby="evropochta-search-status evropochta-status" disabled>
+                                                <input type="hidden" id="evropochta-branch" name="evropochta_branch"
+                                                    value="{{ is_scalar(old('evropochta_branch')) ? old('evropochta_branch') : '' }}" disabled>
+                                                <p id="evropochta-search-status" class="text-caption-01 cl-text-2" role="status"></p>
+                                                <div id="evropochta-results" hidden></div>
                                                 <input type="hidden" id="evropochta-token" name="evropochta_token">
                                                 <p id="evropochta-status" class="text-caption-01" role="status"></p>
                                                 <button type="button" id="evropochta-retry" class="link text-caption-01" hidden>Пересчитать тариф</button>
@@ -710,6 +709,22 @@
     if (evropochtaFields && deliverySelect && checkoutForm) {
         var branchField = document.getElementById('evropochta-branch');
         var branchSearch = document.getElementById('evropochta-search');
+        var branchLabels = JSON.parse(evropochtaFields.dataset.branches);
+        var results = document.getElementById('evropochta-results');
+        var searchStatus = document.getElementById('evropochta-search-status');
+
+        function normalizeBranchSearch(value) {
+            return value.toLowerCase().replace(/ё/g, 'е').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+        }
+
+        var branches = Object.entries(branchLabels).map(function (entry) {
+            return { id: entry[0], label: entry[1], search: normalizeBranchSearch(entry[1]) };
+        });
+        if (branchLabels[branchField.value]) {
+            branchSearch.value = branchLabels[branchField.value];
+        } else {
+            branchField.value = '';
+        }
         var quoteToken = document.getElementById('evropochta-token');
         var quoteStatus = document.getElementById('evropochta-status');
         var retry = document.getElementById('evropochta-retry');
@@ -732,14 +747,71 @@
             }
         }
 
-        branchSearch.addEventListener('input', function () {
-            var terms = branchSearch.value.trim().toLowerCase().split(/\s+/);
-            Array.prototype.forEach.call(branchField.options, function (option) {
-                var label = option.textContent.toLowerCase();
-                var matches = !option.value || option.selected || terms.every(function (term) { return label.includes(term); });
-                option.hidden = !matches;
-                option.disabled = !matches;
+        function renderBranchResults() {
+            results.replaceChildren();
+            results.hidden = true;
+            searchStatus.textContent = '';
+            if (!active || branchField.value) return;
+
+            var query = normalizeBranchSearch(branchSearch.value);
+            if (!query) {
+                searchStatus.textContent = 'Введите город, улицу или номер отделения.';
+                return;
+            }
+
+            var terms = query.split(' ');
+            var matches = branches.filter(function (branch) {
+                return terms.every(function (term) { return branch.search.includes(term); });
             });
+            var shown = matches.slice(0, 20);
+            if (!shown.length) {
+                searchStatus.textContent = 'Отделения не найдены. Проверьте написание или попробуйте указать город.';
+                return;
+            }
+
+            searchStatus.textContent = shown.length < matches.length
+                ? 'Показано ' + shown.length + ' из ' + matches.length + '. Уточните поиск или выберите отделение.'
+                : 'Выберите отделение из списка.';
+            shown.forEach(function (branch) {
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = branch.label;
+                button.dataset.branchId = branch.id;
+                results.append(button);
+            });
+            results.hidden = false;
+        }
+
+        branchSearch.addEventListener('input', function () {
+            branchField.value = '';
+            loadEvropochtaQuote();
+            renderBranchResults();
+        });
+
+        branchSearch.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                var first = results.querySelector('button');
+                if (first && results.childElementCount === 1) {
+                    first.click();
+                } else {
+                    first?.focus();
+                }
+            } else if (event.key === 'ArrowDown' && !results.hidden) {
+                event.preventDefault();
+                results.querySelector('button')?.focus();
+            }
+        });
+
+        results.addEventListener('click', function (event) {
+            var button = event.target.closest('button[data-branch-id]');
+            if (!button || !active) return;
+
+            branchField.value = button.dataset.branchId;
+            branchSearch.value = branchLabels[branchField.value];
+            renderBranchResults();
+            branchSearch.focus();
+            loadEvropochtaQuote();
         });
 
         async function loadEvropochtaQuote() {
@@ -749,13 +821,13 @@
             retry.hidden = true;
             updateTotals();
             var destination = branchField.value;
-            branchField.setCustomValidity('');
+            branchSearch.setCustomValidity(active && !destination ? 'Выберите отделение из списка.' : '');
             quoteStatus.textContent = '';
             if (!active || !destination) return;
 
             var request = new AbortController();
             quoteRequest = request;
-            branchField.setCustomValidity('Дождитесь расчёта тарифа.');
+            branchSearch.setCustomValidity('Дождитесь расчёта тарифа.');
             quoteStatus.textContent = 'Рассчитываем тариф…';
             try {
                 var response = await fetch(evropochtaFields.dataset.quoteUrl, {
@@ -775,12 +847,12 @@
                 }
                 evropochtaPrice = result.price;
                 quoteToken.value = result.token;
-                branchField.setCustomValidity('');
+                branchSearch.setCustomValidity('');
                 quoteStatus.textContent = 'Доставка до отделения — ' + fmtByn(evropochtaPrice);
                 updateTotals();
             } catch (error) {
                 if (request.signal.aborted) return;
-                branchField.setCustomValidity('Пересчитайте тариф или смените способ доставки.');
+                branchSearch.setCustomValidity('Пересчитайте тариф или смените способ доставки.');
                 quoteStatus.textContent = 'Не удалось рассчитать тариф. Попробуйте ещё раз или выберите другой способ доставки.';
                 retry.hidden = false;
             }
@@ -792,12 +864,13 @@
             active = selected;
             evropochtaFields.style.display = active ? '' : 'none';
             branchField.disabled = !active;
-            branchField.required = active;
+            branchSearch.disabled = !active;
+            if (active && !branchField.value && !branchSearch.value && cityInput) branchSearch.value = cityInput.value;
+            renderBranchResults();
             updateEvropochtaPayment();
             loadEvropochtaQuote();
         }
 
-        branchField.addEventListener('change', loadEvropochtaQuote);
         retry.addEventListener('click', loadEvropochtaQuote);
         deliverySelect.addEventListener('change', toggleEvropochta);
         updateEvropochtaPayment();
