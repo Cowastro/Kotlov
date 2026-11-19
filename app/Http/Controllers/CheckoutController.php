@@ -77,7 +77,12 @@ class CheckoutController extends Controller
             : config('shop.checkout_delivery_methods', []);
         $evropochtaDestinations = [];
         $evropochtaPaymentOnly = false;
-        if (! $isB2bCheckout && ($parcel = $evropochta->parcel($cart))) {
+        $evropochtaUnavailable = null;
+        if (! $isB2bCheckout) {
+            ['parcel' => $parcel, 'message' => $evropochtaUnavailable] = $evropochta->assess($cart);
+        }
+
+        if (! $isB2bCheckout && $parcel !== null) {
             try {
                 $evropochtaDestinations = $evropochta->destinations($parcel);
             } catch (RuntimeException) {
@@ -90,6 +95,8 @@ class CheckoutController extends Controller
                 if ($evropochtaPaymentOnly) {
                     $checkoutPaymentMethods[] = EvropochtaCheckout::PAYMENT;
                 }
+            } else {
+                $evropochtaUnavailable = 'Список отделений Европочты сейчас недоступен.';
             }
         }
         $requestedPayment = (string) $request->query('payment_type', '');
@@ -138,6 +145,7 @@ class CheckoutController extends Controller
             'checkoutDeliveryMethods',
             'evropochtaDestinations',
             'evropochtaPaymentOnly',
+            'evropochtaUnavailable',
             'minimalLayout',
         ));
     }

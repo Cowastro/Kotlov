@@ -13,27 +13,50 @@ class EvropochtaCheckout
 
     public const PAYMENT = 'bank_transfer';
 
-    public function __construct(private readonly Evropochta $carrier) {}
+    private const MAX_CHECKOUT_WEIGHT = 5;
+
+    public function __construct(
+        private readonly Evropochta $carrier,
+        private readonly EvropochtaPackaging $packaging,
+    ) {}
 
     public function parcel(array $cart): ?array
     {
-        if (! config('services.evropochta.checkout_enabled') || ! $this->carrier->configured() || count($cart) !== 1) {
-            return null;
+        return $this->assess($cart)['parcel'];
+    }
+
+    /** @return array{parcel: ?array, message: ?string} */
+    public function assess(array $cart): array
+    {
+        if (! config('services.evropochta.checkout_enabled') || ! $this->carrier->configured()) {
+            return ['parcel' => null, 'message' => 'Европочта сейчас недоступна при оформлении.'];
         }
 
         $item = reset($cart);
-        if ((int) ($item['quantity'] ?? 0) !== 1 || ($item['pricing_type'] ?? 'retail') !== 'retail') {
-            return null;
+        if (count($cart) !== 1 || (int) ($item['quantity'] ?? 0) !== 1) {
+            return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для одной единицы товара.'];
         }
 
-        $product = Product::query()->active()->find($item['id'], ['id', 'shipping_parcel']);
+        if (($item['pricing_type'] ?? 'retail') !== 'retail') {
+            return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для розничных заказов.'];
+        }
+
+        $product = Product::query()->active()->find($item['id'], ['id', 'shipping_parcel', 'specs', 'weight']);
         $dimensions = $product?->shipping_parcel ?? [];
+        $weight = $dimensions['weight'] ?? null;
+        if ($product && (! is_numeric($weight) || (float) $weight <= 0)) {
+            $weight = $this->packaging->measurements($product)['item_weight'] ?? $product->weight;
+        }
+
+        if (is_numeric($weight) && round((float) $weight, 2) > self::MAX_CHECKOUT_WEIGHT) {
+            return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для посылок до '.self::MAX_CHECKOUT_WEIGHT.' кг. Этот товар превышает лимит по весу.'];
+        }
 
         $parcel = ['product_id' => (int) $item['id'], 'store_id_start' => config('services.evropochta.checkout_origin')];
         foreach (['weight', 'length', 'width', 'height'] as $field) {
             $value = $dimensions[$field] ?? null;
             if (! is_numeric($value) || (float) $value < 0.01 || (float) $value > 250) {
-                return null;
+                return ['parcel' => null, 'message' => 'Для Европочты при оформлении нужны подтверждённые вес и размеры товара в упаковке.'];
             }
 
             $parcel[$field] = round((float) $value, 2);
@@ -45,10 +68,14 @@ class EvropochtaCheckout
         }
 
         try {
-            return $parcel['weight'] <= 5 && ! Evropochta::isOversize($parcel) ? $parcel : null;
+            if (! Evropochta::isOversize($parcel)) {
+                return ['parcel' => $parcel, 'message' => null];
+            }
         } catch (RuntimeException) {
-            return null;
+            // Invalid dimensions also make the parcel ineligible for automatic checkout.
         }
+
+        return ['parcel' => null, 'message' => 'Размеры упаковки выходят за пределы, доступные для Европочты при оформлении.'];
     }
 
     public function destinations(array $parcel): array

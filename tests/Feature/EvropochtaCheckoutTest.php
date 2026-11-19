@@ -80,7 +80,9 @@ class EvropochtaCheckoutTest extends TestCase
         $product = $this->product();
         $this->mockCarrier();
         $this->withSession($this->cart($product, 2))
-            ->get(route('checkout'))->assertOk()->assertDontSee('Европочта до отделения');
+            ->get(route('checkout'))->assertOk()
+            ->assertDontSee('Европочта до отделения')
+            ->assertSee('Европочта при оформлении доступна для одной единицы товара.');
         $this->postJson(route('checkout.evropochta.quote'), ['branch_id' => 40930010])
             ->assertUnprocessable();
 
@@ -94,6 +96,27 @@ class EvropochtaCheckoutTest extends TestCase
                 ->postJson(route('checkout.evropochta.quote'), ['branch_id' => 40930010])
                 ->assertUnprocessable();
         }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_a_compact_but_heavy_product_shows_the_checkout_weight_limit_without_calling_the_carrier(): void
+    {
+        $product = $this->product();
+        $product->update([
+            'shipping_parcel' => null,
+            'specs' => ['Вес' => '11,5 кг', 'Габариты без упаковки, мм' => '350×143×210'],
+        ]);
+        $this->mockCarrier();
+
+        $this->withSession($this->cart($product))->get(route('checkout'))->assertOk()
+            ->assertDontSee('Европочта до отделения')
+            ->assertSee('Этот товар превышает лимит по весу.')
+            ->assertSee('Рассчитать доставку Европочтой отдельно');
+
+        $product->update(['specs' => []]);
+        $this->withSession($this->cart($product))->get(route('checkout'))->assertOk()
+            ->assertSee('Для Европочты при оформлении нужны подтверждённые вес и размеры товара в упаковке.');
 
         Http::assertNothingSent();
     }

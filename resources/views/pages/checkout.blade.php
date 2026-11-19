@@ -206,10 +206,13 @@
                                         </div>
                                     </fieldset>
 
-                                    @if (!($isB2bCheckout ?? false) && empty($evropochtaDestinations))
-                                        <a href="{{ route('evropochta.calculator') }}" target="_blank" rel="noopener" class="link text-caption-01">
-                                            Рассчитать доставку Европочтой отдельно
-                                        </a>
+                                    @if (!empty($evropochtaUnavailable))
+                                        <div class="text-caption-01" id="evropochta-availability">
+                                            <p>{{ $evropochtaUnavailable }}</p>
+                                            <a href="{{ route('evropochta.calculator') }}" target="_blank" rel="noopener" class="link">
+                                                Рассчитать доставку Европочтой отдельно
+                                            </a>
+                                        </div>
                                     @endif
 
                                     @if (!empty($evropochtaDestinations))
