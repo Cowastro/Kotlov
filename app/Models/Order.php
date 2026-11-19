@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\Marketplaces\DealByOrderStatusSync;
 use App\Services\Orders\OrderItemSupplyContextResolver;
+use App\Services\Orders\OrderStatusSmsNotifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -107,6 +108,8 @@ class Order extends Model
     }
 
     private ?string $pendingStatusHistoryComment = null;
+
+    private ?int $pendingStatusHistoryId = null;
 
     /** @var array<string, mixed>|null */
     private ?array $supplySummaryCache = null;
@@ -243,6 +246,18 @@ class Order extends Model
 
     protected static function booted(): void
     {
+        static::created(function (Order $order): void {
+            app(OrderStatusSmsNotifier::class)->record($order, $order->status === 'cancelled' ? 'cancelled' : 'new', 'created');
+        });
+
+        static::updated(function (Order $order): void {
+            $historyId = $order->pendingStatusHistoryId;
+            $order->pendingStatusHistoryId = null;
+            if ($historyId !== null && $order->wasChanged('status')) {
+                app(OrderStatusSmsNotifier::class)->record($order, $order->status, 'status:'.$historyId);
+            }
+        });
+
         static::updating(function (Order $order) {
             $userId = Auth::id();
             $claimedBy = trim((string) $order->getOriginal('assigned_to'));
@@ -270,7 +285,7 @@ class Order extends Model
                 $previous->status = $order->getOriginal('status');
                 $stageFrom = $previous->effectiveDealStage();
                 $stageTo = $order->effectiveDealStage();
-                OrderStatusHistory::create([
+                $history = OrderStatusHistory::create([
                     'order_id' => $order->id,
                     'user_id' => $userId,
                     'status_from' => $order->getOriginal('status'),
@@ -279,6 +294,7 @@ class Order extends Model
                     'deal_stage_from' => $stageFrom !== $stageTo ? $stageFrom : null,
                     'deal_stage_to' => $stageFrom !== $stageTo ? $stageTo : null,
                 ]);
+                $order->pendingStatusHistoryId = (int) $history->getKey();
             }
         });
     }
@@ -294,6 +310,11 @@ class Order extends Model
         return User::query()->get(['id', 'name', 'telegram_username'])
             ->first(fn (User $user): bool => mb_strtolower(ltrim((string) $user->telegram_username, '@')) === $name
                 || mb_strtolower(trim((string) $user->name)) === $name)?->id;
+    }
+
+    public function statusSms(): HasMany
+    {
+        return $this->hasMany(OrderStatusSms::class)->latest('id');
     }
 
     public function scopeOperationallyActive(Builder $query): Builder

@@ -1216,6 +1216,28 @@ class OrderInfolist
                     ->collapsible()
                     ->collapsed()
                     ->schema([
+                        RepeatableEntry::make('statusSms')
+                            ->label('СМС покупателю')
+                            ->visible(fn (Order $record): bool => $record->statusSms->isNotEmpty())
+                            ->columns(3)
+                            ->contained(false)
+                            ->schema([
+                                TextEntry::make('message')->label('Сообщение'),
+                                TextEntry::make('state')
+                                    ->label('Статус СМС')
+                                    ->badge()
+                                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                                        'accepted' => 'Принято SMS.BY',
+                                        'unconfirmed' => 'Отправка не подтверждена',
+                                        'no_phone' => 'Нет корректного телефона',
+                                        default => 'Ожидает отправки',
+                                    }),
+                                TextEntry::make('sent_at')
+                                    ->label('Время отправки')
+                                    ->dateTime('d.m.Y H:i')
+                                    ->placeholder('—'),
+                            ]),
+
                         RepeatableEntry::make('statusHistory')
                             ->hiddenLabel()
                             ->columns(5)

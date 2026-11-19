@@ -20,9 +20,7 @@ final class SendEvropochtaTrackingSms
 
     public static function configured(): bool
     {
-        return (bool) config('services.sms_by.enabled')
-            && filled(config('services.sms_by.token'))
-            && filled(config('services.sms_by.alphaname_id'));
+        return app(SmsByClient::class)->configuredForSms();
     }
 
     public function handle(SmsByClient $sms): void

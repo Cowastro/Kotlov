@@ -11,6 +11,13 @@ class SmsByClient
 {
     public const CODE_MESSAGE = 'Код KOTLOV: %CODE%';
 
+    public function configuredForSms(): bool
+    {
+        return (bool) config('services.sms_by.enabled')
+            && filled(config('services.sms_by.token'))
+            && filled(config('services.sms_by.alphaname_id'));
+    }
+
     /** @return array{code: string, sms_id: string|null, parts: int|null} */
     public function sendVerificationCode(string $phone): array
     {
