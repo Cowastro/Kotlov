@@ -31,6 +31,87 @@ class EvropochtaOrderShipmentTest extends TestCase
         Http::preventStrayRequests();
     }
 
+    public function test_manual_order_preparation_saves_the_quote_and_enables_shipment_creation(): void
+    {
+        $this->signIn();
+        $this->fakePreparationTariff();
+        $order = $this->manualOrder();
+        $page = Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionVisible('prepareEvropochtaShipment')
+            ->assertActionDisabled('createEvropochtaShipment');
+        Http::assertNothingSent();
+
+        $page->mountAction('prepareEvropochtaShipment')->assertActionMounted('prepareEvropochtaShipment');
+        $component = $page->instance();
+        $form = $component->getSchema($component->getMountedActionSchemaName());
+        $this->assertSame(70130010, (int) $form->getComponent('store_id_start')->getState());
+        $this->assertStringContainsString('Солигорск', $form->getComponent('store_id_finish')->getOptions()[40930011]);
+
+        $page->setActionData($this->parcelInput())->callMountedAction()
+            ->assertHasNoActionErrors()
+            ->assertActionEnabled('createEvropochtaShipment')
+            ->assertSee('Тариф перевозчика')
+            ->assertSee('Солигорск');
+
+        $saved = $order->fresh();
+        $this->assertSame('200.00', $saved->subtotal);
+        $this->assertSame('8.00', $saved->delivery_price);
+        $this->assertSame('198.00', $saved->total);
+        $this->assertSame('Солигорск', $saved->delivery_city);
+        $this->assertSame('Минская область', $saved->delivery_region);
+        $this->assertStringContainsString('Ленинского Комсомола, 43, №567', $saved->delivery_address);
+        $this->assertSame(6.34, $saved->evropochta_quote['carrier_price']);
+        $this->assertSame(70130010, $saved->evropochta_quote['parcel']['store_id_start']);
+        $this->assertSame(40930011, $saved->evropochta_quote['store_id_finish']);
+        $this->assertEquals(['weight' => 1.25, 'length' => 24, 'width' => 24, 'height' => 20],
+            array_intersect_key($saved->evropochta_quote['parcel'], array_flip(['weight', 'length', 'width', 'height'])));
+        $this->assertNull($saved->evropochta_tracking_number);
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && $request->url() === self::API.'postal/payment/calculate'
+            && (float) collect($request->data())->pluck('contents', 'name')->get('weight') === 1.25);
+        Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/create'));
+
+        $saved->items()->firstOrFail()->update(['quantity' => 3]);
+        $page->call('$refresh')->assertActionDisabled('createEvropochtaShipment');
+        $this->assertStringContainsString('Состав заказа изменился', app(EvropochtaOrderShipment::class)->unavailableReason($saved));
+    }
+
+    public function test_temporary_carrier_failure_preserves_the_previous_order_amount(): void
+    {
+        $this->signIn();
+        $this->fakePreparationTariff(Http::response([], 503));
+        $order = $this->manualOrder();
+        $service = app(EvropochtaOrderShipment::class);
+
+        $this->expectException(EvropochtaShipmentException::class);
+        try {
+            $service->prepare($order, $this->parcelInput());
+        } finally {
+            $saved = $order->fresh();
+            $this->assertNull($saved->evropochta_quote);
+            $this->assertSame('0.00', $saved->delivery_price);
+            $this->assertSame('0.00', $saved->total);
+            Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/create'));
+        }
+    }
+
+    public function test_preparation_cannot_overwrite_a_paid_total(): void
+    {
+        $this->signIn();
+        $this->fakePreparationTariff();
+        $order = $this->manualOrder(['payment_status' => 'paid', 'subtotal' => 200, 'total' => 190]);
+
+        $this->expectException(EvropochtaShipmentException::class);
+        $this->expectExceptionMessage('Новый тариф меняет итог заказа');
+        try {
+            app(EvropochtaOrderShipment::class)->prepare($order, $this->parcelInput());
+        } finally {
+            $this->assertSame('190.00', $order->fresh()->total);
+            $this->assertNull($order->fresh()->evropochta_quote);
+        }
+    }
+
     public function test_order_action_creates_one_shipment_saves_the_track_and_shows_tracking(): void
     {
         $order = $this->order();
@@ -119,14 +200,105 @@ class EvropochtaOrderShipmentTest extends TestCase
         Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
     }
 
-    public function test_status_refreshes_and_preserves_the_last_event_if_the_carrier_is_unavailable(): void
+    public function test_manager_cancels_a_created_shipment_and_keeps_the_order_and_track(): void
     {
         $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
         $this->signIn();
         Http::fake([
-            self::API.'postal/history*' => Http::sequence()
-                ->push([['created_at' => '2026-11-19 14:00:00', 'status_to' => ['name' => 'Заявка создана']]])
-                ->push([['created_at' => '2026-11-19 14:30:00', 'status_to' => ['name' => 'В пути']]])
+            self::API.'postal/'.self::TRACK => Http::response($this->carrierStatus(0, 'Заявка создана')),
+            self::API.'postal/'.self::TRACK.'/cancel' => Http::response($this->carrierStatus(90, 'Отменено')),
+        ]);
+
+        $page = Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()]);
+        $page->assertSee('Статус Европочты');
+        $page->assertDontSee('Отменить отправление Европочты');
+        $component = Livewire::test(EvropochtaOrderStatus::class, ['orderId' => $order->id])
+            ->call('refreshStatus')
+            ->assertSee('Отменить отправление Европочты')
+            ->assertSee('wire:confirm=', false)
+            ->call('cancelShipment')
+            ->assertSee('Отменено')
+            ->assertDontSee('Отменить отправление Европочты');
+        $component->call('refreshStatus')->assertSee('Отменено');
+
+        $requestLog = Http::recorded()->map(fn (array $exchange): array => [$exchange[0]->method(), $exchange[0]->url()])->all();
+        $this->assertSame([
+            ['GET', self::API.'postal/'.self::TRACK],
+            ['GET', self::API.'postal/'.self::TRACK],
+            ['POST', self::API.'postal/'.self::TRACK.'/cancel'],
+        ], $requestLog);
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && $request->hasHeader('Token', 'evropochta-test'));
+        $this->assertSame(self::TRACK, $order->fresh()->evropochta_tracking_number);
+        $this->assertSame('confirmed', $order->fresh()->status);
+    }
+
+    public function test_cancellation_checks_the_current_status_even_if_the_button_was_visible(): void
+    {
+        $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
+        $this->signIn();
+        Http::fake([
+            self::API.'postal/'.self::TRACK => Http::sequence()
+                ->push($this->carrierStatus(0, 'Заявка создана'))
+                ->push($this->carrierStatus(10, 'Принято в отделении')),
+        ]);
+
+        Livewire::test(EvropochtaOrderStatus::class, ['orderId' => $order->id])
+            ->call('refreshStatus')
+            ->assertSee('Отменить отправление Европочты')
+            ->call('cancelShipment')
+            ->assertSee('Принято в отделении')
+            ->assertDontSee('Отменить отправление Европочты');
+
+        Http::assertSentCount(2);
+        Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
+    }
+
+    public function test_carrier_rejection_hides_cancellation_until_the_status_is_checked_again(): void
+    {
+        $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
+        $this->signIn();
+        Http::fake([
+            self::API.'postal/'.self::TRACK => Http::sequence()
+                ->push($this->carrierStatus(0, 'Заявка создана'))
+                ->push($this->carrierStatus(0, 'Заявка создана'))
+                ->push($this->carrierStatus(10, 'Принято в отделении')),
+            self::API.'postal/'.self::TRACK.'/cancel' => Http::response(['message' => 'Недопустимый статус'], 422),
+        ]);
+
+        Livewire::test(EvropochtaOrderStatus::class, ['orderId' => $order->id])
+            ->call('refreshStatus')
+            ->call('cancelShipment')
+            ->assertSee('Обновление временно недоступно')
+            ->assertDontSee('Отменить отправление Европочты')
+            ->call('refreshStatus')
+            ->assertSee('Принято в отделении')
+            ->assertDontSee('Отменить отправление Европочты');
+        Http::assertSentCount(4);
+        $this->assertSame(self::TRACK, $order->fresh()->evropochta_tracking_number);
+    }
+
+    public function test_customer_cannot_request_shipment_cancellation(): void
+    {
+        $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
+        $this->actingAs(User::factory()->create(['role' => 'client', 'is_active' => true]));
+        Http::fake([]);
+
+        Livewire::test(EvropochtaOrderStatus::class, ['orderId' => $order->id])
+            ->call('cancelShipment')
+            ->assertForbidden();
+
+        Http::assertNothingSent();
+    }
+
+    public function test_status_refreshes_and_preserves_the_last_status_if_the_carrier_is_unavailable(): void
+    {
+        $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
+        $this->signIn();
+        Http::fake([
+            self::API.'postal/'.self::TRACK => Http::sequence()
+                ->push($this->carrierStatus(0, 'Заявка создана'))
+                ->push($this->carrierStatus(10, 'В пути'))
                 ->pushStatus(503),
         ]);
 
@@ -204,6 +376,47 @@ class EvropochtaOrderShipmentTest extends TestCase
         } finally {
             Http::assertNothingSent();
         }
+    }
+
+    private function manualOrder(array $attributes = []): Order
+    {
+        $order = $this->order($attributes + [
+            'evropochta_quote' => null,
+            'payment_type' => 'evropochta_cod',
+            'payment_status' => 'pending',
+            'subtotal' => 0,
+            'discount' => 10,
+            'total' => 0,
+            'delivery_price' => 0,
+        ]);
+        $order->items()->create(['product_name' => 'Элехант СГБ-1,8', 'product_sku' => 'PS-007.059', 'quantity' => 2, 'price' => 100]);
+
+        return $order;
+    }
+
+    private function parcelInput(): array
+    {
+        return ['store_id_start' => 70130010, 'store_id_finish' => 40930011, 'weight' => 1.25,
+            'length' => 24, 'width' => 24, 'height' => 20];
+    }
+
+    private function fakePreparationTariff(mixed $tariff = null): void
+    {
+        config(['services.evropochta.checkout_origin' => 70130010]);
+        Http::fake([
+            self::API.'stores' => Http::response([
+                ['id' => 70130010, 'type' => 1, 'ops_number' => 1, 'ops_name' => 'Отделение №1',
+                    'city' => 'г. Минск', 'street' => 'Монтажников', 'house' => '2'],
+                ['id' => 40930011, 'type' => 1, 'ops_number' => 567, 'ops_name' => 'Отделение №567',
+                    'city' => 'г. Солигорск', 'street' => 'Ленинского Комсомола', 'house' => '43', 'region' => 'Минская область'],
+            ]),
+            self::API.'postal/payment/calculate' => $tariff ?? Http::response(['sender_pays' => 6.34, 'receiver_pays' => 0]),
+        ]);
+    }
+
+    private function carrierStatus(int $code, string $name): array
+    {
+        return ['number' => self::TRACK, 'status' => ['value' => $code, 'name' => $name]];
     }
 
     private function signIn(): void

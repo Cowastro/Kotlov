@@ -384,6 +384,12 @@ class OrderInfolist
                             ->color('warning')
                             ->visible(fn (Order $record): bool => $record->planned_delivery_date !== null),
 
+                        TextEntry::make('evropochta_quote.carrier_price')
+                            ->label('Тариф перевозчика')
+                            ->formatStateUsing($byn)
+                            ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'
+                                && isset($record->evropochta_quote['carrier_price'])),
+
                         TextEntry::make('evropochta_tracking_number')
                             ->label('Трек-номер Европочты')
                             ->placeholder('Ожидает оформления')

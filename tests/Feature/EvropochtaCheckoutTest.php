@@ -14,6 +14,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class EvropochtaCheckoutTest extends TestCase
@@ -40,7 +41,7 @@ class EvropochtaCheckoutTest extends TestCase
         $this->assertMatchesRegularExpression('/value="evropochta_cod"\s+checked\b/', $checkout->getContent());
 
         $quote = $this->postJson(route('checkout.evropochta.quote'), ['branch_id' => 40930010, 'weight' => 0.01])
-            ->assertOk()->assertJsonPath('price', 6.5);
+            ->assertOk()->assertJsonPath('price', 8);
         $sessionCookie = $quote->getCookie(config('session.cookie'));
         $this->withCookie($sessionCookie->getName(), $sessionCookie->getValue());
 
@@ -69,8 +70,8 @@ class EvropochtaCheckoutTest extends TestCase
         $this->post(route('checkout.store'), ['payment_type' => 'evropochta_cod'] + $orderRequest)
             ->assertRedirect()->assertSessionHasNoErrors();
         $order = Order::query()->sole();
-        $this->assertSame('6.50', $order->delivery_price);
-        $this->assertSame('206.50', $order->total);
+        $this->assertSame('8.00', $order->delivery_price);
+        $this->assertSame('208.00', $order->total);
         $this->assertSame('evropochta_cod', $order->payment_type);
         $this->assertSame('Оплата при получении', $order->paymentStatusLabel());
         $this->assertSame('Лида', $order->delivery_city);
@@ -172,7 +173,7 @@ class EvropochtaCheckoutTest extends TestCase
 
         $this->postJson(route('checkout.evropochta.quote'), ['branch_id' => 40930011])
             ->assertOk()
-            ->assertJsonPath('price', 9)
+            ->assertJsonPath('price', 11)
             ->assertJsonPath('box.dimensions', [50, 30, 30])
             ->assertJsonPath('box.weight', 2.75);
 
@@ -290,7 +291,7 @@ class EvropochtaCheckoutTest extends TestCase
             $this->withSession($this->cart($product))->get(route('checkout'))
                 ->assertOk()->assertSee('Европочта до отделения')->assertSee('г. Лида, Красноармейская, 63, №23');
             $this->postJson(route('checkout.evropochta.quote'), ['branch_id' => 40930010])
-                ->assertOk()->assertJsonPath('price', 17.5);
+                ->assertOk()->assertJsonPath('price', 21);
 
             Http::assertSent(function (Request $request) use ($weight): bool {
                 $form = collect($request->data())->pluck('contents', 'name');
@@ -320,7 +321,7 @@ class EvropochtaCheckoutTest extends TestCase
         $this->post(route('evropochta.calculator.estimate'), [
             'evropochta_branch' => 40930010, 'weight' => 1,
             'length' => 20, 'width' => 15, 'height' => 10,
-        ])->assertOk()->assertSeeText('6,50 BYN')->assertSeeText('Стандартная посылка');
+        ])->assertOk()->assertSeeText('8 BYN')->assertSeeText('Стандартная посылка');
         $this->assertDatabaseCount('orders', 0);
 
         $this->from(route('evropochta.calculator'))->post(route('evropochta.calculator.estimate'), [
@@ -342,7 +343,7 @@ class EvropochtaCheckoutTest extends TestCase
         $this->postJson(route('evropochta.calculator.estimate'), $parcel)
             ->assertOk()
             ->assertExactJson([
-                'price' => 17.5,
+                'price' => 21,
                 'address' => 'г. Лида, Красноармейская, 63, №23',
                 'type' => 'Стандартная посылка',
             ]);
@@ -359,6 +360,26 @@ class EvropochtaCheckoutTest extends TestCase
                 && (float) $form->get('weight') === 12.5;
         });
         $this->assertDatabaseCount('orders', 0);
+    }
+
+    #[DataProvider('retailPrices')]
+    public function test_public_tariff_adds_twenty_percent_before_rounding(float $carrierPrice, int $customerPrice): void
+    {
+        $this->mockCarrier($carrierPrice);
+
+        $this->postJson(route('evropochta.calculator.estimate'), [
+            'evropochta_branch' => 40930010, 'weight' => 1,
+            'length' => 20, 'width' => 15, 'height' => 10,
+        ])->assertOk()->assertJsonPath('price', $customerPrice);
+    }
+
+    public static function retailPrices(): array
+    {
+        return [
+            '9.60 rounds up' => [8.00, 10],
+            '12.30 rounds down' => [10.25, 12],
+            '10.50 rounds up' => [8.75, 11],
+        ];
     }
 
     private function mockCarrier(float $carrierPrice = 6.34): void

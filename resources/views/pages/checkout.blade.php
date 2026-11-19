@@ -730,8 +730,8 @@
         return price;
     }
 
-    function fmtByn(val) {
-        return val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' BYN';
+    function fmtByn(val, fractionDigits = 0) {
+        return val.toFixed(fractionDigits).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' BYN';
     }
 
     function updateTotals() {
@@ -753,10 +753,10 @@
         } else if (cost === 0) {
             deliveryCostEl.innerHTML = '<span class="text-primary fw-semibold">Бесплатно</span>';
         } else {
-            deliveryCostEl.innerHTML = '<span class="fw-semibold">' + fmtByn(cost) + '</span>';
+            deliveryCostEl.innerHTML = '<span class="fw-semibold">' + fmtByn(cost, deliveryType() === 'evropochta' ? 0 : 2) + '</span>';
         }
 
-        totalEl.textContent = fmtByn(total);
+        totalEl.textContent = fmtByn(total, 2);
     }
 
     if (deliveryGroup) {

@@ -9,7 +9,6 @@ use App\Models\Order;
 use App\Services\Shipping\Evropochta;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -108,38 +107,17 @@ class ShipmentResource extends Resource
             ->visible(fn (): bool => app(Evropochta::class)->configured())
             ->modalDescription('До отделения, без наложенного платежа. Укажите вес и размеры с упаковкой.')
             ->modalSubmitActionLabel('Рассчитать')
-            ->schema(function (): array {
-                try {
-                    $branches = collect(app(Evropochta::class)->branches())->map(fn (array $branch): string => $branch['label'])->all();
-                } catch (RuntimeException $exception) {
-                    Notification::make()->title($exception->getMessage())->danger()->persistent()->send();
-
-                    $branches = [];
-                }
-
-                return [
-                    Select::make('store_id_start')->label('Отделение отправления')
-                        ->options($branches)->searchable()->required()->placeholder('Город или адрес'),
-                    Select::make('store_id_finish')->label('Отделение получения')
-                        ->options($branches)->searchable()->required()->placeholder('Город или адрес'),
-                    TextInput::make('weight')->label('Вес, кг')->required()->numeric()
-                        ->minValue(0.01)->maxValue(50)->step(0.01)->rule('decimal:0,2'),
-                    TextInput::make('length')->label('Длина, см')->required()->numeric()
-                        ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
-                    TextInput::make('width')->label('Ширина, см')->required()->numeric()
-                        ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
-                    TextInput::make('height')->label('Высота, см')->required()->numeric()
-                        ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
-                ];
-            })
+            ->schema(fn (): array => EvropochtaOrderActions::parcelFields())
             ->action(function (array $data, Action $action): void {
                 try {
-                    $quote = app(Evropochta::class)->quote($data);
+                    $destination = (int) $data['store_id_finish'];
+                    unset($data['store_id_finish']);
+                    $quote = app(Evropochta::class)->estimate($data, $destination);
                     $tariff = $quote['oversize'] ? 'Громоздкая посылка' : 'Стандартная посылка';
 
                     Notification::make()
-                        ->title('Тариф Европочты — '.number_format($quote['total'], 2, ',', ' ').' BYN')
-                        ->body($tariff.' · отделение → отделение')
+                        ->title('Доставка для клиента — '.number_format($quote['customer_price'], 0, ',', ' ').' BYN')
+                        ->body($tariff.' · тариф Европочты '.number_format($quote['carrier_price'], 2, ',', ' ').' BYN')
                         ->persistent()->success()->send();
                 } catch (RuntimeException $exception) {
                     Notification::make()->title($exception->getMessage())->danger()->persistent()->send();

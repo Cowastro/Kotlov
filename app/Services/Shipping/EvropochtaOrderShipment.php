@@ -3,7 +3,9 @@
 namespace App\Services\Shipping;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Services\Telephony\PhoneNumber;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -12,6 +14,106 @@ use RuntimeException;
 final class EvropochtaOrderShipment
 {
     public function __construct(private readonly Evropochta $carrier) {}
+
+    public function preparationUnavailableReason(Order $order): ?string
+    {
+        if ($order->delivery_type !== EvropochtaCheckout::METHOD
+            || in_array($order->status, ['shipped', 'delivered', 'cancelled', 'completed'], true)
+            || filled($order->evropochta_tracking_number)) {
+            return 'Подготовка доступна для заказа Европочты до оформления отправления.';
+        }
+
+        return $this->carrier->configured() ? null : 'Ключ API Европочты не настроен.';
+    }
+
+    public function prepare(Order $order, array $input): array
+    {
+        if ($reason = $this->preparationUnavailableReason($order)) {
+            throw new EvropochtaShipmentException($reason);
+        }
+
+        $data = Validator::make($input, [
+            'store_id_start' => ['required', 'integer', 'min:1'],
+            'store_id_finish' => ['required', 'integer', 'min:1'],
+            'weight' => ['required', 'numeric', 'decimal:0,2', 'min:0.01', 'max:50'],
+            'length' => ['required', 'numeric', 'decimal:0,2', 'min:0.01', 'max:250'],
+            'width' => ['required', 'numeric', 'decimal:0,2', 'min:0.01', 'max:250'],
+            'height' => ['required', 'numeric', 'decimal:0,2', 'min:0.01', 'max:250'],
+        ])->validate();
+        $destination = (int) $data['store_id_finish'];
+        $parcel = [
+            'store_id_start' => (int) $data['store_id_start'],
+            'weight' => (float) $data['weight'],
+            'length' => (float) $data['length'],
+            'width' => (float) $data['width'],
+            'height' => (float) $data['height'],
+        ];
+
+        if ($destination === $parcel['store_id_start']) {
+            throw ValidationException::withMessages(['store_id_finish' => 'Выберите другое отделение получения.']);
+        }
+
+        $items = $this->orderItems($order);
+        if ($items->isEmpty()) {
+            throw new EvropochtaShipmentException('Добавьте товары в заказ перед подготовкой отправления.');
+        }
+        $signature = $this->itemSignature($items);
+
+        try {
+            $quote = $this->carrier->estimate($parcel, $destination);
+        } catch (RuntimeException $error) {
+            throw new EvropochtaShipmentException($error->getMessage(), previous: $error);
+        }
+
+        return DB::transaction(function () use ($order, $quote, $signature): array {
+            $locked = Order::query()->lockForUpdate()->findOrFail($order->getKey());
+            if ($reason = $this->preparationUnavailableReason($locked)) {
+                throw new EvropochtaShipmentException($reason);
+            }
+            $items = $this->orderItems($locked);
+            if ($this->itemSignature($items) !== $signature) {
+                throw new EvropochtaShipmentException('Состав заказа изменился. Проверьте коробку и пересчитайте тариф.');
+            }
+
+            $subtotal = round((float) $items->sum('total'), 2);
+            $price = (float) $quote['customer_price'];
+            $total = round(max(0, $subtotal - max(0, (float) $locked->discount)) + $price, 2);
+
+            if (in_array($locked->payment_status, ['paid', 'refunded'], true) && $total !== (float) $locked->total) {
+                throw new EvropochtaShipmentException('Новый тариф меняет итог заказа с проведённой оплатой. Сначала согласуйте сумму оплаты.');
+            }
+
+            $quote['order_item_signature'] = $signature;
+            if (! $locked->update([
+                'evropochta_quote' => $quote,
+                'delivery_city' => $quote['city'],
+                'delivery_region' => $quote['region'] ?: null,
+                'delivery_address' => $quote['address'],
+                'delivery_price' => $price,
+                'subtotal' => $subtotal,
+                'total' => $total,
+            ])) {
+                throw new EvropochtaShipmentException('Не удалось сохранить расчёт Европочты в заказе.');
+            }
+
+            return $quote;
+        });
+    }
+
+    /** @return Collection<int, OrderItem> */
+    private function orderItems(Order $order): Collection
+    {
+        return $order->items()->orderBy('id')->get(['id', 'product_id', 'product_sku', 'quantity', 'total']);
+    }
+
+    private function itemSignature(Collection $items): string
+    {
+        $contents = $items->map(fn (OrderItem $item): array => [
+            (int) $item->id, (int) $item->product_id, (string) $item->product_sku, (int) $item->quantity,
+        ]);
+
+        return hash('sha256', $contents->toJson());
+    }
 
     public function unavailableReason(Order $order): ?string
     {
@@ -25,6 +127,11 @@ final class EvropochtaOrderShipment
         if ($order->payment_type === EvropochtaCheckout::COD_PAYMENT
             && ($order->payment_status !== 'pending' || (float) $order->total <= 0)) {
             return 'Для наложенного платежа нужен заказ с положительной суммой, ожидающий оплаты.';
+        }
+
+        $signature = $order->evropochta_quote['order_item_signature'] ?? null;
+        if ($signature !== null && $signature !== $this->itemSignature($this->orderItems($order))) {
+            return 'Состав заказа изменился. Подготовьте отправление и пересчитайте тариф.';
         }
 
         $parcel = $order->evropochta_quote['parcel'] ?? [];

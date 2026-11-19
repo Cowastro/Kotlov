@@ -11,6 +11,8 @@ use RuntimeException;
 
 class Evropochta
 {
+    public const STATUS_CREATED = 0;
+
     public const LABEL_FORMATS = [
         'thermal' => '10 × 10 см',
         'address' => 'A5',
@@ -58,6 +60,29 @@ class Evropochta
 
             return $branches;
         });
+    }
+
+    public function estimate(array $parcel, int $destination): array
+    {
+        $branch = $this->branches()[$destination] ?? null;
+        if ($branch === null) {
+            throw new RuntimeException('Выберите отделение получения из справочника Европочты.');
+        }
+
+        $rate = $this->quote($parcel + ['store_id_finish' => $destination]);
+        $customerPrice = (int) round($rate['total'] * 1.20, 0, PHP_ROUND_HALF_UP);
+
+        return [
+            'parcel' => $parcel,
+            'store_id_finish' => $destination,
+            'city' => preg_replace('/^(?:г\.|город)\s*/ui', '', $branch['city']),
+            'address' => $branch['label'],
+            'region' => $branch['region'],
+            'carrier_price' => $rate['total'],
+            'customer_price' => $customerPrice,
+            'oversize' => $rate['oversize'],
+            'quoted_at' => now()->toIso8601String(),
+        ];
     }
 
     public function quote(array $parcel): array
@@ -156,6 +181,69 @@ class Evropochta
         }
 
         return $number;
+    }
+
+    /** @return array{code: int, status: string} */
+    public function shipmentStatus(string $number): array
+    {
+        $this->validateShipmentNumber($number);
+
+        try {
+            $response = $this->request()->get("postal/{$number}");
+        } catch (ConnectionException) {
+            throw new EvropochtaShipmentException('Европочта не ответила на запрос статуса.');
+        }
+
+        return $this->statusFromResponse($response, $number, 'Не удалось подтвердить статус отправления.');
+    }
+
+    /** @return array{code: int, status: string} */
+    public function cancelShipment(string $number): array
+    {
+        $this->validateShipmentNumber($number);
+
+        try {
+            $response = $this->request()->send('POST', "postal/{$number}/cancel");
+        } catch (ConnectionException) {
+            throw new EvropochtaShipmentException('Европочта не подтвердила отмену. Дождитесь обновления статуса.');
+        }
+
+        if ($response->status() === 422) {
+            throw new EvropochtaShipmentException('Европочта отклонила отмену. Проверьте текущий статус заявки.');
+        }
+
+        $status = $this->statusFromResponse($response, $number, 'Европочта не подтвердила отмену. Дождитесь обновления статуса.');
+        if ($status['code'] === self::STATUS_CREATED) {
+            throw new EvropochtaShipmentException('Европочта пока показывает статус «Заявка создана». Дождитесь обновления статуса.');
+        }
+
+        return $status;
+    }
+
+    private function validateShipmentNumber(string $number): void
+    {
+        if (! preg_match('/^BY\d{12}$/D', $number)) {
+            throw new EvropochtaShipmentException('Проверьте трек-номер Европочты.');
+        }
+    }
+
+    /** @return array{code: int, status: string} */
+    private function statusFromResponse(Response $response, string $number, string $error): array
+    {
+        if (in_array($response->status(), [401, 403], true)) {
+            throw new EvropochtaShipmentException('Европочта отклонила доступ. Проверьте ключ и договор.');
+        }
+        if ($response->status() === 404) {
+            throw new EvropochtaShipmentException('Европочта пока не нашла отправление. Проверьте статус позже.');
+        }
+
+        $code = $response->json('status.value');
+        $name = $response->json('status.name');
+        if (! $response->successful() || $response->json('number') !== $number || ! is_int($code) || ! is_string($name) || blank($name)) {
+            throw new EvropochtaShipmentException($error);
+        }
+
+        return ['code' => $code, 'status' => $name];
     }
 
     /** @return list<array{time: string, status: string, detail: string}> */

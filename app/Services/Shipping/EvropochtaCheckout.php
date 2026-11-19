@@ -162,25 +162,11 @@ class EvropochtaCheckout
 
     public function estimate(array $parcel, int $destination): array
     {
-        $branch = $this->destinations($parcel)[$destination] ?? null;
-        if ($branch === null) {
+        if (! isset($this->destinations($parcel)[$destination])) {
             throw new RuntimeException('Выберите отделение Европочты в регионе.');
         }
 
-        $rate = $this->carrier->quote($parcel + ['store_id_finish' => $destination]);
-        $kopecks = (int) round($rate['total'] * 100);
-        $price = intdiv($kopecks + 49, 50) * 50 / 100;
-        return [
-            'parcel' => $parcel,
-            'store_id_finish' => $destination,
-            'city' => preg_replace('/^(?:г\.|город)\s*/ui', '', $branch['city']),
-            'address' => $branch['label'],
-            'region' => $branch['region'],
-            'carrier_price' => $rate['total'],
-            'customer_price' => $price,
-            'oversize' => $rate['oversize'],
-            'quoted_at' => now()->toIso8601String(),
-        ];
+        return $this->carrier->estimate($parcel, $destination);
     }
 
     public function quote(array $parcel, int $destination, string $sessionId): array
