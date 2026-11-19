@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\Orders\QuickOrderService;
 use App\Services\Shipping\EvropochtaCheckout;
+use App\Services\StorefrontProductSearch;
+use App\Support\Catalog\CatalogSearch;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
@@ -159,17 +161,32 @@ final class QuickOrderAction
 
     private static function searchProducts(string $search): array
     {
-        $search = trim($search);
-        if ($search === '') {
+        $search = CatalogSearch::term($search);
+        if (mb_strlen($search) < 2) {
             return [];
         }
 
-        $catalog = app(QuickCommercialOfferService::class);
-        $ids = Product::query()->active()->notArchived()
+        $candidates = Product::query()->active()->notArchived()
+            ->orderByDesc('in_stock')->orderByDesc('views_count')->orderBy('id')->limit(20);
+        $ids = (clone $candidates)
             ->whereIn('sku', array_unique([$search, mb_strtoupper($search), mb_strtolower($search)]))
-            ->orderByDesc('in_stock')->orderBy('id')->limit(30)->pluck('id')->all();
+            ->pluck('id')->all();
 
-        return $ids === [] ? $catalog->catalogSearchProducts($search) : $catalog->productLabels($ids);
+        if ($ids === []) {
+            $smartSearch = app(StorefrontProductSearch::class);
+            $ids = $smartSearch->applyForSuggestions(clone $candidates, $search)->pluck('id')->all();
+            if ($ids === []) {
+                $ids = $smartSearch->apply($candidates, $search, includeInternal: true)->pluck('id')->all();
+            }
+        }
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $labels = app(QuickCommercialOfferService::class)->productLabels($ids);
+
+        return array_intersect_key(array_replace(array_fill_keys($ids, ''), $labels), $labels);
     }
 
     private static function usesAddress(Get $get): bool

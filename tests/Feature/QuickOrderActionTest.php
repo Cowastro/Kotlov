@@ -108,7 +108,10 @@ class QuickOrderActionTest extends TestCase
         ]);
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $meter = $this->product('PS-007.059', 128);
-        $meter->update(['shipping_parcel' => ['weight' => 1, 'length' => 24, 'width' => 24, 'height' => 20]]);
+        $meter->update([
+            'name' => 'Счётчик газа бытовой Элехант СГБ-1,8',
+            'shipping_parcel' => ['weight' => 1, 'length' => 24, 'width' => 24, 'height' => 20],
+        ]);
         $similar = $this->product('OTHER', 100);
         $similar->update(['name' => 'Аналог PS-007.059']);
 
@@ -132,6 +135,9 @@ class QuickOrderActionTest extends TestCase
         $product = $instance->getSchema($schemaName)->getComponent('items')
             ->getChildSchema($row)->getComponent('product_id');
         $this->assertSame([$meter->id], array_keys($product->getSearchResults(' ps-007.059 ')));
+        $this->assertSame([$meter->id], array_keys($product->getSearchResults('элехант')));
+        $this->assertSame([$meter->id], array_keys($product->getSearchResults('элех')));
+        $this->assertSame([$meter->id], array_keys($product->getSearchResults("'kt[fyn")));
         $this->assertArrayHasKey($similar->id, $product->getSearchResults('Аналог'));
 
         $base = 'mountedActions.0.data';
