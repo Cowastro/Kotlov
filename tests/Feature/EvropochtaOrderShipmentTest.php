@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Orders\Pages\ViewOrder;
+use App\Jobs\SendEvropochtaTrackingSms;
 use App\Livewire\EvropochtaOrderStatus;
 use App\Models\Order;
 use App\Models\User;
@@ -11,6 +12,7 @@ use App\Services\Shipping\EvropochtaShipmentException;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -134,6 +136,7 @@ class EvropochtaOrderShipmentTest extends TestCase
         $preview = $component->getSchema($component->getMountedActionSchemaName());
         $this->assertSame('12,5 кг · 40 × 18 × 25 см', $preview->getComponent('ep_parcel')->getState());
         $this->assertStringContainsString('Красноармейская, 63', $preview->getComponent('ep_destination')->getState());
+        $this->assertTrue($preview->getComponent('notify_receiver')->getState());
 
         $page->setActionData($this->recipient() + ['label_format' => 'thermal'])
             ->callMountedAction()
@@ -316,6 +319,77 @@ class EvropochtaOrderShipmentTest extends TestCase
         $this->assertSame('confirmed', $order->fresh()->status);
     }
 
+    public function test_tracking_sms_is_sent_only_once_to_the_shipment_recipient_after_the_track_is_saved(): void
+    {
+        $this->enableTrackingSms();
+        Bus::fake([SendEvropochtaTrackingSms::class]);
+        $order = $this->order(['customer_phone' => '+375 (29) 000-00-00']);
+        $phone = '375291234567';
+        Http::fake([
+            self::API.'postal/create' => Http::response(['number' => self::TRACK]),
+            'https://app.sms.by/api/v1/sendQuickSMS' => function (Request $request) use ($order, $phone) {
+                $this->assertSame(self::TRACK, $order->fresh()->evropochta_tracking_number);
+                $this->assertSame($phone, $request['phone']);
+                $this->assertSame('42', $request['alphaname_id']);
+                $this->assertSame('KOTLOV: трек Европочты '.self::TRACK, $request['message']);
+
+                return Http::response(['sms_id' => 'sms-test-101']);
+            },
+        ]);
+        $shipment = app(EvropochtaOrderShipment::class);
+        $shipment->create($order, $this->recipient());
+        $shipment->create($order, $this->recipient());
+
+        Http::assertSentCount(1);
+        $this->assertSame('pending', $order->fresh()->evropochta_sms_status);
+        Bus::assertDispatchedAfterResponse(SendEvropochtaTrackingSms::class, 1);
+        $job = Bus::dispatchedAfterResponse(SendEvropochtaTrackingSms::class)->sole();
+        $this->assertSame($phone, $job->phone);
+        app()->call([$job, 'handle']);
+        app()->call([$job, 'handle']);
+
+        Http::assertSentCount(2);
+        $saved = $order->fresh();
+        $this->assertSame('accepted', $saved->evropochta_sms_status);
+        $this->assertSame('sms-test-101', $saved->evropochta_sms_id);
+        $this->assertNotNull($saved->evropochta_sms_sent_at);
+    }
+
+    public function test_sms_failure_keeps_the_shipment_and_does_not_retry_an_unconfirmed_send(): void
+    {
+        $this->enableTrackingSms();
+        Bus::fake([SendEvropochtaTrackingSms::class]);
+        $order = $this->order();
+        Http::fake([
+            self::API.'postal/create' => Http::response(['number' => self::TRACK]),
+            'https://app.sms.by/api/v1/sendQuickSMS' => Http::failedConnection(),
+        ]);
+
+        $this->assertSame(self::TRACK, app(EvropochtaOrderShipment::class)->create($order, $this->recipient()));
+        $job = Bus::dispatchedAfterResponse(SendEvropochtaTrackingSms::class)->sole();
+        app()->call([$job, 'handle']);
+        app()->call([$job, 'handle']);
+
+        Http::assertSentCount(2);
+        $this->assertSame(self::TRACK, $order->fresh()->evropochta_tracking_number);
+        $this->assertSame('unconfirmed', $order->fresh()->evropochta_sms_status);
+        $this->assertNull($order->fresh()->evropochta_sms_id);
+    }
+
+    public function test_shipment_can_be_created_with_the_tracking_sms_switched_off(): void
+    {
+        $this->enableTrackingSms();
+        Bus::fake([SendEvropochtaTrackingSms::class]);
+        $order = $this->order();
+        Http::fake([self::API.'postal/create' => Http::response(['number' => self::TRACK])]);
+
+        app(EvropochtaOrderShipment::class)->create($order, $this->recipient() + ['notify_receiver' => false]);
+
+        $this->assertSame('skipped', $order->fresh()->evropochta_sms_status);
+        Bus::assertNotDispatchedAfterResponse(SendEvropochtaTrackingSms::class);
+        Http::assertSentCount(1);
+    }
+
     public function test_cash_on_delivery_uses_the_order_total_and_the_store_pays_the_fee(): void
     {
         $order = $this->order(['payment_type' => 'evropochta_cod', 'payment_status' => 'pending']);
@@ -417,6 +491,16 @@ class EvropochtaOrderShipmentTest extends TestCase
     private function carrierStatus(int $code, string $name): array
     {
         return ['number' => self::TRACK, 'status' => ['value' => $code, 'name' => $name]];
+    }
+
+    private function enableTrackingSms(): void
+    {
+        config([
+            'services.sms_by.enabled' => true,
+            'services.sms_by.base_url' => 'https://app.sms.by',
+            'services.sms_by.token' => 'sms-test-token',
+            'services.sms_by.alphaname_id' => '42',
+        ]);
     }
 
     private function signIn(): void

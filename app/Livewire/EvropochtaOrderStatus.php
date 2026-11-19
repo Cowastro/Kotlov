@@ -31,10 +31,14 @@ final class EvropochtaOrderStatus extends Component
     #[Locked]
     public bool $canEditShipment = false;
 
+    #[Locked]
+    public ?string $smsStatus = null;
+
     public function refreshStatus(Evropochta $carrier): void
     {
         $order = $this->trackingOrder();
         $this->canEditShipment = OrderResource::canEdit($order);
+        $this->smsStatus = $order->evropochta_sms_status;
         $this->loaded = true;
         $this->unavailable = ! $carrier->configured();
         if ($this->unavailable) {
