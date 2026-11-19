@@ -91,331 +91,6 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            ManageOrderDealAction::make(),
-            EvropochtaOrderActions::prepare(),
-            EvropochtaOrderActions::create(),
-            EvropochtaOrderActions::printLabel('thermal'),
-            EvropochtaOrderActions::printLabel('address'),
-            EvropochtaOrderActions::track(),
-            \App\Filament\Resources\Orders\Actions\OrderReviewLinkAction::make(),
-            \App\Filament\Resources\Orders\Actions\OrderReviewSmsAction::make(),
-            AssignOrderToPartnerAction::make(),
-            ActionGroup::make([
-                CreateCommercialDocumentFromOrderAction::make(),
-                Action::make('printProcurement')
-                ->label('Печать для закупок')
-                ->icon('heroicon-o-printer')
-                ->color('gray')
-                ->url(fn (): string => route('admin.orders.procurement', ['order' => $this->record]))
-                ->openUrlInNewTab(),
-                Action::make('emailProcurement')
-                ->label('Отправить в закупки')
-                ->icon('heroicon-o-paper-airplane')
-                ->color('info')
-                ->modalHeading('Отправить закупочный лист')
-                ->modalDescription('Письмо уйдёт с order@kotlov.by. В защищённой ссылке всегда отображаются текущие поставщики, входные цены, контакты и статусы исполнения.')
-                ->fillForm(fn (): array => [
-                    'recipient' => $this->record->procurement_recipient ?: config('services.procurement.email'),
-                    'note' => null,
-                ])
-                ->schema([
-                    TextInput::make('recipient')
-                        ->label('Email отдела закупок')
-                        ->email()
-                        ->required(),
-                    Textarea::make('note')
-                        ->label('Комментарий')
-                        ->rows(3)
-                        ->maxLength(2000),
-                    Select::make('availability_status')
-                        ->label('Решение по наличию всех позиций')
-                        ->options([
-                            'available' => 'Наличие подтверждено',
-                            'reserved' => 'Всё зарезервировано',
-                        ])
-                        ->required(),
-                    Checkbox::make('availability_confirmation')
-                        ->label('Подтверждаю: поставщики выбраны, наличие или резерв проверены по всем позициям')
-                        ->accepted()
-                        ->required(),
-                ])
-                ->modalSubmitActionLabel('Отправить')
-                ->action(function (array $data): void {
-                    $user = auth()->user();
-                    $this->confirmAvailabilityBeforeShare($data['availability_status'], $data['note'] ?? null);
-                    $portal = app(OrderPortal::class);
-                    $portalLink = $portal->publish($this->record, $user);
-                    $thread = app(SupplierRequestMailDraftService::class)->createOrderProcurementDraft(
-                        $this->record,
-                        $user,
-                        $data['recipient'],
-                        'Закупка по заказу '.$this->record->number,
-                        $this->procurementEmailBody($portal->url($portalLink), $data['note'] ?? null),
-                    );
-                    app(CrmMailSender::class)->sendOrderProcurementDraft($thread, $user);
-
-                    $this->record->forceFill([
-                        'procurement_sent_at' => now(),
-                        'procurement_sent_by' => $user->id,
-                        'procurement_recipient' => mb_strtolower(trim($data['recipient'])),
-                    ])->save();
-                    $this->reloadRecord();
-
-                    Notification::make()
-                        ->success()
-                        ->title('Закупочный лист отправлен')
-                        ->body('Получатель: '.$data['recipient'])
-                        ->send();
-                }),
-                Action::make('sendAccountingPaymentRequest')
-                    ->label('Передать счёт в бухгалтерию')
-                    ->icon('heroicon-o-banknotes')
-                    ->color('warning')
-                    ->modalHeading('Поручение бухгалтерии на оплату')
-                    ->modalDescription('Письмо и документ будут отправлены с order@kotlov.by и останутся связанными с заказом.')
-                    ->fillForm(fn (): array => [
-                        'recipient' => config('services.accounting.email', 'buh-sbg@yandex.ru'),
-                        'amount' => $this->accountingSuggestedAmount(),
-                        'due_date' => now()->addWeekdays(2)->toDateString(),
-                        'comment' => null,
-                    ])
-                    ->schema([
-                        TextInput::make('recipient')
-                            ->label('Email бухгалтерии')
-                            ->email()
-                            ->required(),
-                        TextInput::make('amount')
-                            ->label('Сумма к оплате, BYN')
-                            ->numeric()
-                            ->minValue(0.01),
-                        DatePicker::make('due_date')
-                            ->label('Оплатить до')
-                            ->native(false),
-                        FileUpload::make('attachments')
-                            ->label('Счёт или другой документ на оплату')
-                            ->disk('local')
-                            ->directory('crm-mail-attachments/accounting')
-                            ->visibility('private')
-                            ->multiple()
-                            ->required()
-                            ->maxFiles(5)
-                            ->maxSize(15360)
-                            ->acceptedFileTypes([
-                                'application/pdf',
-                                'image/jpeg',
-                                'image/png',
-                                'image/webp',
-                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                'application/vnd.ms-excel',
-                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                'application/msword',
-                            ])
-                            ->storeFileNamesIn('attachment_file_names')
-                            ->helperText('PDF, фото или Excel. До 5 файлов, каждый не более 15 МБ.'),
-                        Textarea::make('comment')
-                            ->label('Комментарий бухгалтеру')
-                            ->placeholder('Например: оплатить после подтверждения резерва, назначение платежа…')
-                            ->rows(3)
-                            ->maxLength(2000),
-                    ])
-                    ->modalSubmitActionLabel('Отправить поручение')
-                    ->action(function (array $data): void {
-                        $user = auth()->user();
-                        $recipient = mb_strtolower(trim((string) $data['recipient']));
-
-                        try {
-                            [$thread, $request] = DB::transaction(function () use ($data, $user, $recipient): array {
-                                $thread = app(SupplierRequestMailDraftService::class)->createOrderAccountingDraft(
-                                    $this->record,
-                                    $user,
-                                    $recipient,
-                                    'Оплата поставщику — заказ '.$this->record->number,
-                                    $this->accountingEmailBody($data),
-                                    $data['attachments'] ?? [],
-                                    $data['attachment_file_names'] ?? [],
-                                );
-                                $request = $this->record->accountingRequests()->create([
-                                    'mail_thread_id' => $thread->id,
-                                    'requested_by_user_id' => $user->id,
-                                    'recipient_email' => $recipient,
-                                    'amount' => filled($data['amount'] ?? null) ? (float) $data['amount'] : null,
-                                    'due_date' => $data['due_date'] ?? null,
-                                    'status' => 'draft',
-                                    'comment' => $data['comment'] ?? null,
-                                ]);
-
-                                return [$thread, $request];
-                            });
-                        } catch (Throwable $exception) {
-                            report($exception);
-                            Notification::make()
-                                ->danger()
-                                ->title('Не удалось сохранить поручение')
-                                ->body($exception->getMessage())
-                                ->send();
-
-                            return;
-                        }
-
-                        try {
-                            app(CrmMailSender::class)->sendOrderAccountingDraft($thread, $user);
-                            $request->update(['status' => 'sent', 'sent_at' => now(), 'last_error' => null]);
-                            $this->record->statusHistory()->create([
-                                'user_id' => $user->id,
-                                'status_from' => $this->record->status,
-                                'status_to' => $this->record->status,
-                                'comment' => 'Счёт поставщика передан в бухгалтерию · поручение №'.$request->id
-                                    .' · '.$recipient
-                                    .(filled($data['amount'] ?? null) ? ' · '.number_format((float) $data['amount'], 2, ',', ' ').' BYN' : ''),
-                            ]);
-                            Notification::make()->success()->title('Поручение отправлено в бухгалтерию')->body($recipient)->send();
-                        } catch (Throwable $exception) {
-                            $request->update(['last_error' => $exception->getMessage()]);
-                            $this->record->statusHistory()->create([
-                                'user_id' => $user->id,
-                                'status_from' => $this->record->status,
-                                'status_to' => $this->record->status,
-                                'comment' => 'Счёт поставщика прикреплён к заказу, но письмо в бухгалтерию не отправлено · поручение №'.$request->id,
-                            ]);
-                            Notification::make()->warning()->title('Поручение сохранено, но письмо не отправлено')->body($exception->getMessage())->send();
-                        }
-
-                        $this->reloadRecord();
-                    }),
-                Action::make('completeAccountingPaymentRequest')
-                    ->label('Отметить оплату поставщику')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->visible(fn (): bool => $this->record->accountingRequests->where('status', 'sent')->isNotEmpty())
-                    ->schema([
-                        Select::make('accounting_request_id')
-                            ->label('Поручение')
-                            ->options(fn (): array => $this->record->accountingRequests
-                                ->where('status', 'sent')
-                                ->mapWithKeys(fn (OrderAccountingRequest $request): array => [
-                                    $request->id => '№'.$request->id.' · '.($request->amount !== null ? number_format((float) $request->amount, 2, '.', ' ').' BYN' : 'сумма не указана').' · '.$request->recipient_email,
-                                ])->all())
-                            ->required(),
-                        Textarea::make('comment')
-                            ->label('Комментарий об оплате')
-                            ->rows(2)
-                            ->maxLength(1000),
-                    ])
-                    ->modalSubmitActionLabel('Подтвердить оплату')
-                    ->action(function (array $data): void {
-                        $request = $this->record->accountingRequests()->where('status', 'sent')->findOrFail($data['accounting_request_id']);
-                        $request->update([
-                            'status' => 'paid',
-                            'completed_by_user_id' => auth()->id(),
-                            'completed_at' => now(),
-                            'comment' => collect([$request->comment, $data['comment'] ?? null])->filter()->implode("\n"),
-                        ]);
-                        $this->reloadRecord();
-                        Notification::make()->success()->title('Оплата поставщику отмечена')->send();
-                    }),
-            ])
-                ->label('Документы')
-                ->icon('heroicon-o-document-text')
-                ->color('gray')
-                ->button(),
-            ActionGroup::make([
-                Action::make('publishOrderOnline')
-                    ->label('Создать ссылку и QR')
-                    ->icon('heroicon-o-qr-code')
-                    ->color('primary')
-                    ->visible(fn (): bool => ! $this->orderPortalIsComplete())
-                    ->modalHeading('Создать ссылку на подтверждённый заказ')
-                    ->modalDescription('Перед публикацией менеджер обязан подтвердить поставщиков и наличие всех позиций.')
-                    ->schema([
-                        Select::make('availability_status')
-                            ->label('Решение по наличию всех позиций')
-                            ->options([
-                                'available' => 'Наличие подтверждено',
-                                'reserved' => 'Всё зарезервировано',
-                            ])
-                            ->required(),
-                        Checkbox::make('availability_confirmation')
-                            ->label('Подтверждаю: поставщики выбраны, наличие или резерв проверены по всем позициям')
-                            ->accepted()
-                            ->required(),
-                    ])
-                    ->modalSubmitActionLabel('Подтвердить и создать ссылку')
-                    ->action(function (array $data): void {
-                        try {
-                            $this->confirmAvailabilityBeforeShare($data['availability_status']);
-                            $portal = app(OrderPortal::class);
-                            $link = $portal->publish($this->record, auth()->user());
-                            Notification::make()
-                                ->success()
-                                ->title('Онлайн-заказ и QR готовы')
-                                ->body($portal->url($link))
-                                ->persistent()
-                                ->send();
-                        } catch (Throwable $exception) {
-                            Notification::make()->danger()->title('Не удалось создать доступ')->body($exception->getMessage())->send();
-                        }
-                    }),
-                Action::make('showOrderQr')
-                    ->label('Показать QR и ссылку')
-                    ->icon('heroicon-o-qr-code')
-                    ->color('gray')
-                    ->visible(fn (): bool => ! $this->orderPortalIsComplete()
-                        && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
-                    ->modalHeading(fn (): string => 'Онлайн-заказ '.$this->record->number)
-                    ->modalDescription('QR и ссылка ведут на одну защищённую страницу всего заказа, как в онлайн-КП.')
-                    ->modalWidth(Width::Large)
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Закрыть')
-                    ->modalContent(function () {
-                        $link = $this->record->portalLinks()
-                            ->whereNull('revoked_at')->where('expires_at', '>', now())->latest('id')->firstOrFail();
-                        $portal = app(OrderPortal::class);
-
-                        return view('filament.resources.orders.online-access', [
-                            'order' => $this->record,
-                            'url' => $portal->url($link),
-                            'qr' => $portal->qrDataUri($link),
-                            'expiresAt' => $link->expires_at,
-                        ]);
-                    }),
-                Action::make('previewOrderOnline')
-                    ->label('Предпросмотр заказа')
-                    ->icon('heroicon-o-eye')
-                    ->color('gray')
-                    ->visible(fn (): bool => ! $this->orderPortalIsComplete()
-                        && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
-                    ->url(fn (): string => route('admin.orders.online-preview', $this->record))
-                    ->openUrlInNewTab(),
-                Action::make('printOrderOnline')
-                    ->label('Версия для печати')
-                    ->icon('heroicon-o-printer')
-                    ->color('gray')
-                    ->visible(fn (): bool => ! $this->orderPortalIsComplete()
-                        && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
-                    ->url(function (): string {
-                        $link = $this->record->portalLinks()
-                            ->whereNull('revoked_at')->where('expires_at', '>', now())->latest('id')->firstOrFail();
-
-                        return app(OrderPortal::class)->printUrl($link);
-                    })
-                    ->openUrlInNewTab(),
-                Action::make('revokeOrderOnline')
-                    ->label('Отозвать онлайн-доступ')
-                    ->icon('heroicon-o-lock-closed')
-                    ->color('danger')
-                    ->visible(fn (): bool => $this->record->portalLinks()
-                        ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
-                    ->requiresConfirmation()
-                    ->action(function (): void {
-                        $link = $this->record->portalLinks()->whereNull('revoked_at')->latest('id')->firstOrFail();
-                        app(OrderPortal::class)->revoke($link);
-                        Notification::make()->success()->title('Онлайн-доступ к заказу отозван')->send();
-                    }),
-            ])
-                ->label('Онлайн-заказ')
-                ->icon('heroicon-o-globe-alt')
-                ->color('gray')
-                ->button(),
             Action::make('advanceWorkflow')
                 ->label(fn (): string => app(OrderWorkflow::class)->step($this->record)['label'] ?? 'Следующий этап')
                 ->icon(fn (): string => app(OrderWorkflow::class)->step($this->record)['icon'] ?? 'heroicon-o-arrow-right')
@@ -448,9 +123,21 @@ class ViewOrder extends ViewRecord
                             ->send();
                     }
                 }),
-            FindOrderItemAnalogAction::make()
-                ->extraAttributes(['class' => 'order-view-action order-view-action--primary']),
             ActionGroup::make([
+                EvropochtaOrderActions::track(),
+                EvropochtaOrderActions::printLabel('thermal'),
+                EvropochtaOrderActions::printLabel('address'),
+                EvropochtaOrderActions::prepare(),
+                EvropochtaOrderActions::create(),
+            ])
+                ->label('Европочта')
+                ->icon('heroicon-o-cube')
+                ->color('gray')
+                ->dropdownWidth(Width::Medium)
+                ->button(),
+            ActionGroup::make([
+                FindOrderItemAnalogAction::make()
+                    ->extraAttributes(['class' => 'order-view-action order-view-action--primary']),
                 Action::make('confirmFulfillment')
                 ->label('Подтвердить исполнение')
                 ->icon('heroicon-o-check-badge')
@@ -783,9 +470,325 @@ class ViewOrder extends ViewRecord
             ])
                 ->label('Исполнение и закупки')
                 ->icon('heroicon-o-truck')
-                ->color('warning')
+                ->color('gray')
                 ->button(),
             ActionGroup::make([
+                CreateCommercialDocumentFromOrderAction::make(),
+                Action::make('printProcurement')
+                ->label('Печать для закупок')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->url(fn (): string => route('admin.orders.procurement', ['order' => $this->record]))
+                ->openUrlInNewTab(),
+                Action::make('emailProcurement')
+                ->label('Отправить в закупки')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('info')
+                ->modalHeading('Отправить закупочный лист')
+                ->modalDescription('Письмо уйдёт с order@kotlov.by. В защищённой ссылке всегда отображаются текущие поставщики, входные цены, контакты и статусы исполнения.')
+                ->fillForm(fn (): array => [
+                    'recipient' => $this->record->procurement_recipient ?: config('services.procurement.email'),
+                    'note' => null,
+                ])
+                ->schema([
+                    TextInput::make('recipient')
+                        ->label('Email отдела закупок')
+                        ->email()
+                        ->required(),
+                    Textarea::make('note')
+                        ->label('Комментарий')
+                        ->rows(3)
+                        ->maxLength(2000),
+                    Select::make('availability_status')
+                        ->label('Решение по наличию всех позиций')
+                        ->options([
+                            'available' => 'Наличие подтверждено',
+                            'reserved' => 'Всё зарезервировано',
+                        ])
+                        ->required(),
+                    Checkbox::make('availability_confirmation')
+                        ->label('Подтверждаю: поставщики выбраны, наличие или резерв проверены по всем позициям')
+                        ->accepted()
+                        ->required(),
+                ])
+                ->modalSubmitActionLabel('Отправить')
+                ->action(function (array $data): void {
+                    $user = auth()->user();
+                    $this->confirmAvailabilityBeforeShare($data['availability_status'], $data['note'] ?? null);
+                    $portal = app(OrderPortal::class);
+                    $portalLink = $portal->publish($this->record, $user);
+                    $thread = app(SupplierRequestMailDraftService::class)->createOrderProcurementDraft(
+                        $this->record,
+                        $user,
+                        $data['recipient'],
+                        'Закупка по заказу '.$this->record->number,
+                        $this->procurementEmailBody($portal->url($portalLink), $data['note'] ?? null),
+                    );
+                    app(CrmMailSender::class)->sendOrderProcurementDraft($thread, $user);
+
+                    $this->record->forceFill([
+                        'procurement_sent_at' => now(),
+                        'procurement_sent_by' => $user->id,
+                        'procurement_recipient' => mb_strtolower(trim($data['recipient'])),
+                    ])->save();
+                    $this->reloadRecord();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Закупочный лист отправлен')
+                        ->body('Получатель: '.$data['recipient'])
+                        ->send();
+                }),
+                Action::make('sendAccountingPaymentRequest')
+                    ->label('Передать счёт в бухгалтерию')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('warning')
+                    ->modalHeading('Поручение бухгалтерии на оплату')
+                    ->modalDescription('Письмо и документ будут отправлены с order@kotlov.by и останутся связанными с заказом.')
+                    ->fillForm(fn (): array => [
+                        'recipient' => config('services.accounting.email', 'buh-sbg@yandex.ru'),
+                        'amount' => $this->accountingSuggestedAmount(),
+                        'due_date' => now()->addWeekdays(2)->toDateString(),
+                        'comment' => null,
+                    ])
+                    ->schema([
+                        TextInput::make('recipient')
+                            ->label('Email бухгалтерии')
+                            ->email()
+                            ->required(),
+                        TextInput::make('amount')
+                            ->label('Сумма к оплате, BYN')
+                            ->numeric()
+                            ->minValue(0.01),
+                        DatePicker::make('due_date')
+                            ->label('Оплатить до')
+                            ->native(false),
+                        FileUpload::make('attachments')
+                            ->label('Счёт или другой документ на оплату')
+                            ->disk('local')
+                            ->directory('crm-mail-attachments/accounting')
+                            ->visibility('private')
+                            ->multiple()
+                            ->required()
+                            ->maxFiles(5)
+                            ->maxSize(15360)
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'application/vnd.ms-excel',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'application/msword',
+                            ])
+                            ->storeFileNamesIn('attachment_file_names')
+                            ->helperText('PDF, фото или Excel. До 5 файлов, каждый не более 15 МБ.'),
+                        Textarea::make('comment')
+                            ->label('Комментарий бухгалтеру')
+                            ->placeholder('Например: оплатить после подтверждения резерва, назначение платежа…')
+                            ->rows(3)
+                            ->maxLength(2000),
+                    ])
+                    ->modalSubmitActionLabel('Отправить поручение')
+                    ->action(function (array $data): void {
+                        $user = auth()->user();
+                        $recipient = mb_strtolower(trim((string) $data['recipient']));
+
+                        try {
+                            [$thread, $request] = DB::transaction(function () use ($data, $user, $recipient): array {
+                                $thread = app(SupplierRequestMailDraftService::class)->createOrderAccountingDraft(
+                                    $this->record,
+                                    $user,
+                                    $recipient,
+                                    'Оплата поставщику — заказ '.$this->record->number,
+                                    $this->accountingEmailBody($data),
+                                    $data['attachments'] ?? [],
+                                    $data['attachment_file_names'] ?? [],
+                                );
+                                $request = $this->record->accountingRequests()->create([
+                                    'mail_thread_id' => $thread->id,
+                                    'requested_by_user_id' => $user->id,
+                                    'recipient_email' => $recipient,
+                                    'amount' => filled($data['amount'] ?? null) ? (float) $data['amount'] : null,
+                                    'due_date' => $data['due_date'] ?? null,
+                                    'status' => 'draft',
+                                    'comment' => $data['comment'] ?? null,
+                                ]);
+
+                                return [$thread, $request];
+                            });
+                        } catch (Throwable $exception) {
+                            report($exception);
+                            Notification::make()
+                                ->danger()
+                                ->title('Не удалось сохранить поручение')
+                                ->body($exception->getMessage())
+                                ->send();
+
+                            return;
+                        }
+
+                        try {
+                            app(CrmMailSender::class)->sendOrderAccountingDraft($thread, $user);
+                            $request->update(['status' => 'sent', 'sent_at' => now(), 'last_error' => null]);
+                            $this->record->statusHistory()->create([
+                                'user_id' => $user->id,
+                                'status_from' => $this->record->status,
+                                'status_to' => $this->record->status,
+                                'comment' => 'Счёт поставщика передан в бухгалтерию · поручение №'.$request->id
+                                    .' · '.$recipient
+                                    .(filled($data['amount'] ?? null) ? ' · '.number_format((float) $data['amount'], 2, ',', ' ').' BYN' : ''),
+                            ]);
+                            Notification::make()->success()->title('Поручение отправлено в бухгалтерию')->body($recipient)->send();
+                        } catch (Throwable $exception) {
+                            $request->update(['last_error' => $exception->getMessage()]);
+                            $this->record->statusHistory()->create([
+                                'user_id' => $user->id,
+                                'status_from' => $this->record->status,
+                                'status_to' => $this->record->status,
+                                'comment' => 'Счёт поставщика прикреплён к заказу, но письмо в бухгалтерию не отправлено · поручение №'.$request->id,
+                            ]);
+                            Notification::make()->warning()->title('Поручение сохранено, но письмо не отправлено')->body($exception->getMessage())->send();
+                        }
+
+                        $this->reloadRecord();
+                    }),
+                Action::make('completeAccountingPaymentRequest')
+                    ->label('Отметить оплату поставщику')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn (): bool => $this->record->accountingRequests->where('status', 'sent')->isNotEmpty())
+                    ->schema([
+                        Select::make('accounting_request_id')
+                            ->label('Поручение')
+                            ->options(fn (): array => $this->record->accountingRequests
+                                ->where('status', 'sent')
+                                ->mapWithKeys(fn (OrderAccountingRequest $request): array => [
+                                    $request->id => '№'.$request->id.' · '.($request->amount !== null ? number_format((float) $request->amount, 2, '.', ' ').' BYN' : 'сумма не указана').' · '.$request->recipient_email,
+                                ])->all())
+                            ->required(),
+                        Textarea::make('comment')
+                            ->label('Комментарий об оплате')
+                            ->rows(2)
+                            ->maxLength(1000),
+                    ])
+                    ->modalSubmitActionLabel('Подтвердить оплату')
+                    ->action(function (array $data): void {
+                        $request = $this->record->accountingRequests()->where('status', 'sent')->findOrFail($data['accounting_request_id']);
+                        $request->update([
+                            'status' => 'paid',
+                            'completed_by_user_id' => auth()->id(),
+                            'completed_at' => now(),
+                            'comment' => collect([$request->comment, $data['comment'] ?? null])->filter()->implode("\n"),
+                        ]);
+                        $this->reloadRecord();
+                        Notification::make()->success()->title('Оплата поставщику отмечена')->send();
+                    }),
+            ])
+                ->label('Документы')
+                ->icon('heroicon-o-document-text')
+                ->color('gray')
+                ->button(),
+            ActionGroup::make([
+                ManageOrderDealAction::make(),
+                AssignOrderToPartnerAction::make(),
+                \App\Filament\Resources\Orders\Actions\OrderReviewLinkAction::make(),
+                \App\Filament\Resources\Orders\Actions\OrderReviewSmsAction::make(),
+                ActionGroup::make([
+                    Action::make('publishOrderOnline')
+                        ->label('Создать ссылку и QR заказа')
+                        ->icon('heroicon-o-qr-code')
+                        ->color('primary')
+                        ->visible(fn (): bool => ! $this->orderPortalIsComplete())
+                        ->modalHeading('Создать ссылку на подтверждённый заказ')
+                        ->modalDescription('Перед публикацией менеджер обязан подтвердить поставщиков и наличие всех позиций.')
+                        ->schema([
+                            Select::make('availability_status')
+                                ->label('Решение по наличию всех позиций')
+                                ->options([
+                                    'available' => 'Наличие подтверждено',
+                                    'reserved' => 'Всё зарезервировано',
+                                ])
+                                ->required(),
+                            Checkbox::make('availability_confirmation')
+                                ->label('Подтверждаю: поставщики выбраны, наличие или резерв проверены по всем позициям')
+                                ->accepted()
+                                ->required(),
+                        ])
+                        ->modalSubmitActionLabel('Подтвердить и создать ссылку')
+                        ->action(function (array $data): void {
+                            try {
+                                $this->confirmAvailabilityBeforeShare($data['availability_status']);
+                                $portal = app(OrderPortal::class);
+                                $link = $portal->publish($this->record, auth()->user());
+                                Notification::make()
+                                    ->success()
+                                    ->title('Онлайн-заказ и QR готовы')
+                                    ->body($portal->url($link))
+                                    ->persistent()
+                                    ->send();
+                            } catch (Throwable $exception) {
+                                Notification::make()->danger()->title('Не удалось создать доступ')->body($exception->getMessage())->send();
+                            }
+                        }),
+                    Action::make('showOrderQr')
+                        ->label('Показать QR и ссылку')
+                        ->icon('heroicon-o-qr-code')
+                        ->color('gray')
+                        ->visible(fn (): bool => ! $this->orderPortalIsComplete()
+                            && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                        ->modalHeading(fn (): string => 'Онлайн-заказ '.$this->record->number)
+                        ->modalDescription('QR и ссылка ведут на одну защищённую страницу всего заказа, как в онлайн-КП.')
+                        ->modalWidth(Width::Large)
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Закрыть')
+                        ->modalContent(function () {
+                            $link = $this->record->portalLinks()
+                                ->whereNull('revoked_at')->where('expires_at', '>', now())->latest('id')->firstOrFail();
+                            $portal = app(OrderPortal::class);
+
+                            return view('filament.resources.orders.online-access', [
+                                'order' => $this->record,
+                                'url' => $portal->url($link),
+                                'qr' => $portal->qrDataUri($link),
+                                'expiresAt' => $link->expires_at,
+                            ]);
+                        }),
+                    Action::make('previewOrderOnline')
+                        ->label('Предпросмотр заказа')
+                        ->icon('heroicon-o-eye')
+                        ->color('gray')
+                        ->visible(fn (): bool => ! $this->orderPortalIsComplete()
+                            && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                        ->url(fn (): string => route('admin.orders.online-preview', $this->record))
+                        ->openUrlInNewTab(),
+                    Action::make('printOrderOnline')
+                        ->label('Печать онлайн-заказа')
+                        ->icon('heroicon-o-printer')
+                        ->color('gray')
+                        ->visible(fn (): bool => ! $this->orderPortalIsComplete()
+                            && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                        ->url(function (): string {
+                            $link = $this->record->portalLinks()
+                                ->whereNull('revoked_at')->where('expires_at', '>', now())->latest('id')->firstOrFail();
+
+                            return app(OrderPortal::class)->printUrl($link);
+                        })
+                        ->openUrlInNewTab(),
+                    Action::make('revokeOrderOnline')
+                        ->label('Отозвать онлайн-доступ')
+                        ->icon('heroicon-o-lock-closed')
+                        ->color('danger')
+                        ->visible(fn (): bool => $this->record->portalLinks()
+                            ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                        ->requiresConfirmation()
+                        ->action(function (): void {
+                            $link = $this->record->portalLinks()->whereNull('revoked_at')->latest('id')->firstOrFail();
+                            app(OrderPortal::class)->revoke($link);
+                            Notification::make()->success()->title('Онлайн-доступ к заказу отозван')->send();
+                        }),
+                ])->dropdown(false),
             Action::make('addManagerComment')
                 ->label('Добавить комментарий')
                 ->icon('heroicon-o-chat-bubble-left-right')
@@ -895,9 +898,11 @@ class ViewOrder extends ViewRecord
                 ->visible(fn (): bool => ! in_array($this->record->status, ['new', 'checking'], true))
                 ->extraAttributes(['class' => 'order-view-action order-view-action--edit']),
             ])
-                ->label('Управление')
+                ->label('Ещё')
                 ->icon('heroicon-o-ellipsis-horizontal')
                 ->color('gray')
+                ->dropdownWidth(Width::Medium)
+                ->dropdownMaxHeight('65vh')
                 ->button(),
         ];
     }

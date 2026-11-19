@@ -28,8 +28,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Livewire;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Notifications\Notification;
@@ -61,21 +61,11 @@ class OrderInfolist
         };
 
         return $schema
-            ->columns(3)
+            ->columns(['default' => 1, '2xl' => 3])
             ->components([
-                Section::make('Сделка и следующий шаг')
-                    ->columnSpanFull()
-                    ->compact()
-                    ->schema([
-                        ViewEntry::make('deal_progress')->hiddenLabel()
-                            ->view('filament.resources.orders.deal-progress')
-                            ->viewData(['isTable' => false]),
-                    ]),
-
-                // ── Шапка: полная ширина ──────────────────────────────────────
                 Section::make()
                     ->columnSpanFull()
-                    ->columns(8)
+                    ->columns(['default' => 2, 'md' => 4, 'xl' => 8])
                     ->compact()
                     ->schema([
                         TextEntry::make('number')
@@ -126,24 +116,573 @@ class OrderInfolist
                                 : ($record->assigned_to ?? null)),
                     ]),
 
-                Section::make('Что делать дальше')
-                    ->icon('heroicon-o-forward')
-                    ->columnSpanFull()
-                    ->compact()
-                    ->columns(3)
-                    ->schema([
-                        TextEntry::make('workflow_stage')
-                            ->label('Текущий этап')
-                            ->badge()
-                            ->color(fn (Order $record): string => $statusColor($record->status))
-                            ->getStateUsing(fn (Order $record): string => $record->status_label),
-                        TextEntry::make('workflow_destination')
-                            ->label('Куда передать')
-                            ->getStateUsing(fn (Order $record): string => $record->workflowDestination()),
-                        TextEntry::make('workflow_next_step')
-                            ->label('Следующее действие')
-                            ->getStateUsing(fn (Order $record): string => $record->workflowNextStep()),
-                    ]),
+                Group::make([
+                    Section::make('Ход заказа')
+                        ->icon('heroicon-o-forward')
+                        ->columnSpanFull()
+                        ->compact()
+                        ->schema([
+                            ViewEntry::make('deal_progress')->hiddenLabel()
+                                ->view('filament.resources.orders.deal-progress')
+                                ->viewData(['isTable' => false]),
+                        ]),
+
+                    Section::make('Товары заказа')
+                        ->icon('heroicon-o-shopping-bag')
+                        ->columnSpanFull()
+                        ->compact()
+                        ->schema([
+                            RepeatableEntry::make('items')
+                                ->hiddenLabel()
+                                ->columns(12)
+                                ->schema([
+                                    TextEntry::make('product_name')
+                                        ->label('Товар')
+                                        ->columnSpan(3)
+                                        ->url(fn ($record): ?string => $record->publicProductUrl())
+                                        ->openUrlInNewTab(),
+
+                                    TextEntry::make('product_sku')
+                                        ->label('Артикул')
+                                        ->columnSpan(2)
+                                        ->placeholder('—')
+                                        ->fontFamily('mono')
+                                        ->copyable(),
+
+                                    TextEntry::make('quantity')
+                                        ->label('Кол-во')
+                                        ->suffix(' шт.'),
+
+                                    TextEntry::make('price')
+                                        ->label('Продажа')
+                                        ->columnSpan(2)
+                                        ->weight('bold')
+                                        ->color('primary')
+                                        ->formatStateUsing(fn ($state, $record): string => $byn($state)
+                                            .((int) $record->quantity > 1 ? ' × '.(int) $record->quantity.' = '.$byn($record->total) : '')),
+
+                                    TextEntry::make('supply_supplier')
+                                        ->label('Поставщик')
+                                        ->columnSpan(2)
+                                        ->state(fn (OrderItem $record): ?string => $record->fulfillment_supplier_name
+                                            ?: $record->fulfillmentSupplier?->name
+                                            ?: data_get($record->current_availability, 'supplier_name')
+                                            ?: $record->supplyContext()['supplier_name'])
+                                        ->placeholder('Не определён')
+                                        ->helperText(function (OrderItem $record): ?string {
+                                            $recommended = data_get($record->current_availability, 'supplier_name')
+                                                ?: $record->supplyContext()['supplier_name'];
+                                            $assigned = $record->fulfillment_supplier_name ?: $record->fulfillmentSupplier?->name;
+
+                                            return $assigned && $recommended && $assigned !== $recommended
+                                                ? 'Рекомендация базы: '.$recommended
+                                                : null;
+                                        })
+                                        ->weight('bold')
+                                        ->suffixAction(
+                                            Action::make('assignItemSupplier')
+                                                ->label('Назначить')
+                                                ->icon('heroicon-o-arrows-right-left')
+                                                ->color('warning')
+                                                ->tooltip('Назначить или сменить фактического поставщика')
+                                                ->modalHeading(fn (OrderItem $record): string => 'Поставщик: '.$record->product_name)
+                                                ->modalDescription('Рекомендация из базы сохранится для сравнения. Здесь фиксируется фактический поставщик, наличие или резерв и решение менеджера.')
+                                                ->modalSubmitActionLabel('Подтвердить')
+                                                ->fillForm(function (OrderItem $record): array {
+                                                    $recommendedRoute = $record->supplyContext()['status'];
+                                                    $supplierId = $record->fulfillment_supplier_id
+                                                        ?: data_get($record->current_availability, 'supplier_id')
+                                                        ?: $record->supply_supplier_id;
+                                                    $supplier = $supplierId
+                                                        ? Supplier::query()->with('crmCounterparty.contactPoints')->find($supplierId)
+                                                        : null;
+
+                                                    return [
+                                                        'fulfillment_route' => $record->fulfillment_route
+                                                            ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase'),
+                                                        'supplier_id' => $supplierId,
+                                                        'purchase_price' => $record->fulfillment_purchase_price ?? $record->supply_purchase_price,
+                                                        'availability_status' => $record->fulfillment_availability_status,
+                                                        'request_reserve_now' => true,
+                                                        'reservation_quantity' => $record->quantity,
+                                                        'reservation_recipient' => $supplier?->contactEmailAddresses()[0] ?? null,
+                                                        'note' => null,
+                                                    ];
+                                                })
+                                                ->schema([
+                                                    Select::make('fulfillment_route')
+                                                        ->label('Как исполняем')
+                                                        ->options(OrderItem::FULFILLMENT_ROUTES)
+                                                        ->required()
+                                                        ->live(),
+                                                    Select::make('supplier_id')
+                                                        ->label('Фактический поставщик')
+                                                        ->options(fn (): array => Supplier::query()
+                                                            ->where('is_active', true)
+                                                            ->orderBy('name')
+                                                            ->pluck('name', 'id')
+                                                            ->all())
+                                                        ->searchable()
+                                                        ->required()
+                                                        ->live()
+                                                        ->afterStateUpdated(function ($state, Set $set): void {
+                                                            $supplier = $state
+                                                                ? Supplier::query()->with('crmCounterparty.contactPoints')->find($state)
+                                                                : null;
+                                                            $set('reservation_recipient', $supplier?->contactEmailAddresses()[0] ?? null);
+                                                        })
+                                                        ->createOptionForm(self::newSupplierForm())
+                                                        ->createOptionAction(fn (Action $action): Action => $action
+                                                            ->label('Добавить поставщика')
+                                                            ->modalHeading('Новый поставщик по УНП')
+                                                            ->modalDescription('Найдите реквизиты в CRM / 1С и реестре МНС, проверьте их и сохраните. Новый поставщик сразу выберется для позиции.')
+                                                            ->modalSubmitActionLabel('Создать и выбрать'))
+                                                        ->createOptionUsing(fn (array $data): int => self::createSupplier($data))
+                                                        ->helperText('Можно выбрать любого активного поставщика, даже если товар первоначально был подобран у другого.'),
+                                                    Select::make('availability_status')
+                                                        ->label('Решение по наличию')
+                                                        ->options(OrderItem::FULFILLMENT_AVAILABILITY_STATUSES)
+                                                        ->required(),
+                                                    TextInput::make('purchase_price')
+                                                        ->label('Подтверждённая входная цена за единицу, BYN')
+                                                        ->numeric()
+                                                        ->minValue(0),
+                                                    Checkbox::make('request_reserve_now')
+                                                        ->label('Сразу отправить поставщику запрос наличия и резерва')
+                                                        ->helperText('Письмо уйдёт с order@kotlov.by, а заявка и переписка сохранятся в заказе.')
+                                                        ->visible(fn (Get $get): bool => in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
+                                                        ->live(),
+                                                    TextInput::make('reservation_quantity')
+                                                        ->label('Количество для закупки / резерва')
+                                                        ->numeric()
+                                                        ->integer()
+                                                        ->minValue(1)
+                                                        ->required(fn (Get $get): bool => (bool) $get('request_reserve_now')
+                                                            && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
+                                                        ->visible(fn (Get $get): bool => (bool) $get('request_reserve_now')
+                                                            && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
+                                                        ->helperText(fn (OrderItem $record): string => 'В заказе клиента '.$record->quantity.' шт. Можно запросить больше для пополнения склада.'),
+                                                    TextInput::make('reservation_recipient')
+                                                        ->label('Email поставщика')
+                                                        ->email()
+                                                        ->required(fn (Get $get): bool => (bool) $get('request_reserve_now')
+                                                            && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
+                                                        ->visible(fn (Get $get): bool => (bool) $get('request_reserve_now')
+                                                            && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true)),
+                                                    Textarea::make('note')
+                                                        ->label('Комментарий менеджера')
+                                                        ->rows(3)
+                                                        ->maxLength(2000),
+                                                ])
+                                                ->action(function (OrderItem $record, array $data): void {
+                                                    $supplier = filled($data['supplier_id'] ?? null)
+                                                        ? Supplier::query()->with('crmCounterparty.contactPoints')->findOrFail($data['supplier_id'])
+                                                        : null;
+                                                    $sendReserve = (bool) ($data['request_reserve_now'] ?? false)
+                                                        && in_array($data['fulfillment_route'], ['supplier_purchase', 'direct_supplier'], true);
+
+                                                    if ($sendReserve) {
+                                                        $existing = $record->order->supplierOrderRequests()
+                                                            ->where('supplier_id', $supplier?->id)
+                                                            ->where('route', $data['fulfillment_route'])
+                                                            ->whereNotIn('status', ['draft', 'cancelled'])
+                                                            ->first();
+                                                        if ($existing) {
+                                                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                                                'reservation_recipient' => 'Запрос этому поставщику уже отправляли: '.$existing->number.'.',
+                                                            ]);
+                                                        }
+                                                    }
+
+                                                    app(OrderItemFulfillmentManager::class)->confirm(
+                                                        $record,
+                                                        $data['fulfillment_route'],
+                                                        $supplier,
+                                                        auth()->user(),
+                                                        $data['note'] ?? null,
+                                                        filled($data['purchase_price'] ?? null) ? (float) $data['purchase_price'] : null,
+                                                        $data['availability_status'],
+                                                    );
+
+                                                    if ($sendReserve) {
+                                                        try {
+                                                            $order = Order::query()->findOrFail($record->order_id);
+                                                            $reserveQuantity = max(1, (int) ($data['reservation_quantity'] ?? $record->quantity));
+                                                            $request = app(SupplierOrderRequestBuilder::class)
+                                                                ->buildDrafts($order, auth()->user(), $supplier->id, $data['fulfillment_route'])
+                                                                ->firstOrFail();
+                                                            $requestItem = $request->items()->where('order_item_id', $record->id)->firstOrFail();
+                                                            $requestItem->forceFill([
+                                                                'quantity' => $reserveQuantity,
+                                                                'purchase_total' => $requestItem->purchase_price !== null
+                                                                    ? (float) $requestItem->purchase_price * $reserveQuantity
+                                                                    : null,
+                                                            ])->save();
+                                                            $request->load('items');
+                                                            $request->forceFill([
+                                                                'purchase_total' => $request->items->every(fn ($item): bool => $item->purchase_price !== null)
+                                                                    ? $request->items->sum(fn ($item): float => (float) $item->purchase_total)
+                                                                    : null,
+                                                            ])->save();
+                                                            app(SupplierReservationMailService::class)->sendOrderRequest(
+                                                                $request,
+                                                                auth()->user(),
+                                                                (string) $data['reservation_recipient'],
+                                                                filled($data['note'] ?? null)
+                                                                    ? $data['note']
+                                                                    : 'Просим подтвердить актуальное наличие указанного количества и поставить товар в резерв.',
+                                                            );
+                                                            $order->statusHistory()->create([
+                                                                'user_id' => auth()->id(),
+                                                                'status_from' => $order->status,
+                                                                'status_to' => $order->status,
+                                                                'comment' => 'Запрос наличия и резерва отправлен поставщику '.$supplier->name
+                                                                    .' · '.$record->product_name.' · '.$reserveQuantity.' шт.'
+                                                                    .($reserveQuantity !== (int) $record->quantity ? ' (в заказе клиента '.$record->quantity.' шт.)' : '')
+                                                                    .' · '.$request->number,
+                                                            ]);
+                                                        } catch (\Throwable $exception) {
+                                                            report($exception);
+                                                            Notification::make()
+                                                                ->warning()
+                                                                ->title('Решение сохранено, но письмо не отправлено')
+                                                                ->body($exception->getMessage())
+                                                                ->send();
+
+                                                            return;
+                                                        }
+                                                    }
+
+                                                    Notification::make()
+                                                        ->success()
+                                                        ->title($sendReserve ? 'Поставщик подтверждён, запрос резерва отправлен' : 'Поставщик и наличие подтверждены')
+                                                        ->body(($supplier?->name ?: 'Наш склад').' · '.OrderItem::FULFILLMENT_AVAILABILITY_STATUSES[$data['availability_status']])
+                                                        ->send();
+                                                }),
+                                        ),
+
+                                    TextEntry::make('supply_warehouse_name')
+                                        ->label('Склад отгрузки')
+                                        ->columnSpan(2)
+                                        ->placeholder('Не выбран')
+                                        ->helperText(fn (OrderItem $record): ?string => $record->supply_delivery_days
+                                            ? 'Ориентировочная доставка: до '.$record->supply_delivery_days.' дней'
+                                            : null)
+                                        ->visible(fn (OrderItem $record): bool => filled($record->supply_warehouse_name)),
+
+                                    TextEntry::make('supply_stock_summary')
+                                        ->label('Наличие')
+                                        ->columnSpan(2)
+                                        ->state(function (OrderItem $record): string {
+                                            if ($record->fulfillment_availability_status) {
+                                                return $record->fulfillmentAvailabilityLabel() ?? 'Решение менеджера зафиксировано';
+                                            }
+
+                                            $snapshot = $record->supplyContext()['stock_label'];
+                                            if (! $record->current_availability_checked_at) {
+                                                return $snapshot;
+                                            }
+
+                                            $current = (string) ($record->current_availability['stock_label'] ?? 'Неизвестно');
+                                            $current = preg_replace('/^Сейчас\s+/u', '', $current) ?: $current;
+                                            $current = mb_strtolower(mb_substr($current, 0, 1)).mb_substr($current, 1);
+
+                                            return $snapshot.' · сейчас: '.$current;
+                                        })
+                                        ->helperText(function (OrderItem $record): ?string {
+                                            if ($record->fulfillment_availability_status) {
+                                                $current = $record->current_availability_checked_at
+                                                    ? (string) data_get($record->current_availability, 'stock_label', 'Неизвестно')
+                                                    : null;
+                                                $sourceUpdatedAt = data_get($record->current_availability, 'source_updated_at');
+
+                                                return collect([
+                                                    $record->fulfillment_confirmed_at
+                                                        ? 'Подтвердил '.($record->fulfillmentConfirmedBy?->name ?? 'система')
+                                                            .' · '.$record->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
+                                                        : 'Решение менеджера зафиксировано',
+                                                    $current ? 'По актуальной базе: '.$current : null,
+                                                    $record->current_availability_checked_at
+                                                        ? 'проверено '.$record->current_availability_checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
+                                                        : null,
+                                                    $sourceUpdatedAt ? 'данные склада от '.Carbon::parse($sourceUpdatedAt)->timezone('Europe/Minsk')->format('d.m.Y H:i') : null,
+                                                ])->filter()->implode(' · ');
+                                            }
+
+                                            if (! $record->current_availability_checked_at) {
+                                                return 'Актуальное наличие ещё не уточняли';
+                                            }
+
+                                            $sourceUpdatedAt = data_get($record->current_availability, 'source_updated_at');
+                                            $parts = [
+                                                'Проверено '.$record->current_availability_checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i'),
+                                                $record->currentAvailabilityCheckedBy?->name,
+                                                $sourceUpdatedAt ? 'данные склада от '.Carbon::parse($sourceUpdatedAt)->timezone('Europe/Minsk')->format('d.m.Y H:i') : null,
+                                            ];
+
+                                            return collect($parts)->filter()->implode(' · ');
+                                        })
+                                        ->color(fn (OrderItem $record): string => $record->fulfillment_availability_status
+                                            ? match ($record->fulfillment_availability_status) {
+                                                'available', 'reserved' => 'success',
+                                                'ordered' => 'info',
+                                                'unavailable' => 'danger',
+                                                default => 'gray',
+                                            }
+                                            : match (data_get($record->current_availability, 'is_available')) {
+                                                true => 'success',
+                                                false => 'danger',
+                                                default => 'gray',
+                                            })
+                                        ->weight('bold')
+                                        ->suffixAction(
+                                            Action::make('refreshCurrentAvailability')
+                                                ->label('Уточнить')
+                                                ->icon('heroicon-o-arrow-path')
+                                                ->color('info')
+                                                ->tooltip('Уточнить актуальное наличие по последнему обновлению базы')
+                                                ->action(function (OrderItem $record): void {
+                                                    $check = app(OrderItemAvailabilityChecker::class)->check($record, auth()->user());
+
+                                                    Notification::make()
+                                                        ->title('Актуальное наличие проверено')
+                                                        ->body(collect([
+                                                            $check['supplier_name'],
+                                                            $check['stock_label'],
+                                                        ])->filter()->implode(' · '))
+                                                        ->color($check['is_available'] === true ? 'success' : 'warning')
+                                                        ->send();
+                                                }),
+                                        ),
+
+                                    TextEntry::make('fulfillment_result_summary')
+                                        ->label('Итог исполнения')
+                                        ->columnSpanFull()
+                                        ->state(function ($record) use ($byn): string {
+                                            if (! $record->fulfillment_route) {
+                                                return 'Требует решения: маршрут и входная цена не подтверждены';
+                                            }
+
+                                            return collect([
+                                                $record->fulfillmentRouteLabel(),
+                                                $record->fulfillment_supplier_name
+                                                    ?: ($record->fulfillment_route === 'own_stock' ? 'Собственный склад' : null),
+                                                $record->fulfillment_purchase_price !== null
+                                                    ? 'вход '.$byn($record->fulfillment_purchase_price)
+                                                    : 'входная цена не указана',
+                                                $record->fulfillmentAvailabilityLabel(),
+                                                $record->fulfillment_confirmed_at
+                                                    ? 'подтвердил '.($record->fulfillmentConfirmedBy?->name ?? 'система')
+                                                        .' · '.$record->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
+                                                    : null,
+                                            ])->filter()->implode(' · ');
+                                        })
+                                        ->badge()
+                                        ->color(fn ($record): string => $record->fulfillment_route ? 'success' : 'warning')
+                                        ->icon(fn ($record): string => $record->fulfillment_route
+                                            ? 'heroicon-o-check-circle'
+                                            : 'heroicon-o-exclamation-triangle'),
+
+                                    Section::make('Закупка и исполнение')
+                                        ->icon('heroicon-o-truck')
+                                        ->columnSpanFull()
+                                        ->compact()
+                                        ->collapsible()
+                                        ->collapsed()
+                                        ->columns(12)
+                                        ->schema([
+                                            TextEntry::make('supply_contact')
+                                                ->label('Контакты поставщика')
+                                                ->columnSpan(3)
+                                                ->state(fn ($record): ?string => $record->currentSupplyContact())
+                                                ->formatStateUsing(fn (?string $state): HtmlString|string => self::contactLinks($state))
+                                                ->placeholder('Не заполнены')
+                                                ->copyable(),
+
+                                    TextEntry::make('supply_route')
+                                        ->label('Маршрут')
+                                        ->columnSpan(2)
+                                        ->state(fn ($record): string => $record->supplyContext()['route_label'])
+                                        ->badge()
+                                        ->color(fn ($record): string => match ($record->supplyContext()['status']) {
+                                            'own_stock' => 'success',
+                                            'supplier_purchase' => 'warning',
+                                            default => 'danger',
+                                        }),
+
+                                    TextEntry::make('supply_wholesale_price')
+                                        ->label('Оптовая / закупочная')
+                                        ->columnSpan(2)
+                                        ->state(fn ($record): ?float => $record->supplyContext()['wholesale_price'])
+                                        ->formatStateUsing(fn ($state): string => $state === null ? '—' : $byn($state))
+                                        ->helperText(fn ($record): string => $record->supplyContext()['wholesale_price_label']),
+
+                                    TextEntry::make('supply_margin')
+                                        ->label('Расчётная маржа')
+                                        ->columnSpan(2)
+                                        ->state(function ($record) use ($byn): string {
+                                            $context = $record->supplyContext();
+                                            if ($context['margin_total'] === null) {
+                                                return 'Не рассчитана';
+                                            }
+
+                                            return $byn($context['margin_total'])
+                                                .($context['margin_percent'] !== null ? ' / '.number_format($context['margin_percent'], 1, '.', ' ').'%' : '');
+                                        })
+                                        ->color(fn ($record): string => match (true) {
+                                            $record->supplyContext()['margin_total'] === null => 'gray',
+                                            $record->supplyContext()['margin_total'] < 0 => 'danger',
+                                            $record->supplyContext()['margin_total'] == 0 => 'warning',
+                                            default => 'success',
+                                        }),
+
+                                    TextEntry::make('fulfillment_note')
+                                        ->label('Комментарий к маршруту')
+                                        ->columnSpanFull()
+                                        ->visible(fn ($record): bool => filled($record->fulfillment_note)),
+                                        ]),
+                                ]),
+                        ]),
+                ])->columnSpan(['default' => 1, '2xl' => 2]),
+
+                Group::make([
+                    Section::make('Доставка')
+                        ->icon('heroicon-o-truck')
+                        ->compact()
+                        ->columns(2)
+                        ->schema([
+                            TextEntry::make('delivery_type')
+                                ->label('Способ')
+                                ->formatStateUsing(fn (string $state) => Order::DELIVERY_TYPES[$state] ?? $deliveryNames[$state] ?? $state),
+
+                            TextEntry::make('delivery_price')
+                                ->label('Стоимость')
+                                ->formatStateUsing(function ($state, $record) use ($byn) {
+                                    if ($record->delivery_type === 'evropochta' && (float) $state === 0.0 && blank($record->evropochta_quote)) {
+                                        return 'Тариф ещё не рассчитан';
+                                    }
+                                    if ($record->delivery_type === 'kit' && (float) $state === 0.0) {
+                                        return 'Уточняется';
+                                    }
+
+                                    return (float) $state === 0.0 ? 'Бесплатно' : $byn($state);
+                                }),
+
+                            TextEntry::make('delivery_region')
+                                ->label('Область')
+                                ->visible(fn (Order $record): bool => filled($record->delivery_region)),
+
+                            TextEntry::make('delivery_city')
+                                ->label('Город')
+                                ->placeholder('—'),
+
+                            TextEntry::make('delivery_address')
+                                ->label('Адрес')
+                                ->placeholder('—')
+                                ->url(fn ($state, $record) => $state
+                                    ? 'https://maps.google.com/?q='.urlencode(implode(', ', array_filter([
+                                        $record->delivery_city,
+                                        $record->delivery_address,
+                                    ])))
+                                    : null)
+                                ->openUrlInNewTab(),
+
+                            TextEntry::make('planned_delivery_date')
+                                ->label('Плановая дата')
+                                ->date('d.m.Y')
+                                ->badge()
+                                ->color('warning')
+                                ->visible(fn (Order $record): bool => $record->planned_delivery_date !== null),
+
+                            TextEntry::make('evropochta_quote.carrier_price')
+                                ->label('Тариф перевозчика')
+                                ->formatStateUsing($byn)
+                                ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'
+                                    && isset($record->evropochta_quote['carrier_price'])),
+
+                            TextEntry::make('evropochta_tracking_number')
+                                ->label('Трек-номер')
+                                ->placeholder('Ожидает оформления')
+                                ->copyable()
+                                ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'),
+
+                            Livewire::make(\App\Livewire\EvropochtaOrderStatus::class, fn (Order $record): array => ['orderId' => $record->getKey()])
+                                ->columnSpanFull()
+                                ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'
+                                    && filled($record->evropochta_tracking_number)),
+                        ]),
+
+                    Section::make('Клиент')
+                        ->icon('heroicon-o-user')
+                        ->compact()
+                        ->columns(2)
+                        ->schema([
+                            TextEntry::make('customer_name')
+                                ->label('Имя'),
+
+                            TextEntry::make('customer_phone')
+                                ->label('Телефон')
+                                ->copyable()
+                                ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                                ->html(),
+
+                            TextEntry::make('customer_email')
+                                ->label('Email')
+                                ->copyable()
+                                ->placeholder('—')
+                                ->visible(fn (Order $record): bool => filled($record->customer_email))
+                                ->url(fn ($state) => $state ? 'mailto:'.$state : null),
+
+                            TextEntry::make('user.name')
+                                ->label('Аккаунт')
+                                ->visible(fn (Order $record): bool => $record->user !== null),
+
+                            TextEntry::make('company_name')
+                                ->label('Организация')
+                                ->placeholder('—')
+                                ->visible(fn ($record) => (bool) $record->company_name),
+
+                            TextEntry::make('company_unp')
+                                ->label('УНП')
+                                ->placeholder('—')
+                                ->visible(fn ($record) => (bool) $record->company_unp),
+                        ]),
+
+                    Section::make('Оплата')
+                        ->icon('heroicon-o-credit-card')
+                        ->compact()
+                        ->columns(2)
+                        ->schema([
+                            TextEntry::make('payment_type')
+                                ->label('Способ')
+                                ->formatStateUsing(fn (string $state) => Order::PAYMENT_TYPES[$state] ?? $paymentNames[$state] ?? $state),
+
+                            TextEntry::make('payment_status')
+                                ->label('Статус')
+                                ->badge()
+                                ->color(fn (Order $record): string => $record->paymentStatusColor())
+                                ->formatStateUsing(fn (?string $state, Order $record): string => $record->paymentStatusLabel()),
+
+                            TextEntry::make('coupon_code')
+                                ->label('Промокод')
+                                ->visible(fn (Order $record): bool => filled($record->coupon_code)),
+
+                            TextEntry::make('discount')
+                                ->label('Скидка')
+                                ->formatStateUsing($byn)
+                                ->visible(fn (Order $record): bool => (float) $record->discount > 0),
+
+                            TextEntry::make('subtotal')
+                                ->label('Товары')
+                                ->formatStateUsing($byn),
+
+                            TextEntry::make('total')
+                                ->label('Итого')
+                                ->weight('bold')
+                                ->color('primary')
+                                ->formatStateUsing($byn),
+                        ]),
+                ])->columnSpan(1),
 
                 Section::make('Источник продажи')
                     ->icon('heroicon-o-link')
@@ -299,145 +838,6 @@ class OrderInfolist
                                     ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
                                     ->placeholder('—'),
                             ]),
-                    ]),
-
-                // ── Клиент (1 из 3) ──────────────────────────────────────────
-                Section::make('Клиент')
-                    ->icon('heroicon-o-user')
-                    ->compact()
-                    ->columns(2)
-                    ->schema([
-                        TextEntry::make('customer_name')
-                            ->label('Имя'),
-
-                        TextEntry::make('customer_phone')
-                            ->label('Телефон')
-                            ->copyable()
-                            ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
-                            ->html(),
-
-                        TextEntry::make('customer_email')
-                            ->label('Email')
-                            ->copyable()
-                            ->placeholder('—')
-                            ->visible(fn (Order $record): bool => filled($record->customer_email))
-                            ->url(fn ($state) => $state ? 'mailto:'.$state : null),
-
-                        TextEntry::make('user.name')
-                            ->label('Аккаунт')
-                            ->visible(fn (Order $record): bool => $record->user !== null),
-
-                        TextEntry::make('company_name')
-                            ->label('Организация')
-                            ->placeholder('—')
-                            ->visible(fn ($record) => (bool) $record->company_name),
-
-                        TextEntry::make('company_unp')
-                            ->label('УНП')
-                            ->placeholder('—')
-                            ->visible(fn ($record) => (bool) $record->company_unp),
-                    ]),
-
-                // ── Доставка (2 из 3) ─────────────────────────────────────────
-                Section::make('Доставка')
-                    ->icon('heroicon-o-truck')
-                    ->compact()
-                    ->columns(2)
-                    ->schema([
-                        TextEntry::make('delivery_type')
-                            ->label('Способ')
-                            ->formatStateUsing(fn (string $state) => Order::DELIVERY_TYPES[$state] ?? $deliveryNames[$state] ?? $state),
-
-                        TextEntry::make('delivery_price')
-                            ->label('Стоимость')
-                            ->formatStateUsing(function ($state, $record) use ($byn) {
-                                if ($record->delivery_type === 'evropochta' && (float) $state === 0.0 && blank($record->evropochta_quote)) {
-                                    return 'Тариф ещё не рассчитан';
-                                }
-                                if ($record->delivery_type === 'kit' && (float) $state === 0.0) {
-                                    return 'Уточняется';
-                                }
-
-                                return (float) $state === 0.0 ? 'Бесплатно' : $byn($state);
-                            }),
-
-                        TextEntry::make('delivery_region')
-                            ->label('Область')
-                            ->visible(fn (Order $record): bool => filled($record->delivery_region)),
-
-                        TextEntry::make('delivery_city')
-                            ->label('Город')
-                            ->placeholder('—'),
-
-                        TextEntry::make('delivery_address')
-                            ->label('Адрес')
-                            ->placeholder('—')
-                            ->url(fn ($state, $record) => $state
-                                ? 'https://maps.google.com/?q='.urlencode(implode(', ', array_filter([
-                                    $record->delivery_city,
-                                    $record->delivery_address,
-                                ])))
-                                : null)
-                            ->openUrlInNewTab(),
-
-                        TextEntry::make('planned_delivery_date')
-                            ->label('Плановая дата')
-                            ->date('d.m.Y')
-                            ->badge()
-                            ->color('warning')
-                            ->visible(fn (Order $record): bool => $record->planned_delivery_date !== null),
-
-                        TextEntry::make('evropochta_quote.carrier_price')
-                            ->label('Тариф перевозчика')
-                            ->formatStateUsing($byn)
-                            ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'
-                                && isset($record->evropochta_quote['carrier_price'])),
-
-                        TextEntry::make('evropochta_tracking_number')
-                            ->label('Трек-номер Европочты')
-                            ->placeholder('Ожидает оформления')
-                            ->copyable()
-                            ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'),
-
-                        Livewire::make(\App\Livewire\EvropochtaOrderStatus::class, fn (Order $record): array => ['orderId' => $record->getKey()])
-                            ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'
-                                && filled($record->evropochta_tracking_number)),
-                    ]),
-
-                // ── Оплата (3 из 3) ──────────────────────────────────────────
-                Section::make('Оплата')
-                    ->icon('heroicon-o-credit-card')
-                    ->compact()
-                    ->columns(2)
-                    ->schema([
-                        TextEntry::make('payment_type')
-                            ->label('Способ')
-                            ->formatStateUsing(fn (string $state) => Order::PAYMENT_TYPES[$state] ?? $paymentNames[$state] ?? $state),
-
-                        TextEntry::make('payment_status')
-                            ->label('Статус')
-                            ->badge()
-                            ->color(fn (Order $record): string => $record->paymentStatusColor())
-                            ->formatStateUsing(fn (?string $state, Order $record): string => $record->paymentStatusLabel()),
-
-                        TextEntry::make('coupon_code')
-                            ->label('Промокод')
-                            ->visible(fn (Order $record): bool => filled($record->coupon_code)),
-
-                        TextEntry::make('discount')
-                            ->label('Скидка')
-                            ->formatStateUsing($byn)
-                            ->visible(fn (Order $record): bool => (float) $record->discount > 0),
-
-                        TextEntry::make('subtotal')
-                            ->label('Товары')
-                            ->formatStateUsing($byn),
-
-                        TextEntry::make('total')
-                            ->label('Итого')
-                            ->weight('bold')
-                            ->color('primary')
-                            ->formatStateUsing($byn),
                     ]),
 
                 Section::make('Экономический снимок при оформлении')
@@ -607,437 +1007,6 @@ class OrderInfolist
                                     ->formatStateUsing(fn ($state, $record): string => $byn($state)
                                         .($record->commission_rate !== null ? ' · '.rtrim(rtrim(number_format((float) $record->commission_rate, 4, '.', ' '), '0'), '.').'%' : '')),
                                 TextEntry::make('platform_margin')->label('Доход платформы')->formatStateUsing($byn),
-                            ]),
-                    ]),
-
-                // ── Товары заказа: полная ширина ──────────────────────────────
-                Section::make('Товары заказа')
-                    ->description('Товар, количество, продажа, поставщик и наличие. Закупочные детали раскрываются внутри позиции.')
-                    ->icon('heroicon-o-shopping-bag')
-                    ->columnSpanFull()
-                    ->compact()
-                    ->schema([
-                        RepeatableEntry::make('items')
-                            ->hiddenLabel()
-                            ->columns(12)
-                            ->schema([
-                                TextEntry::make('product_name')
-                                    ->label('Товар')
-                                    ->columnSpan(3)
-                                    ->url(fn ($record): ?string => $record->publicProductUrl())
-                                    ->openUrlInNewTab(),
-
-                                IconEntry::make('public_product_page')
-                                    ->hiddenLabel()
-                                    ->state(fn ($record): bool => $record->publicProductUrl() !== null)
-                                    ->boolean()
-                                    ->trueIcon('heroicon-o-arrow-top-right-on-square')
-                                    ->falseIcon('heroicon-o-minus')
-                                    ->color(fn ($record): string => $record->publicProductUrl() ? 'info' : 'gray')
-                                    ->tooltip(fn ($record): string => $record->publicProductUrl()
-                                        ? 'Открыть товар на сайте'
-                                        : 'Карточка на сайте отсутствует')
-                                    ->url(fn ($record): ?string => $record->publicProductUrl())
-                                    ->openUrlInNewTab(),
-
-                                TextEntry::make('product_sku')
-                                    ->label('Артикул')
-                                    ->columnSpan(2)
-                                    ->placeholder('—')
-                                    ->fontFamily('mono')
-                                    ->copyable(),
-
-                                TextEntry::make('quantity')
-                                    ->label('Кол-во')
-                                    ->suffix(' шт.'),
-
-                                TextEntry::make('price')
-                                    ->label('Продажа')
-                                    ->weight('bold')
-                                    ->color('primary')
-                                    ->formatStateUsing(fn ($state, $record): string => $byn($state)
-                                        .((int) $record->quantity > 1 ? ' × '.(int) $record->quantity.' = '.$byn($record->total) : '')),
-
-                                TextEntry::make('supply_supplier')
-                                    ->label('Поставщик')
-                                    ->columnSpan(2)
-                                    ->state(fn (OrderItem $record): ?string => $record->fulfillment_supplier_name
-                                        ?: $record->fulfillmentSupplier?->name
-                                        ?: data_get($record->current_availability, 'supplier_name')
-                                        ?: $record->supplyContext()['supplier_name'])
-                                    ->placeholder('Не определён')
-                                    ->helperText(function (OrderItem $record): ?string {
-                                        $recommended = data_get($record->current_availability, 'supplier_name')
-                                            ?: $record->supplyContext()['supplier_name'];
-                                        $assigned = $record->fulfillment_supplier_name ?: $record->fulfillmentSupplier?->name;
-
-                                        return $assigned && $recommended && $assigned !== $recommended
-                                            ? 'Рекомендация базы: '.$recommended
-                                            : null;
-                                    })
-                                    ->weight('bold')
-                                    ->suffixAction(
-                                        Action::make('assignItemSupplier')
-                                            ->label('Назначить')
-                                            ->icon('heroicon-o-arrows-right-left')
-                                            ->color('warning')
-                                            ->tooltip('Назначить или сменить фактического поставщика')
-                                            ->modalHeading(fn (OrderItem $record): string => 'Поставщик: '.$record->product_name)
-                                            ->modalDescription('Рекомендация из базы сохранится для сравнения. Здесь фиксируется фактический поставщик, наличие или резерв и решение менеджера.')
-                                            ->modalSubmitActionLabel('Подтвердить')
-                                            ->fillForm(function (OrderItem $record): array {
-                                                $recommendedRoute = $record->supplyContext()['status'];
-                                                $supplierId = $record->fulfillment_supplier_id
-                                                    ?: data_get($record->current_availability, 'supplier_id')
-                                                    ?: $record->supply_supplier_id;
-                                                $supplier = $supplierId
-                                                    ? Supplier::query()->with('crmCounterparty.contactPoints')->find($supplierId)
-                                                    : null;
-
-                                                return [
-                                                    'fulfillment_route' => $record->fulfillment_route
-                                                        ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase'),
-                                                    'supplier_id' => $supplierId,
-                                                    'purchase_price' => $record->fulfillment_purchase_price ?? $record->supply_purchase_price,
-                                                    'availability_status' => $record->fulfillment_availability_status,
-                                                    'request_reserve_now' => true,
-                                                    'reservation_quantity' => $record->quantity,
-                                                    'reservation_recipient' => $supplier?->contactEmailAddresses()[0] ?? null,
-                                                    'note' => null,
-                                                ];
-                                            })
-                                            ->schema([
-                                                Select::make('fulfillment_route')
-                                                    ->label('Как исполняем')
-                                                    ->options(OrderItem::FULFILLMENT_ROUTES)
-                                                    ->required()
-                                                    ->live(),
-                                                Select::make('supplier_id')
-                                                    ->label('Фактический поставщик')
-                                                    ->options(fn (): array => Supplier::query()
-                                                        ->where('is_active', true)
-                                                        ->orderBy('name')
-                                                        ->pluck('name', 'id')
-                                                        ->all())
-                                                    ->searchable()
-                                                    ->required()
-                                                    ->live()
-                                                    ->afterStateUpdated(function ($state, Set $set): void {
-                                                        $supplier = $state
-                                                            ? Supplier::query()->with('crmCounterparty.contactPoints')->find($state)
-                                                            : null;
-                                                        $set('reservation_recipient', $supplier?->contactEmailAddresses()[0] ?? null);
-                                                    })
-                                                    ->createOptionForm(self::newSupplierForm())
-                                                    ->createOptionAction(fn (Action $action): Action => $action
-                                                        ->label('Добавить поставщика')
-                                                        ->modalHeading('Новый поставщик по УНП')
-                                                        ->modalDescription('Найдите реквизиты в CRM / 1С и реестре МНС, проверьте их и сохраните. Новый поставщик сразу выберется для позиции.')
-                                                        ->modalSubmitActionLabel('Создать и выбрать'))
-                                                    ->createOptionUsing(fn (array $data): int => self::createSupplier($data))
-                                                    ->helperText('Можно выбрать любого активного поставщика, даже если товар первоначально был подобран у другого.'),
-                                                Select::make('availability_status')
-                                                    ->label('Решение по наличию')
-                                                    ->options(OrderItem::FULFILLMENT_AVAILABILITY_STATUSES)
-                                                    ->required(),
-                                                TextInput::make('purchase_price')
-                                                    ->label('Подтверждённая входная цена за единицу, BYN')
-                                                    ->numeric()
-                                                    ->minValue(0),
-                                                Checkbox::make('request_reserve_now')
-                                                    ->label('Сразу отправить поставщику запрос наличия и резерва')
-                                                    ->helperText('Письмо уйдёт с order@kotlov.by, а заявка и переписка сохранятся в заказе.')
-                                                    ->visible(fn (Get $get): bool => in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
-                                                    ->live(),
-                                                TextInput::make('reservation_quantity')
-                                                    ->label('Количество для закупки / резерва')
-                                                    ->numeric()
-                                                    ->integer()
-                                                    ->minValue(1)
-                                                    ->required(fn (Get $get): bool => (bool) $get('request_reserve_now')
-                                                        && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
-                                                    ->visible(fn (Get $get): bool => (bool) $get('request_reserve_now')
-                                                        && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
-                                                    ->helperText(fn (OrderItem $record): string => 'В заказе клиента '.$record->quantity.' шт. Можно запросить больше для пополнения склада.'),
-                                                TextInput::make('reservation_recipient')
-                                                    ->label('Email поставщика')
-                                                    ->email()
-                                                    ->required(fn (Get $get): bool => (bool) $get('request_reserve_now')
-                                                        && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
-                                                    ->visible(fn (Get $get): bool => (bool) $get('request_reserve_now')
-                                                        && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true)),
-                                                Textarea::make('note')
-                                                    ->label('Комментарий менеджера')
-                                                    ->rows(3)
-                                                    ->maxLength(2000),
-                                            ])
-                                            ->action(function (OrderItem $record, array $data): void {
-                                                $supplier = filled($data['supplier_id'] ?? null)
-                                                    ? Supplier::query()->with('crmCounterparty.contactPoints')->findOrFail($data['supplier_id'])
-                                                    : null;
-                                                $sendReserve = (bool) ($data['request_reserve_now'] ?? false)
-                                                    && in_array($data['fulfillment_route'], ['supplier_purchase', 'direct_supplier'], true);
-
-                                                if ($sendReserve) {
-                                                    $existing = $record->order->supplierOrderRequests()
-                                                        ->where('supplier_id', $supplier?->id)
-                                                        ->where('route', $data['fulfillment_route'])
-                                                        ->whereNotIn('status', ['draft', 'cancelled'])
-                                                        ->first();
-                                                    if ($existing) {
-                                                        throw \Illuminate\Validation\ValidationException::withMessages([
-                                                            'reservation_recipient' => 'Запрос этому поставщику уже отправляли: '.$existing->number.'.',
-                                                        ]);
-                                                    }
-                                                }
-
-                                                app(OrderItemFulfillmentManager::class)->confirm(
-                                                    $record,
-                                                    $data['fulfillment_route'],
-                                                    $supplier,
-                                                    auth()->user(),
-                                                    $data['note'] ?? null,
-                                                    filled($data['purchase_price'] ?? null) ? (float) $data['purchase_price'] : null,
-                                                    $data['availability_status'],
-                                                );
-
-                                                if ($sendReserve) {
-                                                    try {
-                                                        $order = Order::query()->findOrFail($record->order_id);
-                                                        $reserveQuantity = max(1, (int) ($data['reservation_quantity'] ?? $record->quantity));
-                                                        $request = app(SupplierOrderRequestBuilder::class)
-                                                            ->buildDrafts($order, auth()->user(), $supplier->id, $data['fulfillment_route'])
-                                                            ->firstOrFail();
-                                                        $requestItem = $request->items()->where('order_item_id', $record->id)->firstOrFail();
-                                                        $requestItem->forceFill([
-                                                            'quantity' => $reserveQuantity,
-                                                            'purchase_total' => $requestItem->purchase_price !== null
-                                                                ? (float) $requestItem->purchase_price * $reserveQuantity
-                                                                : null,
-                                                        ])->save();
-                                                        $request->load('items');
-                                                        $request->forceFill([
-                                                            'purchase_total' => $request->items->every(fn ($item): bool => $item->purchase_price !== null)
-                                                                ? $request->items->sum(fn ($item): float => (float) $item->purchase_total)
-                                                                : null,
-                                                        ])->save();
-                                                        app(SupplierReservationMailService::class)->sendOrderRequest(
-                                                            $request,
-                                                            auth()->user(),
-                                                            (string) $data['reservation_recipient'],
-                                                            filled($data['note'] ?? null)
-                                                                ? $data['note']
-                                                                : 'Просим подтвердить актуальное наличие указанного количества и поставить товар в резерв.',
-                                                        );
-                                                        $order->statusHistory()->create([
-                                                            'user_id' => auth()->id(),
-                                                            'status_from' => $order->status,
-                                                            'status_to' => $order->status,
-                                                            'comment' => 'Запрос наличия и резерва отправлен поставщику '.$supplier->name
-                                                                .' · '.$record->product_name.' · '.$reserveQuantity.' шт.'
-                                                                .($reserveQuantity !== (int) $record->quantity ? ' (в заказе клиента '.$record->quantity.' шт.)' : '')
-                                                                .' · '.$request->number,
-                                                        ]);
-                                                    } catch (\Throwable $exception) {
-                                                        report($exception);
-                                                        Notification::make()
-                                                            ->warning()
-                                                            ->title('Решение сохранено, но письмо не отправлено')
-                                                            ->body($exception->getMessage())
-                                                            ->send();
-
-                                                        return;
-                                                    }
-                                                }
-
-                                                Notification::make()
-                                                    ->success()
-                                                    ->title($sendReserve ? 'Поставщик подтверждён, запрос резерва отправлен' : 'Поставщик и наличие подтверждены')
-                                                    ->body(($supplier?->name ?: 'Наш склад').' · '.OrderItem::FULFILLMENT_AVAILABILITY_STATUSES[$data['availability_status']])
-                                                    ->send();
-                                            }),
-                                    ),
-
-                                TextEntry::make('supply_warehouse_name')
-                                    ->label('Склад отгрузки')
-                                    ->columnSpan(2)
-                                    ->placeholder('Не выбран')
-                                    ->helperText(fn (OrderItem $record): ?string => $record->supply_delivery_days
-                                        ? 'Ориентировочная доставка: до '.$record->supply_delivery_days.' дней'
-                                        : null)
-                                    ->visible(fn (OrderItem $record): bool => filled($record->supply_warehouse_name)),
-
-                                TextEntry::make('supply_stock_summary')
-                                    ->label('Наличие')
-                                    ->columnSpan(2)
-                                    ->state(function (OrderItem $record): string {
-                                        if ($record->fulfillment_availability_status) {
-                                            return $record->fulfillmentAvailabilityLabel() ?? 'Решение менеджера зафиксировано';
-                                        }
-
-                                        $snapshot = $record->supplyContext()['stock_label'];
-                                        if (! $record->current_availability_checked_at) {
-                                            return $snapshot;
-                                        }
-
-                                        $current = (string) ($record->current_availability['stock_label'] ?? 'Неизвестно');
-                                        $current = preg_replace('/^Сейчас\s+/u', '', $current) ?: $current;
-                                        $current = mb_strtolower(mb_substr($current, 0, 1)).mb_substr($current, 1);
-
-                                        return $snapshot.' · сейчас: '.$current;
-                                    })
-                                    ->helperText(function (OrderItem $record): ?string {
-                                        if ($record->fulfillment_availability_status) {
-                                            $current = $record->current_availability_checked_at
-                                                ? (string) data_get($record->current_availability, 'stock_label', 'Неизвестно')
-                                                : null;
-                                            $sourceUpdatedAt = data_get($record->current_availability, 'source_updated_at');
-
-                                            return collect([
-                                                $record->fulfillment_confirmed_at
-                                                    ? 'Подтвердил '.($record->fulfillmentConfirmedBy?->name ?? 'система')
-                                                        .' · '.$record->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
-                                                    : 'Решение менеджера зафиксировано',
-                                                $current ? 'По актуальной базе: '.$current : null,
-                                                $record->current_availability_checked_at
-                                                    ? 'проверено '.$record->current_availability_checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
-                                                    : null,
-                                                $sourceUpdatedAt ? 'данные склада от '.Carbon::parse($sourceUpdatedAt)->timezone('Europe/Minsk')->format('d.m.Y H:i') : null,
-                                            ])->filter()->implode(' · ');
-                                        }
-
-                                        if (! $record->current_availability_checked_at) {
-                                            return 'Актуальное наличие ещё не уточняли';
-                                        }
-
-                                        $sourceUpdatedAt = data_get($record->current_availability, 'source_updated_at');
-                                        $parts = [
-                                            'Проверено '.$record->current_availability_checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i'),
-                                            $record->currentAvailabilityCheckedBy?->name,
-                                            $sourceUpdatedAt ? 'данные склада от '.Carbon::parse($sourceUpdatedAt)->timezone('Europe/Minsk')->format('d.m.Y H:i') : null,
-                                        ];
-
-                                        return collect($parts)->filter()->implode(' · ');
-                                    })
-                                    ->color(fn (OrderItem $record): string => $record->fulfillment_availability_status
-                                        ? match ($record->fulfillment_availability_status) {
-                                            'available', 'reserved' => 'success',
-                                            'ordered' => 'info',
-                                            'unavailable' => 'danger',
-                                            default => 'gray',
-                                        }
-                                        : match (data_get($record->current_availability, 'is_available')) {
-                                            true => 'success',
-                                            false => 'danger',
-                                            default => 'gray',
-                                        })
-                                    ->weight('bold')
-                                    ->suffixAction(
-                                        Action::make('refreshCurrentAvailability')
-                                            ->label('Уточнить')
-                                            ->icon('heroicon-o-arrow-path')
-                                            ->color('info')
-                                            ->tooltip('Уточнить актуальное наличие по последнему обновлению базы')
-                                            ->action(function (OrderItem $record): void {
-                                                $check = app(OrderItemAvailabilityChecker::class)->check($record, auth()->user());
-
-                                                Notification::make()
-                                                    ->title('Актуальное наличие проверено')
-                                                    ->body(collect([
-                                                        $check['supplier_name'],
-                                                        $check['stock_label'],
-                                                    ])->filter()->implode(' · '))
-                                                    ->color($check['is_available'] === true ? 'success' : 'warning')
-                                                    ->send();
-                                            }),
-                                    ),
-
-                                TextEntry::make('fulfillment_result_summary')
-                                    ->label('Итог исполнения')
-                                    ->columnSpanFull()
-                                    ->state(function ($record) use ($byn): string {
-                                        if (! $record->fulfillment_route) {
-                                            return 'Требует решения: маршрут и входная цена не подтверждены';
-                                        }
-
-                                        return collect([
-                                            $record->fulfillmentRouteLabel(),
-                                            $record->fulfillment_supplier_name
-                                                ?: ($record->fulfillment_route === 'own_stock' ? 'Собственный склад' : null),
-                                            $record->fulfillment_purchase_price !== null
-                                                ? 'вход '.$byn($record->fulfillment_purchase_price)
-                                                : 'входная цена не указана',
-                                            $record->fulfillmentAvailabilityLabel(),
-                                            $record->fulfillment_confirmed_at
-                                                ? 'подтвердил '.($record->fulfillmentConfirmedBy?->name ?? 'система')
-                                                    .' · '.$record->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
-                                                : null,
-                                        ])->filter()->implode(' · ');
-                                    })
-                                    ->badge()
-                                    ->color(fn ($record): string => $record->fulfillment_route ? 'success' : 'warning')
-                                    ->icon(fn ($record): string => $record->fulfillment_route
-                                        ? 'heroicon-o-check-circle'
-                                        : 'heroicon-o-exclamation-triangle'),
-
-                                Section::make('Закупка и исполнение')
-                                    ->icon('heroicon-o-truck')
-                                    ->columnSpanFull()
-                                    ->compact()
-                                    ->collapsible()
-                                    ->collapsed()
-                                    ->columns(12)
-                                    ->schema([
-                                        TextEntry::make('supply_contact')
-                                            ->label('Контакты поставщика')
-                                            ->columnSpan(3)
-                                            ->state(fn ($record): ?string => $record->currentSupplyContact())
-                                            ->formatStateUsing(fn (?string $state): HtmlString|string => self::contactLinks($state))
-                                            ->placeholder('Не заполнены')
-                                            ->copyable(),
-
-                                TextEntry::make('supply_route')
-                                    ->label('Маршрут')
-                                    ->columnSpan(2)
-                                    ->state(fn ($record): string => $record->supplyContext()['route_label'])
-                                    ->badge()
-                                    ->color(fn ($record): string => match ($record->supplyContext()['status']) {
-                                        'own_stock' => 'success',
-                                        'supplier_purchase' => 'warning',
-                                        default => 'danger',
-                                    }),
-
-                                TextEntry::make('supply_wholesale_price')
-                                    ->label('Оптовая / закупочная')
-                                    ->columnSpan(2)
-                                    ->state(fn ($record): ?float => $record->supplyContext()['wholesale_price'])
-                                    ->formatStateUsing(fn ($state): string => $state === null ? '—' : $byn($state))
-                                    ->helperText(fn ($record): string => $record->supplyContext()['wholesale_price_label']),
-
-                                TextEntry::make('supply_margin')
-                                    ->label('Расчётная маржа')
-                                    ->columnSpan(2)
-                                    ->state(function ($record) use ($byn): string {
-                                        $context = $record->supplyContext();
-                                        if ($context['margin_total'] === null) {
-                                            return 'Не рассчитана';
-                                        }
-
-                                        return $byn($context['margin_total'])
-                                            .($context['margin_percent'] !== null ? ' / '.number_format($context['margin_percent'], 1, '.', ' ').'%' : '');
-                                    })
-                                    ->color(fn ($record): string => match (true) {
-                                        $record->supplyContext()['margin_total'] === null => 'gray',
-                                        $record->supplyContext()['margin_total'] < 0 => 'danger',
-                                        $record->supplyContext()['margin_total'] == 0 => 'warning',
-                                        default => 'success',
-                                    }),
-
-                                TextEntry::make('fulfillment_note')
-                                    ->label('Комментарий к маршруту')
-                                    ->columnSpanFull()
-                                    ->visible(fn ($record): bool => filled($record->fulfillment_note)),
-                                    ]),
                             ]),
                     ]),
 

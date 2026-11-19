@@ -261,6 +261,37 @@
         overflow-wrap: anywhere;
     }
 
+    .order-deal--full .order-deal__next {
+        margin-block: .75rem;
+        padding: .75rem 1rem;
+        border-inline-start: 3px solid #f59e0b;
+        border-radius: .5rem;
+        background: rgb(245 158 11 / .08);
+        font-size: .875rem;
+        line-height: 1.35;
+    }
+
+    .order-deal--full .order-deal__next > p {
+        margin-top: .25rem;
+    }
+
+    .order-deal__step-label--short {
+        display: none;
+    }
+
+    @media (max-width: 640px) {
+        .order-deal__step-label--long {
+            display: none;
+        }
+
+        .order-deal__step-label--short {
+            display: block;
+            font-size: .6875rem;
+            line-height: 1.15;
+            overflow-wrap: anywhere;
+        }
+    }
+
     .order-deal--compact .order-deal__next {
         display: -webkit-box;
         -webkit-box-orient: vertical;
