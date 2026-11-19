@@ -4,6 +4,7 @@
     $history = $order->dealStageHistory();
     $compactLabels = ['received' => 'Получен', 'contacted' => 'Контакт', 'agreed' => 'Условия',
         'processing' => 'В работе', 'handover' => 'Передача', 'completed' => 'Завершён'];
+    $mobileLabels = array_replace($compactLabels, ['handover' => 'Выдача', 'completed' => 'Готово']);
     $currentIndex = array_search($order->effectiveDealStage(), array_keys($stages), true);
     $active = $order->dealIsActive();
     $overdue = $active && $order->deal_control_at?->isPast();
@@ -51,7 +52,7 @@
                     <span class="order-deal__step-label">{{ $compactLabels[$key] }}</span>
                 @else
                     <span class="order-deal__step-label order-deal__step-label--long">{{ $label }}</span>
-                    <span class="order-deal__step-label order-deal__step-label--short">{{ $compactLabels[$key] }}</span>
+                    <span class="order-deal__step-label order-deal__step-label--short">{{ $mobileLabels[$key] }}</span>
                 @endif
             </button>
         @endforeach

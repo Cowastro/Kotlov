@@ -134,11 +134,11 @@ class OrderInfolist
                         ->schema([
                             RepeatableEntry::make('items')
                                 ->hiddenLabel()
-                                ->columns(12)
+                                ->columns(['default' => 2, 'lg' => 12])
                                 ->schema([
                                     TextEntry::make('product_name')
                                         ->label('Товар')
-                                        ->columnSpan(3)
+                                        ->columnSpan(['default' => 2, 'lg' => 3])
                                         ->url(fn ($record): ?string => $record->publicProductUrl())
                                         ->openUrlInNewTab(),
 
