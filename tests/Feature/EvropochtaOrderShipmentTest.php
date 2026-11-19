@@ -55,8 +55,8 @@ class EvropochtaOrderShipmentTest extends TestCase
 
         $saved = $order->fresh();
         $this->assertSame('200.00', $saved->subtotal);
-        $this->assertSame('6.50', $saved->delivery_price);
-        $this->assertSame('196.50', $saved->total);
+        $this->assertSame('8.00', $saved->delivery_price);
+        $this->assertSame('198.00', $saved->total);
         $this->assertSame('Солигорск', $saved->delivery_city);
         $this->assertSame('Минская область', $saved->delivery_region);
         $this->assertStringContainsString('Ленинского Комсомола, 43, №567', $saved->delivery_address);

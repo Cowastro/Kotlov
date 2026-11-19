@@ -70,7 +70,7 @@ class Evropochta
         }
 
         $rate = $this->quote($parcel + ['store_id_finish' => $destination]);
-        $kopecks = (int) round($rate['total'] * 100);
+        $customerPrice = (int) round($rate['total'] * 1.20, 0, PHP_ROUND_HALF_UP);
 
         return [
             'parcel' => $parcel,
@@ -79,7 +79,7 @@ class Evropochta
             'address' => $branch['label'],
             'region' => $branch['region'],
             'carrier_price' => $rate['total'],
-            'customer_price' => intdiv($kopecks + 49, 50) * 50 / 100,
+            'customer_price' => $customerPrice,
             'oversize' => $rate['oversize'],
             'quoted_at' => now()->toIso8601String(),
         ];

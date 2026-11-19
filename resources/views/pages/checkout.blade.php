@@ -729,8 +729,8 @@
         return price;
     }
 
-    function fmtByn(val) {
-        return val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' BYN';
+    function fmtByn(val, fractionDigits = 2) {
+        return val.toFixed(fractionDigits).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' BYN';
     }
 
     function updateTotals() {
@@ -738,7 +738,7 @@
 
         var cost = calcDelivery(deliveryType());
         if (evropochtaCardPrice) {
-            evropochtaCardPrice.textContent = evropochtaPrice === null ? 'Выберите отделение' : fmtByn(evropochtaPrice);
+            evropochtaCardPrice.textContent = evropochtaPrice === null ? 'Выберите отделение' : fmtByn(evropochtaPrice, 0);
         }
         var total = subtotal - effectiveDiscount() + (cost !== null ? cost : 0);
 
@@ -752,7 +752,7 @@
         } else if (cost === 0) {
             deliveryCostEl.innerHTML = '<span class="text-primary fw-semibold">Бесплатно</span>';
         } else {
-            deliveryCostEl.innerHTML = '<span class="fw-semibold">' + fmtByn(cost) + '</span>';
+            deliveryCostEl.innerHTML = '<span class="fw-semibold">' + fmtByn(cost, deliveryType() === 'evropochta' ? 0 : 2) + '</span>';
         }
 
         totalEl.textContent = fmtByn(total);
@@ -833,7 +833,7 @@
                 evropochtaPrice = result.price;
                 quoteToken.value = result.token;
                 branchSearch.setCustomValidity('');
-                quoteStatus.textContent = 'Доставка до отделения — ' + fmtByn(evropochtaPrice);
+                quoteStatus.textContent = 'Доставка до отделения — ' + fmtByn(evropochtaPrice, 0);
                 updateTotals();
             } catch (error) {
                 if (request.signal.aborted) return;

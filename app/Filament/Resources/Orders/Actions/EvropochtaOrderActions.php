@@ -53,7 +53,7 @@ final class EvropochtaOrderActions
 
                 $record->refresh();
                 Notification::make()->success()->title('Тариф Европочты сохранён')
-                    ->body('Доставка в заказе · '.number_format($quote['customer_price'], 2, ',', ' ').' BYN')
+                    ->body('Доставка в заказе · '.number_format($quote['customer_price'], 0, ',', ' ').' BYN')
                     ->send();
             });
     }

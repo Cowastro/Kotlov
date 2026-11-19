@@ -110,12 +110,14 @@ class ShipmentResource extends Resource
             ->schema(fn (): array => EvropochtaOrderActions::parcelFields())
             ->action(function (array $data, Action $action): void {
                 try {
-                    $quote = app(Evropochta::class)->quote($data);
+                    $destination = (int) $data['store_id_finish'];
+                    unset($data['store_id_finish']);
+                    $quote = app(Evropochta::class)->estimate($data, $destination);
                     $tariff = $quote['oversize'] ? 'Громоздкая посылка' : 'Стандартная посылка';
 
                     Notification::make()
-                        ->title('Тариф Европочты — '.number_format($quote['total'], 2, ',', ' ').' BYN')
-                        ->body($tariff.' · отделение → отделение')
+                        ->title('Доставка для клиента — '.number_format($quote['customer_price'], 0, ',', ' ').' BYN')
+                        ->body($tariff.' · тариф Европочты '.number_format($quote['carrier_price'], 2, ',', ' ').' BYN')
                         ->persistent()->success()->send();
                 } catch (RuntimeException $exception) {
                     Notification::make()->title($exception->getMessage())->danger()->persistent()->send();
