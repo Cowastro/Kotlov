@@ -3,7 +3,7 @@
     --calculator-side-muted: #e8d8d4;
 }
 
-.parcel-calculator > .container { max-width: 1210px; }
+.parcel-calculator > .container { width: min(100%, 1210px); }
 .parcel-calculator [hidden] { display: none !important; }
 .parcel-calculator__header {
     display: flex;
