@@ -369,7 +369,8 @@ class QuickCommercialOfferService
      */
     public function productLabels(array $ids): array
     {
-        return Product::query()->with(['brand', 'supplierProducts.supplier'])->whereIn('id', $ids)->get()
+        return Product::query()->with(['supplierProducts.supplier', 'integrationProducts.source'])
+            ->whereIn('id', $ids)->get()
             ->mapWithKeys(fn (Product $product): array => [$product->id => $this->productLabel($product)])
             ->all();
     }
