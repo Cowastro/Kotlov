@@ -235,6 +235,8 @@
     .delivery-page { padding-top: 15px; }
     .delivery-hero__copy { padding: 22px 17px; }
     .delivery-hero__image { height: 174px; }
+    .delivery-jump-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
+    .delivery-jump-links a { min-height: 44px; }
     .delivery-methods, .delivery-payments, .delivery-page .order-steps { grid-template-columns: minmax(0, 1fr); }
     .delivery-return { display: grid; }
     .delivery-section { margin-top: 34px; }
