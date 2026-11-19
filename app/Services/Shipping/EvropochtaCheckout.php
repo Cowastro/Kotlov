@@ -65,7 +65,7 @@ class EvropochtaCheckout
         });
     }
 
-    public function quote(array $parcel, int $destination, string $sessionId): array
+    public function estimate(array $parcel, int $destination): array
     {
         $branch = $this->destinations($parcel)[$destination] ?? null;
         if ($branch === null) {
@@ -75,7 +75,7 @@ class EvropochtaCheckout
         $rate = $this->carrier->quote($parcel + ['store_id_finish' => $destination]);
         $kopecks = (int) round($rate['total'] * 100);
         $price = intdiv($kopecks + 49, 50) * 50 / 100;
-        $snapshot = [
+        return [
             'parcel' => $parcel,
             'store_id_finish' => $destination,
             'city' => preg_replace('/^(?:г\.|город)\s*/ui', '', $branch['city']),
@@ -83,11 +83,17 @@ class EvropochtaCheckout
             'region' => $branch['region'],
             'carrier_price' => $rate['total'],
             'customer_price' => $price,
+            'oversize' => $rate['oversize'],
             'quoted_at' => now()->toIso8601String(),
         ];
+    }
+
+    public function quote(array $parcel, int $destination, string $sessionId): array
+    {
+        $snapshot = $this->estimate($parcel, $destination);
 
         return [
-            'price' => $price,
+            'price' => $snapshot['customer_price'],
             'token' => Crypt::encrypt([
                 'session' => $sessionId,
                 'expires' => now()->addMinutes(15)->timestamp,

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Shipping\EvropochtaCheckout;
 use App\Services\Shipping\EvropochtaPackaging;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -92,6 +93,24 @@ class EvropochtaPackagingTest extends TestCase
 
         $this->assertSame('box-20-15-10', $candidate->fresh()->shipping_parcel['box']);
         $this->assertNull($unknown->fresh()->shipping_parcel);
+    }
+
+    public function test_batch_requires_the_reviewed_plan_and_preserves_filled_measurements(): void
+    {
+        $product = $this->product(['Габариты' => '110х66х55 мм', 'Вес' => '300 г']);
+        $existing = ['length' => 30, 'width' => 20, 'height' => 10, 'weight' => 0.85];
+        $manual = $this->product([], ['sku' => 'PACK-MANUAL', 'slug' => 'packaging-manual', 'shipping_parcel' => $existing]);
+
+        $this->assertSame(0, Artisan::call('evropochta:approve-packaging'));
+        preg_match('/packaging\.plan=([a-f0-9]{64})/', Artisan::output(), $plan);
+        $this->assertArrayHasKey(1, $plan);
+        $this->assertNull($product->fresh()->shipping_parcel);
+        $this->assertSame(1, Artisan::call('evropochta:approve-packaging', ['--apply' => str_repeat('0', 64)]));
+        $this->assertNull($product->fresh()->shipping_parcel);
+
+        $this->assertSame(0, Artisan::call('evropochta:approve-packaging', ['--apply' => $plan[1]]));
+        $this->assertSame('box-20-15-10', $product->fresh()->shipping_parcel['box']);
+        $this->assertEquals($existing, $manual->fresh()->shipping_parcel);
     }
 
     private function product(array $specs, array $attributes = []): Product

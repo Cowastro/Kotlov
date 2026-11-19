@@ -98,6 +98,30 @@ class EvropochtaCheckoutTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_the_public_calculator_quotes_the_packed_parcel_without_a_cart(): void
+    {
+        $this->mockCarrier();
+        $this->get(route('evropochta.calculator'))
+            ->assertOk()->assertSee('Калькулятор доставки Европочтой')
+            ->assertSee('20 × 15 × 10 см')
+            ->assertSee('evropochta-branch-picker.js')
+            ->assertSee('г. Лида, Красноармейская, 63, №23')
+            ->assertDontSee('Монтажников, 2, №1');
+
+        $this->post(route('evropochta.calculator.estimate'), [
+            'evropochta_branch' => 40930010, 'weight' => 1,
+            'length' => 20, 'width' => 15, 'height' => 10,
+        ])->assertOk()->assertSee('Доставка — 6,50 BYN')->assertSee('Стандартная посылка');
+        $this->assertDatabaseCount('orders', 0);
+
+        $this->from(route('evropochta.calculator'))->post(route('evropochta.calculator.estimate'), [
+            'evropochta_branch' => 70130010, 'weight' => 1,
+            'length' => 20, 'width' => 15, 'height' => 10,
+        ])->assertSessionHasErrors('estimate');
+
+        Http::assertSentCount(2);
+    }
+
     private function mockCarrier(): void
     {
         config([
