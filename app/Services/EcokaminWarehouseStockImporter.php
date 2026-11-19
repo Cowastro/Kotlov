@@ -150,6 +150,34 @@ class EcokaminWarehouseStockImporter
         return $rows;
     }
 
+    /**
+     * Ties a stock article to a card: the СанБизнесГруп link of that article moves to the card, or is made.
+     * The price syncs of ЭкоКамин find cards by this link first, so it stays.
+     *
+     * @return string «moved» or «created»
+     */
+    public function link(string $article, Product $product, string $name = ''): string
+    {
+        $supplierId = EcokaminChannel::supplierId();
+        if (! $supplierId) {
+            throw new \RuntimeException('Не найден поставщик СанБизнесГруп.');
+        }
+        $normalized = mb_strtoupper(trim(preg_replace('/\s+/u', '', str_replace(['–', '—', '−'], '-', html_entity_decode($article, ENT_QUOTES | ENT_HTML5, 'UTF-8'))) ?? $article));
+        $rows = \App\Models\SupplierProduct::query()->where('supplier_id', $supplierId)
+            ->where(fn ($query) => $query->where('supplier_article', $article)->orWhere('supplier_article_normalized', $normalized))->get();
+        if ($rows->isEmpty()) {
+            \App\Models\SupplierProduct::query()->create(['supplier_id' => $supplierId, 'product_id' => $product->id, 'supplier_article' => $article,
+                'supplier_article_normalized' => $normalized, 'supplier_name' => $name ?: null, 'match_status' => 'matched', 'match_confidence' => 'manual_link']);
+
+            return 'created';
+        }
+        foreach ($rows as $row) {
+            $row->update(['product_id' => $product->id, 'match_status' => 'matched', 'match_confidence' => 'manual_link']);
+        }
+
+        return 'moved';
+    }
+
     public function importJson(string $path): array
     {
         $payload = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
