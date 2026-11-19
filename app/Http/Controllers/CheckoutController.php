@@ -76,26 +76,24 @@ class CheckoutController extends Controller
             ? config('shop.b2b_checkout_delivery_methods', ['b2b_delivery', 'pickup'])
             : config('shop.checkout_delivery_methods', []);
         $evropochtaDestinations = [];
-        $evropochtaPaymentOnly = false;
+        $evropochtaPayments = [];
+        $evropochtaOnlyPayments = [];
         $evropochtaUnavailable = null;
         if (! $isB2bCheckout) {
             ['parcel' => $parcel, 'message' => $evropochtaUnavailable] = $evropochta->assess($cart);
         }
 
         if (! $isB2bCheckout && $parcel !== null) {
-            try {
-                $evropochtaDestinations = $evropochta->destinations($parcel);
-            } catch (RuntimeException) {
-                // Other delivery methods remain available while the carrier is offline.
-            }
+            $evropochtaDestinations = $this->availableEvropochtaDestinations($evropochta, $parcel);
 
             if ($evropochtaDestinations !== []) {
-                $checkoutDeliveryMethods[] = EvropochtaCheckout::METHOD;
-                $evropochtaPaymentOnly = ! in_array(EvropochtaCheckout::PAYMENT, $checkoutPaymentMethods, true);
-                if ($evropochtaPaymentOnly) {
-                    $checkoutPaymentMethods[] = EvropochtaCheckout::PAYMENT;
-                }
-                $checkoutPaymentMethods[] = EvropochtaCheckout::COD_PAYMENT;
+                $checkoutDeliveryMethods = [
+                    EvropochtaCheckout::METHOD,
+                    ...array_values(array_diff($checkoutDeliveryMethods, ['transport', EvropochtaCheckout::METHOD])),
+                ];
+                $evropochtaPayments = $evropochta->paymentMethods($parcel);
+                $evropochtaOnlyPayments = array_values(array_diff($evropochtaPayments, $checkoutPaymentMethods));
+                $checkoutPaymentMethods = [...$checkoutPaymentMethods, ...$evropochtaOnlyPayments];
             } else {
                 $evropochtaUnavailable = 'Список отделений Европочты сейчас недоступен.';
             }
@@ -145,10 +143,20 @@ class CheckoutController extends Controller
             'isB2bCheckout',
             'checkoutDeliveryMethods',
             'evropochtaDestinations',
-            'evropochtaPaymentOnly',
+            'evropochtaPayments',
+            'evropochtaOnlyPayments',
             'evropochtaUnavailable',
             'minimalLayout',
         ));
+    }
+
+    private function availableEvropochtaDestinations(EvropochtaCheckout $evropochta, array $parcel): array
+    {
+        try {
+            return $evropochta->destinations($parcel);
+        } catch (RuntimeException) {
+            return [];
+        }
     }
 
     public function quoteEvropochta(Request $request, B2bCheckoutTerms $b2bTerms, EvropochtaCheckout $evropochta)
@@ -302,12 +310,17 @@ class CheckoutController extends Controller
             ? config('shop.b2b_checkout_delivery_methods', ['b2b_delivery', 'pickup'])
             : array_keys(config('shop.delivery_methods', []));
 
-        $usesEvropochta = $request->input('delivery_type') === EvropochtaCheckout::METHOD;
-        $evropochtaParcel = $usesEvropochta && ! $b2bCheckout['is_b2b'] ? $evropochta->parcel($cart) : null;
+        $deliveryType = $request->input('delivery_type');
+        $usesEvropochta = $deliveryType === EvropochtaCheckout::METHOD;
+        $evropochtaParcel = ! $b2bCheckout['is_b2b'] && ($usesEvropochta || $deliveryType === 'transport')
+            ? $evropochta->parcel($cart)
+            : null;
         $allowedDeliveryMethods = array_diff($allowedDeliveryMethods, [EvropochtaCheckout::METHOD]);
-        if ($evropochtaParcel !== null) {
+        if ($evropochtaParcel !== null && $usesEvropochta) {
             $allowedDeliveryMethods[] = EvropochtaCheckout::METHOD;
-            $checkoutPaymentMethods = [EvropochtaCheckout::PAYMENT, EvropochtaCheckout::COD_PAYMENT];
+            $checkoutPaymentMethods = $evropochta->paymentMethods($evropochtaParcel);
+        } elseif ($evropochtaParcel !== null && $this->availableEvropochtaDestinations($evropochta, $evropochtaParcel) !== []) {
+            $allowedDeliveryMethods = array_diff($allowedDeliveryMethods, ['transport']);
         }
 
         // Защита от двойного сабмита — один токен = один заказ
@@ -339,6 +352,7 @@ class CheckoutController extends Controller
             'customer_phone.required' => 'Введите телефон.',
             'customer_phone.regex' => 'Введите корректный номер телефона.',
             'delivery_type.required' => 'Выберите способ доставки.',
+            'delivery_type.in' => 'Выбранный способ доставки недоступен для этой корзины.',
             'payment_type.required' => 'Выберите способ оплаты.',
             'payment_type.in' => 'Выбранный способ оплаты сейчас недоступен.',
             'evropochta_branch.required' => 'Выберите отделение Европочты.',

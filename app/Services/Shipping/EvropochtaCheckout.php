@@ -17,6 +17,8 @@ class EvropochtaCheckout
 
     public const MAX_CHECKOUT_WEIGHT = 30;
 
+    private const PAYMENT_ON_RECEIPT_CATEGORIES = ['schetchiki-gaza', 'signalizatory-zagazovannosti'];
+
     public function __construct(
         private readonly Evropochta $carrier,
         private readonly EvropochtaPackaging $packaging,
@@ -78,6 +80,17 @@ class EvropochtaCheckout
         }
 
         return ['parcel' => null, 'message' => 'Размеры упаковки выходят за пределы, доступные для Европочты при оформлении.'];
+    }
+
+    /** @return list<string> */
+    public function paymentMethods(array $parcel): array
+    {
+        $paymentOnReceiptOnly = Product::query()
+            ->whereKey($parcel['product_id'])
+            ->whereHas('category', fn ($category) => $category->whereIn('slug', self::PAYMENT_ON_RECEIPT_CATEGORIES))
+            ->exists();
+
+        return $paymentOnReceiptOnly ? [self::COD_PAYMENT] : [self::COD_PAYMENT, self::PAYMENT];
     }
 
     public function destinations(array $parcel): array
