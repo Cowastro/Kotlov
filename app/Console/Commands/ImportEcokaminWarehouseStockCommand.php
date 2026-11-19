@@ -10,7 +10,8 @@ use ZipArchive;
 class ImportEcokaminWarehouseStockCommand extends Command
 {
     protected $signature = 'supplier:import-ecokamin-moscow-stock
-        {file : XLSX/XLS-файл остатков ЭкоКамин}
+        {file : XLSX/XLS-файл остатков ЭкоКамин или подготовленный JSON (database/data/ecokamin_moscow_stock_*.json)}
+        {--show=* : Артикулы, для которых показать, к какой карточке привяжется строка}
         {--apply : Записать сопоставленные остатки в базу}
         {--date= : Дата остатков YYYY-MM-DD; иначе берётся из имени файла или текущая дата}';
 
@@ -25,7 +26,9 @@ class ImportEcokaminWarehouseStockCommand extends Command
             return self::FAILURE;
         }
 
-        $payload = $this->readWorkbook($path);
+        $payload = str_ends_with(mb_strtolower($path), '.json')
+            ? json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR)
+            : $this->readWorkbook($path);
         if ($payload['items'] === []) {
             $this->error('В файле не найдены товарные строки раздела «ПРОДУКЦИЯ ЭКОКАМИН».');
 
@@ -39,6 +42,7 @@ class ImportEcokaminWarehouseStockCommand extends Command
         ));
 
         if (! $this->option('apply')) {
+            $this->printPreview($importer->preview($payload));
             $this->warn('Предпросмотр: база не изменена. Для записи добавьте --apply.');
 
             return self::SUCCESS;
@@ -182,6 +186,26 @@ class ImportEcokaminWarehouseStockCommand extends Command
     private function quantity(mixed $value): float
     {
         return max(0, (float) str_replace(',', '.', trim((string) $value)));
+    }
+
+    /** Safe lines for the server log: rows without a card, rows that reach several, and the articles asked with --show. */
+    private function printPreview(array $rows): void
+    {
+        $show = collect((array) $this->option('show'))->flatMap(fn ($value) => explode(',', (string) $value))->map(fn ($value) => trim($value))->filter()->all();
+        $article = fn (string $value): string => preg_replace('/[^A-Za-z0-9.\/_-]/', '', strtr(mb_strtoupper($value), ['А' => 'A', 'В' => 'B', 'Е' => 'E', 'К' => 'K', 'М' => 'M', 'Н' => 'H', 'О' => 'O', 'Р' => 'P', 'С' => 'C', 'Т' => 'T', 'Х' => 'X'])) ?: '-';
+        $this->line('metric.ecokamin_stock.rows='.count($rows));
+        $this->line('metric.ecokamin_stock.by_article='.collect($rows)->where('by', 'article')->count());
+        $this->line('metric.ecokamin_stock.by_name='.collect($rows)->where('by', 'name')->count());
+        $this->line('metric.ecokamin_stock.unmatched='.collect($rows)->whereNull('product_id')->count());
+        foreach ($rows as $row) {
+            $available = rtrim(rtrim(number_format($row['available'], 3, '.', ''), '0'), '.');
+            if ($row['product_id'] === null) {
+                $kind = count($row['candidates']) > 1 ? 'ambiguous' : 'unmatched';
+                $this->line("audit.ecokamin_stock.{$kind}=".$article($row['article']).':'.$available.($row['candidates'] ? ':'.implode(',', $row['candidates']) : ''));
+            } elseif (in_array($row['article'], $show, true)) {
+                $this->line('audit.ecokamin_stock.row='.$article($row['article']).':'.$available.':'.$row['product_id'].':'.$row['by']);
+            }
+        }
     }
 
     private function sourceDate(string $filename): string

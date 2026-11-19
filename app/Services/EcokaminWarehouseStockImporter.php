@@ -117,6 +117,39 @@ class EcokaminWarehouseStockImporter
         ];
     }
 
+    /**
+     * What an import would do, without writing: per row the card it reaches (by article, else by name),
+     * or why none — no card, or an article / name shared by several cards.
+     *
+     * @return list<array{article: string, name: string, available: float, product_id: ?int, by: ?string, candidates: list<int>}>
+     */
+    public function preview(array $payload): array
+    {
+        $brand = Brand::query()->where('slug', 'ecokamin')->orWhere('name', 'like', '%ЭкоКамин%')->first();
+        if (! $brand) {
+            throw new \RuntimeException('Не найден бренд ЭкоКамин.');
+        }
+        $products = Product::query()->where('brand_id', $brand->id)->with('supplierProducts:id,product_id,supplier_article,supplier_name')->get();
+        [$articleIndex, $nameIndex] = $this->indexes($products);
+        $rows = [];
+        foreach ((array) ($payload['items'] ?? []) as $item) {
+            $article = trim((string) ($item['article'] ?? ''));
+            $name = trim((string) ($item['name'] ?? ''));
+            $byArticle = $articleIndex[$this->key($article)] ?? collect();
+            $byName = $nameIndex[$this->key($name)] ?? collect();
+            [$product, $by] = match (true) {
+                $byArticle->count() === 1 => [$byArticle->first(), 'article'],
+                $byName->count() === 1 => [$byName->first(), 'name'],
+                default => [null, null],
+            };
+            $rows[] = ['article' => $article, 'name' => $name, 'available' => (float) ($item['available'] ?? 0),
+                'product_id' => $product?->id, 'by' => $by,
+                'candidates' => $byArticle->merge($byName)->pluck('id')->unique()->map(fn ($id): int => (int) $id)->values()->all()];
+        }
+
+        return $rows;
+    }
+
     public function importJson(string $path): array
     {
         $payload = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
