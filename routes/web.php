@@ -504,6 +504,10 @@ Route::get('/akcii/kotlov-xo-ceramic-pro', [PromotionController::class, 'xoCeram
 Route::get('/akcii/kotlov-xo-evo-26', [PromotionController::class, 'xoEvo26'])->name('promotions.xo-evo-26');
 Route::get('/akcii/hotta-ceramik-20-30', [PromotionController::class, 'hottaCeramik'])->name('promotions.hotta-ceramik');
 Route::view('/dostavka', 'pages.dostavka');
+Route::get('/dostavka/evropochta', \App\Http\Controllers\EvropochtaCalculatorController::class)
+    ->name('evropochta.calculator');
+Route::post('/dostavka/evropochta', \App\Http\Controllers\EvropochtaCalculatorController::class)
+    ->middleware('throttle:10,1')->name('evropochta.calculator.estimate');
 Route::get('/partners', [PartnerLandingController::class, 'business'])->name('partners');
 Route::get('/rekvizity', fn () => view('pages.requisites', [
     'company' => config('legal.commercial_documents'),

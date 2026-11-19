@@ -38,6 +38,11 @@
                     <div class="tf-rte mb-40">
                         <h4 class="mb-24">Способы доставки</h4>
 
+                        <div class="delivery-card mb-20">
+                            <h6 class="fw-semibold mb-8">Европочта до отделения</h6>
+                            <a href="{{ route('evropochta.calculator') }}" class="link">Рассчитать доставку по весу и размерам коробки</a>
+                        </div>
+
                         {{-- Самовывоз --}}
                         <div class="delivery-card mb-20">
                             <div class="d-flex align-items-start gap-16">

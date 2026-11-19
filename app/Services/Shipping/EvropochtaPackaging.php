@@ -76,9 +76,9 @@ class EvropochtaPackaging
         return null;
     }
 
-    public function approve(Product $product): bool
+    public function approve(Product $product, ?array $expected = null): bool
     {
-        return DB::transaction(function () use ($product): bool {
+        return DB::transaction(function () use ($product, $expected): bool {
             $record = Product::query()->active()->notArchived()->lockForUpdate()->find($product->getKey());
             if (! $record || array_filter($record->shipping_parcel ?? []) !== []) {
                 return false;
@@ -86,7 +86,9 @@ class EvropochtaPackaging
 
             $suggestion = $this->suggest($record);
 
-            return $suggestion !== null && $record->update(['shipping_parcel' => $suggestion]);
+            return $suggestion !== null
+                && ($expected === null || $suggestion === $expected)
+                && $record->update(['shipping_parcel' => $suggestion]);
         });
     }
 
