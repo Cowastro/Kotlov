@@ -92,6 +92,7 @@ class ViewOrder extends ViewRecord
     {
         return [
             ManageOrderDealAction::make(),
+            EvropochtaOrderActions::prepare(),
             EvropochtaOrderActions::create(),
             EvropochtaOrderActions::printLabel('thermal'),
             EvropochtaOrderActions::printLabel('address'),

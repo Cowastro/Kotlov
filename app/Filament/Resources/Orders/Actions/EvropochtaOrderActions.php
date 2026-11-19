@@ -15,9 +15,82 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
+use RuntimeException;
 
 final class EvropochtaOrderActions
 {
+    public static function prepare(): Action
+    {
+        return Action::make('prepareEvropochtaShipment')
+            ->label('Подготовить отправление Европочтой')
+            ->icon('heroicon-o-clipboard-document-list')
+            ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
+            ->visible(fn (Order $record): bool => $record->delivery_type === EvropochtaCheckout::METHOD
+                && blank($record->evropochta_tracking_number))
+            ->disabled(fn (Order $record): bool => app(EvropochtaOrderShipment::class)->preparationUnavailableReason($record) !== null)
+            ->tooltip(fn (Order $record): ?string => app(EvropochtaOrderShipment::class)->preparationUnavailableReason($record))
+            ->modalHeading('Подготовить отправление Европочтой')
+            ->modalDescription('Выберите отделения и укажите вес и наружные размеры коробки. Тариф сохранится в заказе и войдёт в итог к оплате.')
+            ->modalSubmitActionLabel('Рассчитать и сохранить')
+            ->fillForm(function (Order $record): array {
+                $quote = $record->evropochta_quote ?? [];
+
+                return ($quote['parcel'] ?? []) + [
+                    'store_id_start' => config('services.evropochta.checkout_origin'),
+                    'store_id_finish' => $quote['store_id_finish'] ?? null,
+                ];
+            })
+            ->schema(fn (): array => self::parcelFields())
+            ->action(function (Order $record, array $data, Action $action, EvropochtaOrderShipment $shipments): void {
+                try {
+                    $quote = $shipments->prepare($record, $data);
+                } catch (EvropochtaShipmentException $error) {
+                    Notification::make()->danger()->title($error->getMessage())->send();
+                    $action->halt();
+
+                    return;
+                }
+
+                $record->refresh();
+                Notification::make()->success()->title('Тариф Европочты сохранён')
+                    ->body('Доставка в заказе · '.number_format($quote['customer_price'], 0, ',', ' ').' BYN')
+                    ->send();
+            });
+    }
+
+    public static function parcelFields(): array
+    {
+        $loaded = null;
+        $branches = static function () use (&$loaded): array {
+            if ($loaded !== null) {
+                return $loaded;
+            }
+
+            try {
+                return $loaded = array_map(static fn (array $branch): string => $branch['label'], app(Evropochta::class)->branches());
+            } catch (RuntimeException $error) {
+                Notification::make()->danger()->title($error->getMessage())->persistent()->send();
+
+                return $loaded = [];
+            }
+        };
+
+        return [
+            Select::make('store_id_start')->label('Отделение отправления')
+                ->options($branches)->searchable()->required()->placeholder('Город или адрес'),
+            Select::make('store_id_finish')->label('Отделение получения')
+                ->options($branches)->searchable()->required()->different('store_id_start')->placeholder('Город или адрес'),
+            TextInput::make('weight')->label('Вес в упаковке, кг')->required()->numeric()
+                ->minValue(0.01)->maxValue(50)->step(0.01)->rule('decimal:0,2'),
+            TextInput::make('length')->label('Длина коробки, см')->required()->numeric()
+                ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
+            TextInput::make('width')->label('Ширина коробки, см')->required()->numeric()
+                ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
+            TextInput::make('height')->label('Высота коробки, см')->required()->numeric()
+                ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
+        ];
+    }
+
     public static function create(): Action
     {
         return Action::make('createEvropochtaShipment')

@@ -111,12 +111,12 @@
                             {{ $branches === [] ? 'Когда список отделений загрузится, здесь появится стоимость.' : 'Выберите отделение, укажите вес и размеры, затем нажмите «Рассчитать тариф».' }}
                         </p>
                         <div data-calculator-result @unless ($estimate) hidden @endunless>
-                            <p class="parcel-calculator__price" data-calculator-price>{{ $estimate ? number_format($estimate['customer_price'], 2, ',', ' ').' BYN' : '' }}</p>
+                            <p class="parcel-calculator__price" data-calculator-price>{{ $estimate ? number_format($estimate['customer_price'], 0, ',', ' ').' BYN' : '' }}</p>
                             <p class="parcel-calculator__address" data-calculator-address>{{ $estimate['address'] ?? '' }}</p>
                             <p class="parcel-calculator__type" data-calculator-type>{{ $estimate ? ($estimate['oversize'] ? 'Громоздкая посылка' : 'Стандартная посылка') : '' }}</p>
                         </div>
                     </div>
-                    <p class="parcel-calculator__result-note">Стоимость округляется вверх до 0,50 BYN. Коробка оплачивается отдельно.</p>
+                    <p class="parcel-calculator__result-note">Цена доставки округляется до ближайшего рубля. Коробка оплачивается отдельно.</p>
                 </section>
 
                 <div class="parcel-calculator__conditions">

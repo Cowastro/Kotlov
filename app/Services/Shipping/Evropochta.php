@@ -62,6 +62,29 @@ class Evropochta
         });
     }
 
+    public function estimate(array $parcel, int $destination): array
+    {
+        $branch = $this->branches()[$destination] ?? null;
+        if ($branch === null) {
+            throw new RuntimeException('Выберите отделение получения из справочника Европочты.');
+        }
+
+        $rate = $this->quote($parcel + ['store_id_finish' => $destination]);
+        $customerPrice = (int) round($rate['total'] * 1.20, 0, PHP_ROUND_HALF_UP);
+
+        return [
+            'parcel' => $parcel,
+            'store_id_finish' => $destination,
+            'city' => preg_replace('/^(?:г\.|город)\s*/ui', '', $branch['city']),
+            'address' => $branch['label'],
+            'region' => $branch['region'],
+            'carrier_price' => $rate['total'],
+            'customer_price' => $customerPrice,
+            'oversize' => $rate['oversize'],
+            'quoted_at' => now()->toIso8601String(),
+        ];
+    }
+
     public function quote(array $parcel): array
     {
         $weight = (float) ($parcel['weight'] ?? 0);

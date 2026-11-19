@@ -11,10 +11,7 @@
     const amount = result.querySelector('[data-calculator-price]');
     const status = result.querySelector('[data-calculator-result-status]');
     const quote = result.querySelector('[data-calculator-result]');
-    const formatter = new Intl.NumberFormat('ru-BY', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+    const formatter = new Intl.NumberFormat('ru-BY', { maximumFractionDigits: 0 });
     let pending = null;
 
     function selectMatchingBox() {
