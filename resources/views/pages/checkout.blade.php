@@ -729,7 +729,7 @@
         return price;
     }
 
-    function fmtByn(val, fractionDigits = 2) {
+    function fmtByn(val, fractionDigits = 0) {
         return val.toFixed(fractionDigits).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' BYN';
     }
 
@@ -738,7 +738,7 @@
 
         var cost = calcDelivery(deliveryType());
         if (evropochtaCardPrice) {
-            evropochtaCardPrice.textContent = evropochtaPrice === null ? 'Выберите отделение' : fmtByn(evropochtaPrice, 0);
+            evropochtaCardPrice.textContent = evropochtaPrice === null ? 'Выберите отделение' : fmtByn(evropochtaPrice);
         }
         var total = subtotal - effectiveDiscount() + (cost !== null ? cost : 0);
 
@@ -755,7 +755,7 @@
             deliveryCostEl.innerHTML = '<span class="fw-semibold">' + fmtByn(cost, deliveryType() === 'evropochta' ? 0 : 2) + '</span>';
         }
 
-        totalEl.textContent = fmtByn(total);
+        totalEl.textContent = fmtByn(total, 2);
     }
 
     if (deliveryGroup) {
@@ -833,7 +833,7 @@
                 evropochtaPrice = result.price;
                 quoteToken.value = result.token;
                 branchSearch.setCustomValidity('');
-                quoteStatus.textContent = 'Доставка до отделения — ' + fmtByn(evropochtaPrice, 0);
+                quoteStatus.textContent = 'Доставка до отделения — ' + fmtByn(evropochtaPrice);
                 updateTotals();
             } catch (error) {
                 if (request.signal.aborted) return;
