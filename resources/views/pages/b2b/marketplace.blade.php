@@ -65,61 +65,12 @@
             </div>
         @endif
         <section class="b2b-page-heading">
-            <div><p @if($staffWorkspace)class="b2b-staff-role"@endif>{{ $staffWorkspace ? (auth()->user()->isAdmin() ? 'Администратор · большие заявки' : 'CRM · большие заявки') : 'B2B · рабочий каталог' }}</p><h1>{{ $staffWorkspace ? 'Подбор для клиента' : 'Быстрый заказ товаров' }}</h1></div>
-            <button type="button" class="b2b-mobile-catalog-button" data-catalog-open><span>☰</span> Категории</button>
+            <div><p @if($staffWorkspace)class="b2b-staff-role" data-workspace-kicker @endif>{{ $staffWorkspace ? ($workspaceState['id'] ? 'B2B · подбор №'.$workspaceState['id'] : 'B2B · рабочий каталог') : 'B2B · рабочий каталог' }}</p><h1>{{ $staffWorkspace ? 'Подбор для клиента' : 'Быстрый заказ товаров' }}</h1></div>
+            <button type="button" class="b2b-mobile-catalog-button" data-catalog-open><x-heroicon-o-squares-2x2 class="b2b-desk-icon" aria-hidden="true"/> Категории</button>
         </section>
         @if($staffWorkspace)@include('pages.b2b.workspace-toolbar')@endif
 
-        <form method="GET" action="{{ route('b2b.catalog') }}" class="b2b-command-bar" id="b2b-filter-form" autocomplete="off">
-            <input type="hidden" name="mode" value="{{ $mode }}">
-            @if($staffWorkspace)<input type="hidden" name="workspace" value="1"><input type="hidden" name="selection_id" data-workspace-selection-id value="{{ $workspaceState['id'] }}">@endif
-            @if ($categoryId > 0)<input type="hidden" name="category" value="{{ $categoryId }}">@endif
-            @if ($preview)<input type="hidden" name="b2b-preview" value="1">@endif
-
-            <div class="b2b-search" data-suggest-url="{{ route('b2b.catalog.suggest', array_filter(['mode' => $mode, 'b2b-preview' => $preview ? 1 : null, 'workspace' => $staffWorkspace ? 1 : null, 'selection_id' => $staffWorkspace ? $workspaceState['id'] : null])) }}">
-                <i class="icon icon-MagnifyingGlass" aria-hidden="true"></i>
-                <input id="b2b-search-input" type="search" name="q" value="{{ $query }}"
-                    placeholder="Название или артикул" aria-label="Поиск по названию, артикулу, бренду или категории"
-                    aria-autocomplete="list" aria-controls="b2b-search-suggest" aria-expanded="false">
-                @if ($query !== '')
-                    <a href="{{ request()->fullUrlWithQuery(['q' => null, 'category' => null, 'page' => null]) }}" class="b2b-search__clear" aria-label="Очистить поиск">×</a>
-                @else
-                    <kbd>/</kbd>
-                @endif
-                <button type="submit">Найти</button>
-                <div class="b2b-search-suggest" id="b2b-search-suggest" role="listbox" hidden></div>
-            </div>
-
-            <div class="b2b-command-bar__filters">
-                @unless($staffWorkspace)<div class="b2b-mode-switch" aria-label="Режим каталога">
-                    <a href="{{ request()->fullUrlWithQuery(['mode' => 'orderable', 'page' => null]) }}" class="{{ $mode === 'orderable' ? 'active' : '' }}">В наличии и под заказ</a>
-                    <a href="{{ request()->fullUrlWithQuery(['mode' => 'reference', 'page' => null, 'source' => null]) }}" class="{{ $mode === 'reference' ? 'active' : '' }}">Справочный каталог</a>
-                </div>@else<p class="b2b-workspace-price-note">{{ $showProcurement ? 'Внутренний подбор · входные цены и маржа доступны администраторам и менеджерам CRM' : 'Все товары · цены сайта · наличие и условия поставки уточняются' }}</p>@endunless
-                <div class="b2b-filter-selects">
-                    <label><span>Бренд</span><select name="brand" data-auto-submit>
-                        <option value="">Все бренды</option>
-                        @foreach ($brands as $brand)<option value="{{ $brand->id }}" @selected($brandId === (int) $brand->id)>{{ $brand->name }}</option>@endforeach
-                    </select></label>
-                    @if ($mode === 'orderable' && $sourceGroups->count() > 1)
-                        <label><span>Поставщик</span><select name="source" data-auto-submit>
-                            <option value="">Все поставщики</option>
-                            @foreach ($sourceGroups as $sourceGroup)<option value="{{ $sourceGroup['key'] }}" @selected($sourceKey === $sourceGroup['key'])>{{ $sourceGroup['label'] }}</option>@endforeach
-                        </select></label>
-                    @endif
-                    @if ($mode === 'orderable' || $staffWorkspace)
-                        <label><span>Сортировка</span><select name="sort" data-auto-submit>
-                            <option value="name" @selected($sort === 'name')>По названию</option>
-                            @unless($staffWorkspace)<option value="stock" @selected($sort === 'stock')>Сначала в наличии</option>@endunless
-                            <option value="price_asc" @selected($sort === 'price_asc')>Сначала дешевле</option>
-                            <option value="price_desc" @selected($sort === 'price_desc')>Сначала дороже</option>
-                        </select></label>
-                    @endif
-                    <label><span>На странице</span><select name="per_page" data-auto-submit>@foreach([30,60,100] as $size)<option value="{{ $size }}" @selected($perPage === $size)>{{ $size }}</option>@endforeach</select></label>
-                    @if ($query !== '' || $categoryId > 0 || $brandId > 0 || $sourceKey !== '' || $sort !== 'name')<a href="{{ $resetUrl }}" class="b2b-reset-filters">Сбросить</a>@endif
-                </div>
-            </div>
-            @include('pages.b2b.catalog-quick-filters')
-        </form>
+        @unless($staffWorkspace)@include('pages.b2b.catalog-command')@endunless
 
         <section class="b2b-mobile-category-showcase" aria-label="Основные категории">
             <div class="b2b-mobile-category-showcase__heading">
@@ -147,12 +98,13 @@
             <div class="b2b-catalog-overlay" data-catalog-close></div>
             <aside class="b2b-category-panel" id="b2b-category-panel">
                 <div class="b2b-category-panel__heading">
-                    <div><small>Навигация</small><strong>Категории</strong></div>
+                    <div>@unless($staffWorkspace)<small>Навигация</small>@endunless<strong>Категории</strong></div>
                     <button type="button" class="b2b-category-panel__close" data-catalog-close aria-label="Закрыть">×</button>
                 </div>
                 <label class="b2b-category-search"><i class="icon icon-MagnifyingGlass"></i><input type="search" id="b2b-category-search" placeholder="Найти раздел" aria-label="Поиск категории"></label>
                 <a href="{{ request()->fullUrlWithQuery(['category' => null, 'q' => null, 'page' => null]) }}" class="b2b-category-all {{ $categoryId === 0 ? 'active' : '' }}">
-                    <span>{{ in_array('in_stock', $flags, true) ? 'Все в наличии' : 'Все товары' }}</span><span class="b2b-category-count">{{ $navigationTotal }}</span>
+                    @if($staffWorkspace)<x-heroicon-o-squares-2x2 class="b2b-category-icon" aria-hidden="true"/>@endif
+                    <span class="b2b-category-name">{{ in_array('in_stock', $flags, true) ? 'Все в наличии' : 'Все товары' }}</span><span class="b2b-category-count">{{ $navigationTotal }}</span>
                 </a>
                 <div class="b2b-category-tree" id="b2b-category-tree">@include('partials.b2b-category-tree', ['nodes' => $categoryTree, 'level' => 0])</div>
                 @if($categoryTree->isEmpty())<p class="b2b-workspace-price-note">Нет категорий по выбранным условиям.</p>@endif
@@ -160,6 +112,7 @@
             </aside>
 
             <section class="b2b-catalog-results">
+                @if($staffWorkspace)@include('pages.b2b.catalog-command')@endif
                 <div class="b2b-results-toolbar">
                     <div><strong>{{ number_format($products->total(), 0, ',', ' ') }}</strong><span>товаров</span>@if ($query !== '')<em>по запросу «{{ $query }}»</em>@endif</div>
                     @if($staffWorkspace && ($gridView || $diameterGrid))<a class="b2b-grid-toggle" href="{{ request()->fullUrlWithQuery(['view' => $gridView ? null : 'grid', 'page' => null]) }}">{{ $gridView ? '☰ Списком' : '▦ Сетка по диаметрам' }}</a>@endif
@@ -270,6 +223,7 @@
                     <div class="b2b-empty-state"><i class="icon icon-MagnifyingGlass"></i><h2>Ничего не найдено</h2><p>Измените запрос или выберите другой раздел каталога.</p><a href="{{ $resetUrl }}">Показать все товары</a></div>
                 @endif
             </section>
+            @if($staffWorkspace)@include('pages.b2b.workspace-summary')@endif
         </div>
     </main>
     @unless ($staffPreview || $staffWorkspace)

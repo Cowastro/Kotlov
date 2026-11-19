@@ -6,18 +6,12 @@
         @if(!$workspaceState['id'])<option value="">Новый подбор</option>@endif
         @foreach($workspaceSelections as $saved)<option value="{{ $saved->id }}" @selected($workspaceState['id'] === $saved->id)>{{ $saved->name }}</option>@endforeach
     </select></label>
-    <button type="button" data-workspace-new>+ Новый подбор</button>
+    <button type="button" data-workspace-new><x-heroicon-o-plus class="b2b-desk-icon" aria-hidden="true"/> Новый подбор</button>
     <div class="b2b-client-pick" data-client-pick data-clients-url="{{ route('b2b.workspace.clients') }}"><label for="workspace-client-search">Клиент</label><span class="b2b-client-chosen" data-client-chosen hidden><b data-client-label></b><button type="button" data-client-history>История</button><button type="button" data-client-clear aria-label="Убрать клиента">×</button></span><input id="workspace-client-search" type="search" autocomplete="off" placeholder="Название или УНП" data-client-search aria-describedby="workspace-client-hint"><span id="workspace-client-hint" hidden>Показывает, что и по какой цене клиент брал раньше</span><ul class="b2b-client-results" data-client-results role="listbox" hidden></ul></div>
-    <button type="button" data-workspace-paste-open data-paste-url="{{ route('b2b.workspace.paste') }}">Вставить список</button>
+    <button type="button" data-workspace-paste-open data-paste-url="{{ route('b2b.workspace.paste') }}"><x-heroicon-o-clipboard-document-list class="b2b-desk-icon" aria-hidden="true"/> Вставить список</button>
     @if($showProcurement)<label class="b2b-margin-threshold">Мин. маржа, %<input type="number" min="0" max="90" step="1" inputmode="numeric" placeholder="не задана" data-workspace-margin-threshold aria-describedby="margin-threshold-hint"></label><span id="margin-threshold-hint" hidden>Строки с маржой ниже порога подсвечиваются. Порог хранится в этом браузере.</span>@endif
     <span class="b2b-workspace-status" data-workspace-status role="status" aria-live="polite">{{ $workspaceState['saved_at'] ? 'Сохранено '.$workspaceState['saved_at'] : 'Добавьте товар — подбор сохранится в аккаунте' }}</span>
 </section>
-<div class="b2b-workspace-summary" aria-label="Текущий подбор">
-    <button type="button" data-workspace-open><span data-workspace-count>0 позиций</span><strong data-workspace-total>0,00 BYN</strong><span>Открыть подбор ↑</span></button>
-    <a data-workspace-print @if($workspaceState['print_url'])href="{{ $workspaceState['print_url'] }}"@else hidden @endif target="_blank" rel="noopener">Печать / PDF</a>
-    <a data-workspace-desk @if($workspaceState['desk_url'])href="{{ $workspaceState['desk_url'] }}"@else hidden @endif>Таблица заявки →</a>
-    @if($showProcurement)<small data-workspace-procurement></small><small data-workspace-suppliers></small>@endif
-</div>
 <dialog class="b2b-workspace-dialog" id="workspace-new-dialog" aria-labelledby="workspace-new-title">
     <form data-workspace-create>
         <header><h2 id="workspace-new-title">Новый подбор</h2><button type="button" data-dialog-close aria-label="Закрыть">×</button></header>
