@@ -15,7 +15,7 @@
                     <small>Минск, населённые пункты в пределах МКАД-2 и города по маршрутам</small>
                 </span>
             </summary>
-            <div class="own-transport-schedule__body">
+            <div class="own-transport-schedule__body" @isset($routesAnchor) id="{{ $routesAnchor }}" @endisset>
     @else
         <div class="own-transport-schedule own-transport-schedule--expanded">
             <div class="own-transport-schedule__heading">

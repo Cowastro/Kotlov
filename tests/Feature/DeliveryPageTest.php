@@ -13,7 +13,8 @@ class DeliveryPageTest extends TestCase
     {
         $this->get('/dostavka')
             ->assertOk()
-            ->assertSee('class="col-lg-12"', false)
+            ->assertSeeInOrder(['id="delivery-methods"', 'id="order-procedure"', 'id="payment-methods"', 'id="returns"'], false)
+            ->assertSee(route('evropochta.calculator'))
             ->assertSee('BYN<sup>*</sup>', false)
             ->assertSeeText('Для крупногабаритных товаров и товаров весом свыше 80 кг стоимость и условия доставки согласовываются с продавцом.');
     }
@@ -22,7 +23,8 @@ class DeliveryPageTest extends TestCase
     {
         $this->get('/dostavka')
             ->assertOk()
-            ->assertSeeText('Доставка своим транспортом по графику')
+            ->assertSeeText('График доставки своим транспортом')
+            ->assertSee('id="delivery-route-days"', false)
             ->assertSeeText('Понедельник, среда и пятница')
             ->assertSeeText('Минск и населённые пункты в пределах МКАД-2')
             ->assertSeeText('Вторник')
@@ -93,6 +95,17 @@ class DeliveryPageTest extends TestCase
             ->assertDontSee('assets/images/payment/webpay-payment-systems.png', false)
             ->assertDontSee('assets/images/payment/erip-logo-color.svg', false)
             ->assertDontSee('https://www.webpay.by/', false);
+    }
+
+    public function test_delivery_page_keeps_online_payment_instructions_when_enabled(): void
+    {
+        config(['shop.limited_payment_mode' => false]);
+
+        $this->get('/dostavka')
+            ->assertOk()
+            ->assertSeeInOrder(['id="payment-methods"', 'href="#webpay"', 'href="#erip"', 'id="webpay"', 'id="erip"'], false)
+            ->assertSeeText('Карта «Халва»')
+            ->assertSeeText(config('shop.terminal_number'));
     }
 
     public function test_public_checkout_information_uses_san_business_group_as_the_only_seller(): void

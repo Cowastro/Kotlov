@@ -1,309 +1,135 @@
 @extends('layouts.amerce')
 
 @section('title', 'Доставка и оплата '.($cityIn ?? 'в Минске').' — котлы, печи, камины | KOTLOV')
-@section('description', 'Как получить заказ KOTLOV '.($cityIn ?? 'в Минске').': самовывоз, доставка нашим транспортом по графику и по всей Беларуси, оплата картой, через ЕРИП, наличными или по безналу, рассрочка.')
+@section('description', 'Способы доставки и оплаты KOTLOV: самовывоз в Минске, график поездок по Беларуси, доставка транспортной компанией и тариф Европочты до отделения.')
 
 @section('content')
 @php
     $delivery = config('shop.delivery_methods', []);
-    $payment  = config('shop.payment_methods', []);
-    $terminal = config('shop.terminal_number', '87015502');
+    $money = fn ($amount) => number_format($amount, $amount == (int) $amount ? 0 : 2, ',', ' ').' BYN';
 @endphp
 
-<main id="wrapper">
+<main id="wrapper" class="delivery-page">
+    <div class="container">
+        <nav class="delivery-breadcrumbs" aria-label="Хлебные крошки">
+            <a href="{{ url('/') }}">Главная</a>
+            <x-heroicon-o-chevron-right aria-hidden="true"/>
+            <span aria-current="page">Доставка, оплата и возврат</span>
+        </nav>
 
-    <section class="section-page-title text-center flat-spacing-2 pb-0">
-        <div class="container">
-            <div class="main-page-title">
-                <div class="breadcrumbs">
-                    <a href="/" class="text-caption-01 cl-text-3 link">Главная</a>
-                    <i class="icon icon-CaretRightThin cl-text-3"></i>
-                    <p class="text-caption-01">Доставка, оплата и возврат</p>
+        <section class="delivery-hero" aria-labelledby="delivery-title">
+            <div class="delivery-hero__copy">
+                <h1 id="delivery-title">Доставка и оплата</h1>
+                <p>Получите заказ в Минске или любом регионе Беларуси. Выберите доставку до адреса, самовывоз со склада или Европочту до отделения.</p>
+                <div class="delivery-hero__actions">
+                    <a class="delivery-button delivery-button--primary" href="#delivery-methods">
+                        Способы доставки <x-heroicon-o-arrow-down aria-hidden="true"/>
+                    </a>
+                    <a class="delivery-button" href="{{ route('evropochta.calculator') }}">
+                        <x-heroicon-o-calculator aria-hidden="true"/> Калькулятор Европочты
+                    </a>
                 </div>
-                <h3>Доставка, оплата и возврат</h3>
             </div>
-        </div>
-    </section>
+            <img class="delivery-hero__image" src="{{ asset('assets/images/delivery/parcel-loading.webp') }}"
+                width="1200" height="800" alt="" fetchpriority="high" decoding="async">
+        </section>
 
-    <section class="flat-spacing">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-12">
+        <nav class="delivery-jump-links" aria-label="Разделы страницы">
+            <a href="#delivery-methods"><x-heroicon-o-truck aria-hidden="true"/> Доставка</a>
+            <a href="#order-procedure"><x-heroicon-o-clipboard-document-list aria-hidden="true"/> Как оформить</a>
+            <a href="#payment-methods"><x-heroicon-o-credit-card aria-hidden="true"/> Оплата</a>
+            <a href="#returns"><x-heroicon-o-arrow-uturn-left aria-hidden="true"/> Возврат</a>
+        </nav>
 
-                    @include('partials.webpay-compliance')
+        <section class="delivery-section" id="delivery-methods" aria-labelledby="delivery-methods-title">
+            <h2 id="delivery-methods-title">Способы доставки</h2>
+            <div class="delivery-methods">
+                <article class="delivery-method">
+                    <span class="delivery-page__icon"><x-heroicon-o-home-modern aria-hidden="true"/></span>
+                    <h3>Минск и МКАД‑2</h3>
+                    <p class="delivery-method__rate">{{ $money($delivery['courier']['price'] ?? 10) }}<sup>*</sup></p>
+                    <p>Доставим нашим транспортом до адреса. От {{ $money($delivery['courier']['free_from'] ?? 400) }} — бесплатно.</p>
+                </article>
+                <article class="delivery-method">
+                    <span class="delivery-page__icon"><x-heroicon-o-calendar-days aria-hidden="true"/></span>
+                    <h3>Города по графику</h3>
+                    <p class="delivery-method__rate">До {{ $money($delivery['own_transport']['price'] ?? 30) }}<sup>*</sup></p>
+                    <p>Свой транспорт по регулярным маршрутам. От {{ $money($delivery['own_transport']['free_from'] ?? 1000) }} — бесплатно.</p>
+                    <a class="delivery-text-link" href="#delivery-route-days">Посмотреть график <x-heroicon-o-arrow-down aria-hidden="true"/></a>
+                </article>
+                <article class="delivery-method">
+                    <span class="delivery-page__icon"><x-heroicon-o-truck aria-hidden="true"/></span>
+                    <h3>Транспортная компания</h3>
+                    <p class="delivery-method__rate">{{ $money($delivery['transport']['price'] ?? 60) }}<sup>*</sup></p>
+                    <p>По всей Беларуси. От {{ $money($delivery['transport']['free_from'] ?? 1000) }} — бесплатно. Срок согласует менеджер.</p>
+                </article>
+                <article class="delivery-method">
+                    <span class="delivery-page__icon"><x-heroicon-o-building-storefront aria-hidden="true"/></span>
+                    <h3>Самовывоз в Минске</h3>
+                    <p class="delivery-method__rate">Бесплатно</p>
+                    <p>{{ $delivery['pickup']['address'] ?? 'г. Минск, ул. Селицкого, д. 23/10' }}</p>
+                    <p>Самовывоз: {{ $delivery['pickup']['work_time'] ?? 'по предварительному согласованию с консультантом' }}.</p>
+                </article>
+                <article class="delivery-method delivery-method--parcel">
+                    <span class="delivery-page__icon"><x-heroicon-o-cube aria-hidden="true"/></span>
+                    <div>
+                        <h3>Европочта до отделения</h3>
+                        <p>Для заказов из одной единицы товара с подтверждёнными весом и размерами в упаковке. В оформлении доступны стандартные посылки до {{ \App\Services\Shipping\EvropochtaCheckout::MAX_CHECKOUT_WEIGHT }} кг в регионы.</p>
+                        <p>Выберите отделение и проверьте тариф. Оплата — предоплата на расчётный счёт.</p>
+                    </div>
+                    <a class="delivery-button delivery-button--primary" href="{{ route('evropochta.calculator') }}">
+                        <x-heroicon-o-calculator aria-hidden="true"/> Рассчитать тариф
+                    </a>
+                </article>
+            </div>
 
-                    <div class="br-line mb-40"></div>
+            <div class="delivery-routes">
+                @include('partials.own-transport-schedule', ['collapsible' => true, 'routesAnchor' => 'delivery-route-days'])
+            </div>
 
-                    {{-- ===== ДОСТАВКА ===== --}}
-                    <div class="tf-rte mb-40">
-                        <h4 class="mb-24">Способы доставки</h4>
+            <div class="delivery-page__note">
+                <x-heroicon-o-information-circle aria-hidden="true"/>
+                <div>
+                    <p><strong>*</strong> Для крупногабаритных товаров и товаров весом свыше 80 кг стоимость и условия доставки согласовываются с продавцом.</p>
+                    <p>Доставка камней для бани — платная при любой сумме заказа.</p>
+                </div>
+            </div>
+        </section>
 
-                        <div class="delivery-card mb-20">
-                            <h6 class="fw-semibold mb-8">Европочта до отделения</h6>
-                            <a href="{{ route('evropochta.calculator') }}" class="link">Рассчитать доставку по весу и размерам коробки</a>
-                        </div>
+        @include('partials.webpay-compliance')
 
-                        {{-- Самовывоз --}}
-                        <div class="delivery-card mb-20">
-                            <div class="d-flex align-items-start gap-16">
-                                <div class="delivery-icon flex-shrink-0">
-                                    <i class="icon icon-Storefront fs-28"></i>
-                                </div>
-                                <div>
-                                    <h6 class="fw-semibold mb-8">Самовывоз — бесплатно</h6>
-                                    <p class="cl-text-2 mb-4">
-                                        Вы можете самостоятельно забрать покупки по адресу:
-                                    </p>
-                                    <p class="fw-medium mb-4">
-                                        {{ $delivery['pickup']['address'] ?? 'г. Минск, ул. Селицкого, 39Б, каб. 23' }}
-                                    </p>
-                                    <p class="text-caption-01 cl-text-3">
-                                        Самовывоз: {{ $delivery['pickup']['work_time'] ?? 'по предварительному согласованию с консультантом' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Наш транспорт: Минск --}}
-                        <div class="delivery-card mb-20">
-                            <div class="d-flex align-items-start gap-16">
-                                <div class="delivery-icon flex-shrink-0">
-                                    <i class="icon icon-Truck fs-28"></i>
-                                </div>
-                                <div>
-                                    <h6 class="fw-semibold mb-8">
-                                        Нашим транспортом в пределах МКАД-2
-                                        — {{ number_format($delivery['courier']['price'] ?? 10, 2, '.', ' ') }} BYN<sup>*</sup>
-                                    </h6>
-                                    <p class="cl-text-2 mb-4">
-                                        Заказ на сумму от
-                                        <strong>{{ number_format($delivery['courier']['free_from'] ?? 400, 0, '.', ' ') }} BYN</strong>
-                                        доставляется <strong class="text-primary">бесплатно</strong>.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        @include('partials.own-transport-schedule')
-
-                        {{-- Транспортная компания --}}
-                        <div class="delivery-card mb-20">
-                            <div class="d-flex align-items-start gap-16">
-                                <div class="delivery-icon flex-shrink-0">
-                                    <i class="icon icon-Truck fs-28"></i>
-                                </div>
-                                <div>
-                                    <h6 class="fw-semibold mb-8">
-                                        Транспортная компания по Беларуси
-                                        — {{ number_format($delivery['transport']['price'] ?? 60, 2, '.', ' ') }} BYN<sup>*</sup>
-                                    </h6>
-                                    <p class="cl-text-2 mb-4">
-                                        Заказ на сумму свыше
-                                        <strong>{{ number_format($delivery['transport']['free_from'] ?? 1000, 0, '.', ' ') }} BYN</strong>
-                                        доставляется <strong class="text-primary">бесплатно</strong>.
-                                    </p>
-                                    <p class="cl-text-2 mb-4">Доставка по всей Беларуси. Сроки согласовываются с заказчиком.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <p class="text-caption-01 cl-text-3 mb-20">
-                            <strong>*</strong> Для крупногабаритных товаров и товаров весом свыше 80 кг стоимость и условия доставки согласовываются с продавцом.
+        <section class="delivery-section" id="returns" aria-labelledby="delivery-returns-title">
+            <h2 id="delivery-returns-title">Возврат товара</h2>
+            <div class="delivery-return">
+                <span class="delivery-page__icon"><x-heroicon-o-arrow-uturn-left aria-hidden="true"/></span>
+                <div>
+                    <p>
+                        Потребитель вправе в течение <strong>14 дней</strong> с момента передачи
+                        ему непродовольственного товара возвратить товар надлежащего качества или
+                        обменять его на аналогичный товар другого размера, формы, габарита,
+                        фасона, расцветки или комплектации с перерасчётом разницы в цене.
+                    </p>
+                    <p>
+                        Требование об обмене или возврате товара подлежит удовлетворению, если
+                        товар не был в употреблении, сохранены его потребительские свойства и
+                        имеются доказательства приобретения товара у данного продавца.
+                    </p>
+                    <div class="delivery-page__note">
+                        <x-heroicon-o-information-circle aria-hidden="true"/>
+                        <p>
+                            <strong>Внимание:</strong> Технически сложные товары бытового
+                            назначения, включая электрические бытовые машины и приборы,
+                            электрические нагревательные приборы и подобные товары,
+                            <strong>обмену и возврату не подлежат</strong>.
                         </p>
-
-                        {{-- Важное предупреждение --}}
-                        <div class="notice-box mb-20">
-                            <i class="icon icon-Info me-8 text-primary"></i>
-                            <span>
-                                <strong>Важно:</strong> Доставка камней для бани осуществляется
-                                только на платной основе — бесплатная доставка на данный товар не распространяется.
-                            </span>
-                        </div>
-
                     </div>
-
-                    <div class="br-line mb-40"></div>
-
-                    {{-- ===== ОПЛАТА ===== --}}
-                    <div class="tf-rte mb-40">
-                        <h4 class="mb-24">Способы оплаты</h4>
-
-                        <div class="row gy-16">
-
-                            <div class="col-md-6">
-                                <div class="payment-info-card">
-                                    <h6 class="fw-semibold mb-8">💵 Наличными</h6>
-                                    <p class="cl-text-2 mb-0">Наличными при получении товара.</p>
-                                </div>
-                            </div>
-
-                            @if(config('shop.limited_payment_mode', true))
-                            <div class="col-md-6">
-                                <div class="payment-info-card">
-                                    <h6 class="fw-semibold mb-8">📅 Рассрочка до 6 месяцев</h6>
-                                    <p class="cl-text-2 mb-0">
-                                        Оставьте заявку при оформлении заказа. Менеджер свяжется с вами и поможет оформить рассрочку.
-                                    </p>
-                                </div>
-                            </div>
-                            @else
-                            <div class="col-md-6">
-                                <div class="payment-info-card">
-                                    <h6 class="fw-semibold mb-8">💳 Банковской картой</h6>
-                                    <p class="cl-text-2 mb-0">
-                                        MasterCard, Visa, Visa Electron, Maestro, Белкарт.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="payment-info-card">
-                                    <h6 class="fw-semibold mb-8">ЕРИП</h6>
-                                    <p class="cl-text-2 mb-0">
-                                        Оплата по номеру заказа через систему «Расчёт» (ЕРИП). <a href="#erip" class="text-decoration-underline">Инструкция по оплате</a>.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="payment-info-card">
-                                    <h6 class="fw-semibold mb-8">🏦 Безналичный расчёт</h6>
-                                    <p class="cl-text-2 mb-0">
-                                        100% предоплата на расчётный счёт.
-                                        Для РФ и Казахстана — в российских рублях и/или евро на валютный счёт.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="payment-info-card">
-                                    <h6 class="fw-semibold mb-8">📅 Рассрочка до 6 месяцев</h6>
-                                    <p class="cl-text-2 mb-0">
-                                        Оставьте заявку при оформлении заказа. Менеджер свяжется с вами и поможет оформить рассрочку.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="payment-info-card">
-                                    <h6 class="fw-semibold mb-8">🏦 Кредит до 3 лет</h6>
-                                    <p class="cl-text-2 mb-0">
-                                        Подробную информацию уточняйте у менеджеров.
-                                    </p>
-                                </div>
-                            </div>
-
-                            
-
-                            <div class="col-md-6">
-                                <div class="payment-info-card">
-                                    <h6 class="fw-semibold mb-8">🐢 Карта «Халва»</h6>
-                                    <p class="cl-text-2 mb-0">
-                                        Рассрочка до 2 месяцев без первого взноса.<br>
-                                        Номер терминала: <strong>{{ $terminal }}</strong>.
-                                    </p>
-                                </div>
-                            </div>
-
-                          <div class="col-md-6">
-    <div class="payment-info-card">
-        <h6 class="fw-semibold mb-8">🏦 Белгазпромбанк</h6>
-        <p class="cl-text-2 mb-0">Рассрочка на 3 месяца.</p>
-    </div>
-</div>
-
-<div class="col-md-6">
-    <div class="payment-info-card">
-        <h6 class="fw-semibold mb-8">💚 Беларусбанк «Магнит Green»</h6>
-        <p class="cl-text-2 mb-0">Рассрочка на 2 месяца.</p>
-    </div>
-</div> 
-
-                        
-
-                            <div class="col-md-6">
-                                <div class="payment-info-card">
-                                    <h6 class="fw-semibold mb-8">🐢 Карта «Черепаха» ВТБ</h6>
-                                    <p class="cl-text-2 mb-0">Рассрочка до 8 месяцев.</p>
-                                </div>
-                            </div>
-                            @endif
-
-                        </div>
-                    </div>
-
-                    <div class="br-line mb-40"></div>
-
-                    {{-- ===== ВОЗВРАТ ===== --}}
-                    <div class="tf-rte">
-                        <h4 class="mb-20">Возврат товара</h4>
-                        <div class="delivery-card">
-                            <p class="cl-text-2 mb-12">
-                                Потребитель вправе в течение <strong>14 дней</strong> с момента передачи
-                                ему непродовольственного товара возвратить товар надлежащего качества или
-                                обменять его на аналогичный товар другого размера, формы, габарита,
-                                фасона, расцветки или комплектации с перерасчётом разницы в цене.
-                            </p>
-                            <p class="cl-text-2 mb-12">
-                                Требование об обмене или возврате товара подлежит удовлетворению, если
-                                товар не был в употреблении, сохранены его потребительские свойства и
-                                имеются доказательства приобретения товара у данного продавца.
-                            </p>
-                            <div class="notice-box">
-                                <i class="icon icon-Info me-8 text-primary"></i>
-                                <span>
-                                    <strong>Внимание:</strong> Технически сложные товары бытового
-                                    назначения, включая электрические бытовые машины и приборы,
-                                    электрические нагревательные приборы и подобные товары,
-                                    <strong>обмену и возврату не подлежат</strong>.
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
-        </div>
-    </section>
-
+        </section>
+    </div>
 </main>
 @endsection
 
 @push('styles')
-<style>
-.delivery-card {
-    background: #fff;
-    border: 1px solid #e8e8e8;
-    border-radius: 12px;
-    padding: 20px 24px;
-}
-.delivery-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #f5f5f5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-primary, #e02020);
-}
-.payment-info-card {
-    background: #fafafa;
-    border: 1px solid #e8e8e8;
-    border-radius: 10px;
-    padding: 16px 20px;
-    height: 100%;
-}
-.notice-box {
-    background: #fff9f0;
-    border: 1px solid #fde68a;
-    border-radius: 8px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    font-size: 14px;
-    color: #555;
-}
-</style>
+    <link rel="stylesheet" href="{{ asset('assets/css/dostavka.css') }}?v={{ filemtime(public_path('assets/css/dostavka.css')) }}">
 @endpush
