@@ -5,6 +5,22 @@
 .section-checkout .payment_check input[type="radio"] { flex: 0 0 22px; min-width: 22px; height: 22px; }
 .section-checkout .payment_check .pay-title { min-width: 0; }
 .section-checkout .payment_check { align-items: flex-start; }
+.checkout-delivery-options { display: grid; gap: 8px; }
+.checkout-delivery-option {
+    display: grid; grid-template-columns: 20px 24px minmax(0, 1fr) auto; gap: 10px;
+    align-items: start; padding: 12px; border: 1px solid #e4e4e4;
+    border-radius: 10px; cursor: pointer;
+}
+.checkout-delivery-option[hidden] { display: none; }
+.checkout-delivery-option:has(input:checked) { border-color: #222; background: #f7f6f5; }
+.checkout-delivery-option:has(input:focus-visible) { outline: 2px solid #222; outline-offset: 2px; }
+.checkout-delivery-option input[type="radio"] { width: 19px; height: 19px; margin: 2px 0 0; accent-color: #222; }
+.checkout-delivery-option__icon { width: 22px; height: 22px; color: #505050; }
+.checkout-delivery-option__price { text-align: right; white-space: nowrap; }
+@media (max-width: 479px) {
+    .checkout-delivery-option { grid-template-columns: 20px 22px minmax(0, 1fr); }
+    .checkout-delivery-option__price { grid-column: 3; text-align: left; white-space: normal; }
+}
 .payment-info-accordion .accordion-button::after { margin-left: auto; flex-shrink: 0; }
 .payment-info-accordion .accordion-button:not(.collapsed) { color: inherit; }
 .payment-info-list { padding-left: 20px; margin: 0; }
@@ -141,18 +157,73 @@
                                 $checkoutDelivery = collect($checkoutDeliveryMethods ?? config('shop.checkout_delivery_methods', []))
                                     ->mapWithKeys(fn($key) => [$key => config("shop.delivery_methods.$key")])
                                     ->filter();
-                                $selectedDelivery = old('delivery_type', ($isB2bCheckout ?? false) ? 'b2b_delivery' : ($lastOrder?->delivery_type ?: 'courier'));
+                                $evropochtaMethod = \App\Services\Shipping\EvropochtaCheckout::METHOD;
+                                $defaultDelivery = $checkoutDelivery->has($evropochtaMethod)
+                                    ? $evropochtaMethod
+                                    : ($lastOrder?->delivery_type ?: $checkoutDelivery->keys()->first());
+                                $selectedDelivery = old('delivery_type', $defaultDelivery);
                                 if (! is_string($selectedDelivery) || ! $checkoutDelivery->has($selectedDelivery)) {
                                     $selectedDelivery = $checkoutDelivery->keys()->first() ?? 'courier';
                                 }
-                                $evropochtaMethod = \App\Services\Shipping\EvropochtaCheckout::METHOD;
                                 $isEvropochtaSelected = $selectedDelivery === $evropochtaMethod;
+                                $deliveryIcons = [
+                                    'evropochta' => 'cube',
+                                    'courier' => 'truck',
+                                    'own_transport' => 'calendar-days',
+                                    'transport' => 'truck',
+                                    'pickup' => 'building-storefront',
+                                    'b2b_delivery' => 'truck',
+                                ];
+                                $deliveryDetails = [
+                                    'evropochta' => 'До отделения с оплатой при получении',
+                                    'courier' => 'По адресу в Минске и в пределах МКАД-2',
+                                    'own_transport' => 'В города по графику',
+                                    'transport' => 'Для крупных заказов и посылок, недоступных для расчёта Европочтой',
+                                    'pickup' => 'Минск, ул. Селицкого, 23/10',
+                                ];
                             @endphp
                             <div class="box-ip-checkout estimate-shipping">
                                 <div class="h5 title">{{ ($isB2bCheckout ?? false) ? 'Получение заказа' : 'Куда доставить' }}</div>
                                 <div class="form-content">
 
-                                    {{-- Сначала куда: город и адрес (область — по городу на сервере), затем способы, подходящие этому городу --}}
+                                    <fieldset id="delivery-options" class="checkout-delivery-options" aria-describedby="delivery-options-message">
+                                        <legend class="tf-lable fw-medium">
+                                            Способ доставки <span class="text-primary">*</span>
+                                        </legend>
+                                        @foreach ($checkoutDelivery as $key => $method)
+                                            @php
+                                                $methodPrice = \App\Http\Controllers\CheckoutController::calcDelivery($key, (float) $subtotal);
+                                            @endphp
+                                            <label class="checkout-delivery-option" data-delivery-option>
+                                                <input type="radio" name="delivery_type" value="{{ $key }}"
+                                                    @checked($selectedDelivery === $key) required>
+                                                @svg('heroicon-o-'.($deliveryIcons[$key] ?? 'cube'), 'checkout-delivery-option__icon', ['aria-hidden' => 'true'])
+                                                <span>
+                                                    <span class="fw-medium d-block">{{ $key === 'pickup' ? $method['name'] : ($method['checkout_name'] ?? $method['name']) }}</span>
+                                                    @isset($deliveryDetails[$key])
+                                                        <span class="text-caption-01 cl-text-2 d-block">{{ $deliveryDetails[$key] }}</span>
+                                                    @endisset
+                                                </span>
+                                                <span class="checkout-delivery-option__price text-caption-01 fw-medium" @if($key === $evropochtaMethod) data-evropochta-card-price @endif>
+                                                    @if ($key === $evropochtaMethod)
+                                                        Выберите отделение
+                                                    @elseif ($methodPrice === 0.0)
+                                                        Бесплатно
+                                                    @elseif ($methodPrice !== null)
+                                                        {{ number_format($methodPrice, 2, '.', ' ') }} BYN
+                                                    @else
+                                                        По согласованию
+                                                    @endif
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                        @error('delivery_type')
+                                            <div class="text-danger text-caption-01" id="delivery-options-message">{{ $message }}</div>
+                                        @else
+                                            <div class="text-caption-01 cl-text-2" id="delivery-options-message" hidden></div>
+                                        @enderror
+                                    </fieldset>
+
                                     <div id="delivery-address-fields">
                                         <div class="tf-grid-layout sm-col-2">
                                             <fieldset class="tf-field">
@@ -182,40 +253,6 @@
                                             </fieldset>
                                         </div>
                                     </div>
-
-                                    <fieldset class="tf-field">
-                                        <label class="tf-lable fw-medium" for="delivery-type">
-                                            Способ доставки <span class="text-primary">*</span>
-                                            <span class="text-caption-01 cl-text-2 fw-normal d-block" id="delivery-type-hint">{{ ($isB2bCheckout ?? false) ? 'Стоимость и срок доставки менеджер согласует отдельно' : 'Доступные способы для указанного города' }}</span>
-                                        </label>
-                                        <div class="tf-select">
-                                            <select name="delivery_type" id="delivery-type" required>
-                                                @foreach ($checkoutDelivery as $key => $method)
-                                                    @php
-                                                        $methodPrice = \App\Http\Controllers\CheckoutController::calcDelivery($key, (float) $subtotal);
-                                                    @endphp
-                                                    <option value="{{ $key }}"
-                                                        @selected($selectedDelivery === $key)>
-                                                        {{ $method['checkout_name'] ?? $method['name'] }}
-                                                        @if ($key === 'pickup')
-                                                            @if ($cityContact['online_only'] ?? false) — после подтверждения менеджером @endif
-                                                        @elseif ($methodPrice === 0.0)
-                                                            — Бесплатно
-                                                        @elseif ($methodPrice !== null)
-                                                            — {{ number_format($methodPrice, 2, '.', ' ') }} BYN
-                                                        @elseif ($key !== 'evropochta')
-                                                            — стоимость уточняется
-                                                        @endif
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        @if ($checkoutDelivery->has($evropochtaMethod))
-                                            <p class="text-caption-01 cl-text-2" id="evropochta-payment-hint" @if($isEvropochtaSelected) hidden @endif>
-                                                С Европочтой можно оплатить заказ при получении в отделении.
-                                            </p>
-                                        @endif
-                                    </fieldset>
 
                                     @if (!empty($evropochtaUnavailable))
                                         <div class="text-caption-01" id="evropochta-availability">
@@ -263,10 +300,9 @@
                                     )])
                                     ->filter();
                                 $codPayment = \App\Services\Shipping\EvropochtaCheckout::COD_PAYMENT;
-                                $transferPayment = \App\Services\Shipping\EvropochtaCheckout::PAYMENT;
                                 $hiddenPayments = $isEvropochtaSelected
-                                    ? $checkoutPayment->keys()->diff([$codPayment, $transferPayment])->all()
-                                    : (($evropochtaPaymentOnly ?? false) ? [$codPayment, $transferPayment] : [$codPayment]);
+                                    ? $checkoutPayment->keys()->diff($evropochtaPayments)->all()
+                                    : $evropochtaOnlyPayments;
                                 $visiblePayments = $checkoutPayment->except($hiddenPayments);
                                 $currentPayment = old('payment_type', $selectedPayment);
                                 if (! is_string($currentPayment) || ! $visiblePayments->has($currentPayment)) {
@@ -522,7 +558,9 @@
                                 <li class="total-item lh-24 fw-medium">
                                     <span>{{ ($isB2bCheckout ?? false) ? 'Доставка после согласования:' : 'Доставка:' }}</span>
                                     <span id="checkout-delivery-cost">
-                                        @if ($deliveryCost === null)
+                                        @if ($isEvropochtaSelected)
+                                            <span class="cl-text-2">Выберите отделение</span>
+                                        @elseif ($deliveryCost === null)
                                             <span class="cl-text-2">уточняется</span>
                                         @elseif ($deliveryCost === 0.0)
                                             <span class="text-primary fw-semibold">Бесплатно</span>
@@ -536,7 +574,7 @@
                             <div class="last-total h5 fw-medium">
                                 <span>{{ ($isB2bCheckout ?? false) ? 'Предварительно:' : 'Итого:' }}</span>
                                 <span class="text-primary" id="checkout-total">
-                                    {{ number_format($total, 2, '.', ' ') }} BYN
+                                    {{ $isEvropochtaSelected ? '—' : number_format($total, 2, '.', ' ').' BYN' }}
                                 </span>
                             </div>
 
@@ -564,70 +602,66 @@
     var onlineOrderDiscountCoupon = @json($onlineOrderDiscountCoupon);
 
     // ── Показ/скрытие полей адреса при самовывозе ──
-    var deliverySelect   = document.getElementById('delivery-type');
+    var deliveryGroup = document.getElementById('delivery-options');
+    var evropochtaCardPrice = deliveryGroup?.querySelector('[data-evropochta-card-price]');
+    var deliveryRadios = deliveryGroup ? Array.from(deliveryGroup.querySelectorAll('input[name="delivery_type"]')) : [];
+    function deliveryType() {
+        return deliveryRadios.find(function (option) { return option.checked && !option.disabled; })?.value ?? '';
+    }
     var ownTransportSchedule = document.getElementById('own-transport-schedule');
     var addressFields    = document.getElementById('delivery-address-fields');
     var addressInputs    = ['delivery-city', 'delivery-address'].map(function(id) { return document.getElementById(id); }).filter(Boolean);
     var requiredMarks    = document.querySelectorAll('.delivery-required-mark');
-    if (deliverySelect && addressFields) {
+    if (deliveryGroup && addressFields) {
         function toggleAddress() {
-            var isPickup = deliverySelect.value === 'pickup';
-            // The address stays visible above (it is asked first); for pickup it is just not required.
-            var isEvropochta = deliverySelect.value === 'evropochta';
+            var isPickup = deliveryType() === 'pickup';
+            var isEvropochta = deliveryType() === 'evropochta';
             addressFields.hidden = isEvropochta;
             addressInputs.forEach(function(el) { el.required = !isPickup && !isEvropochta; el.disabled = isEvropochta; });
-            if (ownTransportSchedule) ownTransportSchedule.style.display = deliverySelect.value === 'own_transport' ? '' : 'none';
+            if (ownTransportSchedule) ownTransportSchedule.style.display = deliveryType() === 'own_transport' ? '' : 'none';
             requiredMarks.forEach(function(el) { el.style.display = isPickup ? 'none' : ''; });
-            if (ownTransportSchedule && deliverySelect.value === 'own_transport') {
+            if (ownTransportSchedule && deliveryType() === 'own_transport') {
                 ownTransportSchedule.open = true;
             }
         }
-        deliverySelect.addEventListener('change', toggleAddress);
+        deliveryGroup.addEventListener('change', toggleAddress);
         toggleAddress();
     }
 
-    // ── Способ доставки по городу: Минск — наш транспорт, город маршрута — по графику, иначе — транспортная
-    //    компания. Только пока покупатель сам не выбрал способ доставки.
     var cityInput = document.getElementById('delivery-city');
     var ownRouteCities = @json(collect(config('shop.delivery_methods.own_transport.routes', []))->pluck('destinations')->flatten()->map(fn ($c) => mb_strtolower($c))->values());
     var deliveryChosenByHand = @json(old('delivery_type') !== null);
-    if (deliverySelect) {
-        deliverySelect.addEventListener('change', function (event) { if (event.isTrusted) deliveryChosenByHand = true; });
+    if (deliveryGroup) {
+        deliveryGroup.addEventListener('change', function (event) { if (event.isTrusted) deliveryChosenByHand = true; });
     }
-    function deliveryForCity(city) {
-        var key = String(city || '').trim().toLowerCase().replace(/^(г\.|город)\s*/, '');
-        if (!key) return null;
-        if (key === 'минск') return 'courier';
-        return ownRouteCities.indexOf(key) !== -1 ? 'own_transport' : 'transport';
-    }
-    // Ways that make sense for the city: Minsk — pickup and our transport; a route city — also by schedule
-    // and a carrier; any other city — pickup and a carrier. Unknown city: everything.
-    function allowedFor(city) {
-        var pick = deliveryForCity(city);
-        if (pick === 'courier') return ['pickup', 'courier'];
-        if (pick === 'own_transport') return ['pickup', 'own_transport', 'transport', 'evropochta'];
-        if (pick === 'transport') return ['pickup', 'transport', 'evropochta'];
-        return null;
+    function cityKey(city) {
+        return String(city || '').trim().toLowerCase().replace(/^(?:г\.\s*|город\s+)/, '');
     }
     function applyCity() {
         if (isB2bCheckout) return;
-        var allowed = allowedFor(cityInput.value);
-        Array.prototype.forEach.call(deliverySelect.options, function (option) {
-            var ok = !allowed || allowed.indexOf(option.value) !== -1;
-            option.hidden = !ok;
-            option.disabled = !ok;
+        var city = cityKey(cityInput.value);
+        var routeCity = ownRouteCities.includes(city);
+        var available = deliveryRadios.filter(function (option) {
+            var method = option.value;
+            var show = !city || method === 'pickup' || (city === 'минск'
+                ? method === 'courier'
+                : method === 'evropochta' || method === 'transport' || (method === 'own_transport' && routeCity));
+            option.disabled = !show;
+            option.closest('[data-delivery-option]').hidden = !show;
+            return show;
         });
-        var current = deliverySelect.querySelector('option[value="' + deliverySelect.value + '"]');
-        var pick = deliveryForCity(cityInput.value);
-        if ((current && current.disabled) || (!deliveryChosenByHand && pick && deliverySelect.value !== 'pickup')) {
-            if (pick && deliverySelect.querySelector('option[value="' + pick + '"]')) deliverySelect.value = pick;
+        var preferred = !city || city === 'минск' ? 'courier' : (routeCity ? 'own_transport' : 'transport');
+        var selected = available.find(function (option) { return option.checked; });
+        if (!selected || (!deliveryChosenByHand && selected.value !== 'pickup')) {
+            var suggested = ['evropochta', preferred].map(function (method) {
+                return available.find(function (option) { return option.value === method; });
+            }).find(Boolean) ?? available[0];
+            if (suggested) suggested.checked = true;
         }
-        deliverySelect.dispatchEvent(new Event('change'));
+        deliveryGroup.dispatchEvent(new Event('change'));
     }
-    if (cityInput && deliverySelect) {
+    if (cityInput && deliveryGroup) {
         cityInput.addEventListener('change', applyCity);
-        cityInput.addEventListener('input', function () { if (deliveryForCity(cityInput.value) && cityInput.value.trim().length > 2) applyCity(); });
-        if (cityInput.value) applyCity();
     }
 
     // ── Гость: контакты и адрес прошлого заказа хранятся в браузере и подставляются в пустые поля ──
@@ -641,7 +675,7 @@
             if (el && !el.value && remembered[id]) el.value = remembered[id];
         });
     } catch (e) {}
-    if (cityInput && deliverySelect && cityInput.value) applyCity();
+    if (cityInput && deliveryGroup) applyCity();
     if (checkoutForm) {
         var submitButton = checkoutForm.querySelector('[data-checkout-submit]');
         var submitLabel = submitButton ? submitButton.textContent : '';
@@ -700,12 +734,15 @@
     }
 
     function updateTotals() {
-        if (!deliveryCostEl || !totalEl || !deliverySelect) return;
+        if (!deliveryCostEl || !totalEl || !deliveryGroup) return;
 
-        var cost  = calcDelivery(deliverySelect.value);
+        var cost = calcDelivery(deliveryType());
+        if (evropochtaCardPrice) {
+            evropochtaCardPrice.textContent = evropochtaPrice === null ? 'Выберите отделение' : fmtByn(evropochtaPrice);
+        }
         var total = subtotal - effectiveDiscount() + (cost !== null ? cost : 0);
 
-        if (cost === null && deliverySelect.value === 'evropochta') {
+        if (cost === null && deliveryType() === 'evropochta') {
             deliveryCostEl.textContent = 'Выберите отделение';
             totalEl.textContent = '—';
             return;
@@ -721,8 +758,8 @@
         totalEl.textContent = fmtByn(total);
     }
 
-    if (deliverySelect) {
-        deliverySelect.addEventListener('change', updateTotals);
+    if (deliveryGroup) {
+        deliveryGroup.addEventListener('change', updateTotals);
         updateTotals();
     }
 
@@ -730,27 +767,25 @@
     var paymentRadios = document.querySelectorAll('input[name="payment_type"]');
 
     var evropochtaFields = document.getElementById('evropochta-fields');
-    if (evropochtaFields && deliverySelect && checkoutForm) {
+    if (evropochtaFields && deliveryGroup && checkoutForm) {
         var picker = window.mountEvropochtaBranchPicker(evropochtaFields.querySelector('[data-evropochta-picker]'));
         var branchField = picker.branch;
         var branchSearch = picker.search;
         var quoteToken = document.getElementById('evropochta-token');
         var quoteStatus = document.getElementById('evropochta-status');
         var retry = document.getElementById('evropochta-retry');
-        var paymentHint = document.getElementById('evropochta-payment-hint');
-        var carrierOption = deliverySelect.querySelector('option[value="evropochta"]');
         var quoteRequest;
         var active = null;
-        var transferOnlyForEvropochta = @json((bool) ($evropochtaPaymentOnly ?? false));
+        var evropochtaPayments = @json($evropochtaPayments);
+        var evropochtaOnlyPayments = @json($evropochtaOnlyPayments);
         var codPayment = @json(\App\Services\Shipping\EvropochtaCheckout::COD_PAYMENT);
 
         function updateEvropochtaPayment() {
             var selected = null;
             var fallback = null;
             paymentRadios.forEach(function (radio) {
-                var isTransfer = radio.value === 'bank_transfer';
                 var isCod = radio.value === codPayment;
-                var show = active ? (isTransfer || isCod) : (!isCod && (!isTransfer || !transferOnlyForEvropochta));
+                var show = active ? evropochtaPayments.includes(radio.value) : !evropochtaOnlyPayments.includes(radio.value);
                 radio.disabled = !show;
                 radio.closest('.payment_accordion').style.display = show ? '' : 'none';
                 if (!show) return;
@@ -809,8 +844,7 @@
         }
 
         function toggleEvropochta() {
-            var selected = deliverySelect.value === 'evropochta';
-            paymentHint.hidden = selected || carrierOption.disabled;
+            var selected = deliveryType() === 'evropochta';
             if (selected === active) return;
             active = selected;
             evropochtaFields.style.display = active ? '' : 'none';
@@ -821,7 +855,7 @@
 
         branchField.addEventListener('change', loadEvropochtaQuote);
         retry.addEventListener('click', loadEvropochtaQuote);
-        deliverySelect.addEventListener('change', toggleEvropochta);
+        deliveryGroup.addEventListener('change', toggleEvropochta);
         toggleEvropochta();
     }
 

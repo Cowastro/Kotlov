@@ -28,13 +28,15 @@ class EvropochtaCheckoutTest extends TestCase
             ->get(route('checkout'))
             ->assertOk()
             ->assertSee('Европочта до отделения')
-            ->assertSee('С Европочтой можно оплатить заказ при получении в отделении.')
+            ->assertSee('До отделения с оплатой при получении')
             ->assertSee('Оплата при получении в Европочте')
             ->assertSee('id="evropochta-results" hidden', false)
             ->assertSee('data-branches=', false)
             ->assertSee('г. Лида, Красноармейская, 63, №23')
             ->assertDontSee('Монтажников, 2, №1');
-        $this->assertMatchesRegularExpression('/value="evropochta_cod"\s+disabled\b/', $checkout->getContent());
+        $checkout->assertDontSee('name="delivery_type" value="transport"', false);
+        $this->assertMatchesRegularExpression('/name="delivery_type" value="evropochta"\s+checked\b/', $checkout->getContent());
+        $this->assertMatchesRegularExpression('/value="evropochta_cod"\s+checked\b/', $checkout->getContent());
 
         $quote = $this->postJson(route('checkout.evropochta.quote'), ['branch_id' => 40930010, 'weight' => 0.01])
             ->assertOk()->assertJsonPath('price', 6.5);
@@ -94,7 +96,7 @@ class EvropochtaCheckoutTest extends TestCase
         $default = $this->withSession($session + ['_old_input' => ['delivery_type' => 'evropochta']])
             ->get(route('checkout'))
             ->assertOk();
-        $this->assertMatchesRegularExpression('/id="evropochta-payment-hint"\s+hidden\b/', $default->getContent());
+        $default->assertSee('id="delivery-options"', false);
         $this->assertMatchesRegularExpression('/value="evropochta_cod"\s+checked\b/', $default->getContent());
         $this->assertMatchesRegularExpression('/value="cash"\s+disabled\b/', $default->getContent());
 
@@ -107,6 +109,45 @@ class EvropochtaCheckoutTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/value="evropochta_cod"\s+checked\b/', $prepaid->getContent());
     }
 
+    public function test_gas_meters_and_alarms_use_payment_on_receipt_for_evropochta(): void
+    {
+        $product = $this->product();
+        $this->mockCarrier();
+        $this->withHeader('User-Agent', 'Mozilla/5.0');
+
+        foreach (['schetchiki-gaza', 'signalizatory-zagazovannosti'] as $category) {
+            $targetCategory = Category::query()->firstOrCreate(['slug' => $category], ['name' => $category, 'parent_id' => 0]);
+            $product->update(['category_id' => $targetCategory->id]);
+            $this->withSession($this->cart($product))
+                ->get(route('checkout'))
+                ->assertOk()
+                ->assertSee('Оплата при получении в Европочте')
+                ->assertDontSee('id="pay-bank_transfer"', false)
+                ->assertDontSee('name="delivery_type" value="transport"', false);
+
+            $input = [
+                'order_token' => 'shipping-probe',
+                'customer_name' => 'Покупатель',
+                'customer_phone' => '+375291112233',
+                'payment_type' => 'bank_transfer',
+                'delivery_type' => 'evropochta',
+                'evropochta_branch' => 40930010,
+                'evropochta_token' => 'test-quote',
+            ];
+            $this->post(route('checkout.store'), $input)->assertSessionHasErrors('payment_type');
+            $this->post(route('checkout.store'), [
+                'delivery_type' => 'transport',
+                'payment_type' => 'cash',
+                'delivery_city' => 'Солигорск',
+                'delivery_address' => 'ул. Ленина, 1',
+            ] + $input)->assertSessionHasErrors('delivery_type');
+            RateLimiter::clear('form:checkout:127.0.0.1');
+        }
+
+        $this->assertDatabaseCount('orders', 0);
+        Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/create'));
+    }
+
     public function test_multiple_units_and_missing_package_measurements_are_ineligible(): void
     {
         $product = $this->product();
@@ -114,8 +155,10 @@ class EvropochtaCheckoutTest extends TestCase
         $this->withSession($this->cart($product, 2))
             ->get(route('checkout'))->assertOk()
             ->assertDontSee('Европочта до отделения')
-            ->assertDontSee('id="evropochta-payment-hint"', false)
-            ->assertSee('Европочта при оформлении доступна для одной единицы товара.');
+            ->assertDontSee('name="delivery_type" value="evropochta"', false)
+            ->assertSee('Европочта при оформлении доступна для одной единицы товара.')
+            ->assertSee('Транспортная компания по Беларуси')
+            ->assertSee('60.00 BYN');
         $this->postJson(route('checkout.evropochta.quote'), ['branch_id' => 40930010])
             ->assertUnprocessable();
 
@@ -144,7 +187,7 @@ class EvropochtaCheckoutTest extends TestCase
 
         $this->withSession($this->cart($product))->get(route('checkout'))->assertOk()
             ->assertDontSee('Европочта до отделения')
-            ->assertDontSee('id="evropochta-payment-hint"', false)
+            ->assertDontSee('name="delivery_type" value="evropochta"', false)
             ->assertSee('Для Европочты при оформлении нужны подтверждённые вес и размеры товара в упаковке.')
             ->assertSee('Рассчитать доставку Европочтой отдельно');
 
