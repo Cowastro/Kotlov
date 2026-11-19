@@ -2,6 +2,7 @@
 
 namespace App\Services\Shipping;
 
+use App\Jobs\SendEvropochtaTrackingSms;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Telephony\PhoneNumber;
@@ -220,9 +221,23 @@ final class EvropochtaOrderShipment
 
             // The order lock prevents parallel requests. The carrier's external_id also protects retries after a timeout.
             $number = $this->carrier->createShipment($payload);
+            $notify = (bool) ($recipient['notify_receiver'] ?? true);
+            $smsStatus = match (true) {
+                ! $notify => 'skipped',
+                ! SendEvropochtaTrackingSms::configured() => 'unavailable',
+                default => 'pending',
+            };
             $lockedOrder->evropochta_tracking_number = $number;
+            $lockedOrder->evropochta_sms_status = $smsStatus;
             if (! $lockedOrder->save()) {
                 throw new EvropochtaShipmentException('Трек-номер получен, но не сохранён. Повторите действие для восстановления номера.');
+            }
+
+            if ($smsStatus === 'pending') {
+                $orderId = (int) $lockedOrder->getKey();
+                DB::afterCommit(static function () use ($orderId, $number, $phone): void {
+                    SendEvropochtaTrackingSms::dispatchAfterResponse($orderId, $number, $phone);
+                });
             }
 
             return $number;

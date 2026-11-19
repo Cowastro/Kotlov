@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Actions;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Jobs\SendEvropochtaTrackingSms;
 use App\Models\Order;
 use App\Services\Shipping\Evropochta;
 use App\Services\Shipping\EvropochtaCheckout;
@@ -11,6 +12,7 @@ use App\Services\Shipping\EvropochtaShipmentException;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
@@ -108,6 +110,7 @@ final class EvropochtaOrderActions
                 'receiver_name' => preg_match('/^\S+$/u', trim((string) $record->customer_name)) ? trim($record->customer_name) : null,
                 'receiver_phone_number' => $record->customer_phone,
                 'label_format' => 'thermal',
+                'notify_receiver' => true,
             ])
             ->schema([
                 TextEntry::make('ep_destination')
@@ -140,6 +143,11 @@ final class EvropochtaOrderActions
                 TextInput::make('receiver_patronymic_name')->label('Отчество, если есть')->trim()->maxLength(100),
                 TextInput::make('receiver_phone_number')->label('Телефон получателя')->inputMode('tel')->trim()->required()->maxLength(30),
                 Select::make('label_format')->label('Формат ярлыка')->options(Evropochta::LABEL_FORMATS)->required(),
+                Toggle::make('notify_receiver')
+                    ->label('Отправить получателю СМС с трек-номером')
+                    ->helperText(fn (): string => SendEvropochtaTrackingSms::configured()
+                        ? 'СМС придёт на указанный телефон получателя.'
+                        : 'SMS.BY пока не настроен. Отправление можно оформить.'),
             ])
             ->action(function (Order $record, array $data, Action $action, Component $livewire, EvropochtaOrderShipment $shipments): void {
                 try {
