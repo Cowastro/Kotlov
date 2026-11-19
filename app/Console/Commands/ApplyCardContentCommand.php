@@ -56,14 +56,68 @@ class ApplyCardContentCommand extends Command
                 $values['images'] = $images;
             }
             $dirty = collect($values)->filter(fn ($value, $field) => $product->{$field} != $value)->keys()->all();
+            // «characteristics»: rows of the table to correct by name, in the attribute values and in the specs JSON.
+            $fixes = $this->characteristics($product, (array) ($data['characteristics'] ?? []), (bool) $this->option('apply'));
+            if ($fixes > 0) {
+                $dirty[] = 'characteristics';
+            }
             $this->line(sprintf('audit.card_content.card=%d:%s:%s', $product->id, $product->slug, $dirty ? implode('-', $dirty) : 'same'));
             if ($dirty && $this->option('apply')) {
-                $product->update(Arr::only($values, $dirty));
+                $product->update(Arr::only($values, array_diff($dirty, ['characteristics'])));
                 $changed++;
             }
         }
         $this->line('metric.card_content.updated='.$changed);
 
         return self::SUCCESS;
+    }
+
+    /** Sets the rows of the characteristics table given by name; returns how many differ. */
+    private function characteristics(Product $product, array $rows, bool $apply): int
+    {
+        $normal = fn (string $value): string => mb_strtolower(trim(preg_replace('/\s+/u', ' ', $value) ?? ''));
+        $values = \App\Models\ProductAttributeValue::query()->with('attribute', 'option')->where('product_id', $product->id)->get()->filter(fn ($value) => $value->attribute !== null);
+        $specs = (array) ($product->specs ?? []);
+        $differ = 0;
+        $specsChanged = false;
+        foreach ($rows as $name => $wanted) {
+            $wanted = trim((string) $wanted);
+            $found = [];
+            foreach ($values->filter(fn ($value) => $normal($value->attribute->name) === $normal((string) $name)) as $value) {
+                // «154 кг» for an attribute with the suffix «кг» is kept as «154».
+                $suffix = trim((string) $value->attribute->suffix);
+                $wanted = $suffix !== '' && $value->attribute->type === 'value' && str_ends_with($normal($wanted), $normal($suffix))
+                    ? trim(mb_substr($wanted, 0, mb_strlen($wanted) - mb_strlen($suffix))) : $wanted;
+                $current = match ($value->attribute->type) { 'select' => (string) $value->option?->name, 'check' => $value->is_checked ? 'Да' : 'Нет', default => (string) $value->value };
+                $found[] = 'attribute';
+                if ($normal($current) === $normal($wanted)) {
+                    continue;
+                }
+                $differ++;
+                if ($apply) {
+                    $value->update(match ($value->attribute->type) {
+                        'select' => ['option_id' => \App\Models\AttributeOption::query()->firstOrCreate(['attribute_id' => $value->attribute_id, 'name' => $wanted])->id],
+                        'check' => ['is_checked' => in_array($normal($wanted), ['да', 'есть', 'yes', '1'], true)],
+                        default => ['value' => $wanted],
+                    });
+                }
+            }
+            foreach ($specs as $index => $row) {
+                if (is_array($row) && $normal((string) ($row['key'] ?? '')) === $normal((string) $name)) {
+                    $found[] = 'specs';
+                    if ($normal((string) ($row['value'] ?? '')) !== $normal($wanted)) {
+                        $differ++;
+                        $specs[$index]['value'] = $wanted;
+                        $specsChanged = true;
+                    }
+                }
+            }
+            $this->line(sprintf('audit.card_content.characteristic=%d:%s:%s', $product->id, Str::slug((string) $name), $found ? implode('-', array_unique($found)) : 'missing'));
+        }
+        if ($apply && $specsChanged) {
+            $product->update(['specs' => $specs]);
+        }
+
+        return $differ;
     }
 }
