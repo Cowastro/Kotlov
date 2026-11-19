@@ -7,6 +7,7 @@
         @foreach($workspaceSelections as $saved)<option value="{{ $saved->id }}" @selected($workspaceState['id'] === $saved->id)>{{ $saved->name }}</option>@endforeach
     </select></label>
     <button type="button" data-workspace-new>+ Новый подбор</button>
+    <div class="b2b-client-pick" data-client-pick data-clients-url="{{ route('b2b.workspace.clients') }}"><label for="workspace-client-search">Клиент</label><span class="b2b-client-chosen" data-client-chosen hidden><b data-client-label></b><button type="button" data-client-history>История</button><button type="button" data-client-clear aria-label="Убрать клиента">×</button></span><input id="workspace-client-search" type="search" autocomplete="off" placeholder="Название или УНП" data-client-search aria-describedby="workspace-client-hint"><span id="workspace-client-hint" hidden>Показывает, что и по какой цене клиент брал раньше</span><ul class="b2b-client-results" data-client-results role="listbox" hidden></ul></div>
     <button type="button" data-workspace-paste-open data-paste-url="{{ route('b2b.workspace.paste') }}">Вставить список</button>
     @if($showProcurement)<label class="b2b-margin-threshold">Мин. маржа, %<input type="number" min="0" max="90" step="1" inputmode="numeric" placeholder="не задана" data-workspace-margin-threshold aria-describedby="margin-threshold-hint"></label><span id="margin-threshold-hint" hidden>Строки с маржой ниже порога подсвечиваются. Порог хранится в этом браузере.</span>@endif
     <span class="b2b-workspace-status" data-workspace-status role="status" aria-live="polite">{{ $workspaceState['saved_at'] ? 'Сохранено '.$workspaceState['saved_at'] : 'Добавьте товар — подбор сохранится в аккаунте' }}</span>
@@ -52,4 +53,9 @@
     <p data-analogs-source class="b2b-workspace-price-note"></p>
     <p data-analogs-status role="status" aria-live="polite"></p>
     <div data-analogs-list></div>
+</dialog>
+<dialog class="b2b-workspace-dialog is-history" id="workspace-history-dialog" aria-labelledby="workspace-history-title">
+    <header><div><small>Заказы с сайта и B2B‑заявки, без отменённых</small><h2 id="workspace-history-title">История клиента</h2></div><button type="button" data-dialog-close aria-label="Закрыть">×</button></header>
+    <p data-history-status role="status" aria-live="polite"></p>
+    <div data-history-orders></div>
 </dialog>

@@ -145,6 +145,9 @@ class StaffCatalogWorkspace
         return [
             'id' => $selection?->id, 'revision' => $selection?->revision,
             'name' => $selection?->name ?? 'Новый подбор',
+            'client' => $selection?->meta['client'] ?? null,
+            'client_url' => $selection ? route('b2b.workspace.client', $selection) : null,
+            'history_url' => $selection ? route('b2b.workspace.history', $selection) : null,
             'items' => $items,
             'procurement' => self::canViewProcurement($user) ? [
                 'total' => round($purchaseTotal, 2), 'margin' => round($matchedRetail - $marginCost, 2),
