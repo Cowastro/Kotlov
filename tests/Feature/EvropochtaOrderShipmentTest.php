@@ -31,6 +31,87 @@ class EvropochtaOrderShipmentTest extends TestCase
         Http::preventStrayRequests();
     }
 
+    public function test_manual_order_preparation_saves_the_quote_and_enables_shipment_creation(): void
+    {
+        $this->signIn();
+        $this->fakePreparationTariff();
+        $order = $this->manualOrder();
+        $page = Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionVisible('prepareEvropochtaShipment')
+            ->assertActionDisabled('createEvropochtaShipment');
+        Http::assertNothingSent();
+
+        $page->mountAction('prepareEvropochtaShipment')->assertActionMounted('prepareEvropochtaShipment');
+        $component = $page->instance();
+        $form = $component->getSchema($component->getMountedActionSchemaName());
+        $this->assertSame(70130010, (int) $form->getComponent('store_id_start')->getState());
+        $this->assertStringContainsString('Солигорск', $form->getComponent('store_id_finish')->getOptions()[40930011]);
+
+        $page->setActionData($this->parcelInput())->callMountedAction()
+            ->assertHasNoActionErrors()
+            ->assertActionEnabled('createEvropochtaShipment')
+            ->assertSee('Тариф перевозчика')
+            ->assertSee('Солигорск');
+
+        $saved = $order->fresh();
+        $this->assertSame('200.00', $saved->subtotal);
+        $this->assertSame('6.50', $saved->delivery_price);
+        $this->assertSame('196.50', $saved->total);
+        $this->assertSame('Солигорск', $saved->delivery_city);
+        $this->assertSame('Минская область', $saved->delivery_region);
+        $this->assertStringContainsString('Ленинского Комсомола, 43, №567', $saved->delivery_address);
+        $this->assertSame(6.34, $saved->evropochta_quote['carrier_price']);
+        $this->assertSame(70130010, $saved->evropochta_quote['parcel']['store_id_start']);
+        $this->assertSame(40930011, $saved->evropochta_quote['store_id_finish']);
+        $this->assertEquals(['weight' => 1.25, 'length' => 24, 'width' => 24, 'height' => 20],
+            array_intersect_key($saved->evropochta_quote['parcel'], array_flip(['weight', 'length', 'width', 'height'])));
+        $this->assertNull($saved->evropochta_tracking_number);
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && $request->url() === self::API.'postal/payment/calculate'
+            && (float) collect($request->data())->pluck('contents', 'name')->get('weight') === 1.25);
+        Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/create'));
+
+        $saved->items()->firstOrFail()->update(['quantity' => 3]);
+        $page->call('$refresh')->assertActionDisabled('createEvropochtaShipment');
+        $this->assertStringContainsString('Состав заказа изменился', app(EvropochtaOrderShipment::class)->unavailableReason($saved));
+    }
+
+    public function test_temporary_carrier_failure_preserves_the_previous_order_amount(): void
+    {
+        $this->signIn();
+        $this->fakePreparationTariff(Http::response([], 503));
+        $order = $this->manualOrder();
+        $service = app(EvropochtaOrderShipment::class);
+
+        $this->expectException(EvropochtaShipmentException::class);
+        try {
+            $service->prepare($order, $this->parcelInput());
+        } finally {
+            $saved = $order->fresh();
+            $this->assertNull($saved->evropochta_quote);
+            $this->assertSame('0.00', $saved->delivery_price);
+            $this->assertSame('0.00', $saved->total);
+            Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/create'));
+        }
+    }
+
+    public function test_preparation_cannot_overwrite_a_paid_total(): void
+    {
+        $this->signIn();
+        $this->fakePreparationTariff();
+        $order = $this->manualOrder(['payment_status' => 'paid', 'subtotal' => 200, 'total' => 190]);
+
+        $this->expectException(EvropochtaShipmentException::class);
+        $this->expectExceptionMessage('Новый тариф меняет итог заказа');
+        try {
+            app(EvropochtaOrderShipment::class)->prepare($order, $this->parcelInput());
+        } finally {
+            $this->assertSame('190.00', $order->fresh()->total);
+            $this->assertNull($order->fresh()->evropochta_quote);
+        }
+    }
+
     public function test_order_action_creates_one_shipment_saves_the_track_and_shows_tracking(): void
     {
         $order = $this->order();
@@ -295,6 +376,42 @@ class EvropochtaOrderShipmentTest extends TestCase
         } finally {
             Http::assertNothingSent();
         }
+    }
+
+    private function manualOrder(array $attributes = []): Order
+    {
+        $order = $this->order($attributes + [
+            'evropochta_quote' => null,
+            'payment_type' => 'evropochta_cod',
+            'payment_status' => 'pending',
+            'subtotal' => 0,
+            'discount' => 10,
+            'total' => 0,
+            'delivery_price' => 0,
+        ]);
+        $order->items()->create(['product_name' => 'Элехант СГБ-1,8', 'product_sku' => 'PS-007.059', 'quantity' => 2, 'price' => 100]);
+
+        return $order;
+    }
+
+    private function parcelInput(): array
+    {
+        return ['store_id_start' => 70130010, 'store_id_finish' => 40930011, 'weight' => 1.25,
+            'length' => 24, 'width' => 24, 'height' => 20];
+    }
+
+    private function fakePreparationTariff(mixed $tariff = null): void
+    {
+        config(['services.evropochta.checkout_origin' => 70130010]);
+        Http::fake([
+            self::API.'stores' => Http::response([
+                ['id' => 70130010, 'type' => 1, 'ops_number' => 1, 'ops_name' => 'Отделение №1',
+                    'city' => 'г. Минск', 'street' => 'Монтажников', 'house' => '2'],
+                ['id' => 40930011, 'type' => 1, 'ops_number' => 567, 'ops_name' => 'Отделение №567',
+                    'city' => 'г. Солигорск', 'street' => 'Ленинского Комсомола', 'house' => '43', 'region' => 'Минская область'],
+            ]),
+            self::API.'postal/payment/calculate' => $tariff ?? Http::response(['sender_pays' => 6.34, 'receiver_pays' => 0]),
+        ]);
     }
 
     private function carrierStatus(int $code, string $name): array

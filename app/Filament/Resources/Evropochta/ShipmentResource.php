@@ -9,7 +9,6 @@ use App\Models\Order;
 use App\Services\Shipping\Evropochta;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -108,30 +107,7 @@ class ShipmentResource extends Resource
             ->visible(fn (): bool => app(Evropochta::class)->configured())
             ->modalDescription('До отделения, без наложенного платежа. Укажите вес и размеры с упаковкой.')
             ->modalSubmitActionLabel('Рассчитать')
-            ->schema(function (): array {
-                try {
-                    $branches = collect(app(Evropochta::class)->branches())->map(fn (array $branch): string => $branch['label'])->all();
-                } catch (RuntimeException $exception) {
-                    Notification::make()->title($exception->getMessage())->danger()->persistent()->send();
-
-                    $branches = [];
-                }
-
-                return [
-                    Select::make('store_id_start')->label('Отделение отправления')
-                        ->options($branches)->searchable()->required()->placeholder('Город или адрес'),
-                    Select::make('store_id_finish')->label('Отделение получения')
-                        ->options($branches)->searchable()->required()->placeholder('Город или адрес'),
-                    TextInput::make('weight')->label('Вес, кг')->required()->numeric()
-                        ->minValue(0.01)->maxValue(50)->step(0.01)->rule('decimal:0,2'),
-                    TextInput::make('length')->label('Длина, см')->required()->numeric()
-                        ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
-                    TextInput::make('width')->label('Ширина, см')->required()->numeric()
-                        ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
-                    TextInput::make('height')->label('Высота, см')->required()->numeric()
-                        ->minValue(0.01)->maxValue(250)->step(0.01)->rule('decimal:0,2'),
-                ];
-            })
+            ->schema(fn (): array => EvropochtaOrderActions::parcelFields())
             ->action(function (array $data, Action $action): void {
                 try {
                     $quote = app(Evropochta::class)->quote($data);
