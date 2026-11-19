@@ -351,6 +351,9 @@ class OrderInfolist
                         TextEntry::make('delivery_price')
                             ->label('Стоимость')
                             ->formatStateUsing(function ($state, $record) use ($byn) {
+                                if ($record->delivery_type === 'evropochta' && (float) $state === 0.0 && blank($record->evropochta_quote)) {
+                                    return 'Тариф ещё не рассчитан';
+                                }
                                 if ($record->delivery_type === 'kit' && (float) $state === 0.0) {
                                     return 'Уточняется';
                                 }
