@@ -105,6 +105,11 @@ return [
     // free_from: порог бесплатной доставки (null = никогда не бесплатна)
     // ─────────────────────────────────────────────────────────────────
     'delivery_methods' => [
+        'evropochta' => [
+            'name' => 'Европочта до отделения',
+            'price' => null,
+            'free_from' => null,
+        ],
         'pickup' => [
             'name' => 'Самовывоз',
             // In the checkout: a fallback, the date is agreed with the manager.

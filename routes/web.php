@@ -646,6 +646,8 @@ Route::post('/cart/coupon', [CartController::class, 'saveCoupon'])->name('cart.c
 // ===== Checkout =====
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store')->middleware('public.form.protect:checkout')->block(120, 10);
+Route::post('/checkout/evropochta/quote', [CheckoutController::class, 'quoteEvropochta'])
+    ->middleware('throttle:20,1')->name('checkout.evropochta.quote');
 Route::post('/checkout/company-lookup', TaxpayerLookupController::class)
     ->middleware('throttle:20,1')
     ->name('checkout.company-lookup');

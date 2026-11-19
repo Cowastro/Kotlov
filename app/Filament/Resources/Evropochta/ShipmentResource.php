@@ -55,6 +55,7 @@ class ShipmentResource extends Resource
                 TextColumn::make('delivery_city')->label('Город'),
                 TextColumn::make('delivery_address')->label('Отделение / адрес')->wrap(),
                 TextColumn::make('delivery_price')->label('Доставка в заказе')->money('BYN'),
+                TextColumn::make('evropochta_quote.carrier_price')->label('Тариф перевозчика')->money('BYN')->placeholder('—'),
                 TextColumn::make('evropochta_tracking_number')->label('Трек-номер')
                     ->searchable()->placeholder('Ожидает оформления'),
             ])

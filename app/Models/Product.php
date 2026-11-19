@@ -52,7 +52,7 @@ class Product extends Model
         'price', 'price_old', 'manual_purchase_price_byn', 'manual_price_updated_by', 'manual_price_updated_at', 'currency',
         'content', 'short_description',
         'images', 'specs', 'service_info', 'documents', 'promo_flags', 'video_url', 'content_source_url',
-        'weight', 'unit', 'warranty',
+        'weight', 'unit', 'warranty', 'shipping_parcel',
         'is_active', 'is_archived', 'in_stock', 'availability_status', 'stock_qty',
         'requires_price_confirmation', 'manual_stock_management',
         'created_via', 'created_by_user_id',
@@ -62,6 +62,7 @@ class Product extends Model
     ];
 
     protected $casts = [
+        'shipping_parcel' => 'array',
         'images' => 'array',
         'specs' => 'array',
         'service_info' => 'array',

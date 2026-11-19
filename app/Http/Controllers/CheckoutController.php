@@ -17,9 +17,12 @@ use App\Services\CartSelection;
 use App\Services\CommercialDocuments\CheckoutInvoiceService;
 use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Orders\OrderEconomicSnapshotRecorder;
+use App\Services\Shipping\EvropochtaCheckout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class CheckoutController extends Controller
 {
@@ -33,6 +36,7 @@ class CheckoutController extends Controller
         CartAvailabilityGuard $availabilityGuard,
         CartCouponService $couponService,
         B2bCheckoutTerms $b2bTerms,
+        EvropochtaCheckout $evropochta,
     ) {
         $cart = CartSelection::items(session(self::CART_KEY, []));
 
@@ -71,6 +75,23 @@ class CheckoutController extends Controller
         $checkoutDeliveryMethods = $isB2bCheckout
             ? config('shop.b2b_checkout_delivery_methods', ['b2b_delivery', 'pickup'])
             : config('shop.checkout_delivery_methods', []);
+        $evropochtaDestinations = [];
+        $evropochtaPaymentOnly = false;
+        if (! $isB2bCheckout && ($parcel = $evropochta->parcel($cart))) {
+            try {
+                $evropochtaDestinations = $evropochta->destinations($parcel);
+            } catch (RuntimeException) {
+                // Other delivery methods remain available while the carrier is offline.
+            }
+
+            if ($evropochtaDestinations !== []) {
+                $checkoutDeliveryMethods[] = EvropochtaCheckout::METHOD;
+                $evropochtaPaymentOnly = ! in_array(EvropochtaCheckout::PAYMENT, $checkoutPaymentMethods, true);
+                if ($evropochtaPaymentOnly) {
+                    $checkoutPaymentMethods[] = EvropochtaCheckout::PAYMENT;
+                }
+            }
+        }
         $requestedPayment = (string) $request->query('payment_type', '');
         $selectedPayment = in_array($requestedPayment, $checkoutPaymentMethods, true)
             ? $requestedPayment
@@ -115,8 +136,30 @@ class CheckoutController extends Controller
             'invoiceProfile',
             'isB2bCheckout',
             'checkoutDeliveryMethods',
+            'evropochtaDestinations',
+            'evropochtaPaymentOnly',
             'minimalLayout',
         ));
+    }
+
+    public function quoteEvropochta(Request $request, B2bCheckoutTerms $b2bTerms, EvropochtaCheckout $evropochta)
+    {
+        $data = $request->validate(['branch_id' => ['required', 'integer', 'min:1']]);
+        $cart = CartSelection::items($request->session()->get(self::CART_KEY, []));
+        $terms = $b2bTerms->evaluate($request->user(), $cart);
+        $parcel = $terms['can_checkout'] && ! $terms['is_b2b'] ? $evropochta->parcel($cart) : null;
+
+        if ($parcel === null) {
+            throw ValidationException::withMessages(['branch_id' => 'Европочта недоступна для этой корзины.']);
+        }
+
+        try {
+            return response()->json($evropochta->quote($parcel, (int) $data['branch_id'], $request->session()->getId()));
+        } catch (RuntimeException) {
+            throw ValidationException::withMessages([
+                'branch_id' => 'Не удалось рассчитать доставку до этого отделения. Выберите другое или смените способ доставки.',
+            ]);
+        }
     }
 
     // ─────────────────────────────────────────
@@ -131,6 +174,7 @@ class CheckoutController extends Controller
         BelarusTaxpayerRegistry $taxpayerRegistry,
         CheckoutInvoiceService $checkoutInvoices,
         B2bOrderPlacement $b2bOrderPlacement,
+        EvropochtaCheckout $evropochta,
     ) {
         $cart = CartSelection::items(session(self::CART_KEY, []));
 
@@ -249,6 +293,14 @@ class CheckoutController extends Controller
             ? config('shop.b2b_checkout_delivery_methods', ['b2b_delivery', 'pickup'])
             : array_keys(config('shop.delivery_methods', []));
 
+        $usesEvropochta = $request->input('delivery_type') === EvropochtaCheckout::METHOD;
+        $evropochtaParcel = $usesEvropochta && ! $b2bCheckout['is_b2b'] ? $evropochta->parcel($cart) : null;
+        $allowedDeliveryMethods = array_diff($allowedDeliveryMethods, [EvropochtaCheckout::METHOD]);
+        if ($evropochtaParcel !== null) {
+            $allowedDeliveryMethods[] = EvropochtaCheckout::METHOD;
+            $checkoutPaymentMethods = [EvropochtaCheckout::PAYMENT];
+        }
+
         // Защита от двойного сабмита — один токен = один заказ
         $token = $request->input('order_token');
         if (! is_string($token) || $token === '' || strlen($token) > 128 || session('order_token_used_'.$token)) {
@@ -262,10 +314,12 @@ class CheckoutController extends Controller
             'delivery_type' => ['required', 'in:'.implode(',', $allowedDeliveryMethods)],
             // The region is no longer asked: it follows from the city (self::regionOf).
             'delivery_region' => ['nullable', 'string', 'max:255'],
-            'delivery_city' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
-            'delivery_address' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:500'],
+            'delivery_city' => ['required_unless:delivery_type,pickup,evropochta', 'nullable', 'string', 'max:255'],
+            'delivery_address' => ['required_unless:delivery_type,pickup,evropochta', 'nullable', 'string', 'max:500'],
             'payment_type' => ['required', 'in:'.implode(',', $checkoutPaymentMethods)],
             'comment' => ['nullable', 'string', 'max:1000'],
+            'evropochta_branch' => [$usesEvropochta ? 'required' : 'nullable', 'integer', 'min:1'],
+            'evropochta_token' => [$usesEvropochta ? 'required' : 'nullable', 'string', 'max:4096'],
             // Реквизиты для счёта
             'company_name' => ['required_if:payment_type,invoice,invoice_deferred', 'nullable', 'string', 'max:255'],
             'company_unp' => ['required_if:payment_type,invoice,invoice_deferred', 'nullable', 'regex:/^\d{9}$/'],
@@ -278,6 +332,8 @@ class CheckoutController extends Controller
             'delivery_type.required' => 'Выберите способ доставки.',
             'payment_type.required' => 'Выберите способ оплаты.',
             'payment_type.in' => 'Выбранный способ оплаты сейчас недоступен.',
+            'evropochta_branch.required' => 'Выберите отделение Европочты.',
+            'evropochta_token.required' => 'Дождитесь расчёта тарифа Европочты.',
             'delivery_city.required_unless' => 'Укажите город доставки.',
             'delivery_address.required_unless' => 'Укажите адрес доставки.',
             'company_name.required_if' => 'Введите название организации для оплаты по счёту.',
@@ -286,6 +342,20 @@ class CheckoutController extends Controller
             'company_address.required_if' => 'Укажите юридический адрес организации.',
             'company_email.required_if' => 'Укажите email, на который менеджер отправит счёт.',
         ]);
+
+        $evropochtaQuote = null;
+        if ($usesEvropochta) {
+            $evropochtaQuote = $evropochta->confirmedQuote(
+                $evropochtaParcel,
+                (int) $request->input('evropochta_branch'),
+                $request->input('evropochta_token'),
+                $request->session()->getId(),
+            );
+
+            if ($evropochtaQuote === null) {
+                throw ValidationException::withMessages(['evropochta_branch' => 'Тариф устарел. Проверьте новый расчёт перед оформлением.']);
+            }
+        }
 
         $invoiceCompany = null;
         $isInvoicePayment = in_array($request->payment_type, ['invoice', 'invoice_deferred'], true);
@@ -322,7 +392,7 @@ class CheckoutController extends Controller
             && ! $couponService->onlineOrderDiscountAppliesToPayment($request->payment_type)) {
             $coupon = $couponService->quoteForCart(null, $cart);
         }
-        $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
+        $deliveryPrice = $evropochtaQuote['customer_price'] ?? self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
 
         // B2B is an independent business process. It never creates a retail Order,
         // never enters the retail CRM queue and never dispatches NewOrderCreated.
@@ -355,7 +425,7 @@ class CheckoutController extends Controller
                 ->with('success', 'B2B-заказ '.$order->number.' зарегистрирован отдельно и отправлен вашему B2B-менеджеру.');
         }
 
-        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon, $invoiceCompany, $checkoutInvoices, $couponService, $b2bCheckout, $b2bTerms, $isInvoicePayment) {
+        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon, $invoiceCompany, $checkoutInvoices, $couponService, $b2bCheckout, $b2bTerms, $isInvoicePayment, $evropochtaQuote) {
 
             $lockedCoupon = null;
             if ($coupon['code']) {
@@ -394,10 +464,11 @@ class CheckoutController extends Controller
 
                 'delivery_type' => $request->delivery_type,
                 'delivery_region' => $request->delivery_type === 'pickup' ? null
-                    : ($request->delivery_region ?: self::regionOf((string) $request->delivery_city)),
-                'delivery_city' => $request->delivery_city,
-                'delivery_address' => $request->delivery_address,
+                    : ($evropochtaQuote['region'] ?? ($request->delivery_region ?: self::regionOf((string) $request->delivery_city))),
+                'delivery_city' => $evropochtaQuote['city'] ?? $request->delivery_city,
+                'delivery_address' => $evropochtaQuote['address'] ?? $request->delivery_address,
                 'delivery_price' => $deliveryPrice,
+                ...($evropochtaQuote ? ['evropochta_quote' => $evropochtaQuote] : []),
 
                 'payment_type' => $request->payment_type,
                 'payment_status' => 'pending',

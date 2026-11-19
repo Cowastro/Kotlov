@@ -409,6 +409,21 @@ class ProductForm
                                     ]),
 
                                 // ── Дополнительно ─────────────────────────────────────────────
+                                Section::make('Габариты посылки для Европочты')
+                                    ->description('Укажите вес и размеры одной товарной единицы в готовой к отправке упаковке. Для витрины подходят стандартные посылки до 5 кг.')
+                                    ->columnSpanFull()
+                                    ->columns(4)
+                                    ->schema([
+                                        TextInput::make('shipping_parcel.weight')->label('Вес, кг')
+                                            ->numeric()->minValue(0.01)->maxValue(50)->step(0.01),
+                                        TextInput::make('shipping_parcel.length')->label('Длина, см')
+                                            ->numeric()->minValue(0.01)->maxValue(250)->step(0.01),
+                                        TextInput::make('shipping_parcel.width')->label('Ширина, см')
+                                            ->numeric()->minValue(0.01)->maxValue(250)->step(0.01),
+                                        TextInput::make('shipping_parcel.height')->label('Высота, см')
+                                            ->numeric()->minValue(0.01)->maxValue(250)->step(0.01),
+                                    ]),
+
                                 Section::make('Дополнительно')
                                     ->columnSpanFull()
                                     ->columns(3)
