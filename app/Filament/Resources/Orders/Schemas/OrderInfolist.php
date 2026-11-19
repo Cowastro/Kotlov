@@ -139,8 +139,19 @@ class OrderInfolist
                                     TextEntry::make('product_name')
                                         ->label('Товар')
                                         ->columnSpan(['default' => 2, 'lg' => 3])
-                                        ->url(fn ($record): ?string => $record->publicProductUrl())
-                                        ->openUrlInNewTab(),
+                                        ->url(fn (OrderItem $record): ?string => $record->publicProductUrl())
+                                        ->openUrlInNewTab()
+                                        ->suffixAction(
+                                            Action::make('openPublicProduct')
+                                                ->label('Открыть товар на сайте')
+                                                ->tooltip('Открыть товар на сайте')
+                                                ->icon('heroicon-o-arrow-top-right-on-square')
+                                                ->iconButton()
+                                                ->color('info')
+                                                ->visible(fn (OrderItem $record): bool => $record->publicProductUrl() !== null)
+                                                ->url(fn (OrderItem $record): ?string => $record->publicProductUrl())
+                                                ->openUrlInNewTab()
+                                        ),
 
                                     TextEntry::make('product_sku')
                                         ->label('Артикул')
