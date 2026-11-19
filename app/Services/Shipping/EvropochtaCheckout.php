@@ -13,7 +13,7 @@ class EvropochtaCheckout
 
     public const PAYMENT = 'bank_transfer';
 
-    private const MAX_CHECKOUT_WEIGHT = 5;
+    public const MAX_CHECKOUT_WEIGHT = 30;
 
     public function __construct(
         private readonly Evropochta $carrier,
@@ -48,7 +48,7 @@ class EvropochtaCheckout
             $weight = $this->packaging->measurements($product)['item_weight'] ?? $product->weight;
         }
 
-        if (is_numeric($weight) && round((float) $weight, 2) > self::MAX_CHECKOUT_WEIGHT) {
+        if (is_numeric($weight) && (float) $weight > self::MAX_CHECKOUT_WEIGHT) {
             return ['parcel' => null, 'message' => 'Европочта при оформлении доступна для посылок до '.self::MAX_CHECKOUT_WEIGHT.' кг. Этот товар превышает лимит по весу.'];
         }
 
