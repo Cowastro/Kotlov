@@ -148,6 +148,7 @@ class EvropochtaOrderShipmentTest extends TestCase
             ->assertActionVisible('trackEvropochtaShipment')
             ->assertActionVisible('printEvropochtaLabel_thermal')
             ->assertActionVisible('printEvropochtaLabel_address')
+            ->assertSeeInOrder(['Ход заказа', 'Следующий шаг', 'Товары заказа', 'Трек-номер'])
             ->assertSee(self::TRACK)
             ->assertSee('Статус Европочты');
 

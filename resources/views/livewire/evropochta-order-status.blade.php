@@ -22,7 +22,7 @@
     @endif
     @if ($canEditShipment && ! $unavailable && ($latest['code'] ?? null) === \App\Services\Shipping\Evropochta::STATUS_CREATED)
         <div class="mt-2">
-            <x-filament::button type="button" color="danger" size="sm"
+            <x-filament::button type="button" color="danger" size="sm" outlined
                 wire:click="cancelShipment" wire:loading.attr="disabled" wire:target="cancelShipment"
                 wire:confirm="Отменить заявку у Европочты? Заказ в KOTLOV останется в текущем статусе.">
                 Отменить отправление Европочты
