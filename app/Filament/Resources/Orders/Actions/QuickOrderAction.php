@@ -8,7 +8,9 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\Orders\QuickOrderService;
+use App\Services\Shipping\EvropochtaCheckout;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -57,13 +59,15 @@ final class QuickOrderAction
                         ->addActionLabel('Добавить товар')
                         ->columns(12)
                         ->live()
+                        ->afterStateUpdated(self::updateEvropochtaQuote(...))
                         ->schema([
                             Select::make('product_id')
                                 ->label('Товар (поиск по названию, артикулу, бренду)')
                                 ->searchable()
                                 ->required()
                                 ->live()
-                                ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->catalogSearchProducts($search))
+                                ->searchDebounce(250)
+                                ->getSearchResultsUsing(self::searchProducts(...))
                                 ->getOptionLabelUsing(fn ($value): ?string => app(QuickCommercialOfferService::class)->productLabels([(int) $value])[(int) $value] ?? null)
                                 ->afterStateUpdated(function ($state, Set $set): void {
                                     $product = $state ? Product::query()->find((int) $state) : null;
@@ -81,15 +85,38 @@ final class QuickOrderAction
                 ]),
                 Section::make('Доставка и оплата')->schema([
                     Grid::make(3)->schema([
-                        Select::make('delivery_type')->label('Доставка')->options(Order::DELIVERY_TYPES)->default('pickup')->required()->live()->native(false),
-                        TextInput::make('delivery_city')->label('Город')->visible(fn (Get $get): bool => $get('delivery_type') !== 'pickup'),
+                        Select::make('delivery_type')->label('Доставка')->options(Order::DELIVERY_TYPES)->default('pickup')->required()->live()->native(false)
+                            ->afterStateUpdated(function (?string $state, Get $get, Set $set): void {
+                                if ($state === EvropochtaCheckout::METHOD) {
+                                    $set('payment_type', EvropochtaCheckout::COD_PAYMENT);
+                                } elseif ($get('payment_type') === EvropochtaCheckout::COD_PAYMENT) {
+                                    $set('payment_type', 'cash');
+                                }
+                                self::updateEvropochtaQuote($get, $set);
+                            }),
+                        TextInput::make('delivery_city')->label('Город')->visible(self::usesAddress(...)),
                         TextInput::make('delivery_price')->label('Стоимость доставки, BYN')->numeric()->minValue(0)->default(0)->live(onBlur: true)
-                            ->visible(fn (Get $get): bool => $get('delivery_type') !== 'pickup'),
+                            ->visible(self::usesAddress(...)),
                     ]),
-                    TextInput::make('delivery_address')->label('Адрес доставки')->visible(fn (Get $get): bool => $get('delivery_type') !== 'pickup'),
+                    TextInput::make('delivery_address')->label('Адрес доставки')->visible(self::usesAddress(...)),
+                    Select::make('evropochta_branch')->label('Отделение получения')
+                        ->options(self::evropochtaBranches(...))->searchable()->live()
+                        ->placeholder('Введите город, улицу или номер отделения')
+                        ->visible(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD)
+                        ->afterStateUpdated(self::updateEvropochtaQuote(...)),
+                    Hidden::make('evropochta_token'),
+                    Hidden::make('evropochta_price')->dehydrated(false),
+                    Hidden::make('evropochta_note')->dehydrated(false),
+                    Placeholder::make('evropochta_tariff')->label('Доставка Европочтой')
+                        ->visible(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD)
+                        ->content(fn (Get $get): string => $get('evropochta_price') !== null
+                            ? number_format((float) $get('evropochta_price'), 0, ',', ' ').' BYN'
+                            : ($get('evropochta_note') ?: 'Выберите отделение, чтобы рассчитать тариф.')),
                     Grid::make(3)->schema([
-                        Select::make('payment_type')->label('Оплата')->options(
-                            collect(Order::PAYMENT_TYPES)->except('invoice_deferred')->all()
+                        Select::make('payment_type')->label('Оплата')->options(fn (Get $get): array =>
+                            $get('delivery_type') === EvropochtaCheckout::METHOD
+                                ? array_intersect_key(Order::PAYMENT_TYPES, array_flip([EvropochtaCheckout::COD_PAYMENT, EvropochtaCheckout::PAYMENT]))
+                                : collect(Order::PAYMENT_TYPES)->except(['invoice_deferred', EvropochtaCheckout::COD_PAYMENT])->all()
                         )->default('cash')->required()->live()->native(false),
                         TextInput::make('company_name')->label('Организация')->visible(fn (Get $get): bool => in_array($get('payment_type'), ['invoice', 'bank_transfer'], true)),
                         TextInput::make('company_unp')->label('УНП')->visible(fn (Get $get): bool => in_array($get('payment_type'), ['invoice', 'bank_transfer'], true)),
@@ -101,9 +128,14 @@ final class QuickOrderAction
                     Textarea::make('comment')->label('Комментарий к заказу')->rows(2)->columnSpan(2),
                 ]),
                 Placeholder::make('order_total')
-                    ->label('Итого к оплате')
+                    ->label(fn (Get $get): string => $get('delivery_type') === EvropochtaCheckout::METHOD && $get('evropochta_price') === null
+                        ? 'Итого без доставки' : 'Итого к оплате')
                     ->content(fn (Get $get): string => number_format(
-                        self::itemsTotal((array) $get('items')) + ($get('delivery_type') === 'pickup' ? 0 : max(0, (float) $get('delivery_price'))),
+                        self::itemsTotal((array) $get('items')) + match ($get('delivery_type')) {
+                            'pickup' => 0,
+                            EvropochtaCheckout::METHOD => (float) $get('evropochta_price'),
+                            default => max(0, (float) $get('delivery_price')),
+                        },
                         2, ',', ' ',
                     ).' BYN'),
             ])
@@ -123,6 +155,75 @@ final class QuickOrderAction
                     ->send();
                 $action->redirect(OrderResource::getUrl('view', ['record' => $order]));
             });
+    }
+
+    private static function searchProducts(string $search): array
+    {
+        $search = trim($search);
+        if ($search === '') {
+            return [];
+        }
+
+        $catalog = app(QuickCommercialOfferService::class);
+        $ids = Product::query()->active()->notArchived()
+            ->whereIn('sku', array_unique([$search, mb_strtoupper($search), mb_strtolower($search)]))
+            ->orderByDesc('in_stock')->orderBy('id')->limit(30)->pluck('id')->all();
+
+        return $ids === [] ? $catalog->catalogSearchProducts($search) : $catalog->productLabels($ids);
+    }
+
+    private static function usesAddress(Get $get): bool
+    {
+        return ! in_array($get('delivery_type'), ['pickup', EvropochtaCheckout::METHOD], true);
+    }
+
+    private static function evropochtaBranches(): array
+    {
+        try {
+            $branches = app(EvropochtaCheckout::class)->destinations(['store_id_start' => config('services.evropochta.checkout_origin')]);
+
+            return array_map(fn (array $branch): string => $branch['label'], $branches);
+        } catch (RuntimeException) {
+            return [];
+        }
+    }
+
+    private static function updateEvropochtaQuote(Get $get, Set $set): void
+    {
+        if ($get('delivery_type') !== EvropochtaCheckout::METHOD) {
+            $set('evropochta_token', null);
+            $set('evropochta_price', null);
+            $set('evropochta_note', null);
+
+            return;
+        }
+
+        ['parcel' => $parcel, 'message' => $message] = app(QuickOrderService::class)->assessEvropochta((array) $get('items'));
+        $destination = (int) $get('evropochta_branch');
+        $checkout = app(EvropochtaCheckout::class);
+        $session = session()->getId();
+        $token = $get('evropochta_token');
+        $cached = $destination && is_string($token) && $token !== ''
+            ? $checkout->confirmedQuote($parcel, $destination, $token, $session)
+            : null;
+        if ($cached !== null) {
+            return;
+        }
+
+        $set('evropochta_token', null);
+        $set('evropochta_price', null);
+        $set('evropochta_note', $message);
+        if ($parcel === null || ! $destination) {
+            return;
+        }
+
+        try {
+            $quote = $checkout->quote($parcel, $destination, $session);
+            $set('evropochta_token', $quote['token']);
+            $set('evropochta_price', $quote['price']);
+        } catch (RuntimeException $error) {
+            $set('evropochta_note', $error->getMessage());
+        }
     }
 
     private static function itemsTotal(array $items): float

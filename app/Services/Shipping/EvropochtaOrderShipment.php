@@ -100,6 +100,11 @@ final class EvropochtaOrderShipment
         });
     }
 
+    public function bindQuoteToOrder(array $quote, Order $order): array
+    {
+        return $quote + ['order_item_signature' => $this->itemSignature($this->orderItems($order))];
+    }
+
     /** @return Collection<int, OrderItem> */
     private function orderItems(Order $order): Collection
     {

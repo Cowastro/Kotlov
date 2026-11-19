@@ -6,6 +6,8 @@ use App\Events\NewOrderCreated;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Shipping\EvropochtaCheckout;
+use App\Services\Shipping\EvropochtaOrderShipment;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -19,10 +21,22 @@ class QuickOrderService
     /** Statuses a manager may put a manual order into right away. */
     public const START_STATUSES = ['new', 'checking', 'confirmed', 'processing'];
 
+    public function __construct(private readonly EvropochtaCheckout $evropochta) {}
+
+    public function assessEvropochta(array $items): array
+    {
+        $cart = collect($items)->filter(fn (array $item): bool => (int) ($item['product_id'] ?? 0) > 0)
+            ->map(fn (array $item): array => ['id' => (int) $item['product_id'], 'quantity' => max(1, (int) ($item['quantity'] ?? 1))])
+            ->all();
+
+        return $this->evropochta->assess($cart);
+    }
+
     /**
      * @param  array{customer_name:string, customer_phone:string, customer_email?:?string, items:array<int, array{product_id:int|string, quantity:int|string, price:float|string}>,
      *     delivery_type:string, delivery_city?:?string, delivery_address?:?string, delivery_price?:float|string|null, payment_type:string,
-     *     company_name?:?string, company_unp?:?string, status?:?string, comment?:?string}  $data
+     *     company_name?:?string, company_unp?:?string, status?:?string, comment?:?string,
+     *     evropochta_branch?:?int, evropochta_token?:?string}  $data
      */
     public function create(array $data, User $manager): Order
     {
@@ -48,12 +62,37 @@ class QuickOrderService
             return ['product' => $product, 'quantity' => $quantity, 'price' => $price, 'total' => round($price * $quantity, 2)];
         });
 
+        $usesEvropochta = $data['delivery_type'] === EvropochtaCheckout::METHOD;
+        if ($usesEvropochta && ! in_array($data['payment_type'], [EvropochtaCheckout::COD_PAYMENT, EvropochtaCheckout::PAYMENT], true)) {
+            throw new RuntimeException('Выберите оплату при получении или предоплату Европочты.');
+        }
+
+        $quote = null;
+        if ($usesEvropochta) {
+            $parcel = $this->assessEvropochta($items->all())['parcel'];
+            if ($parcel !== null) {
+                $quote = $this->evropochta->confirmedQuote(
+                    $parcel,
+                    (int) ($data['evropochta_branch'] ?? 0),
+                    is_string($data['evropochta_token'] ?? null) ? $data['evropochta_token'] : '',
+                    session()->getId(),
+                );
+                if ($quote === null) {
+                    throw new RuntimeException('Выберите отделение и дождитесь расчёта тарифа Европочты.');
+                }
+            }
+        }
+
         $subtotal = round($lines->sum('total'), 2);
-        $deliveryPrice = $data['delivery_type'] === 'pickup' ? 0.0 : round(max(0, (float) ($data['delivery_price'] ?? 0)), 2);
+        $deliveryPrice = match ($data['delivery_type']) {
+            'pickup' => 0.0,
+            EvropochtaCheckout::METHOD => (float) ($quote['customer_price'] ?? 0),
+            default => round(max(0, (float) ($data['delivery_price'] ?? 0)), 2),
+        };
         $status = in_array($data['status'] ?? '', self::START_STATUSES, true) ? $data['status'] : 'processing';
         $withCompany = in_array($data['payment_type'], ['invoice', 'bank_transfer'], true);
 
-        $order = DB::transaction(function () use ($data, $manager, $lines, $subtotal, $deliveryPrice, $status, $withCompany): Order {
+        $order = DB::transaction(function () use ($data, $manager, $lines, $subtotal, $deliveryPrice, $status, $withCompany, $quote, $usesEvropochta): Order {
             $order = Order::query()->create([
                 'number' => Order::generateNumber(),
                 'status' => $status,
@@ -63,8 +102,9 @@ class QuickOrderService
                 'company_name' => $withCompany ? (trim((string) ($data['company_name'] ?? '')) ?: null) : null,
                 'company_unp' => $withCompany ? (trim((string) ($data['company_unp'] ?? '')) ?: null) : null,
                 'delivery_type' => $data['delivery_type'],
-                'delivery_city' => $data['delivery_type'] === 'pickup' ? null : (trim((string) ($data['delivery_city'] ?? '')) ?: null),
-                'delivery_address' => $data['delivery_type'] === 'pickup' ? null : (trim((string) ($data['delivery_address'] ?? '')) ?: null),
+                'delivery_city' => $quote['city'] ?? ($data['delivery_type'] === 'pickup' || $usesEvropochta ? null : (trim((string) ($data['delivery_city'] ?? '')) ?: null)),
+                'delivery_address' => $quote['address'] ?? ($data['delivery_type'] === 'pickup' || $usesEvropochta ? null : (trim((string) ($data['delivery_address'] ?? '')) ?: null)),
+                'delivery_region' => $quote['region'] ?? null,
                 'delivery_price' => $deliveryPrice,
                 'payment_type' => $data['payment_type'],
                 'payment_status' => 'pending',
@@ -87,6 +127,10 @@ class QuickOrderService
                     'total' => $line['total'],
                     'pricing_type' => 'retail',
                 ]);
+            }
+
+            if ($quote !== null) {
+                $order->update(['evropochta_quote' => app(EvropochtaOrderShipment::class)->bindQuoteToOrder($quote, $order)]);
             }
 
             app(OrderEconomicSnapshotRecorder::class)->capturePlaced($order->load('items'));
