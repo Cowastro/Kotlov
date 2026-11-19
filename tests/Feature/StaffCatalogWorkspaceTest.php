@@ -322,8 +322,12 @@ class StaffCatalogWorkspaceTest extends TestCase
         $product = $this->product();
         $selection = CustomerSelection::create(['user_id' => $admin->id, 'name' => 'Ранее сохранённый подбор', 'items' => [], 'revision' => 1]);
         $this->actingAs($admin)->get(route('b2b.catalog', ['workspace' => 1, 'selection_id' => $selection->id]))->assertOk()
-            ->assertViewHas('workspaceState', fn ($state) => $state['id'] === $selection->id);
+            ->assertViewHas('workspaceState', fn ($state) => $state['id'] === $selection->id)
+            ->assertSee('B2B · подбор №'.$selection->id)
+            ->assertSeeInOrder(['id="b2b-category-panel"', 'class="b2b-category-icon"', 'id="b2b-filter-form"', 'b2b-product-table', 'data-workspace-preview-lines'], false);
         $this->putJson(route('b2b.workspace.update', ['selection' => $selection->id, 'product' => $product->id]), ['revision' => 1, 'quantity' => 2])->assertOk();
+        $this->get(route('b2b.catalog', ['workspace' => 1, 'selection_id' => $selection->id, 'q' => $product->sku]))
+            ->assertOk()->assertSee('1 поз. · 2 шт.')->assertSee('25,00 BYN');
         $this->assertTrue($selection->fresh()->meta['staff_workspace']);
         $this->assertSame(2, $selection->fresh()->items[$product->id]['quantity']);
     }

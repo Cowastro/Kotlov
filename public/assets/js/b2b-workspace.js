@@ -8,6 +8,8 @@
     var switcher = root.querySelector('[data-workspace-switch]');
     var dialog = document.getElementById('workspace-selection-dialog');
     var newDialog = document.getElementById('workspace-new-dialog');
+    var preview = document.querySelector('[data-workspace-preview-lines]');
+    var previewEmpty = document.querySelector('[data-workspace-empty]');
     var csrf = document.querySelector('meta[name="csrf-token"]').content;
     var search = dialog.querySelector('[data-workspace-line-search]');
     var orderRules = window.KotlovOrderRules;
@@ -113,6 +115,22 @@
         });
     }
 
+    function drawPreview() {
+        var lines = document.createDocumentFragment();
+        state.items.forEach(function (item) {
+            var line = document.createElement('li');
+            var name = document.createElement('strong');
+            name.textContent = item.name;
+            var quantity = document.createElement('small');
+            quantity.textContent = item.quantity + ' шт. · ' + (item.price > 0 ? money(item.price * item.quantity) : 'Цена уточняется');
+            line.append(name, quantity);
+            lines.appendChild(line);
+        });
+        preview.replaceChildren(lines);
+        preview.hidden = !state.items.length;
+        previewEmpty.hidden = !!state.items.length;
+    }
+
     function render() {
         if (state.id) {
             // Keep category links, pagination and search on the newly created selection.
@@ -130,6 +148,7 @@
             suggestUrl.searchParams.set('selection_id', state.id); suggest.dataset.suggestUrl = suggestUrl.toString();
         }
         document.querySelector('[data-workspace-count]').textContent = state.items.length + ' поз. · ' + state.items.reduce(function (sum, item) { return sum + item.quantity; }, 0) + ' шт.';
+        document.querySelector('[data-workspace-kicker]').textContent = state.id ? 'B2B · подбор №' + state.id : 'B2B · рабочий каталог';
         var unpriced = state.items.some(function (item) { return !(item.price > 0); });
         document.querySelectorAll('[data-workspace-total]').forEach(function (node) { node.textContent = money(state.total) + (unpriced ? ' + уточнение' : ''); });
         document.querySelectorAll('[data-workspace-procurement]').forEach(function (node) {
@@ -177,6 +196,7 @@
             if (document.activeElement !== input && !cell.dataset.dirty) input.value = item ? item.quantity : '';
         });
         paintMargins();
+        drawPreview();
         if (dialog.open && !dialog.querySelector('[data-workspace-quantity]:focus')) drawLines();
         document.dispatchEvent(new CustomEvent('kotlov:workspace-updated'));
     }
