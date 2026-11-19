@@ -215,6 +215,7 @@ class Order extends Model
 
     public const PAYMENT_TYPES = [
         'cash' => 'Наличными',
+        'evropochta_cod' => 'Наложенный платёж Европочты',
         'card' => 'Банковской платежной карточкой',
         'bank_transfer' => 'Безналичный расчёт',
         'currency_transfer' => 'Оплата для РФ и Казахстана',
@@ -361,7 +362,7 @@ class Order extends Model
     public function isPaymentOnReceipt(): bool
     {
         return $this->isRetailCustomer()
-            && in_array($this->payment_type, ['cash', 'card'], true);
+            && in_array($this->payment_type, ['cash', 'card', 'evropochta_cod'], true);
     }
 
     public function paymentStatusLabel(): string

@@ -95,6 +95,7 @@ class CheckoutController extends Controller
                 if ($evropochtaPaymentOnly) {
                     $checkoutPaymentMethods[] = EvropochtaCheckout::PAYMENT;
                 }
+                $checkoutPaymentMethods[] = EvropochtaCheckout::COD_PAYMENT;
             } else {
                 $evropochtaUnavailable = 'Список отделений Европочты сейчас недоступен.';
             }
@@ -306,7 +307,7 @@ class CheckoutController extends Controller
         $allowedDeliveryMethods = array_diff($allowedDeliveryMethods, [EvropochtaCheckout::METHOD]);
         if ($evropochtaParcel !== null) {
             $allowedDeliveryMethods[] = EvropochtaCheckout::METHOD;
-            $checkoutPaymentMethods = [EvropochtaCheckout::PAYMENT];
+            $checkoutPaymentMethods = [EvropochtaCheckout::PAYMENT, EvropochtaCheckout::COD_PAYMENT];
         }
 
         // Защита от двойного сабмита — один токен = один заказ

@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class EvropochtaCheckoutTest extends TestCase
@@ -27,6 +28,7 @@ class EvropochtaCheckoutTest extends TestCase
             ->get(route('checkout'))
             ->assertOk()
             ->assertSee('Европочта до отделения')
+            ->assertSee('Наложенный платёж')
             ->assertSee('id="evropochta-results" hidden', false)
             ->assertSee('data-branches=', false)
             ->assertSee('г. Лида, Красноармейская, 63, №23')
@@ -54,11 +56,18 @@ class EvropochtaCheckoutTest extends TestCase
         $this->post(route('checkout.store'), ['payment_type' => 'cash'] + $orderRequest)
             ->assertSessionHasErrors('payment_type');
         $this->assertDatabaseCount('orders', 0);
+        RateLimiter::clear('form:checkout:127.0.0.1');
 
-        $this->post(route('checkout.store'), $orderRequest)->assertRedirect()->assertSessionHasNoErrors();
+        $this->post(route('checkout.store'), ['delivery_type' => 'pickup', 'payment_type' => 'evropochta_cod'] + $orderRequest)
+            ->assertSessionHasErrors('payment_type');
+
+        $this->post(route('checkout.store'), ['payment_type' => 'evropochta_cod'] + $orderRequest)
+            ->assertRedirect()->assertSessionHasNoErrors();
         $order = Order::query()->sole();
         $this->assertSame('6.50', $order->delivery_price);
         $this->assertSame('206.50', $order->total);
+        $this->assertSame('evropochta_cod', $order->payment_type);
+        $this->assertSame('Оплата при получении', $order->paymentStatusLabel());
         $this->assertSame('Лида', $order->delivery_city);
         $this->assertSame('Гродненская область', $order->delivery_region);
         $this->assertSame(6.34, $order->evropochta_quote['carrier_price']);

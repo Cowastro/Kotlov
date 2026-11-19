@@ -13,6 +13,8 @@ class EvropochtaCheckout
 
     public const PAYMENT = 'bank_transfer';
 
+    public const COD_PAYMENT = 'evropochta_cod';
+
     public const MAX_CHECKOUT_WEIGHT = 30;
 
     public function __construct(

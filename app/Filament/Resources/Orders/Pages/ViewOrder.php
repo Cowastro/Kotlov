@@ -8,6 +8,7 @@ use App\Filament\Resources\Orders\Actions\ManageOrderDealAction;
 use App\Filament\Resources\Orders\Actions\AssignOrderToPartnerAction;
 use App\Filament\Resources\Orders\Actions\CreateCommercialDocumentFromOrderAction;
 use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
+use App\Filament\Resources\Orders\Actions\EvropochtaOrderActions;
 use App\Models\Order;
 use App\Models\OrderAccountingRequest;
 use App\Models\OrderItem;
@@ -91,6 +92,10 @@ class ViewOrder extends ViewRecord
     {
         return [
             ManageOrderDealAction::make(),
+            EvropochtaOrderActions::create(),
+            EvropochtaOrderActions::printLabel('thermal'),
+            EvropochtaOrderActions::printLabel('address'),
+            EvropochtaOrderActions::track(),
             \App\Filament\Resources\Orders\Actions\OrderReviewLinkAction::make(),
             \App\Filament\Resources\Orders\Actions\OrderReviewSmsAction::make(),
             AssignOrderToPartnerAction::make(),

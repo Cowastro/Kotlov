@@ -11,6 +11,11 @@ use RuntimeException;
 
 class Evropochta
 {
+    public const LABEL_FORMATS = [
+        'thermal' => '10 × 10 см',
+        'address' => 'A5',
+    ];
+
     public function configured(): bool
     {
         return filled(config('services.evropochta.token'));
@@ -114,6 +119,98 @@ class Evropochta
 
         // Размеры в сотых долях сантиметра. Обхват считается поперёк длинной стороны.
         return $longest > 10500 || $longest + 2 * ($middle + $shortest) > 20000;
+    }
+
+    public function createShipment(array $data): string
+    {
+        try {
+            $response = $this->request()->asJson()->post('postal/create', $data);
+            $result = $response->json();
+            $number = data_get($result, 'number');
+
+            // The API returns the existing number on an external_id collision.
+            if ($response->status() === 422
+                && is_string($message = data_get($result, 'message'))
+                && preg_match('/^33 Такой PostalItemExternalId уже существует:\s*(BY\d{12})\s*$/u', $message, $matches)) {
+                $existing = $this->request()->get('postal/'.$matches[1]);
+                if ($existing->successful()
+                    && $existing->json('external_id') === $data['external_id']
+                    && $existing->json('number') === $matches[1]) {
+                    return $matches[1];
+                }
+
+                throw new EvropochtaShipmentException('Европочта уже приняла заявку. Подождите три минуты и повторите действие, чтобы получить трек-номер.');
+            }
+        } catch (ConnectionException) {
+            throw new EvropochtaShipmentException('Европочта не подтвердила результат запроса. Подождите три минуты перед повторной попыткой.');
+        }
+
+        if (in_array($response->status(), [401, 403], true)) {
+            throw new EvropochtaShipmentException('Европочта отклонила доступ. Проверьте ключ и договор.');
+        }
+        if ($response->status() === 422) {
+            throw new EvropochtaShipmentException('Европочта отклонила заявку. Проверьте получателя, отделения и параметры посылки.');
+        }
+        if (! $response->successful() || ! is_string($number) || ! preg_match('/^BY\d{12}$/D', $number)) {
+            throw new EvropochtaShipmentException('Европочта не подтвердила трек-номер. Подождите три минуты перед повторной попыткой.');
+        }
+
+        return $number;
+    }
+
+    /** @return list<array{time: string, status: string, detail: string}> */
+    public function trackingHistory(string $number): array
+    {
+        try {
+            $response = $this->request()->get('postal/history', ['number' => $number]);
+        } catch (ConnectionException) {
+            throw new EvropochtaShipmentException('Европочта не ответила на запрос отслеживания.');
+        }
+
+        if ($response->status() === 404) {
+            throw new EvropochtaShipmentException('Отправление пока не найдено. После оформления подождите три минуты и проверьте снова.');
+        }
+        if (in_array($response->status(), [401, 403], true)) {
+            throw new EvropochtaShipmentException('Европочта отклонила доступ. Проверьте ключ и договор.');
+        }
+        $events = $response->json();
+        if (! $response->successful() || ! is_array($events) || ! array_is_list($events)) {
+            throw new EvropochtaShipmentException('Не удалось получить историю. Проверьте трек-номер или повторите позже.');
+        }
+
+        return collect($events)
+            ->filter(fn (mixed $event): bool => is_array($event) && is_string(data_get($event, 'status_to.name')))
+            ->sortByDesc('created_at')
+            ->map(fn (array $event): array => [
+                'time' => is_string($event['created_at'] ?? null) ? $event['created_at'] : '',
+                'status' => data_get($event, 'status_to.name'),
+                'detail' => is_string($event['info'] ?? null) ? $event['info'] : '',
+            ])->values()->all();
+    }
+
+    public function shipmentLabel(string $number, string $format): string
+    {
+        if (! isset(self::LABEL_FORMATS[$format]) || ! preg_match('/^BY\d{12}$/D', $number)) {
+            throw new EvropochtaShipmentException('Проверьте трек-номер и формат ярлыка.');
+        }
+
+        try {
+            $response = $this->request()->accept('application/pdf')->get("label/{$format}/{$number}");
+        } catch (ConnectionException) {
+            throw new EvropochtaShipmentException('Европочта не ответила на запрос ярлыка. Повторите попытку позже.');
+        }
+
+        if ($response->status() === 404) {
+            throw new EvropochtaShipmentException('Ярлык ещё готовится. Повторите запрос через три минуты после оформления.');
+        }
+        if (in_array($response->status(), [401, 403], true)) {
+            throw new EvropochtaShipmentException('Европочта отклонила доступ. Проверьте ключ и договор.');
+        }
+        if (! $response->successful() || ! str_starts_with($response->body(), '%PDF-')) {
+            throw new EvropochtaShipmentException('Европочта пока не вернула PDF ярлыка. Повторите попытку позже.');
+        }
+
+        return $response->body();
     }
 
     private function request(): PendingRequest

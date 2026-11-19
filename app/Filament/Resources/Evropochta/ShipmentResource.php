@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Evropochta;
 
 use App\Filament\Resources\Evropochta\Pages\ListShipments;
+use App\Filament\Resources\Orders\Actions\EvropochtaOrderActions;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use App\Services\Shipping\Evropochta;
@@ -63,6 +64,7 @@ class ShipmentResource extends Resource
                     ->searchable()->placeholder('Ожидает оформления'),
             ])
             ->recordActions([
+                EvropochtaOrderActions::track(),
                 static::quoteAction()
                     ->authorize(fn (Order $record): bool => OrderResource::canView($record)),
                 Action::make('saveTrackingNumber')

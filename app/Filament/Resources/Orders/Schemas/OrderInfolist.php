@@ -30,6 +30,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Livewire;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
@@ -382,6 +383,16 @@ class OrderInfolist
                             ->badge()
                             ->color('warning')
                             ->visible(fn (Order $record): bool => $record->planned_delivery_date !== null),
+
+                        TextEntry::make('evropochta_tracking_number')
+                            ->label('Трек-номер Европочты')
+                            ->placeholder('Ожидает оформления')
+                            ->copyable()
+                            ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'),
+
+                        Livewire::make(\App\Livewire\EvropochtaOrderStatus::class, fn (Order $record): array => ['orderId' => $record->getKey()])
+                            ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'
+                                && filled($record->evropochta_tracking_number)),
                     ]),
 
                 // ── Оплата (3 из 3) ──────────────────────────────────────────
