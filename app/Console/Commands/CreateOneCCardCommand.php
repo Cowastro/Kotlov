@@ -34,6 +34,8 @@ class CreateOneCCardCommand extends Command
         {--replace=* : With --like: «было::стало» in the copied texts (220 В::380 В, 3 фазы); «=>» also works locally}
         {--like= : Id of a sibling card (same series): its category, brand, photos, specs and texts are the base}
         {--without-row : Our own card with no 1C row (a model not stocked yet); code is then only a label}
+        {--no-images : With --like: do not copy the photos of the sibling (another look: cladding, door, colour)}
+        {--hidden : Hide the card from buyers until it has its own photo (catalog:hide-cards-awaiting-photos --publish shows it)}
         {--apply : Create the card and link the row}';
 
     protected $description = 'Create a card for one 1C row from our own photo and data';
@@ -70,15 +72,27 @@ class CreateOneCCardCommand extends Command
             ->map(fn ($line) => array_map('trim', explode(':', (string) $line, 2)))
             ->filter(fn ($pair) => count($pair) === 2 && $pair[0] !== '' && $pair[1] !== '')
             ->mapWithKeys(fn ($pair) => [$pair[0] => $pair[1]]);
+        // The characteristics table of the sibling is mostly its attribute values: they are copied, a --spec of the same name changes one.
+        $attributeValues = $like ? \App\Models\ProductAttributeValue::query()->with('attribute', 'option')->where('product_id', $like->id)->get()
+            ->filter(fn ($value) => $value->attribute !== null)->map(function ($value) use ($own): array {
+                $name = trim((string) $value->attribute->name);
+                $key = $own->keys()->first(fn ($spec) => mb_strtolower(trim((string) $spec)) === mb_strtolower($name));
+                $row = ['attribute' => $value->attribute, 'option_id' => $value->option_id, 'value' => $value->value, 'is_checked' => $value->is_checked];
+                if ($key !== null) {
+                    $row['override'] = $own->pull($key);
+                }
+
+                return $row;
+            })->values() : collect();
         // A sibling's specs stay in their order; a --spec with the same name replaces the value, new ones go last.
         $specs = collect($like?->specs ?? [])->filter(fn ($row) => is_array($row) && filled($row['key'] ?? null))
             ->map(fn ($row) => ['key' => $row['key'], 'value' => $own->pull($row['key']) ?? ($row['value'] ?? '')])
             ->concat($own->map(fn ($value, $key) => ['key' => $key, 'value' => $value])->values())
             ->values()->all();
-        if ($images->isEmpty() && $like) {
+        if ($images->isEmpty() && $like && ! $this->option('no-images')) {
             $images = collect($like->imagePaths());
         }
-        $this->line(sprintf('audit.onec_card.plan=%d:%s:%s:images%d:specs%d', (int) $item?->id, Str::slug($name), $category->slug, $images->count(), count($specs)));
+        $this->line(sprintf('audit.onec_card.plan=%d:%s:%s:images%d:specs%d', (int) $item?->id, Str::slug($name), $category->slug, $images->count(), count($specs) + $attributeValues->count()));
         if (! $this->option('apply')) {
             return self::SUCCESS;
         }
@@ -104,6 +118,21 @@ class CreateOneCCardCommand extends Command
             $this->line('audit.onec_card.failed='.$item->id);
 
             return self::FAILURE;
+        }
+        foreach ($attributeValues as $row) {
+            $attribute = $row['attribute'];
+            $values = ['option_id' => $row['option_id'], 'value' => $row['value'], 'is_checked' => $row['is_checked']];
+            if (array_key_exists('override', $row)) {
+                $values = match ($attribute->type) {
+                    'select' => ['option_id' => \App\Models\AttributeOption::query()->firstOrCreate(['attribute_id' => $attribute->id, 'name' => $row['override']])->id, 'value' => null, 'is_checked' => null],
+                    'check' => ['option_id' => null, 'value' => null, 'is_checked' => in_array(mb_strtolower($row['override']), ['да', 'есть', 'yes', '1'], true)],
+                    default => ['option_id' => null, 'value' => $row['override'], 'is_checked' => null],
+                };
+            }
+            \App\Models\ProductAttributeValue::query()->create(['product_id' => $product->id, 'attribute_id' => $attribute->id] + $values);
+        }
+        if ($this->option('hidden')) {
+            $product->update(['is_active' => false, 'created_via' => \App\Models\Product::CREATED_VIA_AWAITING_PHOTOS]);
         }
         $this->line(sprintf('audit.onec_card.created=%d:%d:%s', (int) $item?->id, $product->id, $product->slug));
 
