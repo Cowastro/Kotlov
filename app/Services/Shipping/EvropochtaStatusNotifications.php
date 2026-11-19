@@ -118,7 +118,7 @@ final class EvropochtaStatusNotifications
 
         try {
             $id = $this->sms->sendSms($phone, (string) config('services.sms_by.alphaname_id'),
-                'KOTLOV: '.Str::limit($message->carrier_status, 45).' · '.$message->tracking_number);
+                'Европочта: '.Str::limit($message->carrier_status, 42).' · '.$message->tracking_number);
         } catch (RuntimeException) {
             return false;
         }

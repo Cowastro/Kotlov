@@ -144,9 +144,9 @@ final class EvropochtaOrderActions
                 TextInput::make('receiver_phone_number')->label('Телефон получателя')->inputMode('tel')->trim()->required()->maxLength(30),
                 Select::make('label_format')->label('Формат ярлыка')->options(Evropochta::LABEL_FORMATS)->required(),
                 Toggle::make('notify_receiver')
-                    ->label('Отправить получателю СМС с трек-номером')
+                    ->label('Уведомлять получателя по СМС')
                     ->helperText(fn (): string => SendEvropochtaTrackingSms::configured()
-                        ? 'СМС придёт на указанный телефон получателя.'
+                        ? 'На указанный телефон придут трек-номер и уведомления об изменениях доставки.'
                         : 'SMS.BY пока не настроен. Отправление можно оформить.'),
             ])
             ->action(function (Order $record, array $data, Action $action, Component $livewire, EvropochtaOrderShipment $shipments): void {

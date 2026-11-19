@@ -267,7 +267,7 @@ class EvropochtaOrderShipmentTest extends TestCase
         $this->travel(6)->minutes();
         $this->artisan('evropochta:notify-statuses')->assertSuccessful();
 
-        $this->assertSame(array_map(fn (string $name): string => 'KOTLOV: '.$name.' · '.self::TRACK, $names), $sent);
+        $this->assertSame(array_map(fn (string $name): string => 'Европочта: '.$name.' · '.self::TRACK, $names), $sent);
         $this->assertDatabaseHas('evropochta_status_messages', [
             'order_id' => $order->id, 'carrier_event' => 'cancelled', 'sms_status' => 'accepted', 'sms_id' => 'status-5',
         ]);
@@ -294,7 +294,7 @@ class EvropochtaOrderShipmentTest extends TestCase
         $component->call('refreshStatus')->assertSee('Отменено · Принято SMS.BY');
         Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), 'sendQuickSMS')
             && $request['phone'] === '375291234567'
-            && $request['message'] === 'KOTLOV: Отменено · '.self::TRACK);
+            && $request['message'] === 'Европочта: Отменено · '.self::TRACK);
         $this->assertSame('confirmed', $order->fresh()->status);
     }
 
