@@ -27,6 +27,8 @@ class EvropochtaCheckoutTest extends TestCase
             ->get(route('checkout'))
             ->assertOk()
             ->assertSee('Европочта до отделения')
+            ->assertSee('id="evropochta-results" hidden', false)
+            ->assertSee('data-branches=', false)
             ->assertSee('г. Лида, Красноармейская, 63, №23')
             ->assertDontSee('Монтажников, 2, №1');
 
