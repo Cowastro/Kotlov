@@ -231,6 +231,7 @@ class Order extends Model
 
     public const DELIVERY_TYPES = [
         'pickup' => 'Самовывоз',
+        'evropochta' => 'Европочта',
         'courier' => 'Нашим транспортом в пределах МКАД-2',
         'own_transport' => 'Нашим транспортом в города по графику',
         'transport' => 'Транспортная компания по Беларуси',
