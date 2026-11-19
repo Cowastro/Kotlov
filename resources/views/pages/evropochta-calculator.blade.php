@@ -4,96 +4,142 @@
 @section('description', 'Рассчитайте доставку Европочтой из Минска до отделения по весу и размерам упакованной посылки.')
 
 @section('content')
-<main class="flat-spacing">
+@php
+    $fields = [
+        'weight' => ['Вес с упаковкой', 'кг', '12,5'],
+        'length' => ['Длина', 'см', '40'],
+        'width' => ['Ширина', 'см', '18'],
+        'height' => ['Высота', 'см', '25'],
+    ];
+@endphp
+
+<main class="delivery-page parcel-calculator">
     <div class="container">
-        <div class="mx-auto" style="max-width: 720px;">
-            <a href="{{ url('/dostavka') }}" class="link text-caption-01">Доставка, оплата и возврат</a>
-            <h1 class="h3 mt-12 mb-12">Калькулятор доставки Европочтой</h1>
-            <p class="cl-text-2 mb-24">Из Минска до отделения в регионе. Укажите вес вместе с коробкой и её наружные размеры.</p>
+        <nav class="delivery-breadcrumbs" aria-label="Хлебные крошки">
+            <a href="{{ url('/dostavka') }}">Доставка и оплата</a>
+            <x-heroicon-o-chevron-right aria-hidden="true"/>
+            <span aria-current="page">Калькулятор Европочты</span>
+        </nav>
 
-            @if ($estimate)
-                <section id="evropochta-estimate-result" class="alert alert-success mb-24" aria-live="polite">
-                    <p class="fw-semibold mb-4">Доставка — {{ number_format($estimate['customer_price'], 2, ',', ' ') }} BYN</p>
-                    <p>{{ $estimate['address'] }} · {{ $estimate['oversize'] ? 'Громоздкая посылка' : 'Стандартная посылка' }}</p>
-                    <p class="text-caption-01 mt-4">Ориентир для указанных параметров. Стоимость коробки отдельно.</p>
-                </section>
-            @endif
+        <header class="parcel-calculator__header">
+            <div>
+                <h1>Калькулятор доставки Европочтой</h1>
+                <p>Рассчитайте стоимость пересылки из Минска до выбранного отделения в регионе.</p>
+            </div>
+            <span class="parcel-calculator__header-icon" aria-hidden="true"><x-heroicon-o-cube/></span>
+        </header>
 
+        <div class="parcel-calculator__layout">
             @if ($branches === [])
-                <p class="alert alert-warning">Справочник отделений временно недоступен. Попробуйте рассчитать доставку позже.</p>
+                <div class="parcel-calculator__card parcel-calculator__unavailable" role="status">
+                    <x-heroicon-o-information-circle aria-hidden="true"/>
+                    <div>
+                        <h2>Отделения временно недоступны</h2>
+                        <p>Обновите страницу, чтобы повторить загрузку.</p>
+                        <a class="delivery-text-link" href="{{ route('evropochta.calculator') }}">Обновить страницу</a>
+                    </div>
+                </div>
             @else
-                <form id="evropochta-estimate" class="tf-grid-layout gap-16" action="{{ route('evropochta.calculator.estimate') }}" method="POST">
+                <form id="evropochta-estimate" class="parcel-calculator__form" action="{{ route('evropochta.calculator.estimate') }}" method="POST">
                     @csrf
-                    <fieldset class="tf-field">
+
+                    <fieldset class="parcel-calculator__card">
+                        <legend>
+                            <span class="parcel-calculator__icon"><x-heroicon-o-map-pin aria-hidden="true"/></span>
+                            <span>1. Отделение получения</span>
+                        </legend>
                         @include('partials.evropochta-branch-picker', [
                             'branches' => $branches,
                             'branchId' => old('evropochta_branch', $values['evropochta_branch'] ?? ''),
+                            'searchLabel' => 'Поиск отделения',
                         ])
                     </fieldset>
 
-                    <fieldset class="tf-field">
-                        <label class="tf-lable fw-medium" for="evropochta-box">Типовая коробка</label>
-                        <div class="tf-select">
-                            <select id="evropochta-box">
-                                <option value="">Свои размеры</option>
-                                @foreach ($boxes as $box)
-                                    <option value="{{ implode(',', $box['outer']) }}">{{ implode(' × ', $box['outer']) }} см</option>
-                                @endforeach
-                            </select>
+                    <fieldset class="parcel-calculator__card">
+                        <legend>
+                            <span class="parcel-calculator__icon"><x-heroicon-o-archive-box aria-hidden="true"/></span>
+                            <span>2. Параметры посылки</span>
+                        </legend>
+                        <p class="parcel-calculator__help">Взвесьте посылку вместе с упаковкой и измерьте коробку снаружи.</p>
+                        @if ($boxes !== [])
+                            <div class="parcel-calculator__field parcel-calculator__box">
+                                <label for="evropochta-box">Размеры коробки</label>
+                                <select id="evropochta-box">
+                                    <option value="">Ввести вручную</option>
+                                    @foreach ($boxes as $box)
+                                        <option value="{{ implode(',', $box['outer']) }}">{{ implode(' × ', $box['outer']) }} см</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+
+                        <div class="parcel-calculator__fields">
+                            @foreach ($fields as $field => [$label, $unit, $example])
+                                @php($value = old($field, $values[$field] ?? ''))
+                                <div class="parcel-calculator__field">
+                                    <label for="evropochta-{{ $field }}">{{ $label }} <span class="visually-hidden">в {{ $unit }}</span></label>
+                                    <div class="parcel-calculator__input">
+                                        <input type="text" inputmode="decimal" name="{{ $field }}" id="evropochta-{{ $field }}"
+                                            value="{{ is_scalar($value) ? $value : '' }}" placeholder="{{ $example }}"
+                                            pattern="[0-9]+([.,][0-9]{1,2})?" required>
+                                        <span aria-hidden="true">{{ $unit }}</span>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </fieldset>
 
-                    <div class="tf-grid-layout sm-col-2">
-                        @foreach (['weight' => 'Вес с упаковкой, кг', 'length' => 'Длина, см', 'width' => 'Ширина, см', 'height' => 'Высота, см'] as $field => $label)
-                            @php($value = old($field, $values[$field] ?? ''))
-                            <fieldset class="tf-field">
-                                <label class="tf-lable fw-medium" for="evropochta-{{ $field }}">{{ $label }}</label>
-                                <input type="number" inputmode="decimal" name="{{ $field }}" id="evropochta-{{ $field }}"
-                                    value="{{ is_scalar($value) ? $value : '' }}" min="0.01" max="{{ $field === 'weight' ? 50 : 250 }}" step="0.01" required>
-                            </fieldset>
-                        @endforeach
+                    <div class="parcel-calculator__errors" data-calculator-errors role="alert" @if ($errors->isEmpty()) hidden @endif>
+                        <ul>
+                            @foreach ($errors->all() as $message)
+                                <li>{{ $message }}</li>
+                            @endforeach
+                        </ul>
                     </div>
 
-                    @if ($errors->any())
-                        <div class="alert alert-warning" role="alert">
-                            <ul class="mb-0">
-                                @foreach ($errors->all() as $message)
-                                    <li>{{ $message }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-
-                    <p class="text-caption-01 cl-text-2">Расчёт справочный. Для заказа с непроверенными габаритами цену доставки подтвердит менеджер.</p>
-                    <button type="submit" class="tf-btn animate-btn">Рассчитать доставку</button>
+                    <button type="submit" class="delivery-button delivery-button--primary parcel-calculator__submit">
+                        <x-heroicon-o-calculator aria-hidden="true"/> Рассчитать тариф
+                    </button>
                 </form>
             @endif
+
+            <aside class="parcel-calculator__side" aria-label="Результат и условия расчёта">
+                <section class="parcel-calculator__result" id="evropochta-estimate-result" aria-labelledby="evropochta-result-title" tabindex="-1">
+                    <h2 id="evropochta-result-title"><x-heroicon-o-calculator aria-hidden="true"/> Тариф доставки</h2>
+                    <div aria-live="polite" aria-atomic="true">
+                        <p class="parcel-calculator__result-status" data-calculator-result-status @if ($estimate) hidden @endif>
+                            {{ $branches === [] ? 'Когда список отделений загрузится, здесь появится стоимость.' : 'Выберите отделение, укажите вес и размеры, затем нажмите «Рассчитать тариф».' }}
+                        </p>
+                        <div data-calculator-result @unless ($estimate) hidden @endunless>
+                            <p class="parcel-calculator__price" data-calculator-price>{{ $estimate ? number_format($estimate['customer_price'], 2, ',', ' ').' BYN' : '' }}</p>
+                            <p class="parcel-calculator__address" data-calculator-address>{{ $estimate['address'] ?? '' }}</p>
+                            <p class="parcel-calculator__type" data-calculator-type>{{ $estimate ? ($estimate['oversize'] ? 'Громоздкая посылка' : 'Стандартная посылка') : '' }}</p>
+                        </div>
+                    </div>
+                    <p class="parcel-calculator__result-note">Стоимость округляется вверх до 0,50 BYN. Коробка оплачивается отдельно.</p>
+                </section>
+
+                <div class="parcel-calculator__conditions">
+                    <x-heroicon-o-information-circle aria-hidden="true"/>
+                    <div>
+                        <h2>Условия расчёта</h2>
+                        <p>Калькулятор принимает вес до 50 кг. Свыше 30 кг нужны отделения для тяжеловесных посылок.</p>
+                        <p>При оформлении заказа на KOTLOV доступны стандартные посылки до {{ \App\Services\Shipping\EvropochtaCheckout::MAX_CHECKOUT_WEIGHT }} кг с подтверждёнными параметрами упаковки.</p>
+                    </div>
+                </div>
+            </aside>
         </div>
     </div>
 </main>
 @endsection
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('assets/css/dostavka.css') }}?v={{ filemtime(public_path('assets/css/dostavka.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/evropochta-calculator.css') }}?v={{ filemtime(public_path('assets/css/evropochta-calculator.css')) }}">
+@endpush
+
 @if ($branches !== [])
     @push('scripts')
-        <script>
-            (function () {
-                var form = document.getElementById('evropochta-estimate');
-                window.mountEvropochtaBranchPicker(form.querySelector('[data-evropochta-picker]'));
-                var box = document.getElementById('evropochta-box');
-                box.addEventListener('change', function () {
-                    if (!box.value) return;
-                    var dimensions = box.value.split(',');
-                    ['length', 'width', 'height'].forEach(function (field, index) {
-                        document.getElementById('evropochta-' + field).value = dimensions[index];
-                    });
-                });
-                var result = document.getElementById('evropochta-estimate-result');
-                if (result) {
-                    ['input', 'change'].forEach(function (event) {
-                        form.addEventListener(event, function () { result.style.display = 'none'; });
-                    });
-                }
-            })();
-        </script>
+        <script src="{{ asset('assets/js/evropochta-calculator.js') }}?v={{ filemtime(public_path('assets/js/evropochta-calculator.js')) }}" defer></script>
     @endpush
 @endif

@@ -170,7 +170,7 @@ class EvropochtaCheckoutTest extends TestCase
         $this->post(route('evropochta.calculator.estimate'), [
             'evropochta_branch' => 40930010, 'weight' => 1,
             'length' => 20, 'width' => 15, 'height' => 10,
-        ])->assertOk()->assertSee('Доставка — 6,50 BYN')->assertSee('Стандартная посылка');
+        ])->assertOk()->assertSeeText('6,50 BYN')->assertSeeText('Стандартная посылка');
         $this->assertDatabaseCount('orders', 0);
 
         $this->from(route('evropochta.calculator'))->post(route('evropochta.calculator.estimate'), [
@@ -179,6 +179,36 @@ class EvropochtaCheckoutTest extends TestCase
         ])->assertSessionHasErrors('estimate');
 
         Http::assertSentCount(2);
+    }
+
+    public function test_public_calculator_returns_a_quote_for_local_decimal_input_and_validates_the_branch(): void
+    {
+        $this->mockCarrier(17.26);
+        $parcel = [
+            'evropochta_branch' => 40930010, 'weight' => '12,5',
+            'length' => '40', 'width' => '18', 'height' => '25',
+        ];
+
+        $this->postJson(route('evropochta.calculator.estimate'), $parcel)
+            ->assertOk()
+            ->assertExactJson([
+                'price' => 17.5,
+                'address' => 'г. Лида, Красноармейская, 63, №23',
+                'type' => 'Стандартная посылка',
+            ]);
+
+        $this->postJson(route('evropochta.calculator.estimate'), ['weight' => '50,01'] + $parcel)
+            ->assertUnprocessable()->assertJsonValidationErrors('weight');
+        $this->postJson(route('evropochta.calculator.estimate'), ['evropochta_branch' => 70130010] + $parcel)
+            ->assertUnprocessable()->assertJsonValidationErrors('estimate');
+
+        Http::assertSent(function (Request $request): bool {
+            $form = collect($request->data())->pluck('contents', 'name');
+
+            return str_ends_with($request->url(), '/payment/calculate')
+                && (float) $form->get('weight') === 12.5;
+        });
+        $this->assertDatabaseCount('orders', 0);
     }
 
     private function mockCarrier(float $carrierPrice = 6.34): void
