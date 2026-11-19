@@ -87,9 +87,14 @@ class CreateOneCCardCommandTest extends TestCase
         $sibling = \App\Models\Product::query()->create(['category_id' => $category->id, 'name' => 'Камин РИО', 'slug' => 'kamin-rio-like', 'price' => 8056.99,
             'images' => ['img/products/gamma-san/lyuk-polimerpeschanyi-1-5t-zelenyi.webp'], 'content' => '<p>Камин РИО: облицовка сталь.</p>',
             'specs' => [['key' => 'Облицовка', 'value' => 'сталь'], ['key' => 'Мощность', 'value' => '12 кВт']]]);
+        $power = \App\Models\Attribute::create(['category_id' => $category->id, 'name' => 'Мощность, кВт', 'type' => 'value', 'in_product' => true]);
+        $cladding = \App\Models\Attribute::create(['category_id' => $category->id, 'name' => 'Материал облицовки', 'type' => 'select', 'in_product' => true]);
+        $steel = \App\Models\AttributeOption::create(['attribute_id' => $cladding->id, 'name' => 'Сталь']);
+        \App\Models\ProductAttributeValue::create(['product_id' => $sibling->id, 'attribute_id' => $power->id, 'value' => '7']);
+        \App\Models\ProductAttributeValue::create(['product_id' => $sibling->id, 'attribute_id' => $cladding->id, 'option_id' => $steel->id]);
 
         $this->artisan('integration:create-onec-card', ['code' => 'KR226', 'category' => '-', '--like' => $sibling->id, '--without-row' => true,
-            '--title' => 'Камин РИО керамика', '--spec' => ['Облицовка: керамика'], '--replace' => ['облицовка сталь::облицовка керамика'],
+            '--title' => 'Камин РИО керамика', '--spec' => ['Облицовка: керамика', 'Материал облицовки: Керамика'], '--replace' => ['облицовка сталь::облицовка керамика'],
             '--no-images' => true, '--hidden' => true, '--apply' => true])->assertSuccessful();
 
         $product = \App\Models\Product::query()->where('name', 'Камин РИО керамика')->firstOrFail();
@@ -98,5 +103,10 @@ class CreateOneCCardCommandTest extends TestCase
         $this->assertSame(\App\Models\Product::CREATED_VIA_AWAITING_PHOTOS, $product->created_via);
         $this->assertSame('<p>Камин РИО: облицовка керамика.</p>', $product->content);
         $this->assertSame([['key' => 'Облицовка', 'value' => 'керамика'], ['key' => 'Мощность', 'value' => '12 кВт']], $product->specs);
+        // The attribute values of the sibling are copied; «Материал облицовки» gets the new option.
+        $values = \App\Models\ProductAttributeValue::query()->with('option')->where('product_id', $product->id)->get()->keyBy('attribute_id');
+        $this->assertSame('7', $values[$power->id]->value);
+        $this->assertSame('Керамика', $values[$cladding->id]->option->name);
+        $this->assertSame($steel->id, \App\Models\ProductAttributeValue::query()->where('product_id', $sibling->id)->where('attribute_id', $cladding->id)->value('option_id'));
     }
 }
