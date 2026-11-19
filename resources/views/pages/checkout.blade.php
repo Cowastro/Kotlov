@@ -230,7 +230,6 @@
                                                 @error('evropochta_branch') <div class="text-danger text-caption-01">{{ $message }}</div> @enderror
                                                 @error('evropochta_token') <div class="text-danger text-caption-01">{{ $message }}</div> @enderror
                                             </fieldset>
-                                            <p class="text-caption-01 cl-text-2">Менеджер пришлёт реквизиты для предоплаты после подтверждения заказа.</p>
                                         </div>
                                     @endif
 
@@ -271,12 +270,17 @@
                                 <div class="payment-method-box" id="payment-method-box">
 
                                     @foreach ($checkoutPayment as $key => $method)
-                                    <div class="payment_accordion">
+                                    @php
+                                        $hideCod = $key === \App\Services\Shipping\EvropochtaCheckout::COD_PAYMENT
+                                            && old('delivery_type') !== \App\Services\Shipping\EvropochtaCheckout::METHOD;
+                                    @endphp
+                                    <div class="payment_accordion" @if($hideCod) style="display: none" @endif>
                                         <label for="pay-{{ $key }}" class="payment_check checkbox-wrap">
                                             <input type="radio" name="payment_type"
                                                 class="tf-check-rounded style-2"
                                                 id="pay-{{ $key }}"
                                                 value="{{ $key }}"
+                                                @disabled($hideCod)
                                                 {{ old('payment_type', $selectedPayment ?? $firstPayment) === $key ? 'checked' : '' }}>
                                             <span class="pay-title fw-medium lh-24">
                                                 {{ $method['name'] }}
@@ -717,13 +721,15 @@
         var retry = document.getElementById('evropochta-retry');
         var quoteRequest;
         var active = false;
-        var onlyForEvropochta = @json((bool) ($evropochtaPaymentOnly ?? false));
+        var transferOnlyForEvropochta = @json((bool) ($evropochtaPaymentOnly ?? false));
+        var codPayment = @json(\App\Services\Shipping\EvropochtaCheckout::COD_PAYMENT);
 
         function updateEvropochtaPayment() {
             var selected = null;
             paymentRadios.forEach(function (radio) {
                 var isTransfer = radio.value === 'bank_transfer';
-                var show = active ? isTransfer : (!isTransfer || !onlyForEvropochta);
+                var isCod = radio.value === codPayment;
+                var show = active ? (isTransfer || isCod) : (!isCod && (!isTransfer || !transferOnlyForEvropochta));
                 radio.disabled = !show;
                 radio.closest('.payment_accordion').style.display = show ? '' : 'none';
                 if (show && (!selected || radio.checked)) selected = radio;

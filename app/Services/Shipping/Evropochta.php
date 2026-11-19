@@ -11,6 +11,11 @@ use RuntimeException;
 
 class Evropochta
 {
+    public const LABEL_FORMATS = [
+        'thermal' => '10 × 10 см',
+        'address' => 'A5',
+    ];
+
     public function configured(): bool
     {
         return filled(config('services.evropochta.token'));
@@ -181,6 +186,31 @@ class Evropochta
                 'status' => data_get($event, 'status_to.name'),
                 'detail' => is_string($event['info'] ?? null) ? $event['info'] : '',
             ])->values()->all();
+    }
+
+    public function shipmentLabel(string $number, string $format): string
+    {
+        if (! isset(self::LABEL_FORMATS[$format]) || ! preg_match('/^BY\d{12}$/D', $number)) {
+            throw new EvropochtaShipmentException('Проверьте трек-номер и формат ярлыка.');
+        }
+
+        try {
+            $response = $this->request()->accept('application/pdf')->get("label/{$format}/{$number}");
+        } catch (ConnectionException) {
+            throw new EvropochtaShipmentException('Европочта не ответила на запрос ярлыка. Повторите попытку позже.');
+        }
+
+        if ($response->status() === 404) {
+            throw new EvropochtaShipmentException('Ярлык ещё готовится. Повторите запрос через три минуты после оформления.');
+        }
+        if (in_array($response->status(), [401, 403], true)) {
+            throw new EvropochtaShipmentException('Европочта отклонила доступ. Проверьте ключ и договор.');
+        }
+        if (! $response->successful() || ! str_starts_with($response->body(), '%PDF-')) {
+            throw new EvropochtaShipmentException('Европочта пока не вернула PDF ярлыка. Повторите попытку позже.');
+        }
+
+        return $response->body();
     }
 
     private function request(): PendingRequest

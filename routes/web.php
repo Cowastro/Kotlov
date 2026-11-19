@@ -141,6 +141,12 @@ Route::get('/admin/orders/{order}/procurement', OrderProcurementController::clas
     ->middleware('auth')
     ->name('admin.orders.procurement');
 
+Route::get('/admin/orders/{order}/evropochta-label/{format}', \App\Http\Controllers\EvropochtaOrderLabelController::class)
+    ->whereNumber('order')
+    ->whereIn('format', array_keys(\App\Services\Shipping\Evropochta::LABEL_FORMATS))
+    ->middleware('auth')
+    ->name('admin.orders.evropochta-label');
+
 // Внутренние релизы: список для сотрудников, релиз — по ссылке на 48 часов без входа.
 Route::get('/admin/releases', [ReleaseNotesController::class, 'index'])
     ->name('admin.releases.index');

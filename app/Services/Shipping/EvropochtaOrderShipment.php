@@ -22,6 +22,11 @@ final class EvropochtaOrderShipment
             return 'Ключ API Европочты не настроен.';
         }
 
+        if ($order->payment_type === EvropochtaCheckout::COD_PAYMENT
+            && ($order->payment_status !== 'pending' || (float) $order->total <= 0)) {
+            return 'Для наложенного платежа нужен заказ с положительной суммой, ожидающий оплаты.';
+        }
+
         $parcel = $order->evropochta_quote['parcel'] ?? [];
         $destination = $order->evropochta_quote['store_id_finish'] ?? null;
         $origin = $parcel['store_id_start'] ?? null;
@@ -92,6 +97,13 @@ final class EvropochtaOrderShipment
             ];
             if (filled($contact['receiver_patronymic_name'] ?? null)) {
                 $payload['receiver_patronymic_name'] = trim($contact['receiver_patronymic_name']);
+            }
+
+            if ($lockedOrder->payment_type === EvropochtaCheckout::COD_PAYMENT) {
+                $amount = (float) $lockedOrder->total;
+                $payload['payment_amount'] = $amount;
+                $payload['declared_amount'] = $amount;
+                $payload['cash_on_delivery_payer'] = 0;
             }
 
             // The order lock prevents parallel requests. The carrier's external_id also protects retries after a timeout.
