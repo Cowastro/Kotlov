@@ -9,6 +9,7 @@ use App\Models\CrmCounterparty;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Services\ProductVariantSelector;
+use App\Services\Shipping\EvropochtaCheckout;
 use App\Support\AdminPhoneLinks;
 use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
@@ -410,7 +411,7 @@ class ProductForm
 
                                 // ── Дополнительно ─────────────────────────────────────────────
                                 Section::make('Габариты посылки для Европочты')
-                                    ->description('Укажите вес и размеры одной товарной единицы в готовой к отправке упаковке. Для витрины подходят стандартные посылки до 5 кг.')
+                                    ->description('Укажите вес и размеры одной товарной единицы в готовой к отправке упаковке. Для витрины подходят стандартные посылки до '.EvropochtaCheckout::MAX_CHECKOUT_WEIGHT.' кг.')
                                     ->columnSpanFull()
                                     ->columns(4)
                                     ->schema([

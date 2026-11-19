@@ -88,7 +88,7 @@ class EvropochtaCheckoutTest extends TestCase
 
         foreach ([
             ['weight' => 1, 'length' => 30],
-            ['weight' => 5.01, 'length' => 30, 'width' => 20, 'height' => 10],
+            ['weight' => 30.01, 'length' => 30, 'width' => 20, 'height' => 10],
             ['weight' => 1, 'length' => 110, 'width' => 20, 'height' => 10],
         ] as $parcel) {
             $product->update(['shipping_parcel' => $parcel]);
@@ -100,7 +100,7 @@ class EvropochtaCheckoutTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_a_compact_but_heavy_product_shows_the_checkout_weight_limit_without_calling_the_carrier(): void
+    public function test_unconfirmed_packaging_and_overweight_products_do_not_call_the_carrier(): void
     {
         $product = $this->product();
         $product->update([
@@ -111,14 +111,50 @@ class EvropochtaCheckoutTest extends TestCase
 
         $this->withSession($this->cart($product))->get(route('checkout'))->assertOk()
             ->assertDontSee('Европочта до отделения')
-            ->assertSee('Этот товар превышает лимит по весу.')
+            ->assertSee('Для Европочты при оформлении нужны подтверждённые вес и размеры товара в упаковке.')
             ->assertSee('Рассчитать доставку Европочтой отдельно');
 
-        $product->update(['specs' => []]);
+        $product->update(['specs' => ['Вес' => '31 кг', 'Габариты без упаковки, мм' => '350×143×210']]);
         $this->withSession($this->cart($product))->get(route('checkout'))->assertOk()
-            ->assertSee('Для Европочты при оформлении нужны подтверждённые вес и размеры товара в упаковке.');
+            ->assertSee('Европочта при оформлении доступна для посылок до 30 кг. Этот товар превышает лимит по весу.');
 
         Http::assertNothingSent();
+    }
+
+    public function test_confirmed_garant_parcel_and_the_30_kg_boundary_can_be_quoted_in_checkout(): void
+    {
+        $product = $this->product();
+        $product->update([
+            'name' => 'ИБП Гарант-1500 24В', 'sku' => 'OMENERGO-E0201-0007',
+            'slug' => 'ibp-garant-1500-24v-1500va-e0201-0007', 'shipping_parcel' => null,
+        ]);
+        $migration = require database_path('migrations/2026_11_19_160000_confirm_evropochta_garant_1500_parcel.php');
+        $migration->up();
+        $parcel = $product->refresh()->shipping_parcel;
+        $this->assertEquals(['weight' => 12.5, 'length' => 40, 'width' => 18, 'height' => 25],
+            collect($parcel)->only(['weight', 'length', 'width', 'height'])->all());
+        $this->mockCarrier(17.26);
+
+        foreach ([12.5, 30] as $weight) {
+            $product->update(['shipping_parcel' => ['weight' => $weight] + $parcel]);
+            $this->withSession($this->cart($product))->get(route('checkout'))
+                ->assertOk()->assertSee('Европочта до отделения')->assertSee('г. Лида, Красноармейская, 63, №23');
+            $this->postJson(route('checkout.evropochta.quote'), ['branch_id' => 40930010])
+                ->assertOk()->assertJsonPath('price', 17.5);
+
+            Http::assertSent(function (Request $request) use ($weight): bool {
+                $form = collect($request->data())->pluck('contents', 'name');
+
+                return str_ends_with($request->url(), '/payment/calculate')
+                    && (float) $form->get('weight') === (float) $weight
+                    && (int) $form->get('store_id_finish') === 40930010;
+            });
+        }
+
+        $migration->down();
+        $this->assertEquals(30, $product->refresh()->shipping_parcel['weight']);
+        Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/create'));
+        $this->assertDatabaseCount('orders', 0);
     }
 
     public function test_the_public_calculator_quotes_the_packed_parcel_without_a_cart(): void
@@ -145,7 +181,7 @@ class EvropochtaCheckoutTest extends TestCase
         Http::assertSentCount(2);
     }
 
-    private function mockCarrier(): void
+    private function mockCarrier(float $carrierPrice = 6.34): void
     {
         config([
             'services.evropochta.token' => 'test-token',
@@ -163,7 +199,7 @@ class EvropochtaCheckoutTest extends TestCase
                     'city' => 'г. Лида', 'street' => 'Красноармейская', 'house' => '63', 'region' => 'Гродненская область'],
             ]),
             'https://api-kassa.evropochta.by/api/external/postal/payment/calculate' => Http::response([
-                'sender_pays' => 6.34, 'receiver_pays' => 0,
+                'sender_pays' => $carrierPrice, 'receiver_pays' => 0,
             ]),
         ]);
     }
