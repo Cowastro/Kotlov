@@ -1,0 +1,116 @@
+{
+  "reviewed_on": "2026-11-19",
+  "pairs": [
+    {
+      "ids": [
+        35777,
+        38337
+      ],
+      "decision": "confirmed_duplicate",
+      "manufacturer_articles": [
+        "LD.65.501.15",
+        "LD.65.501.15"
+      ],
+      "supplier_articles": [
+        "00113672",
+        "00147226"
+      ],
+      "sources": [
+        "https://xn--d1an.xn--p1ai/products/3474--nippel_pramoj_ld_pride_dn15_1_2_nr_nr_latun/",
+        "https://ld-global.com/products/1776--ld_pride_brass_hex_nipple_m_m_dn_15/"
+      ],
+      "reason": "Один непустой заводской артикул в обеих карточках и строках поставщика; завод подтверждает DN15, наружную резьбу, латунь без покрытия. Различаются внутренние SKU и коды поставщика."
+    },
+    {
+      "ids": [
+        30992,
+        30993
+      ],
+      "decision": "unresolved",
+      "manufacturer_articles": [
+        null,
+        null
+      ],
+      "supplier_articles": [
+        "00051923"
+      ],
+      "sources": [
+        "https://www.bereg.by/product/kran_sharovyy_flantsevyy_kshtsf_ru_16_du_150_125_ld/",
+        "https://xn--d1an.xn--p1ai/engineering-catalog/general/krany-stal-nye-cel-nosvarnye/dla-zidkih-sred/seria-ld/flancevye-kscf/stal-20/nepolnyj-prohod/group/g-51/"
+      ],
+      "reason": "Код поставщика найден, полного заводского артикула нет. Завод выпускает варианты материала, строительной длины и комплектации. Нельзя восстановить точное исполнение по общему названию.",
+      "request": "Для 00051923: полный артикул LD и обозначение КШЦФ с суффиксом исполнения, марка стали, строительная длина, комплектность; фото маркировки или паспорт отгруженного изделия."
+    },
+    {
+      "ids": [
+        31080,
+        31081
+      ],
+      "decision": "unresolved",
+      "manufacturer_articles": [
+        null,
+        null
+      ],
+      "supplier_articles": [
+        "00059375"
+      ],
+      "sources": [
+        "https://www.bereg.by/product/kran_sharovyy_flantsevyy_kshtsf_ru_16_du_125_125_ld/",
+        "https://xn--d1an.xn--p1ai/catalog/krany/krany-stalnye/krany-ld-dlia-zhidkosti/nominal-nyj-diametr-dn--125/"
+      ],
+      "reason": "Полный заводской артикул отсутствует в обеих карточках и фиде. В каталоге LD есть разные материалы и комплектности DN125 PN16.",
+      "request": "Для 00059375: полный артикул LD, марка стали, проход 125 мм, строительная длина, исполнение и комплектность; паспорт или фото шильдика."
+    },
+    {
+      "ids": [
+        36986,
+        38354
+      ],
+      "decision": "unresolved",
+      "manufacturer_articles": [
+        "LD.65.501.32",
+        null
+      ],
+      "supplier_articles": [
+        "00131904",
+        "00147523"
+      ],
+      "sources": [
+        "https://ld-global.com/products/1969--ld_pride_brass_hex_nipple_m_m_dn_32/"
+      ],
+      "reason": "Завод подтверждает модель LD.65.501.32 для первой карточки. Во второй нет заводского кода или EAN; поиск поставщика не вернул проверяемую карточку. Связь второго кода с этой моделью не подтверждена.",
+      "request": "Для 00147523: заводской артикул, EAN, материал/покрытие, DN32 и единица поставки; подтвердить связь с 00131904 или прислать фото этикетки."
+    },
+    {
+      "ids": [
+        41581,
+        43336
+      ],
+      "decision": "different_revisions",
+      "manufacturer_articles": [
+        "LD.47.301.40",
+        "LD.47.112.1.40.M02"
+      ],
+      "sources": [
+        "https://xn--d1an.xn--p1ai/products/201--kran_sarovoj_latunnyj_ld_pride_47_40_v_v_r_du_40_ru_25_rycag/"
+      ],
+      "reason": "У производителя для LD 47.301.40 прямо указано «Заменён на LD 47.112.1.40.M02». Это замена исполнения, а не доказательство одного SKU; EAN различаются. Оба товара остаются раздельно."
+    },
+    {
+      "ids": [
+        44295,
+        44308
+      ],
+      "decision": "different_variants",
+      "manufacturer_articles": [
+        "LD.57.111.1.32.L",
+        "LD.57.111.1.32.M02"
+      ],
+      "sources": [
+        "https://xn--d1an.xn--p1ai/products/18531--fil_tr_kosoj_latunnyj_ld_pride_57_32_v_v_du_32_ru_25/",
+        "https://xn--d1an.xn--p1ai/products/18861--fil_tr_kosoj_latunnyj_ld_pride_57_32_v_v_du_32_ru_25/"
+      ],
+      "reason": "В официальном каталоге две отдельные карточки LD 57.111.1.32 L и LD 57.111.1.32.M02. Отдельные заводские обозначения и EAN. Не объединять."
+    }
+  ]
+}

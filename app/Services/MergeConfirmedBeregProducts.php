@@ -42,7 +42,10 @@ class MergeConfirmedBeregProducts
                 foreach ([$old, $canonical] as $card) {
                     $specs = json_decode($card->specs ?: '[]', true, 512, JSON_THROW_ON_ERROR);
                     $maker = collect($specs)->firstWhere('key', 'Код производителя')['value'] ?? '';
-                    if ($card->sku !== $pair['sku'] || $this->name($card->name) !== $this->name($pair['name']) || trim($maker) !== $pair['maker'] || $old->brand_id !== $canonical->brand_id) {
+                    // Different internal SKUs are allowed only when explicitly reviewed;
+                    // the nonempty factory code must still match on both cards.
+                    $expectedSku = (int) $card->id === (int) $old->id ? ($pair['duplicate_sku'] ?? $pair['sku']) : $pair['sku'];
+                    if (trim((string) $pair['maker']) === '' || $card->sku !== $expectedSku || $this->name($card->name) !== $this->name($pair['name']) || trim($maker) !== $pair['maker'] || $old->brand_id !== $canonical->brand_id) {
                         throw new RuntimeException('Идентификация пары '.$pair['sku'].' изменилась. Объединение остановлено.');
                     }
                 }
@@ -117,7 +120,11 @@ class MergeConfirmedBeregProducts
                 foreach ($references as [$table, $column]) {
                     // Query-builder updates intentionally preserve timestamps, prices, quantities,
                     // offer IDs and captured order procurement snapshots (no model save hooks).
-                    DB::table($table)->where($column, $old->id)->update([$column => $canonical->id]);
+                    $update = [$column => $canonical->id];
+                    if ($column === 'product_id' && in_array($table, ['supplier_products', 'supplier_product_mappings', 'supplier_sync_states'], true) && Schema::hasColumn($table, 'product_sku')) {
+                        $update['product_sku'] = $canonical->sku;
+                    }
+                    DB::table($table)->where($column, $old->id)->update($update);
                 }
                 DB::table('reviews')->where('reviewable_type', Product::class)->where('reviewable_id', $old->id)->update(['reviewable_id' => $canonical->id]);
                 DB::table('b2b_pricing_rules')->where('scope_type', 'product')->where('scope_id', $old->id)->update(['scope_id' => $canonical->id]);

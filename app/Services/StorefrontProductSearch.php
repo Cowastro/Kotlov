@@ -393,12 +393,18 @@ class StorefrontProductSearch
             return [];
         }
 
+        // Retired internal SKUs still resolve to the reviewed canonical card.
+        // Exact matches avoid broadening ordinary word/category search.
+        $aliasIds = DB::table('products')->whereNotNull('merged_into_product_id')
+            ->whereIn('sku', array_unique([trim($search), mb_strtoupper(trim($search)), mb_strtolower(trim($search))]))
+            ->limit(300)->pluck('merged_into_product_id')->all();
+
         return SupplierProduct::query()->whereNotNull('product_id')
             ->where('match_status', 'matched')
             ->whereHas('supplier', fn (Builder $supplier) => $supplier->where('is_active', true))
             ->where(fn (Builder $offer) => $offer->where('supplier_article_normalized', $key)
                 ->orWhere('supplier_catalog_code', $key))
-            ->distinct()->limit(300)->pluck('product_id')->map(fn ($id) => (int) $id)->all();
+            ->distinct()->limit(300)->pluck('product_id')->merge($aliasIds)->map(fn ($id) => (int) $id)->unique()->values()->all();
     }
 
     /** Use MySQL FULLTEXT for public catalogue text; internal aliases are resolved separately. */
