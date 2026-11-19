@@ -80,4 +80,23 @@ class CreateOneCCardCommandTest extends TestCase
         $this->assertSame($sibling->imagePaths(), $product->imagePaths());
         $this->assertSame([['key' => 'Мощность', 'value' => '10 кВт'], ['key' => 'Электропитание', 'value' => '380 В, 3 фазы']], $product->specs);
     }
+
+    public function test_a_model_of_another_look_takes_the_texts_of_its_sibling_but_not_the_photos_and_waits_for_its_own(): void
+    {
+        $category = Category::query()->firstOrCreate(['slug' => 'kaminy-like'], ['name' => 'Камины', 'is_active' => true]);
+        $sibling = \App\Models\Product::query()->create(['category_id' => $category->id, 'name' => 'Камин РИО', 'slug' => 'kamin-rio-like', 'price' => 8056.99,
+            'images' => ['img/products/gamma-san/lyuk-polimerpeschanyi-1-5t-zelenyi.webp'], 'content' => '<p>Камин РИО: облицовка сталь.</p>',
+            'specs' => [['key' => 'Облицовка', 'value' => 'сталь'], ['key' => 'Мощность', 'value' => '12 кВт']]]);
+
+        $this->artisan('integration:create-onec-card', ['code' => 'KR226', 'category' => '-', '--like' => $sibling->id, '--without-row' => true,
+            '--title' => 'Камин РИО керамика', '--spec' => ['Облицовка: керамика'], '--replace' => ['облицовка сталь::облицовка керамика'],
+            '--no-images' => true, '--hidden' => true, '--apply' => true])->assertSuccessful();
+
+        $product = \App\Models\Product::query()->where('name', 'Камин РИО керамика')->firstOrFail();
+        $this->assertSame([], $product->imagePaths());
+        $this->assertFalse($product->is_active);
+        $this->assertSame(\App\Models\Product::CREATED_VIA_AWAITING_PHOTOS, $product->created_via);
+        $this->assertSame('<p>Камин РИО: облицовка керамика.</p>', $product->content);
+        $this->assertSame([['key' => 'Облицовка', 'value' => 'керамика'], ['key' => 'Мощность', 'value' => '12 кВт']], $product->specs);
+    }
 }

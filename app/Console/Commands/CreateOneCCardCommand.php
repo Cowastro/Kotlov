@@ -34,6 +34,8 @@ class CreateOneCCardCommand extends Command
         {--replace=* : With --like: «было::стало» in the copied texts (220 В::380 В, 3 фазы); «=>» also works locally}
         {--like= : Id of a sibling card (same series): its category, brand, photos, specs and texts are the base}
         {--without-row : Our own card with no 1C row (a model not stocked yet); code is then only a label}
+        {--no-images : With --like: do not copy the photos of the sibling (another look: cladding, door, colour)}
+        {--hidden : Hide the card from buyers until it has its own photo (catalog:hide-cards-awaiting-photos --publish shows it)}
         {--apply : Create the card and link the row}';
 
     protected $description = 'Create a card for one 1C row from our own photo and data';
@@ -75,7 +77,7 @@ class CreateOneCCardCommand extends Command
             ->map(fn ($row) => ['key' => $row['key'], 'value' => $own->pull($row['key']) ?? ($row['value'] ?? '')])
             ->concat($own->map(fn ($value, $key) => ['key' => $key, 'value' => $value])->values())
             ->values()->all();
-        if ($images->isEmpty() && $like) {
+        if ($images->isEmpty() && $like && ! $this->option('no-images')) {
             $images = collect($like->imagePaths());
         }
         $this->line(sprintf('audit.onec_card.plan=%d:%s:%s:images%d:specs%d', (int) $item?->id, Str::slug($name), $category->slug, $images->count(), count($specs)));
@@ -104,6 +106,9 @@ class CreateOneCCardCommand extends Command
             $this->line('audit.onec_card.failed='.$item->id);
 
             return self::FAILURE;
+        }
+        if ($this->option('hidden')) {
+            $product->update(['is_active' => false, 'created_via' => \App\Models\Product::CREATED_VIA_AWAITING_PHOTOS]);
         }
         $this->line(sprintf('audit.onec_card.created=%d:%d:%s', (int) $item?->id, $product->id, $product->slug));
 
