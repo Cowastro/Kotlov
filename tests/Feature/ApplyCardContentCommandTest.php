@@ -48,4 +48,34 @@ class ApplyCardContentCommandTest extends TestCase
         $this->assertSame('Труба Мета-Бел 1 м', $card->fresh()->name);
         $this->assertSame('truba-1-m', $card->fresh()->slug);
     }
+
+    public function test_wrong_rows_of_the_characteristics_table_are_corrected_by_name(): void
+    {
+        $category = Category::query()->firstOrCreate(['slug' => 'kaminy-fix'], ['name' => 'Камины', 'is_active' => true]);
+        $card = Product::query()->create(['name' => 'Камин РИО', 'slug' => 'kamin-rio-fix', 'category_id' => $category->id, 'price' => 100,
+            'specs' => [['key' => 'Габариты (ВхШхГ)', 'value' => '970х610х400 мм'], ['key' => 'Цвет', 'value' => 'Чёрный']]]);
+        $weight = \App\Models\Attribute::create(['category_id' => $category->id, 'name' => 'Вес', 'suffix' => 'кг', 'type' => 'value', 'in_product' => true]);
+        $afterburn = \App\Models\Attribute::create(['category_id' => $category->id, 'name' => 'Вторичный дожиг', 'type' => 'select', 'in_product' => true]);
+        $no = \App\Models\AttributeOption::create(['attribute_id' => $afterburn->id, 'name' => 'Нет']);
+        \App\Models\ProductAttributeValue::create(['product_id' => $card->id, 'attribute_id' => $weight->id, 'value' => '93']);
+        \App\Models\ProductAttributeValue::create(['product_id' => $card->id, 'attribute_id' => $afterburn->id, 'option_id' => $no->id]);
+        $file = 'test_characteristics_fix';
+        file_put_contents(database_path('data/'.$file.'.json'), json_encode(['kamin-rio-fix' => ['characteristics' => [
+            'Габариты (ВхШхГ)' => '1331х577х468 мм', 'Вес' => '154 кг', 'Вторичный дожиг' => 'Да', 'Цвет' => 'Чёрный', 'Высота' => '1331 мм']]], JSON_UNESCAPED_UNICODE));
+
+        try {
+            $this->artisan('catalog:apply-card-content', ['file' => $file])
+                ->expectsOutputToContain("audit.card_content.card={$card->id}:kamin-rio-fix:characteristics")
+                ->expectsOutputToContain("audit.card_content.characteristic={$card->id}:ves:attribute")
+                ->expectsOutputToContain("audit.card_content.characteristic={$card->id}:vysota:missing")->assertSuccessful();
+            $this->assertSame('93', \App\Models\ProductAttributeValue::query()->where('attribute_id', $weight->id)->value('value'));
+
+            $this->artisan('catalog:apply-card-content', ['file' => $file, '--apply' => true])->expectsOutputToContain('metric.card_content.updated=1')->assertSuccessful();
+        } finally {
+            @unlink(database_path('data/'.$file.'.json'));
+        }
+        $this->assertSame('154', \App\Models\ProductAttributeValue::query()->where('attribute_id', $weight->id)->value('value'));
+        $this->assertSame('Да', \App\Models\ProductAttributeValue::query()->with('option')->where('attribute_id', $afterburn->id)->first()->option->name);
+        $this->assertSame([['key' => 'Габариты (ВхШхГ)', 'value' => '1331х577х468 мм'], ['key' => 'Цвет', 'value' => 'Чёрный']], $card->fresh()->specs);
+    }
 }
