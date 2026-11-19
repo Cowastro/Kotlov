@@ -382,6 +382,12 @@ class OrderInfolist
                             ->badge()
                             ->color('warning')
                             ->visible(fn (Order $record): bool => $record->planned_delivery_date !== null),
+
+                        TextEntry::make('evropochta_tracking_number')
+                            ->label('Трек-номер Европочты')
+                            ->placeholder('Ожидает оформления')
+                            ->copyable()
+                            ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'),
                     ]),
 
                 // ── Оплата (3 из 3) ──────────────────────────────────────────
