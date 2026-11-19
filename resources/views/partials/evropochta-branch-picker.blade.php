@@ -1,6 +1,6 @@
 <div data-evropochta-picker
     data-branches="{{ json_encode(array_map(fn (array $branch) => $branch['label'], $branches), JSON_UNESCAPED_UNICODE) }}">
-    <label class="tf-lable fw-medium" for="evropochta-search">Отделение получения</label>
+    <label class="tf-lable fw-medium" for="evropochta-search">{{ $searchLabel ?? 'Отделение получения' }}</label>
     <input type="search" id="evropochta-search" placeholder="Город, улица или номер отделения"
         autocomplete="off" aria-controls="evropochta-results" aria-describedby="evropochta-search-status" @disabled($pickerDisabled ?? false)>
     <input type="hidden" id="evropochta-branch" name="evropochta_branch" value="{{ is_scalar($branchId) ? $branchId : '' }}" @disabled($pickerDisabled ?? false)>
