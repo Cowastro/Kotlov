@@ -39,6 +39,11 @@ class EvropochtaCheckout
             $parcel[$field] = round((float) $value, 2);
         }
 
+        if (isset($dimensions['box']) && ($dimensions['weight_mode'] ?? null) === 'band') {
+            $parcel['box'] = $dimensions['box'];
+            $parcel['weight_mode'] = 'band';
+        }
+
         try {
             return $parcel['weight'] <= 5 && ! Evropochta::isOversize($parcel) ? $parcel : null;
         } catch (RuntimeException) {

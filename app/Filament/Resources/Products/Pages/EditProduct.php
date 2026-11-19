@@ -167,6 +167,13 @@ class EditProduct extends EditRecord
             $this->normalizeSpecs($data['specs'] ?? [])
         );
 
+        if (isset($data['shipping_parcel'])) {
+            $previous = $this->record->shipping_parcel ?? [];
+            $dimensions = array_intersect_key($previous, array_flip(['weight', 'length', 'width', 'height']));
+            $submitted = array_filter($data['shipping_parcel'], fn (mixed $value): bool => filled($value));
+            $data['shipping_parcel'] = $submitted == $dimensions ? ($previous ?: null) : ($submitted ?: null);
+        }
+
         return $data;
     }
 
