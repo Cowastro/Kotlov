@@ -20,6 +20,7 @@ class CopyCardContentCommand extends Command
         {--spec=* : «Название: значение» set on the target after the copy}
         {--brand= : Brand name or slug of an existing brand for the target}
         {--price= : Retail price of the target, BYN}
+        {--title= : New name of the target (the H1 follows when it was the old name or empty)}
         {--publish : Show the target to buyers (a card hidden while it waited for photos)}
         {--apply : Write the content}';
 
@@ -67,11 +68,17 @@ class CopyCardContentCommand extends Command
             'brand_id' => $brand?->id,
             'price' => filled($this->option('price')) ? round((float) str_replace(',', '.', (string) $this->option('price')), 2) : null,
         ], fn ($value) => $value !== null);
+        if (filled($title = trim((string) $this->option('title')))) {
+            $data['name'] = $title;
+            if (blank($to->h1) || $to->h1 === $to->name) {
+                $data['h1'] = $title;
+            }
+        }
         if ($this->option('publish')) {
             $data += ['is_active' => true, 'created_via' => $to->created_via === Product::CREATED_VIA_AWAITING_PHOTOS ? null : $to->created_via];
         }
 
-        $this->line(sprintf('audit.copy_card.plan=%d:%d:images%d:specs%d:text%d:brand%d', $from->id, $to->id,
+        $this->line(sprintf('audit.copy_card.plan=%d:%d:images%d:specs%d:text%d:brand%d'.(isset($data['name']) ? ':title' : ''), $from->id, $to->id,
             count((array) ($data['images'] ?? [])), count((array) ($data['specs'] ?? [])),
             mb_strlen(strip_tags((string) ($data['content'] ?? ''))), (int) ($brand?->id ?? 0)));
         if (! $this->option('apply')) {

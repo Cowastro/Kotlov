@@ -70,4 +70,22 @@ class CopyCardContentCommandTest extends TestCase
         $this->assertSame('<p>Текст</p>', $card->content);
         $this->assertSame(['img/products/ring-1.jpg'], $card->images);
     }
+
+    public function test_a_wrong_name_is_corrected_and_the_h1_follows(): void
+    {
+        $category = Category::query()->firstOrCreate(['slug' => 'kaminnye-topki'], ['name' => 'Топки', 'is_active' => true]);
+        $card = Product::query()->create(['category_id' => $category->id, 'name' => 'Альфа 1000RB левая', 'h1' => 'Альфа 1000RB левая',
+            'slug' => 'alfa-1000rb', 'price' => 7190.83]);
+
+        $this->artisan('catalog:copy-card-content', ['from' => $card->id, 'to' => $card->id, '--title' => 'Альфа 1000 RB правая'])
+            ->expectsOutputToContain(':title')->assertSuccessful();
+        $this->assertSame('Альфа 1000RB левая', $card->fresh()->name);
+
+        $this->artisan('catalog:copy-card-content', ['from' => $card->id, 'to' => $card->id, '--title' => 'Альфа 1000 RB правая', '--apply' => true])->assertSuccessful();
+        $card->refresh();
+        $this->assertSame('Альфа 1000 RB правая', $card->name);
+        $this->assertSame('Альфа 1000 RB правая', $card->h1);
+        $this->assertEquals(7190.83, (float) $card->price);
+        $this->assertSame('alfa-1000rb', $card->slug);
+    }
 }
