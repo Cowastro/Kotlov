@@ -59,7 +59,7 @@ class TermTeploSupplierTest extends TestCase
         $feed->shouldReceive('sources')->andReturn(['price' => ['id' => 'price', 'date' => '2026-10-12'],
             'stock' => ['id' => 'stock', 'date' => '2026-11-19']]);
         $feed->shouldReceive('download')->andReturnNull();
-        $feed->shouldReceive('read')->andReturn([['GE0Q6NE09' => [
+        $feed->shouldReceive('read')->times(3)->andReturn([['GE0Q6NE09' => [
             'article' => 'GE0Q6NE09', 'name' => 'Urban', 'title' => 'Котлы и бойлеры Haier',
             'quantity' => 344, 'retail' => 2200, 'cost' => 1879, 'specs' => ['Тип' => 'Другой', 'Мощность, кВт' => '24'],
         ]], [], []]);
@@ -68,6 +68,7 @@ class TermTeploSupplierTest extends TestCase
         $this->assertFalse(Supplier::where('code', 'termteplosistem')->exists());
         $this->artisan('supplier:sync-termteplo --apply')->assertSuccessful();
         $this->artisan('supplier:sync-termteplo --apply')->assertSuccessful();
+        $this->artisan('supplier:sync-termteplo --apply --if-new')->expectsOutput('Ведомость и прайс уже обработаны.')->assertSuccessful();
         $offer = SupplierProduct::where('supplier_article', 'GE0Q6NE09')->sole();
         $this->assertEquals($card->id, $offer->product_id);
         $this->assertEquals(344, $offer->stock_quantity);

@@ -33,10 +33,18 @@ class TermTeploFeed
                 continue;
             }
             $date = CarbonImmutable::createFromFormat('!d.m.y', $match[1], 'Europe/Minsk');
-            if ($date->format('d.m.y') !== $match[1] || $date->isFuture()) {
+            if ($date->format('d.m.y') !== $match[1]) {
                 throw new RuntimeException("Проверьте дату файла {$name}");
             }
-            $files[$kind][$date->toDateString()][] = $id;
+            if ($date->isFuture()) {
+                continue;
+            }
+            $file = ['id' => $id, 'date' => $date->toDateString()];
+            $modified = trim($xpath->evaluate('string(.//*[contains(@class,"flip-entry-last-modified")])', $entry));
+            if ($modified !== '') {
+                $file['modified'] = $modified;
+            }
+            $files[$kind][$date->toDateString()][] = $file;
         }
         $result = [];
         foreach (['price', 'stock'] as $kind) {
@@ -46,7 +54,7 @@ class TermTeploFeed
             if ($date === null || count($dates[$date]) !== 1) {
                 throw new RuntimeException("Не удалось однозначно определить файл {$kind}");
             }
-            $result[$kind] = ['id' => $dates[$date][0], 'date' => $date];
+            $result[$kind] = $dates[$date][0];
         }
 
         return $result;
