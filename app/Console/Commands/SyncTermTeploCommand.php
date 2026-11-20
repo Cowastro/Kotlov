@@ -94,7 +94,8 @@ class SyncTermTeploCommand extends Command
             ->groupBy(fn ($card) => TermTeploModel::key($card->name, $card->brand?->name ?? '') ?? '')->forget('');
         $titles = collect($rows)->countBy(fn ($row) => $this->titleKey($row['name']));
         $articles = array_fill_keys(array_column($rows, 'article'), true);
-        $byTitle = $byArticle = [];
+        $byTitle = [];
+        $byArticle = $this->reviewedGasBoilerCards($rows);
         foreach (Product::select(['id', 'name', 'specs'])->lazyById(300) as $card) {
             $key = $this->titleKey($card->name);
             if ($key !== '' && ($titles[$key] ?? 0) === 1) {
@@ -177,6 +178,36 @@ class SyncTermTeploCommand extends Command
         $this->info("Связано с карточками KOTLOV: {$linked}");
         $this->line("metric.termteplo.linked={$linked}");
         $this->line('metric.termteplo.unlinked='.(count($rows) - $linked));
+    }
+
+    private function reviewedGasBoilerCards(array $rows): array
+    {
+        // Legacy storefront URLs sometimes encode the wrong power. Verify both catalog identities and titles.
+        $models = [
+            'PS-011.255' => ['2201356', 'D18'],
+            'PS-011.256' => ['2201357', 'D24'],
+            'PS-011.776' => ['2201358', 'D28'],
+            'PS-011.777' => ['2201359', 'D32'],
+            'PS-011.778' => ['2201360', 'D40'],
+            'PS-011.780' => ['2201383', 'D24 Atmo'],
+            'PS-011.782' => ['2201375', 'SB24'],
+            'PS-011.783' => ['2201376', 'SB28'],
+            'PS-011.784' => ['2201377', 'SB32'],
+            'PS-011.785' => ['2201378', 'SB40'],
+        ];
+        $matches = [];
+        foreach (Product::whereIn('sku', array_keys($models))->where('is_active', true)->where('is_archived', false)->get(['id', 'sku', 'name']) as $card) {
+            [$article, $model] = $models[$card->sku];
+            $row = $rows[$article] ?? null;
+            $title = 'Котел газовый отопительный водогрейный Arderia '.$model;
+            if ($row && $row['quantity'] > 0 && $row['retail'] > 0
+                && $this->titleKey($row['name']) === $this->titleKey($title)
+                && $this->titleKey($card->name) === $this->titleKey($title.', v3')) {
+                $matches[$article][] = $card->id;
+            }
+        }
+
+        return $matches;
     }
 
     private function titleKey(string $name): string
