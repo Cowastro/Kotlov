@@ -1216,6 +1216,9 @@ jobs:
             grep -E '^metric\.deal_order_inbox\.[a-z_]+=-?[0-9]+$' "$detail_log" || true
             echo "safe_deal_order_inbox_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-termteplo" ]]; then
+            grep -E '^metric\.termteplo\.(linked|unlinked)=[0-9]+$' "$detail_log" || true
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "deal:sync-brand-prices" ]]; then
             echo "safe_deal_brand_prices_begin"
             grep -E '^audit\.termteplo\.review=[0-9]+:(none|[0-9]+(,[0-9]+)*)$' "$detail_log" || true

@@ -92,13 +92,43 @@ class SyncTermTeploCommand extends Command
             ->orWhere('name', 'like', '%Haier%')->orWhere('name', 'like', '%KRATS%')->orWhere('name', 'like', '%Arderia%')
             ->orWhere('name', 'like', '%Хайер%')->get(['id', 'sku', 'name', 'brand_id'])
             ->groupBy(fn ($card) => TermTeploModel::key($card->name, $card->brand?->name ?? '') ?? '')->forget('');
+        $titles = collect($rows)->countBy(fn ($row) => $this->titleKey($row['name']));
+        $articles = array_fill_keys(array_column($rows, 'article'), true);
+        $byTitle = $byArticle = [];
+        foreach (Product::select(['id', 'name', 'specs'])->lazyById(300) as $card) {
+            $key = $this->titleKey($card->name);
+            if ($key !== '' && ($titles[$key] ?? 0) === 1) {
+                $byTitle[$key][] = $card->id;
+            }
+            foreach ($card->specs ?? [] as $label => $value) {
+                if (is_array($value)) {
+                    $label = $value['key'] ?? '';
+                    $value = $value['value'] ?? null;
+                }
+                if (in_array(mb_strtolower(trim((string) $label)), ['артикул', 'артикул производителя'], true)
+                    && is_scalar($value) && isset($articles[trim((string) $value)])) {
+                    $byArticle[trim((string) $value)][] = $card->id;
+                }
+            }
+            // The manufacturer identifies these v3 boilers by article. The feed omits the revision.
+            if (preg_match('/^(?:электрический кот[её]л|кот[её]л электрический) arderia e\s*(4|6|9|12|16|20|24),?\s+v3$/iu', trim($card->name), $m)) {
+                $article = [4 => '2202208', 6 => '2202209', 9 => '2202210', 12 => '2202211',
+                    16 => '2202212', 20 => '2202213', 24 => '2202214'][(int) $m[1]];
+                if (isset($rows[$article]) && TermTeploModel::key($rows[$article]['name'], $rows[$article]['title']) === 'arderia:E'.$m[1]) {
+                    $byArticle[$article][] = $card->id;
+                }
+            }
+        }
         foreach ($rows as $code => $row) {
             $offer = $existing->pull($code) ?? new SupplierProduct(['supplier_id' => $supplier->id, 'supplier_article' => $code]);
             $product = $offer->product_id ? Product::lockForUpdate()->find($offer->product_id) : null;
-            if (! $product && empty($offer->raw['no_auto_link']) && $row['article'] !== '' && $row['article'] !== '—') {
-                $ids = Product::where('sku', $row['article'])->pluck('id')->merge(
+            if (! $product && empty($offer->raw['no_auto_link'])) {
+                $ids = in_array($row['article'], ['', '—'], true) ? collect() : Product::where('sku', $row['article'])->pluck('id')->merge(
                     SupplierProduct::where('supplier_article', $row['article'])->whereNotNull('product_id')->pluck('product_id')
-                )->unique();
+                )->merge($byArticle[$row['article']] ?? [])->unique();
+                if ($ids->isEmpty()) {
+                    $ids = collect($byTitle[$this->titleKey($row['name'])] ?? []);
+                }
                 $product = $ids->count() === 1 ? Product::lockForUpdate()->find($ids->first()) : null;
                 $model = TermTeploModel::key($row['name'], $row['title']);
                 if ($ids->isEmpty() && $model && ($models[$model] ?? collect())->count() === 1
@@ -123,9 +153,10 @@ class SyncTermTeploCommand extends Command
                 $linked++;
                 $touched[] = $product->id;
                 $product->specs = HaierTechnicalCatalog::append($product->specs ?? [], $row['specs']);
-                if ($row['retail'] !== null && $product->operationalIntegrationProducts()->isEmpty()
+                if ($row['retail'] > 0 && $product->operationalIntegrationProducts()->isEmpty()
                     && ! $product->operationalSupplierProducts()->contains(fn ($item) => $item->supplier_id != $supplier->id)) {
                     $product->price = $row['retail'];
+                    $product->requires_price_confirmation = false;
                 }
                 if ($product->isDirty()) {
                     $product->save();
@@ -144,5 +175,14 @@ class SyncTermTeploCommand extends Command
         }
         app(SupplierProductAvailabilityService::class)->refreshMany(array_values(array_unique($touched)));
         $this->info("Связано с карточками KOTLOV: {$linked}");
+        $this->line("metric.termteplo.linked={$linked}");
+        $this->line('metric.termteplo.unlinked='.(count($rows) - $linked));
+    }
+
+    private function titleKey(string $name): string
+    {
+        $name = preg_replace('/\s+/u', ' ', trim(str_replace('ё', 'е', mb_strtolower($name))));
+
+        return preg_match('/(?:[a-zа-я]+[- ]?\d|\d[- ]?[a-zа-я]+)/u', $name) ? $name : '';
     }
 }
