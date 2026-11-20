@@ -7,6 +7,8 @@ use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\Orders\QuickOrderService;
 use Filament\Facades\Filament;
@@ -114,6 +116,17 @@ class QuickOrderActionTest extends TestCase
         ]);
         $similar = $this->product('OTHER', 100);
         $similar->update(['name' => 'Аналог PS-007.059']);
+        $supplier = Supplier::query()->create(['code' => 'quick-order-supplier', 'name' => 'Поставщик', 'is_active' => true]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id, 'product_id' => $meter->id, 'supplier_article' => 'METER',
+            'match_confidence' => 'manual_price_list', 'in_stock' => true, 'stock_quantity' => 12,
+            'last_stock_synced_at' => now(),
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id, 'product_id' => $similar->id, 'supplier_article' => 'SIMILAR',
+            'match_confidence' => 'manual_price_list', 'in_stock' => true,
+            'stock_status' => SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE,
+        ]);
 
         $api = 'https://api-kassa.evropochta.by/api/external/';
         Http::fake([
@@ -138,12 +151,19 @@ class QuickOrderActionTest extends TestCase
         $this->assertSame([$meter->id], array_keys($product->getSearchResults('элехант')));
         $this->assertSame([$meter->id], array_keys($product->getSearchResults('элех')));
         $this->assertSame([$meter->id], array_keys($product->getSearchResults("'kt[fyn")));
-        $this->assertArrayHasKey($similar->id, $product->getSearchResults('Аналог'));
+        $this->assertStringContainsString('В наличии: 12 шт.', $product->getSearchResults('Элехант')[$meter->id]);
+        $unknownStockLabel = $product->getSearchResults('Аналог')[$similar->id];
+        $this->assertStringContainsString('В наличии', $unknownStockLabel);
+        $this->assertStringNotContainsString('В наличии:', $unknownStockLabel);
 
         $base = 'mountedActions.0.data';
         $page->set($base.'.customer_name', 'Тест')->set($base.'.customer_phone', '+375291112233')
-            ->set($base.'.items.'.$row.'.product_id', (string) $meter->id)
-            ->set($base.'.delivery_type', 'evropochta')
+            ->set($base.'.items.'.$row.'.product_id', (string) $meter->id);
+        $selectedProduct = $page->instance()->getSchema($schemaName)->getComponent('items')
+            ->getChildSchema($row)->getComponent('product_id');
+        $this->assertStringContainsString('В наличии: 12 шт.', $selectedProduct->getOptionLabel());
+
+        $page->set($base.'.delivery_type', 'evropochta')
             ->assertSet($base.'.payment_type', 'evropochta_cod')
             ->assertSet($base.'.evropochta_price', null)
             ->set($base.'.evropochta_branch', '40930011')
