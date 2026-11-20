@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class OneCExchangeReportCommand extends Command
 {
-    protected $signature = 'onec:exchange-report {--days=4 : How many days of the journal to show}';
+    protected $signature = 'onec:exchange-report {--days=4 : How many days of the journal to show}
+        {--log= : Application log to scan (default storage/logs/laravel.log)}';
 
     protected $description = 'Show the recent 1C exchange runs and session files as safe audit lines';
 
@@ -79,7 +80,65 @@ class OneCExchangeReportCommand extends Command
             ]));
         }
 
+        $this->logErrors(max(1, (int) $this->option('days')));
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Errors of the application log in the window: time, exception class and the first frame in app/ —
+     * no message text. A request killed by the PHP time or memory limit shows up here and nowhere else.
+     */
+    private function logErrors(int $days): void
+    {
+        $path = (string) ($this->option('log') ?: storage_path('logs/laravel.log'));
+        if (! is_file($path)) {
+            return;
+        }
+
+        $handle = fopen($path, 'rb');
+        $size = filesize($path);
+        fseek($handle, max(0, $size - 60 * 1024 * 1024));
+        $since = now()->subDays($days)->format('Y-m-d H:i');
+        $current = null;
+        $entries = [];
+
+        while (($line = fgets($handle)) !== false) {
+            if (preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})[^\]]*\] \w+\.(ERROR|CRITICAL|ALERT|EMERGENCY):/', $line, $m)) {
+                if ($current) {
+                    $entries[] = $current;
+                }
+                $current = $m[1] >= $since ? ['at' => $m[1], 'head' => $line, 'frame' => null] : null;
+
+                continue;
+            }
+            if ($current && $current['frame'] === null && preg_match('#[\\\\/]app[\\\\/]([A-Za-z0-9_\\\\/]+\.php)[(:](\d+)#', $line, $f)) {
+                $current['frame'] = str_replace('\\', '/', $f[1]).':'.$f[2];
+            }
+        }
+        if ($current) {
+            $entries[] = $current;
+        }
+        fclose($handle);
+
+        foreach ($entries as $entry) {
+            $head = $entry['head'];
+            $kind = match (true) {
+                str_contains($head, 'Maximum execution time') => 'time_limit',
+                str_contains($head, 'Allowed memory size') => 'memory_limit',
+                (bool) preg_match('/\(([A-Za-z\\\\]+(Exception|Error))\(code/', $head, $c) => strtolower(str_replace('\\', '.', $c[1])),
+                default => 'other',
+            };
+            if (! $entry['frame'] && preg_match('#[\\\\/]app[\\\\/]([A-Za-z0-9_\\\\/]+\.php)[(:](\d+)#', $head, $f)) {
+                $entry['frame'] = str_replace('\\', '/', $f[1]).':'.$f[2];
+            }
+            $related = in_array($kind, ['time_limit', 'memory_limit'], true)
+                || preg_match('/OneC|CommerceMl|1c\/exchange|Integrations/i', $head.' '.$entry['frame']);
+            if (! $related) {
+                continue;
+            }
+            $this->line('audit.onec_exchange.log='.str_replace([' ', '-', ':'], '', $entry['at']).':'.$this->slug($kind).':'.$this->slug(strtolower((string) ($entry['frame'] ?: 'none'))));
+        }
     }
 
     private function errorCode(?string $message): string
