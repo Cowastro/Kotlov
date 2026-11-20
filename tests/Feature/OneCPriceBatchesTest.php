@@ -72,6 +72,25 @@ class OneCPriceBatchesTest extends TestCase
         $this->withToken($key)->postJson('/1c/agent/price-batches/'.$batch->id.'/result', ['ok' => true])->assertStatus(409);
     }
 
+    public function test_the_agent_on_powershell_2_gets_the_batch_as_plain_lines(): void
+    {
+        $service = app(OneCPriceBatches::class);
+        [, $key] = OneCAgentToken::issue('test', $this->admin->id);
+        $this->withToken($key)->get('/1c/agent/price-batches/next?format=lines')->assertOk()->assertSeeText('none');
+
+        $batch = $service->buildFromPriceless($this->admin);
+        $service->approve($batch, $this->admin);
+        $lines = explode("\n", trim($this->withToken($key)->get('/1c/agent/price-batches/next?format=lines')->assertOk()->getContent()));
+
+        $this->assertSame('batch|'.$batch->id, $lines[0]);
+        $this->assertSame('comment|Цены с сайта KOTLOV, пакет №'.$batch->id, $lines[1]);
+        $this->assertSame('currency|11867b41-09b8-11e9-bad6-1c1b0d1de7c2', $lines[2]);
+        $this->assertSame('type|7b0fbdc2-1ffa-11e9-bad6-1c1b0d1de7c2', $lines[3]);
+        $this->assertContains('row|adcaedcf-5146-11ea-a246-1c1b0d1de7c2|00000000-0000-0000-0000-000000000000|7b0fbdc2-1ffa-11e9-bad6-1c1b0d1de7c2|92.50|1|', $lines);
+        $this->assertContains('row|adcaedcf-5146-11ea-a246-1c1b0d1de7c2|00000000-0000-0000-0000-000000000000|a56e299d-d38a-11e9-a218-1c1b0d1de7c2|111.00|0|[РозничныйТипЦен]*1.2', $lines);
+        $this->assertSame('end', end($lines));
+    }
+
     public function test_a_wholesale_above_retail_blocks_the_batch_and_a_revoked_key_is_refused(): void
     {
         $service = app(OneCPriceBatches::class);
