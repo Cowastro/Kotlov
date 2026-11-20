@@ -56,6 +56,10 @@ class InstallerProfileForm
                             ->label('Верифицирован'),
                         Toggle::make('is_published')
                             ->label('Опубликован'),
+                        Toggle::make('lead_notifications')
+                            ->label('Присылать заявки на монтаж')
+                            ->helperText('Новые заявки из его региона приходят на e-mail профиля.')
+                            ->default(true),
                     ]),
 
                 // ── 2. Контакты ───────────────────────────────────────────

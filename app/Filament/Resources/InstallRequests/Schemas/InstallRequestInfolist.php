@@ -183,6 +183,14 @@ class InstallRequestInfolist
                             ->columnSpanFull(),
                     ]),
 
+                Section::make('Рассылка монтажникам')
+                    ->schema([
+                        TextEntry::make('leads_summary')
+                            ->hiddenLabel()
+                            ->state(fn ($record): HtmlString => self::leadsSummary($record))
+                            ->html(),
+                    ]),
+
                 Section::make('Служебное')
                     ->columns(2)
                     ->collapsed()
@@ -196,5 +204,31 @@ class InstallRequestInfolist
                     ]),
 
             ]);
+    }
+
+    /** Who the request was offered to by e-mail, who opened it and who took it. */
+    public static function leadsSummary($record): HtmlString
+    {
+        $leads = $record->leads()->with('installerProfile:id,company_name,contact_name,phone')->orderByRaw('taken_at is null')->orderBy('taken_at')->orderBy('id')->get();
+        if ($leads->isEmpty()) {
+            return new HtmlString(e($record->leads_sent_at ? 'Подходящих монтажников не нашлось.' : 'Заявку не рассылали монтажникам.'));
+        }
+
+        $time = fn ($at): string => $at ? $at->timezone(config('app.display_timezone', 'Europe/Minsk'))->format('d.m H:i') : '';
+        $rows = $leads->map(function ($lead) use ($time): string {
+            $profile = $lead->installerProfile;
+            $status = match (true) {
+                $lead->taken_at !== null => '<strong style="color:#15803d">взял '.$time($lead->taken_at).'</strong>',
+                $lead->opened_at !== null => 'открыл '.$time($lead->opened_at),
+                $lead->notified_at !== null => 'письмо '.$time($lead->notified_at),
+                default => 'не отправлено',
+            };
+
+            return '<li>'.e($profile?->display_name ?? '—').($profile?->phone ? ' · '.e($profile->phone) : '').' — '.$status.'</li>';
+        })->implode('');
+
+        $taken = $leads->whereNotNull('taken_at')->count();
+
+        return new HtmlString('<p style="margin:0 0 6px">Отправлено: '.$leads->whereNotNull('notified_at')->count().', открыли: '.$leads->whereNotNull('opened_at')->count().', взяли: '.$taken.'</p><ul style="margin:0;padding-left:18px">'.$rows.'</ul>');
     }
 }
