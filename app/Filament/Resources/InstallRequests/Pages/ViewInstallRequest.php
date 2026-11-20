@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\InstallRequests\Pages;
 
+use App\Filament\Resources\InstallRequests\Actions\SendToInstallersAction;
 use App\Filament\Resources\InstallRequests\InstallRequestResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -13,6 +14,7 @@ class ViewInstallRequest extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            SendToInstallersAction::make(),
             EditAction::make(),
         ];
     }

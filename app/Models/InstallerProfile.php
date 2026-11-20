@@ -52,6 +52,7 @@ class InstallerProfile extends Model
         'certificate_files',
         'is_published',
         'status',
+        'lead_notifications',
         'priority_until',
 
         // Верификация и рейтинг
@@ -76,6 +77,7 @@ class InstallerProfile extends Model
         'is_verified' => 'boolean',
         'is_published' => 'boolean',
         'nationwide' => 'boolean',
+        'lead_notifications' => 'boolean',
         'priority_until' => 'datetime',
         'b2b_invited_at' => 'datetime',
 

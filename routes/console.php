@@ -585,3 +585,10 @@ Artisan::command('orders:send-status-sms', function (\App\Services\Orders\OrderS
 })->purpose('Send order status SMS to customers');
 
 Schedule::command('orders:send-status-sms')->everyMinute()->withoutOverlapping(15)->runInBackground();
+
+// New requests for installation are offered to the matching installers by e-mail (the first three who take one get the contacts).
+Schedule::command('installers:send-leads')
+    ->everyMinute()
+    ->withoutOverlapping(10)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/installer-leads.log'));

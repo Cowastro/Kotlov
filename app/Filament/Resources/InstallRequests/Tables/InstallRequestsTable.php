@@ -4,6 +4,7 @@ namespace App\Filament\Resources\InstallRequests\Tables;
 
 use App\Models\InstallerProfile;
 use App\Support\AdminPhoneLinks;
+use App\Filament\Resources\InstallRequests\Actions\SendToInstallersAction;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -196,6 +197,7 @@ class InstallRequestsTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                SendToInstallersAction::make(),
                 Action::make('accepted')
                     ->label('Принята')
                     ->icon('heroicon-o-phone')
