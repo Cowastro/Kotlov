@@ -1247,6 +1247,11 @@ jobs:
             grep -E '^audit\.copy_card\.(plan=[0-9]+:[0-9]+:images[0-9]+:specs[0-9]+:text[0-9]+:brand[0-9]+|done=[0-9]+|skipped=[0-9]+:[a-z_]+)$' "$detail_log" || true
             echo "safe_copy_card_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "integration:identity-collisions" ]]; then
+            echo "safe_onec_collisions_begin"
+            grep -E '^(metric\.onec_collisions\.[a-z_]+=[0-9]+|audit\.onec_collisions\.(group=[0-9]+:[a-z_]+~[a-z0-9-]+(,[a-z_]+~[a-z0-9-]+)*:rows=[0-9]+:cards=[0-9]+:char=[01]|row=[0-9]+:[0-9]+:[a-z0-9-]+:[a-z0-9-]+:[a-z_]+:-?[0-9]+:[0-9]+:[0-9]+))$' "$detail_log" || true
+            echo "safe_onec_collisions_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "onec:exchange-report" ]]; then
             echo "safe_onec_exchange_begin"
             grep -E '^audit\.onec_exchange\.(source=[0-9]+:[a-z0-9_.-]+:auth=([0-9]{12}|never)|run=[0-9]+(:[a-z0-9_.-]+){4}:[0-9]{1,12}:[0-9]{1,12}:files=[0-9]+:bytes=[0-9]+:items=[0-9]+:orders=[0-9]+:error=[a-z0-9_]+|file=[a-z0-9_.-]+:[a-z0-9_.-]{1,8}:[a-z0-9_.-]+:[0-9]+:[0-9]{12}:received=[01]|log=[0-9]{12}:[a-z0-9_.-]+:[a-z0-9_.-]+)$' "$detail_log" || true
