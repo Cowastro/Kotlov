@@ -6,7 +6,9 @@ use App\Filament\Resources\OneCAgentTasks\Actions\IssueAgentKeyAction;
 use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCPriceBatches;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Enums\Width;
 use Illuminate\Contracts\Support\Htmlable;
@@ -44,7 +46,18 @@ class ListOneCAgentTasks extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('prices')->label('Цены для 1С')->icon('heroicon-o-currency-dollar')->color('gray')
+            Action::make('buildPriceless')
+                ->label('Цены: товары без цены')
+                ->icon('heroicon-o-sparkles')
+                ->requiresConfirmation()
+                ->modalHeading('Сформировать пакет из товаров 1С без цены?')
+                ->modalDescription('В пакет попадут товары с остатком, у которых в 1С нет цены и розница прошла проверку (наценка к закупке, рынок). Опт — розница −20 %, не ниже закупки +5 %. Цены можно будет поправить перед отправкой.')
+                ->action(function (): void {
+                    $batch = app(OneCPriceBatches::class)->buildFromPriceless(auth()->user());
+                    Notification::make()->success()->title('Пакет №'.$batch->id.' сформирован: товаров '.$batch->items_count)->send();
+                    $this->redirect(OneCPriceBatchResource::getUrl('view', ['record' => $batch]));
+                }),
+            Action::make('prices')->label('Пакеты цен')->icon('heroicon-o-currency-dollar')->color('gray')
                 ->url(OneCPriceBatchResource::getUrl('index')),
             Action::make('download')->label('Скачать агента')->icon('heroicon-o-arrow-down-tray')->color('gray')
                 ->url(url('/downloads/onec-agent/agent.ps1'))->openUrlInNewTab(),

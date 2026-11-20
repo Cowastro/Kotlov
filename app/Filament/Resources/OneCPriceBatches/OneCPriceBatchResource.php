@@ -32,6 +32,9 @@ class OneCPriceBatchResource extends Resource
 
     protected static ?int $navigationSort = 13;
 
+    /** Reached from «Мост 1С»: one menu entry for everything that goes to 1C. */
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function getNavigationGroup(): ?string
     {
         return 'Интеграции';
