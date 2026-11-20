@@ -177,6 +177,11 @@ Route::get('/admin/purchase-price-sources/{source}/attachment', ProductPurchaseP
     ->middleware('auth')
     ->name('admin.purchase-price-sources.attachment');
 
+Route::get('/admin/price-proposals/{file}', \App\Http\Controllers\PriceProposalDownloadController::class)
+    ->where('file', '[a-z0-9-]+\.xlsx')
+    ->middleware('auth')
+    ->name('admin.price-proposals.download');
+
 Route::get('/admin/market-research-reports/{marketResearchReport}/pdf', MarketResearchReportPdfController::class)
     ->middleware('auth')
     ->name('admin.market-research-reports.pdf');

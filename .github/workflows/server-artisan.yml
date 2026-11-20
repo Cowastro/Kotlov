@@ -1258,6 +1258,11 @@ jobs:
             grep -E '^(metric\.priceless_stock\.[a-z_]+=[0-9]+|audit\.priceless_stock\.row=[a-z0-9-]+:[a-z0-9-]+:[0-9]+:[0-9]+:[0-9]+\.[0-9]{2}:[01])$' "$detail_log" || true
             echo "safe_priceless_stock_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "integration:propose-priceless-prices" ]]; then
+            echo "safe_price_proposal_begin"
+            grep -E '^(metric\.price_proposal\.[a-z_]+=[0-9]+|audit\.price_proposal\.file=[a-z0-9-]+\.xlsx)$' "$detail_log" || true
+            echo "safe_price_proposal_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "onec:exchange-report" ]]; then
             echo "safe_onec_exchange_begin"
             grep -E '^audit\.onec_exchange\.(source=[0-9]+:[a-z0-9_.-]+:auth=([0-9]{12}|never)|run=[0-9]+(:[a-z0-9_.-]+){4}:[0-9]{1,12}:[0-9]{1,12}:files=[0-9]+:bytes=[0-9]+:items=[0-9]+:orders=[0-9]+:error=[a-z0-9_]+|file=[a-z0-9_.-]+:[a-z0-9_.-]{1,8}:[a-z0-9_.-]+:[0-9]+:[0-9]{12}:received=[01]|log=[0-9]{12}:[a-z0-9_.-]+:[a-z0-9_.-]+)$' "$detail_log" || true
