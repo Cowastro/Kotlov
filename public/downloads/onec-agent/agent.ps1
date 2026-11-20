@@ -1,6 +1,6 @@
 ﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 3: «Мост 1С».
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
-# Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; odata_read — read-only lists of 1C.
+# Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; odata_read, doc_status — read-only lists of 1C.
 #   agent.ps1 -Check   read-only check: the site key and the 1C OData user work
 #   agent.ps1          one run (the scheduler starts it every 5 minutes): does every task waiting in the queue
 param([switch]$Check)
@@ -192,6 +192,7 @@ for ($round = 0; $round -lt 20; $round++) {
         switch ($type) {
             'price_batch' { $data = Do-PriceBatch $lines }
             'odata_read' { $data = Do-ODataRead $id $lines }
+            'doc_status' { $data = Do-ODataRead $id $lines }
             default { throw ('Агент версии ' + $AgentVersion + ' не умеет задачи «' + $type + '»: обновите agent.ps1 с сайта') }
         }
         $form = @('ok=1') + $data

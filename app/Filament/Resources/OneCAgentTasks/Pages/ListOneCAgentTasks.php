@@ -5,6 +5,7 @@ namespace App\Filament\Resources\OneCAgentTasks\Pages;
 use App\Filament\Resources\OneCAgentTasks\Actions\IssueAgentKeyAction;
 use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
+use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCPriceBatches;
@@ -72,6 +73,16 @@ class ListOneCAgentTasks extends ListRecords
                     } catch (\DomainException $e) {
                         Notification::make()->warning()->title($e->getMessage())->send();
                     }
+                }),
+            Action::make('checkDocuments')
+                ->label('Сверить с 1С')
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->action(function (): void {
+                    $task = app(DocumentStatusTaskHandler::class)->enqueueCheck(auth()->user());
+                    $task
+                        ? Notification::make()->success()->title('Агент проверит документы в 1С за 5 минут')->send()
+                        : Notification::make()->info()->title('Все документы уже проведены, или проверка уже в очереди')->send();
                 }),
             Action::make('prices')->label('Пакеты цен')->icon('heroicon-o-currency-dollar')->color('gray')
                 ->url(OneCPriceBatchResource::getUrl('index')),

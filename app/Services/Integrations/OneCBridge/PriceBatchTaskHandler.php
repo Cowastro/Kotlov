@@ -59,7 +59,19 @@ class PriceBatchTaskHandler implements OneCAgentTaskHandler
             ]);
         }
 
-        return $result['ok'] ? 'Документ '.($batch->onec_document_number ?: 'создан').', не проведён' : null;
+        return $result['ok'] ? self::documentSummary($batch) : null;
+    }
+
+    /** «Документ УТ-00000017, проведён» — as 1C last said. */
+    public static function documentSummary(OneCPriceBatch $batch): string
+    {
+        $state = match (true) {
+            (bool) $batch->onec_deleted => 'помечен на удаление',
+            (bool) $batch->onec_posted => 'проведён',
+            default => 'не проведён',
+        };
+
+        return 'Документ '.($batch->onec_document_number ?: 'создан').', '.$state;
     }
 
     public function requeued(OneCAgentTask $task): void

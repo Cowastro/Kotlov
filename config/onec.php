@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 
@@ -28,6 +29,7 @@ return [
         'handlers' => [
             'price_batch' => PriceBatchTaskHandler::class,
             'odata_read' => ODataReadTaskHandler::class,
+            'doc_status' => DocumentStatusTaskHandler::class,
         ],
     ],
 

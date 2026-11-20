@@ -40,7 +40,7 @@ class ViewOneCAgentTask extends ViewRecord
                 TextEntry::make('error')->label('Ошибка')->columnSpanFull()->visible(fn (OneCAgentTask $record): bool => filled($record->error)),
             ]),
         ];
-        if ($this->record->type === ODataReadTaskHandler::TYPE) {
+        if (in_array($this->record->type, [ODataReadTaskHandler::TYPE, 'doc_status'], true)) {
             foreach (array_keys((array) data_get($this->record->payload, 'queries', [])) as $name) {
                 $sections[] = Section::make($name)->collapsible()
                     ->schema([TextEntry::make('part_'.$name)->hiddenLabel()->state(fn (OneCAgentTask $record) => $this->part($record, $name))]);

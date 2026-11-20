@@ -74,7 +74,7 @@ class ODataReadTaskHandler implements OneCAgentTaskHandler
     {
         DB::transaction(function () use ($task, $name, $code, $body): void {
             $task = OneCAgentTask::query()->lockForUpdate()->findOrFail($task->id);
-            if ($task->type !== self::TYPE || $task->status !== OneCAgentTask::SENDING) {
+            if (! in_array($task->type, [self::TYPE, DocumentStatusTaskHandler::TYPE], true) || $task->status !== OneCAgentTask::SENDING) {
                 throw new DomainException('Задача не ждёт данных агента.');
             }
             if (! array_key_exists($name, (array) data_get($task->payload, 'queries', []))) {
