@@ -5,6 +5,8 @@ namespace App\Filament\Resources\OneCAgentTasks\Pages;
 use App\Filament\Resources\OneCAgentTasks\Actions\IssueAgentKeyAction;
 use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
+use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
+use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCPriceBatches;
 use Filament\Actions\Action;
@@ -56,6 +58,31 @@ class ListOneCAgentTasks extends ListRecords
                     $batch = app(OneCPriceBatches::class)->buildFromPriceless(auth()->user());
                     Notification::make()->success()->title('Пакет №'.$batch->id.' сформирован: товаров '.$batch->items_count)->send();
                     $this->redirect(OneCPriceBatchResource::getUrl('view', ['record' => $batch]));
+                }),
+            Action::make('readOrderReferences')
+                ->label('Прочитать справочники 1С')
+                ->icon('heroicon-o-magnifying-glass')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Прочитать справочники 1С для заказов?')
+                ->modalDescription('Агент только читает: организации, склады, партнёр «Розничный покупатель», соглашения, ставки НДС, валюты и пример «Заказа клиента». В 1С ничего не меняется. Результат откроется в задаче.')
+                ->action(function (): void {
+                    try {
+                        $task = app(ODataReadTaskHandler::class)->enqueueOrderReferences(auth()->user());
+                        Notification::make()->success()->title('Задача №'.$task->id.' в очереди: агент прочитает за 5 минут')->send();
+                    } catch (\DomainException $e) {
+                        Notification::make()->warning()->title($e->getMessage())->send();
+                    }
+                }),
+            Action::make('checkDocuments')
+                ->label('Сверить с 1С')
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->action(function (): void {
+                    $task = app(DocumentStatusTaskHandler::class)->enqueueCheck(auth()->user());
+                    $task
+                        ? Notification::make()->success()->title('Агент проверит документы в 1С за 5 минут')->send()
+                        : Notification::make()->info()->title('Все документы уже проведены, или проверка уже в очереди')->send();
                 }),
             Action::make('prices')->label('Пакеты цен')->icon('heroicon-o-currency-dollar')->color('gray')
                 ->url(OneCPriceBatchResource::getUrl('index')),

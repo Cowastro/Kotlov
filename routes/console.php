@@ -621,3 +621,9 @@ Schedule::command('integration:rematch-source onec')
     ->withoutOverlapping(120)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/integration-rematch.log'));
+
+// «Мост 1С»: the site learns which of the documents the agent created the accountant has posted.
+Schedule::command('onec:check-documents')
+    ->everyThirtyMinutes()
+    ->between('07:00', '22:00')
+    ->withoutOverlapping(10);

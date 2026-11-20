@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\OneCAgentTasks\Pages\ListOneCAgentTasks;
+use App\Filament\Resources\OneCAgentTasks\Pages\ViewOneCAgentTask;
 use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
@@ -12,9 +13,12 @@ use App\Models\OneCAgentToken;
 use App\Models\OneCPriceBatch;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCPriceBatches;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -45,6 +49,12 @@ class OneCBridgeTest extends TestCase
         $batches->approve($batch, $this->admin);
 
         return $batch->fresh();
+    }
+
+    private function sendPart(string $uri, string $body): TestResponse
+    {
+        return $this->call('POST', $uri, [], [], [], ['HTTP_AUTHORIZATION' => 'Bearer '.$this->key, 'HTTP_X_KOTLOV_AGENT' => '3',
+            'CONTENT_TYPE' => 'application/octet-stream'], $body);
     }
 
     private function agent(): static
@@ -136,6 +146,63 @@ class OneCBridgeTest extends TestCase
         $this->assertSame($batch->id, $task->subject_id);
         (require database_path('migrations/2026_11_21_110000_backfill_onec_bridge_history.php'))->up();
         $this->assertSame(1, OneCAgentTask::query()->count());
+    }
+
+    public function test_the_agent_reads_1c_lists_for_orders_and_the_answers_show_in_the_task(): void
+    {
+        Storage::fake('local');
+        $this->actingAs($this->admin);
+        Livewire::test(ListOneCAgentTasks::class)->callAction('readOrderReferences')->assertHasNoActionErrors();
+        $task = OneCAgentTask::query()->sole();
+        $this->assertNull($task->subject_id);
+
+        $lines = explode("\n", trim($this->agent()->get('/1c/agent/tasks/next')->assertOk()->getContent()));
+        $this->assertSame('task|'.$task->id.'|odata_read', $lines[0]);
+        $this->assertContains('get|warehouses|Catalog_%D0%A1%D0%BA%D0%BB%D0%B0%D0%B4%D1%8B?$format=json&$select=Ref_Key%2CDescription%2CIsFolder%2CDeletionMark&$top=300', $lines);
+        foreach (array_slice($lines, 1, -1) as $line) {
+            $this->assertMatchesRegularExpression('/^get\|[a-z0-9_]+\|[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$/', $line);
+        }
+
+        $body = json_encode(['value' => [['Ref_Key' => 'aaaaaaaa-0000-0000-0000-000000000001', 'Description' => 'Основной склад', 'IsFolder' => false]]], JSON_UNESCAPED_UNICODE);
+        $this->sendPart('/1c/agent/tasks/'.$task->id.'/part?name=warehouses&code=200', $body)->assertOk();
+        $this->sendPart('/1c/agent/tasks/'.$task->id.'/part?name=vat_rates&code=404', '{"odata.error":{"message":{"value":"Нет такого"}}}')->assertOk();
+        $this->sendPart('/1c/agent/tasks/'.$task->id.'/part?name=passwords&code=200', '{}')->assertStatus(409);
+        $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1', 'read' => '1'])->assertOk();
+        $this->assertSame('Прочитано 1 из 8', $task->fresh()->summary);
+
+        Livewire::test(ViewOneCAgentTask::class, ['record' => $task->getRouteKey()])
+            ->assertOk()->assertSee('Основной склад')->assertSee('aaaaaaaa-0000-0000-0000-000000000001')->assertSee('Нет такого');
+    }
+
+    public function test_the_site_learns_from_1c_that_the_accountant_posted_the_price_document(): void
+    {
+        Storage::fake('local');
+        $batch = $this->approvedBatch();
+        $priceTask = OneCAgentTask::query()->sole();
+        $this->agent()->get('/1c/agent/tasks/next')->assertOk();
+        $this->agent()->post('/1c/agent/tasks/'.$priceTask->id.'/result', ['ok' => '1', 'document_number' => 'УТ-00000017',
+            'document_key' => '29E03C60-E292-11F1-8C60-1C1B0D1DE7C2'])->assertOk();
+        $this->assertSame('Документ УТ-00000017, не проведён', $priceTask->fresh()->summary);
+
+        $this->artisan('onec:check-documents')->expectsOutputToContain('metric.onec_check_documents.queued=')->assertSuccessful();
+        $check = OneCAgentTask::query()->where('type', 'doc_status')->sole();
+        $lines = explode("\n", trim($this->agent()->get('/1c/agent/tasks/next')->assertOk()->getContent()));
+        $this->assertSame('task|'.$check->id.'|doc_status', $lines[0]);
+        $this->assertMatchesRegularExpression('/^get\|prices_1\|[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$/', $lines[1]);
+        $this->assertStringContainsString(rawurlencode("Ref_Key eq guid'29e03c60-e292-11f1-8c60-1c1b0d1de7c2'"), $lines[1]);
+
+        $this->sendPart('/1c/agent/tasks/'.$check->id.'/part?name=prices_1&code=200', json_encode(['value' => [
+            ['Ref_Key' => '29e03c60-e292-11f1-8c60-1c1b0d1de7c2', 'Number' => 'УТ-00000017', 'Posted' => true, 'DeletionMark' => false],
+        ]]))->assertOk();
+        $this->agent()->post('/1c/agent/tasks/'.$check->id.'/result', ['ok' => '1'])->assertOk();
+
+        $this->assertTrue($batch->fresh()->onec_posted);
+        $this->assertSame('Документ УТ-00000017, проведён', $priceTask->fresh()->summary);
+        $this->assertSame('Проверено 1, проведено 1', $check->fresh()->summary);
+        // Posted documents are not asked about again, and done checks do not clutter the bridge.
+        $this->assertNull(app(DocumentStatusTaskHandler::class)->enqueueCheck(null));
+        $this->actingAs($this->admin);
+        Livewire::test(ListOneCAgentTasks::class)->assertCanSeeTableRecords([$priceTask])->assertCanNotSeeTableRecords([$check]);
     }
 
     public function test_the_first_agent_still_gets_price_batches_and_the_panel_asks_to_update_it(): void

@@ -6,6 +6,7 @@ use App\Filament\Resources\OneCPriceBatches\Pages\ListOneCPriceBatches;
 use App\Filament\Resources\OneCPriceBatches\Pages\ViewOneCPriceBatch;
 use App\Filament\Resources\OneCPriceBatches\RelationManagers\ItemsRelationManager;
 use App\Models\OneCPriceBatch;
+use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
@@ -69,7 +70,8 @@ class OneCPriceBatchResource extends Resource
                     ->color(fn (string $state): string => self::color($state)),
                 TextEntry::make('items_count')->label('Товаров')->state(fn (OneCPriceBatch $record): int => $record->items()->count()),
                 TextEntry::make('onec_document_number')->label('Документ в 1С')->placeholder('—')
-                    ->helperText('«Установка цен номенклатуры», не проведён: бухгалтер проверяет и проводит.'),
+                    ->formatStateUsing(fn (OneCPriceBatch $record): string => PriceBatchTaskHandler::documentSummary($record))
+                    ->helperText('«Установка цен номенклатуры»: бухгалтер проверяет и проводит. Состояние сайт сверяет с 1С каждые полчаса.'),
                 TextEntry::make('creator.name')->label('Сформировал')->placeholder('—'),
                 TextEntry::make('approved_at')->label('Отправлен')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('—'),
                 TextEntry::make('finished_at')->label('Ответ агента')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('—'),
@@ -88,7 +90,8 @@ class OneCPriceBatchResource extends Resource
                     ->formatStateUsing(fn (string $state): string => OneCPriceBatch::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => self::color($state)),
                 TextColumn::make('items_count')->label('Товаров')->counts('items')->alignRight(),
-                TextColumn::make('onec_document_number')->label('Документ 1С')->placeholder('—'),
+                TextColumn::make('onec_document_number')->label('Документ 1С')->placeholder('—')
+                    ->formatStateUsing(fn (OneCPriceBatch $record): string => PriceBatchTaskHandler::documentSummary($record)),
                 TextColumn::make('comment')->label('Комментарий')->limit(60)->placeholder('—'),
             ])
             ->defaultSort('id', 'desc')

@@ -33,13 +33,16 @@ class OneCPriceBatch extends Model
 
     protected $fillable = [
         'status', 'comment', 'created_by', 'approved_by', 'approved_at', 'picked_at', 'finished_at',
-        'onec_document_number', 'onec_document_key', 'error',
+        'onec_document_number', 'onec_document_key', 'onec_posted', 'onec_deleted', 'onec_checked_at', 'error',
     ];
 
     protected $casts = [
         'approved_at' => 'datetime',
         'picked_at' => 'datetime',
         'finished_at' => 'datetime',
+        'onec_checked_at' => 'datetime',
+        'onec_posted' => 'boolean',
+        'onec_deleted' => 'boolean',
     ];
 
     public function items(): HasMany

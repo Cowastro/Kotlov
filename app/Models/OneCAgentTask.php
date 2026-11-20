@@ -32,7 +32,7 @@ class OneCAgentTask extends Model
     protected $table = 'onec_agent_tasks';
 
     protected $fillable = [
-        'type', 'subject_type', 'subject_id', 'title', 'status', 'attempts', 'created_by',
+        'type', 'subject_type', 'subject_id', 'title', 'payload', 'status', 'attempts', 'created_by',
         'picked_at', 'finished_at', 'summary', 'result', 'error',
     ];
 
@@ -40,6 +40,7 @@ class OneCAgentTask extends Model
         'picked_at' => 'datetime',
         'finished_at' => 'datetime',
         'result' => 'array',
+        'payload' => 'array',
         'attempts' => 'integer',
     ];
 

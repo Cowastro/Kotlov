@@ -3,11 +3,15 @@
 namespace App\Filament\Resources\OneCAgentTasks;
 
 use App\Filament\Resources\OneCAgentTasks\Pages\ListOneCAgentTasks;
+use App\Filament\Resources\OneCAgentTasks\Pages\ViewOneCAgentTask;
 use App\Models\OneCAgentTask;
+use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
+use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use BackedEnum;
 use DomainException;
 use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
@@ -104,9 +108,12 @@ class OneCAgentTaskResource extends Resource
                 SelectFilter::make('status')->label('Состояние')->options(OneCAgentTask::STATUSES),
                 SelectFilter::make('type')->label('Что')->options(fn (): array => $tasks->types()),
             ])
+            // The regular checks of document states are many and say nothing new; only a failed one is shown.
+            ->modifyQueryUsing(fn ($query) => $query->whereNot(fn ($q) => $q->where('type', DocumentStatusTaskHandler::TYPE)->where('status', OneCAgentTask::DONE)))
             ->defaultSort('id', 'desc')
             ->poll('30s')
             ->recordActions([
+                ViewAction::make()->visible(fn (OneCAgentTask $record): bool => in_array($record->type, [ODataReadTaskHandler::TYPE, DocumentStatusTaskHandler::TYPE], true)),
                 Action::make('retry')->label('Повторить')->icon('heroicon-o-arrow-path')
                     ->visible(fn (OneCAgentTask $record): bool => $record->status === OneCAgentTask::FAILED)
                     ->requiresConfirmation()
@@ -124,6 +131,7 @@ class OneCAgentTaskResource extends Resource
     {
         return [
             'index' => ListOneCAgentTasks::route('/'),
+            'view' => ViewOneCAgentTask::route('/{record}'),
         ];
     }
 

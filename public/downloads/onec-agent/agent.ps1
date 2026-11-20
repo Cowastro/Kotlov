@@ -1,12 +1,12 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 2: «Мост 1С».
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 3: «Мост 1С».
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
-# Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры».
+# Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; odata_read, doc_status — read-only lists of 1C.
 #   agent.ps1 -Check   read-only check: the site key and the 1C OData user work
 #   agent.ps1          one run (the scheduler starts it every 5 minutes): does every task waiting in the queue
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '2'
+$AgentVersion = '3'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -136,6 +136,25 @@ function Do-PriceBatch([string[]]$lines) {
     return @(('document_number=' + $number), ('document_key=' + $key))
 }
 
+# ---- odata_read: GET the 1C lists the site asked for and upload each answer as it is (read only) ----
+function Do-ODataRead([string]$id, [string[]]$lines) {
+    $n = 0
+    foreach ($l in $lines) {
+        $p = $l.Split('|')
+        if ($p[0] -ne 'get') { continue }
+        $name = $p[1]; $path = $p[2]
+        # Only a path inside the OData publication: no other host, no other folder.
+        if ($name -notmatch '^[a-z0-9_]+$' -or $path -notmatch '^[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$') { throw ('Недопустимый запрос: ' + $name) }
+        $code = Invoke-Curl ($OData + $path) 'GET' @('Accept: application/json') $ODataUser $null @() $Out
+        $up = Join-Path $Root 'last-upload.txt'
+        $sent = Invoke-Curl ($Site + '/1c/agent/tasks/' + $id + '/part?name=' + $name + '&code=' + $code) 'POST' ($SiteHeaders + @('Content-Type: application/octet-stream')) $null $Out @() $up
+        if ($sent -ne '200') { throw ('Сайт не принял «' + $name + '»: ' + $sent + ' ' + (Read-Answer $up)) }
+        Log ('  ' + $name + ': 1С ответила ' + $code)
+        if ($code -eq '200') { $n++ }
+    }
+    return @(('read=' + $n))
+}
+
 # Sends the result; the «done» file (what was already created in 1C) is kept until the site has accepted it.
 function Send-Result([string]$id, [string[]]$form, [string]$doneFile) {
     $code = Invoke-Curl ($Site + '/1c/agent/tasks/' + $id + '/result') 'POST' $SiteHeaders $null $null $form $Out
@@ -172,6 +191,8 @@ for ($round = 0; $round -lt 20; $round++) {
     try {
         switch ($type) {
             'price_batch' { $data = Do-PriceBatch $lines }
+            'odata_read' { $data = Do-ODataRead $id $lines }
+            'doc_status' { $data = Do-ODataRead $id $lines }
             default { throw ('Агент версии ' + $AgentVersion + ' не умеет задачи «' + $type + '»: обновите agent.ps1 с сайта') }
         }
         $form = @('ok=1') + $data
