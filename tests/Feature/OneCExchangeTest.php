@@ -1271,6 +1271,44 @@ XML;
         ]);
     }
 
+    public function test_an_unchanged_row_keeps_its_name_suggestion_but_still_links_by_an_exact_code(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Каталог><Товары><Товар>
+    <Ид>speed-onec-id</Ид>
+    <Артикул>SPEED-777</Артикул>
+    <Наименование>Котёл пеллетный Скорость 25 кВт</Наименование>
+  </Товар></Товары></Каталог>
+</КоммерческаяИнформация>
+XML;
+        $importer = app(CommerceMlCatalogImporter::class);
+        $importer->import($xml);
+        $item = IntegrationProduct::query()->where('external_id', 'speed-onec-id')->firstOrFail();
+        $this->assertSame('unmatched', $item->match_status);
+
+        // A card with the same name appears: an unchanged row is not re-matched by name during the exchange…
+        $card = $this->createProduct(['sku' => 'CARD-1', 'name' => 'Котёл пеллетный Скорость 25 кВт', 'slug' => 'speed-card']);
+        $importer->import($xml);
+        $this->assertSame('unmatched', $item->fresh()->match_status);
+
+        // …the nightly rematch suggests it,
+        $importer->rematchSource('onec');
+        $this->assertSame('suggested', $item->fresh()->match_status);
+
+        // a changed 1C name is matched at once,
+        $item->forceFill(['match_status' => 'unmatched', 'match_method' => null, 'candidates' => null])->save();
+        $importer->import(str_replace('25 кВт</Наименование>', '25 кВт </Наименование>', str_replace('Котёл пеллетный', 'Котел пеллетный', $xml)));
+        $this->assertSame('suggested', $item->fresh()->match_status);
+
+        // and an exact article always links, changed or not.
+        $card->update(['sku' => 'SPEED-777']);
+        $importer->import(str_replace('Котёл пеллетный', 'Котел пеллетный', $xml));
+        $this->assertSame($card->id, $item->fresh()->product_id);
+        $this->assertSame('matched', $item->fresh()->match_status);
+    }
+
     public function test_catalog_item_reads_onec_code_and_links_it_to_existing_sku(): void
     {
         $product = $this->createProduct([

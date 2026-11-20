@@ -592,3 +592,11 @@ Schedule::command('installers:send-leads')
     ->withoutOverlapping(10)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/installer-leads.log'));
+
+// The 1C exchange matches by name only new or changed rows (a full pass outlived the web request); the
+// suggestions of the rest are refreshed at night, when new site cards may have appeared.
+Schedule::command('integration:rematch-source onec')
+    ->dailyAt('03:40')
+    ->withoutOverlapping(120)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/integration-rematch.log'));

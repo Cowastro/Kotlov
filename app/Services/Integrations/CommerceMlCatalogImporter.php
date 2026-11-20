@@ -294,7 +294,7 @@ class CommerceMlCatalogImporter
         if (! $item->product_id
             && $item->match_status !== 'ignored'
             && ! $this->hasUnchangedResearchDispute($item)) {
-            $item->fill($this->match($item));
+            $item->fill($this->match($item, $this->needsNameMatching($item, $alreadyExists)));
         }
 
         $item->save();
@@ -369,7 +369,7 @@ class CommerceMlCatalogImporter
         if (! $item->product_id
             && $item->match_status !== 'ignored'
             && ! $this->hasUnchangedResearchDispute($item)) {
-            $item->fill($this->match($item));
+            $item->fill($this->match($item, $this->needsNameMatching($item, $alreadyExists)));
         }
 
         $item->save();
@@ -552,7 +552,21 @@ class CommerceMlCatalogImporter
     }
 
     /** @return array<string, mixed> */
-    private function match(IntegrationProduct $item): array
+    /**
+     * Fuzzy name matching compares a row with hundreds of cards (similar_text) and made a full 1C catalogue
+     * outlive the web request time limit once the site had tens of thousands of cards. During an exchange
+     * it runs only for a new row, a row whose name or identifiers changed in 1C, or one never matched; the
+     * rest keep their suggestions until the nightly integration:rematch-source (or the admin button).
+     */
+    private function needsNameMatching(IntegrationProduct $item, bool $alreadyExists): bool
+    {
+        return ! $alreadyExists
+            || $item->match_status === null
+            || $item->isDirty(['name', 'external_sku', 'external_code', 'barcode']);
+    }
+
+    /** @param bool $byName false: only exact identifiers; without one the row keeps its current suggestion */
+    private function match(IntegrationProduct $item, bool $byName = true): array
     {
         $exactMatches = collect([
             'article' => $item->external_sku,
@@ -601,6 +615,10 @@ class CommerceMlCatalogImporter
                 })->all(),
                 'matched_at' => null,
             ];
+        }
+
+        if (! $byName) {
+            return [];
         }
 
         $normalizedName = $this->normalizeName((string) $item->name);
