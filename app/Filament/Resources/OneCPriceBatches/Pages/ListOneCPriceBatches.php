@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\OneCPriceBatches\Pages;
 
+use App\Filament\Resources\OneCAgentTasks\Actions\IssueAgentKeyAction;
 use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
 use App\Models\OneCAgentToken;
 use App\Services\Integrations\OneCPriceBatches;
@@ -10,7 +11,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Enums\Width;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\HtmlString;
 
 class ListOneCPriceBatches extends ListRecords
 {
@@ -43,20 +43,7 @@ class ListOneCPriceBatches extends ListRecords
                     Notification::make()->success()->title('Пакет №'.$batch->id.' сформирован: товаров '.$batch->items_count)->send();
                     $this->redirect(OneCPriceBatchResource::getUrl('view', ['record' => $batch]));
                 }),
-            Action::make('agentKey')
-                ->label('Ключ агента 1С')
-                ->icon('heroicon-o-key')
-                ->color('gray')
-                ->visible(fn (): bool => (bool) auth()->user()?->isAdmin())
-                ->requiresConfirmation()
-                ->modalHeading('Выпустить новый ключ агента?')
-                ->modalDescription('Прежние ключи перестанут работать. Новый ключ показывается один раз: сразу вставьте его в настройку агента на сервере 1С.')
-                ->action(function (): void {
-                    OneCAgentToken::query()->whereNull('revoked_at')->update(['revoked_at' => now()]);
-                    [, $plain] = OneCAgentToken::issue('Агент сервера 1С', auth()->id());
-                    Notification::make()->success()->persistent()->title('Ключ агента (показывается один раз)')
-                        ->body(new HtmlString('<code style="user-select:all;word-break:break-all">'.e($plain).'</code>'))->send();
-                }),
+            IssueAgentKeyAction::make(),
         ];
     }
 }

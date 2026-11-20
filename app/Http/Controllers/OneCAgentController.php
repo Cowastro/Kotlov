@@ -2,18 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\OneCAgentTask;
 use App\Models\OneCAgentToken;
 use App\Models\OneCPriceBatch;
+use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 use App\Services\Integrations\OneCPriceBatches;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
-/** The agent on the 1C server: it asks for approved price batches and reports the 1C document it created. */
+/**
+ * «Мост 1С»: the agent on the 1C server asks for the next task, does it in 1C and reports the result.
+ * PowerShell 2.0 there has no JSON parser, so a task comes as plain lines, one field per line, «|» separated.
+ */
 class OneCAgentController extends Controller
 {
-    public function __construct(private readonly OneCPriceBatches $batches) {}
+    public function __construct(
+        private readonly OneCAgentTasks $tasks,
+        private readonly OneCPriceBatches $batches,
+    ) {}
 
     public function ping(Request $request): JsonResponse
     {
@@ -21,17 +30,46 @@ class OneCAgentController extends Controller
             : $this->denied();
     }
 
+    /** The next task: «task|id|type», the lines of its kind, «end»; «none» when the queue is empty. */
+    public function nextTask(Request $request): JsonResponse|Response
+    {
+        if (! $this->authorized($request)) {
+            return $this->denied();
+        }
+        $task = $this->tasks->claimNext();
+        if (! $task) {
+            return $this->text("none\n");
+        }
+        $lines = $this->tasks->handler($task->type)->lines($task);
+
+        return $this->text(implode("\n", ['task|'.$task->id.'|'.$task->type, ...$lines, 'end'])."\n");
+    }
+
+    public function taskResult(Request $request, int $task): JsonResponse
+    {
+        if (! $this->authorized($request)) {
+            return $this->denied();
+        }
+        $record = OneCAgentTask::query()->find($task);
+        if (! $record) {
+            return response()->json(['ok' => false, 'error' => 'not_found'], 404);
+        }
+        $data = collect($request->except(['ok', 'error']))->filter(fn ($v): bool => is_scalar($v))->all();
+
+        return $this->finish($record, ['ok' => $request->input('ok'), 'error' => $request->input('error'), 'data' => $data]);
+    }
+
+    /** The first agent (version 1) knows prices only: it asks here and answers to priceBatchResult. */
     public function next(Request $request): JsonResponse|Response
     {
         if (! $this->authorized($request)) {
             return $this->denied();
         }
-        $batch = $this->batches->claimNext();
-        $payload = $batch ? $this->batches->payload($batch) : null;
+        $task = $this->tasks->claimNext([PriceBatchTaskHandler::TYPE]);
+        $payload = $task ? $this->batches->payload(OneCPriceBatch::query()->findOrFail($task->subject_id)) : null;
 
-        // PowerShell 2.0 on the 1C server has no JSON parser: «lines» gives one field per line, «|» separated.
         if ($request->query('format') === 'lines') {
-            return response($payload ? $this->lines($payload) : "none\n", 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
+            return $this->text($payload ? implode("\n", PriceBatchTaskHandler::batchLines($payload))."\nend\n" : "none\n");
         }
 
         return response()->json(['batch' => $payload]);
@@ -42,39 +80,42 @@ class OneCAgentController extends Controller
         if (! $this->authorized($request)) {
             return $this->denied();
         }
-        $record = OneCPriceBatch::query()->find($batch);
-        if (! $record) {
-            return response()->json(['ok' => false, 'error' => 'not_found'], 404);
+        $task = OneCAgentTask::query()->where('type', PriceBatchTaskHandler::TYPE)->where('subject_type', (new OneCPriceBatch)->getMorphClass())
+            ->where('subject_id', $batch)->where('status', OneCAgentTask::SENDING)->latest('id')->first();
+        if (! $task) {
+            return response()->json(['ok' => false, 'error' => OneCPriceBatch::query()->whereKey($batch)->exists() ? 'Пакет не ждёт ответа агента.' : 'not_found'],
+                OneCPriceBatch::query()->whereKey($batch)->exists() ? 409 : 404);
         }
+
+        return $this->finish($task, ['ok' => $request->input('ok'), 'error' => $request->input('error'),
+            'data' => array_filter($request->only(['document_number', 'document_key']), 'is_scalar')]);
+    }
+
+    /** @param array{ok: mixed, error: mixed, data: array<string, mixed>} $result */
+    private function finish(OneCAgentTask $task, array $result): JsonResponse
+    {
         try {
-            $record = $this->batches->finish($record, $request->only(['ok', 'document_number', 'document_key', 'error']));
+            $task = $this->tasks->finish($task, $result);
         } catch (DomainException $e) {
             return response()->json(['ok' => false, 'error' => $e->getMessage()], 409);
         }
+        $status = $task->type === PriceBatchTaskHandler::TYPE ? OneCPriceBatch::query()->find($task->subject_id)?->status : $task->status;
 
-        return response()->json(['ok' => true, 'status' => $record->status]);
+        return response()->json(['ok' => true, 'status' => $status, 'task_status' => $task->status]);
     }
 
-    /** @param array<string, mixed> $payload */
-    private function lines(array $payload): string
+    private function text(string $body): Response
     {
-        $clean = fn ($value): string => str_replace(['|', "\r", "\n"], ' ', (string) $value);
-        $lines = ['batch|'.$payload['batch_id'], 'comment|'.$clean($payload['comment']), 'currency|'.$payload['currency_key']];
-        foreach ($payload['price_type_keys'] as $key) {
-            $lines[] = 'type|'.$key;
-        }
-        foreach ($payload['rows'] as $row) {
-            $lines[] = implode('|', ['row', $row['item_key'], $row['characteristic_key'], $row['price_type_key'],
-                number_format((float) $row['price'], 2, '.', ''), $row['manual'] ? '1' : '0', $clean($row['formula'])]);
-        }
-
-        return implode("\n", $lines)."\nend\n";
+        return response($body, 200, ['Content-Type' => 'text/plain; charset=UTF-8']);
     }
 
     private function authorized(Request $request): bool
     {
         $token = OneCAgentToken::findActive($request->bearerToken());
-        $token?->forceFill(['last_seen_at' => now()])->saveQuietly();
+        if ($token) {
+            $version = mb_substr(preg_replace('/[^0-9.]/', '', (string) $request->header('X-Kotlov-Agent', '')), 0, 20);
+            $token->forceFill(['last_seen_at' => now(), 'agent_version' => $version !== '' ? $version : '1'])->saveQuietly();
+        }
 
         return $token !== null;
     }
