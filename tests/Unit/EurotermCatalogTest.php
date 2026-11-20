@@ -7,6 +7,18 @@ use Tests\TestCase;
 
 class EurotermCatalogTest extends TestCase
 {
+    public function test_description_excludes_scripts_styles_and_store_promotions(): void
+    {
+        $url = 'https://euroterm.by/pk-90-05l.html';
+        \Illuminate\Support\Facades\Http::fake([$url => \Illuminate\Support\Facades\Http::response(
+            '<div class="product-description"><style>.overprice-price {display:flex}</style>'
+            .'<p>Отвод 90 градусов.</p><script>function sendpost(){}</script></div>'
+        )]);
+        $preview = app(\App\Services\ProductSourceEnricher::class)->preview($url);
+        $this->assertSame('Отвод 90 градусов.', $preview['description']);
+        $this->assertTrue(EurotermCatalog::containsStorefrontText('<p>Выгодно купить в Euroterm.by</p>'));
+    }
+
     public function test_it_parses_product_cards_and_hidden_pagination(): void
     {
         $html = <<<'HTML'

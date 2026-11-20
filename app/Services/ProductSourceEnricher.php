@@ -839,8 +839,8 @@ class ProductSourceEnricher
 
         if ($this->isEurotermUrl($url)) {
             $euroterm = $this->extractEurotermData($html, $url);
-            $parsed['description'] = $euroterm['description'] ?: $parsed['description'];
-            $parsed['short_description'] = $euroterm['short_description'] ?: $parsed['short_description'];
+            $parsed['description'] = $euroterm['description'];
+            $parsed['short_description'] = $euroterm['short_description'];
             $parsed['specs'] = $euroterm['specs'] ?: $parsed['specs'];
             $parsed['images'] = $euroterm['images'] ?: $parsed['images'];
         }
@@ -883,7 +883,13 @@ class ProductSourceEnricher
             '//*[contains(concat(" ", normalize-space(@class), " "), " product-description ")]'
         )?->item(0);
         if ($descriptionNode) {
+            foreach ($xpath->query('.//script | .//style | .//noscript', $descriptionNode) as $node) {
+                $node->parentNode->removeChild($node);
+            }
             $description = $this->cleanText($descriptionNode->textContent);
+            if (\App\Services\Suppliers\EurotermCatalog::containsStorefrontText($description)) {
+                $description = '';
+            }
         }
 
         $specs = [];

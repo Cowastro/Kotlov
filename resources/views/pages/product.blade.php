@@ -399,9 +399,13 @@
                                 @endif
 
                                 {{-- Краткое описание --}}
+                                @php
+                                    $eurotermCopy = str_starts_with((string) $product->sku, 'EUROTERM-')
+                                        || in_array(parse_url((string) $product->content_source_url, PHP_URL_HOST), ['euroterm.by', 'www.euroterm.by'], true);
+                                @endphp
                                 @if ($manufacturerPump)
                                     <p class="product-infor-desc cl-text-2 mb-12">{{ $pumpDetailDocument ? 'Параметры этого исполнения и документ производителя — во вкладке «Технические характеристики».' : 'Паспортные параметры этого исполнения уточняются. Для подбора сообщите менеджеру точный артикул или данные с шильдика.' }}</p>
-                                @elseif ($product->short_description)
+                                @elseif ($product->short_description && !($eurotermCopy && \App\Services\Suppliers\EurotermCatalog::containsStorefrontText($product->short_description)))
                                     <p class="product-infor-desc cl-text-2 mb-12">
                                         {!! $product->short_description !!}
                                     </p>
@@ -843,6 +847,9 @@
                 $xoControllerManualUrl = '/docs/kotlov-xo-controller-1-2os-ru.pdf';
                 $isXoCeramicPro100 = $product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt';
                 $renderedProductContent = (string) $product->content;
+                if ($eurotermCopy && \App\Services\Suppliers\EurotermCatalog::containsStorefrontText($renderedProductContent)) {
+                    $renderedProductContent = e($product->name);
+                }
                 if ($isXoCeramicPro100 && !str_contains($renderedProductContent, $xoControllerManualUrl)) {
                     $manualLabel = 'Инструкция контроллера XO 1.0S/2.0S (PDF)';
                     $manualLink = '<a href="' . $xoControllerManualUrl . '" class="link fw-medium" target="_blank" rel="noopener"><strong>' . $manualLabel . '</strong></a>';
