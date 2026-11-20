@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\OneCPriceBatches\Pages;
 
 use App\Filament\Resources\OneCAgentTasks\Actions\IssueAgentKeyAction;
+use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
 use App\Models\OneCAgentToken;
 use App\Services\Integrations\OneCPriceBatches;
@@ -43,6 +44,8 @@ class ListOneCPriceBatches extends ListRecords
                     Notification::make()->success()->title('Пакет №'.$batch->id.' сформирован: товаров '.$batch->items_count)->send();
                     $this->redirect(OneCPriceBatchResource::getUrl('view', ['record' => $batch]));
                 }),
+            Action::make('bridge')->label('Мост 1С')->icon('heroicon-o-arrows-right-left')->color('gray')
+                ->url(OneCAgentTaskResource::getUrl('index')),
             IssueAgentKeyAction::make(),
         ];
     }

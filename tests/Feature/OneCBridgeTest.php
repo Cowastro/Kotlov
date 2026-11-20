@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\OneCAgentTasks\Pages\ListOneCAgentTasks;
+use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -118,6 +119,23 @@ class OneCBridgeTest extends TestCase
         $this->agent()->get('/1c/agent/tasks/next')->assertSeeText('none');
         $this->assertSame(OneCAgentTask::FAILED, $task->fresh()->status);
         $this->assertSame(OneCPriceBatch::FAILED, $batch->fresh()->status);
+    }
+
+    public function test_prices_start_from_the_bridge_and_old_finished_batches_show_in_its_history(): void
+    {
+        $this->actingAs($this->admin);
+        Livewire::test(ListOneCAgentTasks::class)->callAction('buildPriceless')->assertHasNoActionErrors();
+        $batch = OneCPriceBatch::query()->sole();
+        $this->assertFalse(OneCPriceBatchResource::shouldRegisterNavigation());
+
+        $batch->forceFill(['status' => OneCPriceBatch::CREATED, 'onec_document_number' => 'УТ-00000017', 'finished_at' => now()])->save();
+        (require database_path('migrations/2026_11_21_110000_backfill_onec_bridge_history.php'))->up();
+        $task = OneCAgentTask::query()->sole();
+        $this->assertSame(OneCAgentTask::DONE, $task->status);
+        $this->assertSame('Документ УТ-00000017, не проведён', $task->summary);
+        $this->assertSame($batch->id, $task->subject_id);
+        (require database_path('migrations/2026_11_21_110000_backfill_onec_bridge_history.php'))->up();
+        $this->assertSame(1, OneCAgentTask::query()->count());
     }
 
     public function test_the_first_agent_still_gets_price_batches_and_the_panel_asks_to_update_it(): void
