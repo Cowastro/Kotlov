@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Models\Product;
+use App\Models\Supplier;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class OneCItemsRejectCandidatesTest extends TestCase
@@ -52,8 +56,8 @@ class OneCItemsRejectCandidatesTest extends TestCase
             ->expectsOutputToContain('metric.onec_items.ignored=1')->assertSuccessful();
         $this->assertSame('ignored', $part->fresh()->match_status);
 
-        $category = \App\Models\Category::query()->firstOrCreate(['slug' => 'aksessuary'], ['name' => 'Аксессуары', 'is_active' => true]);
-        $card = \App\Models\Product::query()->create(['category_id' => $category->id, 'name' => 'Ballu BCT/EVU-3M', 'slug' => 'ballu-bctevu-3m',
+        $category = Category::query()->firstOrCreate(['slug' => 'aksessuary'], ['name' => 'Аксессуары', 'is_active' => true]);
+        $card = Product::query()->create(['category_id' => $category->id, 'name' => 'Ballu BCT/EVU-3M', 'slug' => 'ballu-bctevu-3m',
             'price' => 96, 'is_active' => false, 'is_archived' => true]);
         $row = IntegrationProduct::query()->create(['integration_source_id' => $source->id, 'external_id' => 'onec-bct',
             'external_code' => 'УТ-00006137', 'name' => 'BCT/EVU-3M Блок управления', 'match_status' => 'unmatched']);
@@ -61,5 +65,35 @@ class OneCItemsRejectCandidatesTest extends TestCase
             ->expectsOutputToContain('audit.onec_items.unarchived='.$card->id)->assertSuccessful();
         $this->assertFalse((bool) $card->fresh()->is_archived);
         $this->assertSame($card->id, $row->fresh()->product_id);
+    }
+
+    public function test_a_row_linked_to_a_wrong_card_is_unlinked_and_the_card_keeps_the_price_of_its_own_row(): void
+    {
+        $source = IntegrationSource::query()->where('code', 'onec')->firstOrFail();
+        $supplier = Supplier::query()->create(['code' => 'sbg-test', 'name' => 'СБГ']);
+        $source->forceFill(['supplier_id' => $supplier->id])->save();
+        $category = Category::query()->firstOrCreate(['slug' => 'dymohody'], ['name' => 'Дымоходы', 'is_active' => true]);
+        $card = Product::query()->create(['category_id' => $category->id, 'name' => 'Тройник d150', 'slug' => 'tee-d150', 'price' => 180]);
+        $right = IntegrationProduct::query()->create(['integration_source_id' => $source->id, 'external_id' => 'tee-150', 'external_code' => 'УТ-00007745',
+            'external_sku' => 'TS.SHARED', 'name' => 'Тройник d150', 'match_status' => 'matched', 'product_id' => $card->id]);
+        $wrong = IntegrationProduct::query()->create(['integration_source_id' => $source->id, 'external_id' => 'tee-115', 'external_code' => 'УТ-00008614',
+            'external_sku' => 'TS.SHARED', 'name' => 'Тройник d115', 'match_status' => 'matched', 'product_id' => $card->id]);
+        DB::table('supplier_products')->insert(['product_id' => $card->id, 'supplier_id' => $supplier->id,
+            'supplier_article' => 'TS.SHARED', 'created_at' => now(), 'updated_at' => now()]);
+
+        $this->artisan('integration:onec-items', ['--unlink' => ['УТ-00008614']])
+            ->expectsOutputToContain('audit.onec_items.unlinked='.$wrong->id.':'.$card->id)->assertSuccessful();
+        $this->assertSame($card->id, (int) $wrong->fresh()->product_id);
+
+        $this->artisan('integration:onec-items', ['--unlink' => ['УТ-00008614'], '--apply' => true])->assertSuccessful();
+        $wrong->refresh();
+        $this->assertNull($wrong->product_id);
+        $this->assertSame('manual_research_unresolved', $wrong->match_method);
+        $this->assertSame([$card->id], $wrong->candidates[0]['rejected_product_ids']);
+        $this->assertSame($card->id, (int) $right->fresh()->product_id);
+        $this->assertTrue(DB::table('supplier_products')->where('product_id', $card->id)->exists());
+
+        $guard = new \ReflectionMethod(CommerceMlCatalogImporter::class, 'hasUnchangedResearchDispute');
+        $this->assertTrue($guard->invoke(app(CommerceMlCatalogImporter::class), $wrong));
     }
 }
