@@ -14,6 +14,19 @@ class IntegrationSourceStatusMappingAdminTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_source_list_opens_on_onec_and_keeps_procurement_sources_accessible(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        $onec = IntegrationSource::firstOrCreate(['code' => 'onec'], ['name' => 'Склад 1С']);
+        $price = IntegrationSource::firstOrCreate(['code' => 'belomo_wholesale'], ['name' => 'БелОМО', 'driver' => 'static_pricelist']);
+
+        \Livewire\Livewire::test(\App\Filament\Resources\IntegrationSources\Pages\ListIntegrationSources::class)
+            ->assertCanSeeTableRecords([$onec])
+            ->assertCanNotSeeTableRecords([$price])
+            ->set('activeTab', 'all')
+            ->assertCanSeeTableRecords([$price, $onec]);
+    }
+
     public function test_admin_can_see_source_specific_order_and_payment_status_mapping_controls(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
