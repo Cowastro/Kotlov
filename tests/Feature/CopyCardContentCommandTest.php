@@ -50,4 +50,24 @@ class CopyCardContentCommandTest extends TestCase
         $this->artisan('catalog:copy-card-content', ['from' => $from->id, 'to' => $to->id, '--brand' => 'Нет такого', '--apply' => true])
             ->expectsOutputToContain('audit.copy_card.skipped='.$to->id.':no_brand')->assertFailed();
     }
+
+    public function test_the_same_card_gets_only_its_brand_price_and_is_published(): void
+    {
+        $category = Category::query()->firstOrCreate(['slug' => 'krepleniya-dymohod'], ['name' => 'Крепления', 'is_active' => true]);
+        $brand = Brand::query()->where('name', 'Теплов и Сухов')->first() ?? Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suxov', 'is_active' => true]);
+        $card = Product::query()->create(['category_id' => $category->id, 'name' => 'Кольцо ф110', 'slug' => 'ring-110', 'price' => 0,
+            'is_active' => false, 'created_via' => Product::CREATED_VIA_AWAITING_PHOTOS, 'images' => ['img/products/ring-1.jpg'],
+            'content' => '<p>Текст</p>', 'specs' => [['key' => 'Страна-производитель', 'value' => 'Россия']]]);
+
+        $this->artisan('catalog:copy-card-content', ['from' => $card->id, 'to' => $card->id, '--brand' => 'Теплов и Сухов',
+            '--price' => '6', '--publish' => true, '--apply' => true])->assertSuccessful();
+
+        $card->refresh();
+        $this->assertSame($brand->id, $card->brand_id);
+        $this->assertEquals(6, (float) $card->price);
+        $this->assertTrue((bool) $card->is_active);
+        $this->assertNull($card->created_via);
+        $this->assertSame('<p>Текст</p>', $card->content);
+        $this->assertSame(['img/products/ring-1.jpg'], $card->images);
+    }
 }

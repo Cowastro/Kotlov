@@ -19,6 +19,8 @@ class CopyCardContentCommand extends Command
         {--replace=* : «было::стало» in the copied texts and spec values}
         {--spec=* : «Название: значение» set on the target after the copy}
         {--brand= : Brand name or slug of an existing brand for the target}
+        {--price= : Retail price of the target, BYN}
+        {--publish : Show the target to buyers (a card hidden while it waited for photos)}
         {--apply : Write the content}';
 
     protected $description = 'Copy photos, description and specs from a sibling card to another size of the series';
@@ -35,7 +37,6 @@ class CopyCardContentCommand extends Command
         }
         $reason = match (true) {
             ! $from || ! $to => 'no_card',
-            $from->id === $to->id => 'same_card',
             $this->option('brand') && ! $brand => 'no_brand',
             default => null,
         };
@@ -56,13 +57,19 @@ class CopyCardContentCommand extends Command
             $index === false ? $specs->push(['key' => $key, 'value' => $value]) : $specs->put($index, ['key' => $key, 'value' => $value]);
         }
 
+        // The same card as source and target changes only what is given (specs, brand, price, publish).
+        $same = $from->id === $to->id;
         $data = array_filter([
-            'images' => $from->images ?: null,
+            'images' => $same ? null : ($from->images ?: null),
             'specs' => $specs->values()->all() ?: null,
-            'short_description' => $this->replaced($from->short_description) ?: null,
-            'content' => $this->replaced($from->content) ?: null,
+            'short_description' => $same ? null : ($this->replaced($from->short_description) ?: null),
+            'content' => $same ? null : ($this->replaced($from->content) ?: null),
             'brand_id' => $brand?->id,
+            'price' => filled($this->option('price')) ? round((float) str_replace(',', '.', (string) $this->option('price')), 2) : null,
         ], fn ($value) => $value !== null);
+        if ($this->option('publish')) {
+            $data += ['is_active' => true, 'created_via' => $to->created_via === Product::CREATED_VIA_AWAITING_PHOTOS ? null : $to->created_via];
+        }
 
         $this->line(sprintf('audit.copy_card.plan=%d:%d:images%d:specs%d:text%d:brand%d', $from->id, $to->id,
             count((array) ($data['images'] ?? [])), count((array) ($data['specs'] ?? [])),
