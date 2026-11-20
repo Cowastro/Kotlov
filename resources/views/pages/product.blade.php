@@ -489,13 +489,21 @@
                                             <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }}
                                         </span>
                                     @elseif ($displayAvailabilityStatus === 'check')
+                                        @php
+                                            $reportedStock = $product->lastReportedSupplierStock();
+                                        @endphp
                                         <span class="stock check-stock fw-medium" style="color:#b45309;">
-                                            <i class="icon icon-CheckCircle" style="color:#b45309;"></i> {{ $availabilityLabel }}
+                                            @if ($reportedStock)
+                                                В наличии на {{ $reportedStock->last_stock_synced_at->copy()->setTimezone('Europe/Minsk')->format('d.m.Y') }}:
+                                                {{ $reportedStock->stock_quantity }} {{ in_array($product->unit, [null, '', 'шт', 'шт.'], true) ? 'шт.' : $product->unit }}
+                                            @else
+                                                {{ $availabilityLabel }}
+                                            @endif
                                         </span>
                                         <p class="text-caption-01 cl-text-2 mt-4 mb-0">
-                                            {{ $hasAssignedSupplier
+                                            {{ $reportedStock ? 'Менеджер уточнит текущий остаток и срок поставки.' : ($hasAssignedSupplier
                                                 ? 'Менеджер подтвердит наличие и срок поставки после оформления.'
-                                                : 'Поставщик пока не назначен. Оставьте запрос — менеджер уточнит наличие и возможность поставки.' }}
+                                                : 'Поставщик пока не назначен. Оставьте запрос — менеджер уточнит наличие и возможность поставки.') }}
                                         </p>
                                     @else
                                         <span class="stock out-stock fw-medium text-danger">
@@ -531,7 +539,7 @@
                                 {{-- Количество и кнопки — есть в наличии --}}
                                 <div class="tf-product-variant">
                                     <div class="tf-product-total-quantity">
-                                        <p>Количество:</p>
+                                        <p>Количество для заказа</p>
                                         <div class="group-action product-main-quantity-row">
                                             <div class="wg-quantity">
                                                 <button class="btn-quantity btn-decrease">
@@ -755,7 +763,7 @@
                         </p>
                     @endif
                     <div class="tf-product-info-quantity">
-                        <p class="title">Количество:</p>
+                        <p class="title">Количество для заказа</p>
                         <div class="wg-quantity style-2">
                             <button class="btn-quantity minus-btn">
                                 <i class="icon icon-minus"></i>
