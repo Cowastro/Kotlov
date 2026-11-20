@@ -67,7 +67,8 @@ class SyncDealByBrandPricesCommand extends Command
             $this->metrics($localProducts, $remoteProducts, $plan);
             if (filled($this->option('export-missing'))) {
                 $cards = array_filter(array_map('intval', explode(',', (string) $this->option('export-cards'))));
-                $this->exportMissing($cards !== [] ? $localProducts->whereIn('id', $cards)->values()
+                // Listed cards are exported whatever their brand or supplier (a one-off: new goods of our own stock).
+                $this->exportMissing($cards !== [] ? Product::query()->whereIn('id', $cards)->get()
                     : $localProducts->whereNotIn('id', $plan['matched_local_ids'])->values(), (string) $this->option('export-missing'));
             }
 
