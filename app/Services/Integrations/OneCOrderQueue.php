@@ -41,6 +41,13 @@ class OneCOrderQueue
                 throw new DomainException('Позиции заказа не сопоставлены с центральной 1С.');
             }
 
+            // 1C would create a new item or counterparty for an unknown id: the order waits until it has none.
+            $problems = app(OneCOrderReadiness::class)->check($lockedOrder, $source)['problems'];
+            if ($problems !== []) {
+                throw new DomainException('Заказ нельзя передать в 1С: '.implode('; ', array_slice($problems, 0, 5))
+                    .(count($problems) > 5 ? '; и ещё '.(count($problems) - 5) : '').'.');
+            }
+
             $delivery = OrderIntegrationDelivery::query()->lockForUpdate()->firstOrNew([
                 'order_id' => $lockedOrder->id,
                 'integration_source_id' => $source->id,
