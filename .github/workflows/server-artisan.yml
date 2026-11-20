@@ -1237,6 +1237,11 @@ jobs:
             grep -E '^(metric\.ecokamin_stock\.[a-z_]+=[0-9]+|audit\.ecokamin_stock\.(unmatched|ambiguous|row)=[A-Za-z0-9./_-]+:[0-9.-]+(:[0-9,]+)?(:(article|name))?|audit\.ecokamin_stock\.link=[A-Za-z0-9./_-]+:[0-9]+:(moved|created)|metric\.ecokamin_stock_apply\.[a-z]+=[0-9]+)$' "$detail_log" || true
             echo "safe_ecokamin_stock_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "onec:exchange-report" ]]; then
+            echo "safe_onec_exchange_begin"
+            grep -E '^audit\.onec_exchange\.(source=[0-9]+:[a-z0-9_.-]+:auth=([0-9]{12}|never)|run=[0-9]+(:[a-z0-9_.-]+){4}:[0-9]{1,12}:[0-9]{1,12}:files=[0-9]+:bytes=[0-9]+:items=[0-9]+:orders=[0-9]+:error=[a-z0-9_]+|file=[a-z0-9_.-]+:[a-z0-9_.-]{1,8}:[a-z0-9_.-]+:[0-9]+:[0-9]{12}:received=[01])$' "$detail_log" || true
+            echo "safe_onec_exchange_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:normalize-teplov-names" ]]; then
             echo "safe_teplov_names_begin"
             grep -E '^(metric\.teplov_names\.[a-z_]+=[0-9]+|audit\.teplov_names\.(export=exports/[a-z0-9-]+\.xlsx|backup=tis-names-[0-9-]+\.json))$' "$detail_log" || true
