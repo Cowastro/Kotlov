@@ -252,7 +252,7 @@ class OneCSetupReadinessTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(IntegrationSourceResource::getUrl('index', panel: 'admin'))
+            ->get(IntegrationSourceResource::getUrl('index', ['tab' => 'all'], panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Источник для списка')
             ->assertSeeText('Работает')
