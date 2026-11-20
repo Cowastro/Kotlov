@@ -22,8 +22,8 @@ return new class extends Migration
             $table->timestamp('taken_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['install_request_id', 'installer_profile_id']);
-            $table->index(['install_request_id', 'taken_at']);
+            $table->unique(['install_request_id', 'installer_profile_id'], 'install_leads_request_profile_unique');
+            $table->index(['install_request_id', 'taken_at'], 'install_leads_request_taken_index');
         });
 
         Schema::table('install_requests', function (Blueprint $table) {
