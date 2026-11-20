@@ -17,4 +17,17 @@ return [
         // mapping review. Older session directories are removed by scheduler.
         'file_retention_hours' => (int) env('ONEC_EXCHANGE_FILE_RETENTION_HOURS', 48),
     ],
+
+    // «Установка цен номенклатуры» the 1C agent creates from the site (ids of the 1C price types and currency).
+    'price_documents' => [
+        'currency_key' => '11867b41-09b8-11e9-bad6-1c1b0d1de7c2',
+        'vat_rate' => 1.2,
+        'types' => [
+            // [kind, with VAT, 1C id, formula 1C keeps for a type computed from another]
+            ['retail', false, '7b0fbdc2-1ffa-11e9-bad6-1c1b0d1de7c2', ''],
+            ['wholesale', false, 'de262f38-66a1-11e9-9b7c-1c1b0d1de7c2', ''],
+            ['wholesale', true, 'a56e299c-d38a-11e9-a218-1c1b0d1de7c2', '[ОптоваяЦена]*1.2'],
+            ['retail', true, 'a56e299d-d38a-11e9-a218-1c1b0d1de7c2', '[РозничныйТипЦен]*1.2'],
+        ],
+    ],
 ];

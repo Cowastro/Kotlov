@@ -108,6 +108,15 @@ Route::post('/ai-selection/contact', [PublicAiSelectionController::class, 'conta
     ->middleware('throttle:4,1')
     ->name('ai-selection.contact');
 
+// The agent on the 1C server (bearer key from «Цены для 1С»): approved price batches out, created documents back.
+Route::prefix('/1c/agent')->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
+    ->middleware('throttle:60,1')->group(function (): void {
+        Route::get('/ping', [\App\Http\Controllers\OneCAgentController::class, 'ping'])->name('onec.agent.ping');
+        Route::get('/price-batches/next', [\App\Http\Controllers\OneCAgentController::class, 'next'])->name('onec.agent.next');
+        Route::post('/price-batches/{batch}/result', [\App\Http\Controllers\OneCAgentController::class, 'result'])
+            ->whereNumber('batch')->name('onec.agent.result');
+    });
+
 Route::match(['get', 'post'], '/1c/exchange/{source}', OneCExchangeController::class)
     ->where('source', '[a-z0-9][a-z0-9_-]{1,99}')
     ->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
