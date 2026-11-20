@@ -16,6 +16,23 @@ class TermTeploSupplierTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_shop_article_is_linked_to_supplier_offer_without_a_local_card_or_price_write(): void
+    {
+        $supplier = Supplier::create(['code' => 'termteplosistem', 'name' => 'ТТС', 'is_active' => true]);
+        $offer = SupplierProduct::create(['supplier_id' => $supplier->id, 'supplier_article' => '2202214',
+            'supplier_name' => 'Электрический котел Arderia E24', 'raw' => ['title' => 'Котлы ARDERIA']]);
+        $client = $this->mock(DealByClient::class);
+        $client->shouldReceive('listProducts')->twice()->andReturn(['products' => [
+            ['id' => 123, 'sku' => '2202214', 'name' => 'Электрический котел Arderia E 24', 'price' => 900],
+        ]]);
+        $client->shouldNotReceive('editProducts');
+        $this->artisan('deal:sync-brand-prices --supplier=termteplosistem')->assertSuccessful();
+        $this->assertArrayNotHasKey('sbg_catalog_id', $offer->fresh()->raw);
+        $this->artisan('deal:sync-brand-prices --supplier=termteplosistem --apply')->assertSuccessful();
+        $this->assertEquals(123, $offer->fresh()->raw['sbg_catalog_id']);
+        $this->assertSame('Котлы ARDERIA', $offer->fresh()->raw['title']);
+    }
+
     public function test_sbg_updates_only_the_unique_complete_model_and_checks_the_result(): void
     {
         $category = Category::create(['name' => 'Водонагреватели', 'slug' => 'termteplo-sbg']);

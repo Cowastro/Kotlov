@@ -9,6 +9,7 @@ use App\Models\SupplierSync;
 use App\Services\SupplierProductAvailabilityService;
 use App\Services\Suppliers\HaierTechnicalCatalog;
 use App\Services\Suppliers\TermTeploFeed;
+use App\Services\Suppliers\TermTeploModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -86,10 +87,11 @@ class SyncTermTeploCommand extends Command
         ])->save();
         $touched = [];
         $linked = 0;
-        $models = collect($rows)->filter(fn ($row) => str_contains(mb_strtolower($row['name'].' '.$row['title']), 'haier'))
-            ->groupBy(fn ($row) => HaierTechnicalCatalog::model($row['name']) ?? '')->forget('');
-        $cards = Product::where('name', 'like', '%Haier%')->orWhereHas('brand', fn ($q) => $q->where('name', 'Haier'))
-            ->get(['id', 'sku', 'name'])->groupBy(fn ($card) => HaierTechnicalCatalog::model($card->name) ?? '')->forget('');
+        $models = collect($rows)->groupBy(fn ($row) => TermTeploModel::key($row['name'], $row['title']) ?? '')->forget('');
+        $cards = Product::with('brand:id,name')->whereHas('brand', fn ($q) => $q->whereIn('name', ['Haier', 'KRATS', 'Arderia']))
+            ->orWhere('name', 'like', '%Haier%')->orWhere('name', 'like', '%KRATS%')->orWhere('name', 'like', '%Arderia%')
+            ->orWhere('name', 'like', '%Хайер%')->get(['id', 'sku', 'name', 'brand_id'])
+            ->groupBy(fn ($card) => TermTeploModel::key($card->name, $card->brand?->name ?? '') ?? '')->forget('');
         foreach ($rows as $code => $row) {
             $offer = $existing->pull($code) ?? new SupplierProduct(['supplier_id' => $supplier->id, 'supplier_article' => $code]);
             $product = $offer->product_id ? Product::lockForUpdate()->find($offer->product_id) : null;
@@ -98,12 +100,11 @@ class SyncTermTeploCommand extends Command
                     SupplierProduct::where('supplier_article', $row['article'])->whereNotNull('product_id')->pluck('product_id')
                 )->unique();
                 $product = $ids->count() === 1 ? Product::lockForUpdate()->find($ids->first()) : null;
-                $model = HaierTechnicalCatalog::model($row['name']);
+                $model = TermTeploModel::key($row['name'], $row['title']);
                 if ($ids->isEmpty() && $model && ($models[$model] ?? collect())->count() === 1
-                    && str_contains(mb_strtolower($row['name'].' '.$row['title']), 'haier')
                     && ($cards[$model] ?? collect())->count() === 1) {
                     $candidate = $cards[$model]->first();
-                    if (! preg_match('/^G[A-Z0-9]{7,}(RU)?$/i', (string) $candidate->sku)) {
+                    if (! preg_match('/^(?:G[A-Z0-9]{7,}|KEB-.*)$/i', (string) $candidate->sku)) {
                         $product = Product::lockForUpdate()->find($candidate->id);
                     }
                 }
