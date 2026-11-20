@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OneCAgentTask;
 use App\Models\OneCAgentToken;
 use App\Models\OneCPriceBatch;
+use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 use App\Services\Integrations\OneCPriceBatches;
@@ -57,6 +58,25 @@ class OneCAgentController extends Controller
         $data = collect($request->except(['ok', 'error']))->filter(fn ($v): bool => is_scalar($v))->all();
 
         return $this->finish($record, ['ok' => $request->input('ok'), 'error' => $request->input('error'), 'data' => $data]);
+    }
+
+    /** One answer of 1C for a read task, the body as it came. */
+    public function taskPart(Request $request, int $task): JsonResponse
+    {
+        if (! $this->authorized($request)) {
+            return $this->denied();
+        }
+        $record = OneCAgentTask::query()->find($task);
+        if (! $record) {
+            return response()->json(['ok' => false, 'error' => 'not_found'], 404);
+        }
+        try {
+            app(ODataReadTaskHandler::class)->storePart($record, (string) $request->query('name'), (int) $request->query('code'), $request->getContent());
+        } catch (DomainException $e) {
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 409);
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     /** The first agent (version 1) knows prices only: it asks here and answers to priceBatchResult. */

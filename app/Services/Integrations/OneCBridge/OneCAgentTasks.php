@@ -40,18 +40,20 @@ class OneCAgentTasks
         return collect(config('onec.agent.handlers', []))->map(fn (string $class): string => app($class)->label())->all();
     }
 
-    public function enqueue(string $type, Model $subject, string $title, ?User $user): OneCAgentTask
+    /** @param array<string, mixed>|null $payload for a task without a subject: what exactly to do */
+    public function enqueue(string $type, ?Model $subject, string $title, ?User $user, ?array $payload = null): OneCAgentTask
     {
         $this->handler($type);
-        $active = OneCAgentTask::query()->where('type', $type)->whereMorphedTo('subject', $subject)
+        $active = OneCAgentTask::query()->where('type', $type)
+            ->when($subject, fn ($q) => $q->whereMorphedTo('subject', $subject), fn ($q) => $q->whereNull('subject_id'))
             ->whereIn('status', OneCAgentTask::ACTIVE)->exists();
         if ($active) {
             throw new DomainException('Задача уже в очереди агента 1С.');
         }
 
         return OneCAgentTask::query()->create([
-            'type' => $type, 'subject_type' => $subject->getMorphClass(), 'subject_id' => $subject->getKey(),
-            'title' => mb_substr($title, 0, 250), 'status' => OneCAgentTask::QUEUED, 'created_by' => $user?->id,
+            'type' => $type, 'subject_type' => $subject?->getMorphClass(), 'subject_id' => $subject?->getKey(),
+            'title' => mb_substr($title, 0, 250), 'payload' => $payload, 'status' => OneCAgentTask::QUEUED, 'created_by' => $user?->id,
         ]);
     }
 

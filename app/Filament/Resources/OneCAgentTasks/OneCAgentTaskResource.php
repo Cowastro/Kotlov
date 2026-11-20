@@ -3,11 +3,14 @@
 namespace App\Filament\Resources\OneCAgentTasks;
 
 use App\Filament\Resources\OneCAgentTasks\Pages\ListOneCAgentTasks;
+use App\Filament\Resources\OneCAgentTasks\Pages\ViewOneCAgentTask;
 use App\Models\OneCAgentTask;
+use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use BackedEnum;
 use DomainException;
 use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
@@ -107,6 +110,7 @@ class OneCAgentTaskResource extends Resource
             ->defaultSort('id', 'desc')
             ->poll('30s')
             ->recordActions([
+                ViewAction::make()->visible(fn (OneCAgentTask $record): bool => $record->type === ODataReadTaskHandler::TYPE),
                 Action::make('retry')->label('Повторить')->icon('heroicon-o-arrow-path')
                     ->visible(fn (OneCAgentTask $record): bool => $record->status === OneCAgentTask::FAILED)
                     ->requiresConfirmation()
@@ -124,6 +128,7 @@ class OneCAgentTaskResource extends Resource
     {
         return [
             'index' => ListOneCAgentTasks::route('/'),
+            'view' => ViewOneCAgentTask::route('/{record}'),
         ];
     }
 

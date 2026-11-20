@@ -113,6 +113,8 @@ Route::prefix('/1c/agent')->withoutMiddleware([PreventRequestForgery::class, Val
     ->middleware('throttle:60,1')->group(function (): void {
         Route::get('/ping', [\App\Http\Controllers\OneCAgentController::class, 'ping'])->name('onec.agent.ping');
         Route::get('/tasks/next', [\App\Http\Controllers\OneCAgentController::class, 'nextTask'])->name('onec.agent.tasks.next');
+        Route::post('/tasks/{task}/part', [\App\Http\Controllers\OneCAgentController::class, 'taskPart'])
+            ->whereNumber('task')->name('onec.agent.tasks.part');
         Route::post('/tasks/{task}/result', [\App\Http\Controllers\OneCAgentController::class, 'taskResult'])
             ->whereNumber('task')->name('onec.agent.tasks.result');
         Route::get('/price-batches/next', [\App\Http\Controllers\OneCAgentController::class, 'next'])->name('onec.agent.next');
