@@ -239,7 +239,8 @@ class TermTeploFeed
                 }
                 $offers[$key] = [
                     'article' => '', 'name' => $name, 'title' => $title, 'row' => $i + 1, 'quantity' => null,
-                    'cost' => round($cells[$c], 2), 'retail' => round($cells[$c + 1], 2),
+                    // The matrix publishes whole BYN, although its formulas retain fractional intermediate results.
+                    'cost' => round($cells[$c]), 'retail' => round($cells[$c + 1]),
                     'specs' => ['Тип' => $type, 'Высота, мм' => $height, 'Длина, мм' => $cells[0],
                         'Подключение' => $connection, 'Теплоотдача при ΔТ 70, Вт' => $cells[$power]],
                 ];

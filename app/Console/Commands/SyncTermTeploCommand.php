@@ -74,7 +74,7 @@ class SyncTermTeploCommand extends Command
         ]);
         $date = CarbonImmutable::parse($sources['stock']['date'], 'Europe/Minsk')->setTimezone(config('app.timezone'));
         $sync = SupplierSync::firstOrNew(['key' => 'termteplosistem_price']);
-        $existing = SupplierProduct::where('supplier_id', $supplier->id)->get()->keyBy('supplier_article');
+        $existing = SupplierProduct::where('supplier_id', $supplier->id)->lockForUpdate()->get()->keyBy('supplier_article');
         if ($existing->contains(fn ($offer) => $offer->last_stock_synced_at?->gt($date))) {
             throw new RuntimeException('В базе уже есть более свежая ведомость');
         }
@@ -92,19 +92,19 @@ class SyncTermTeploCommand extends Command
             ->get(['id', 'sku', 'name'])->groupBy(fn ($card) => HaierTechnicalCatalog::model($card->name) ?? '')->forget('');
         foreach ($rows as $code => $row) {
             $offer = $existing->pull($code) ?? new SupplierProduct(['supplier_id' => $supplier->id, 'supplier_article' => $code]);
-            $product = $offer->product;
+            $product = $offer->product_id ? Product::lockForUpdate()->find($offer->product_id) : null;
             if (! $product && empty($offer->raw['no_auto_link']) && $row['article'] !== '' && $row['article'] !== '—') {
                 $ids = Product::where('sku', $row['article'])->pluck('id')->merge(
                     SupplierProduct::where('supplier_article', $row['article'])->whereNotNull('product_id')->pluck('product_id')
                 )->unique();
-                $product = $ids->count() === 1 ? Product::find($ids->first()) : null;
+                $product = $ids->count() === 1 ? Product::lockForUpdate()->find($ids->first()) : null;
                 $model = HaierTechnicalCatalog::model($row['name']);
                 if ($ids->isEmpty() && $model && ($models[$model] ?? collect())->count() === 1
                     && str_contains(mb_strtolower($row['name'].' '.$row['title']), 'haier')
                     && ($cards[$model] ?? collect())->count() === 1) {
                     $candidate = $cards[$model]->first();
                     if (! preg_match('/^G[A-Z0-9]{7,}(RU)?$/i', (string) $candidate->sku)) {
-                        $product = Product::find($candidate->id);
+                        $product = Product::lockForUpdate()->find($candidate->id);
                     }
                 }
             }
@@ -122,7 +122,8 @@ class SyncTermTeploCommand extends Command
                 $linked++;
                 $touched[] = $product->id;
                 $product->specs = HaierTechnicalCatalog::append($product->specs ?? [], $row['specs']);
-                if ($row['retail'] !== null && ! $product->operationalSupplierProducts()->contains(fn ($item) => $item->supplier_id != $supplier->id)) {
+                if ($row['retail'] !== null && $product->operationalIntegrationProducts()->isEmpty()
+                    && ! $product->operationalSupplierProducts()->contains(fn ($item) => $item->supplier_id != $supplier->id)) {
                     $product->price = $row['retail'];
                 }
                 if ($product->isDirty()) {
@@ -134,7 +135,7 @@ class SyncTermTeploCommand extends Command
             if (in_array($gone->supplier_article, $duplicates, true)) {
                 continue;
             }
-            $gone->update(['in_stock' => false, 'stock_quantity' => null, 'stock_status' => 'out_of_stock',
+            $gone->update(['in_stock' => false, 'stock_quantity' => null, 'stock_status' => 'missing_from_feed',
                 'last_stock_synced_at' => $date]);
             if ($gone->product_id) {
                 $touched[] = $gone->product_id;
