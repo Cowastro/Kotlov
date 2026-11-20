@@ -1,15 +1,17 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it).
-# Takes approved price batches from kotlov.by and creates an UNPOSTED «Установка цен номенклатуры» in 1C
-# through the local OData publication; reports the 1C document number back to the site.
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 2: «Мост 1С».
+# Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
+# Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры».
 #   agent.ps1 -Check   read-only check: the site key and the 1C OData user work
-#   agent.ps1          one run (the scheduler starts it every 5 minutes)
+#   agent.ps1          one run (the scheduler starts it every 5 minutes): does every task waiting in the queue
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
+$AgentVersion = '2'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
 $LogPath = Join-Path $Root 'agent.log'
+$DoneDir = Join-Path $Root 'done'
 $Utf8 = New-Object System.Text.UTF8Encoding($false)
 Add-Type -AssemblyName System.Security
 
@@ -69,13 +71,14 @@ function Read-Answer([string]$file) {
 $cfg = Read-Config
 $Site = $cfg['site'].TrimEnd('/')
 $OData = $cfg['odata'].TrimEnd('/') + '/'
-$SiteAuth = 'Authorization: Bearer ' + (Unprotect $cfg['site_key'])
+$SiteHeaders = @(('Authorization: Bearer ' + (Unprotect $cfg['site_key'])), ('X-Kotlov-Agent: ' + $AgentVersion))
 $ODataUser = $cfg['odata_user'] + ':' + (Unprotect $cfg['odata_password'])
 $Out = Join-Path $Root 'last-answer.txt'
 $Body = Join-Path $Root 'last-body.json'
 
 if ($Check) {
-    $code = Invoke-Curl ($Site + '/1c/agent/ping') 'GET' @($SiteAuth) $null $null @() $Out
+    Log ('Агент версии ' + $AgentVersion)
+    $code = Invoke-Curl ($Site + '/1c/agent/ping') 'GET' $SiteHeaders $null $null @() $Out
     if ($code -eq '200') { Log 'Сайт: ключ агента принят' } else { Log ('Сайт: ошибка ' + $code + ' ' + (Read-Answer $Out)) }
 
     $types = $OData + [Uri]::EscapeDataString('Catalog_ВидыЦен') + '?$format=json&$select=Description'
@@ -84,28 +87,20 @@ if ($Check) {
     exit 0
 }
 
-# 1. The next approved batch.
-$code = Invoke-Curl ($Site + '/1c/agent/price-batches/next?format=lines') 'GET' @($SiteAuth) $null $null @() $Out
-if ($code -ne '200') { Log ('Сайт не отдал пакет: ' + $code); exit 1 }
-$lines = [IO.File]::ReadAllLines($Out, $Utf8)
-if ($lines.Length -eq 0 -or $lines[0] -eq 'none') { exit 0 }
-
-$batch = $null; $comment = ''; $currency = ''; $types = @(); $rows = @()
-foreach ($l in $lines) {
-    $p = $l.Split('|')
-    switch ($p[0]) {
-        'batch' { $batch = $p[1] }
-        'comment' { $comment = $p[1] }
-        'currency' { $currency = $p[1] }
-        'type' { $types += $p[1] }
-        'row' { $rows += ,$p }
+# ---- price_batch: «Установка цен номенклатуры» like the ones made by hand, one row per item and price type ----
+function Do-PriceBatch([string[]]$lines) {
+    $comment = ''; $currency = ''; $types = @(); $rows = @()
+    foreach ($l in $lines) {
+        $p = $l.Split('|')
+        switch ($p[0]) {
+            'comment' { $comment = $p[1] }
+            'currency' { $currency = $p[1] }
+            'type' { $types += $p[1] }
+            'row' { $rows += ,$p }
+        }
     }
-}
-if (-not $batch -or $lines[$lines.Length - 1] -ne 'end') { Log 'Пакет пришёл не целиком, попробую в следующий раз'; exit 1 }
-Log ('Пакет №' + $batch + ': строк ' + $rows.Count)
+    if ($rows.Count -eq 0) { throw 'В пакете нет строк' }
 
-try {
-    # 2. «Установка цен номенклатуры» like the ones made by hand: one row per item and price type.
     $zero = '00000000-0000-0000-0000-000000000000'
     $sb = New-Object System.Text.StringBuilder
     [void]$sb.Append('{"Date":' + (Js (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss')) + ',"Комментарий":' + (Js $comment) + ',"Товары":[')
@@ -138,13 +133,55 @@ try {
     $number = ''; $key = ''
     if ($answer -match '"Number"\s*:\s*"([^"]*)"') { $number = $matches[1] }
     if ($answer -match '"Ref_Key"\s*:\s*"([0-9a-fA-F-]{36})"') { $key = $matches[1] }
-    Log ('Пакет №' + $batch + ': создан документ ' + $number)
-    $code = Invoke-Curl ($Site + '/1c/agent/price-batches/' + $batch + '/result') 'POST' @($SiteAuth) $null $null @('ok=1', ('document_number=' + $number), ('document_key=' + $key)) $Out
-    if ($code -ne '200') { Log ('Сайт не принял ответ: ' + $code + ' ' + (Read-Answer $Out)) }
-} catch {
-    $err = [string]$_
-    if ($err.Length -gt 1500) { $err = $err.Substring(0, 1500) }
-    Log ('Пакет №' + $batch + ': ошибка ' + $err)
-    $code = Invoke-Curl ($Site + '/1c/agent/price-batches/' + $batch + '/result') 'POST' @($SiteAuth) $null $null @('ok=0', ('error=' + $err)) $Out
-    exit 1
+    return @(('document_number=' + $number), ('document_key=' + $key))
+}
+
+# Sends the result; the «done» file (what was already created in 1C) is kept until the site has accepted it.
+function Send-Result([string]$id, [string[]]$form, [string]$doneFile) {
+    $code = Invoke-Curl ($Site + '/1c/agent/tasks/' + $id + '/result') 'POST' $SiteHeaders $null $null $form $Out
+    if ($code -eq '200' -or $code -eq '409' -or $code -eq '404') {
+        if ($doneFile -and (Test-Path $doneFile)) { Remove-Item $doneFile -Force }
+        if ($code -ne '200') { Log ('Задача №' + $id + ': сайт ответил ' + $code + ' ' + (Read-Answer $Out)) }
+        return $true
+    }
+    Log ('Задача №' + $id + ': сайт не принял ответ (' + $code + '), повторю позже')
+    return $false
+}
+
+if (-not (Test-Path $DoneDir)) { [void](New-Item -ItemType Directory -Path $DoneDir) }
+
+for ($round = 0; $round -lt 20; $round++) {
+    $code = Invoke-Curl ($Site + '/1c/agent/tasks/next') 'GET' $SiteHeaders $null $null @() $Out
+    if ($code -ne '200') { Log ('Сайт не отдал задачу: ' + $code); exit 1 }
+    $lines = [IO.File]::ReadAllLines($Out, $Utf8)
+    if ($lines.Length -eq 0 -or $lines[0] -eq 'none') { exit 0 }
+
+    $head = $lines[0].Split('|')
+    if ($head[0] -ne 'task' -or $lines[$lines.Length - 1] -ne 'end') { Log 'Задача пришла не целиком, попробую в следующий раз'; exit 1 }
+    $id = $head[1]; $type = $head[2]
+    $doneFile = Join-Path $DoneDir ('task-' + $id + '.txt')
+
+    # Already done in 1C, only the answer to the site was lost: report it again instead of doing it twice.
+    if (Test-Path $doneFile) {
+        Log ('Задача №' + $id + ': уже выполнена раньше, повторяю ответ сайту')
+        if (-not (Send-Result $id ([IO.File]::ReadAllLines($doneFile, $Utf8)) $doneFile)) { exit 1 }
+        continue
+    }
+
+    Log ('Задача №' + $id + ' (' + $type + '): строк ' + ($lines.Length - 2))
+    try {
+        switch ($type) {
+            'price_batch' { $data = Do-PriceBatch $lines }
+            default { throw ('Агент версии ' + $AgentVersion + ' не умеет задачи «' + $type + '»: обновите agent.ps1 с сайта') }
+        }
+        $form = @('ok=1') + $data
+        [IO.File]::WriteAllLines($doneFile, $form, $Utf8)
+        Log ('Задача №' + $id + ': готово ' + ($data -join ' '))
+        if (-not (Send-Result $id $form $doneFile)) { exit 1 }
+    } catch {
+        $err = [string]$_
+        if ($err.Length -gt 1500) { $err = $err.Substring(0, 1500) }
+        Log ('Задача №' + $id + ': ошибка ' + $err)
+        [void](Send-Result $id @('ok=0', ('error=' + $err)) $null)
+    }
 }

@@ -3,8 +3,11 @@
 namespace App\Services\Integrations;
 
 use App\Models\IntegrationSource;
+use App\Models\OneCAgentTask;
 use App\Models\OneCPriceBatch;
 use App\Models\User;
+use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -14,14 +17,14 @@ use Illuminate\Support\Facades\DB;
  */
 class OneCPriceBatches
 {
-    /** A batch the agent took but never answered goes back to the queue after this many minutes. */
-    public const STALE_MINUTES = 30;
-
     private const LOADED = ['ok', 'computed', 'raised'];
 
     private const GUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
 
-    public function __construct(private readonly PricelessStockPriceProposal $proposal) {}
+    public function __construct(
+        private readonly PricelessStockPriceProposal $proposal,
+        private readonly OneCAgentTasks $tasks,
+    ) {}
 
     public function buildFromPriceless(?User $user): OneCPriceBatch
     {
@@ -71,20 +74,7 @@ class OneCPriceBatches
                 throw new DomainException("У {$bad} товаров цена не задана или опт выше розницы.");
             }
             $locked->forceFill(['status' => OneCPriceBatch::APPROVED, 'approved_by' => $user?->id, 'approved_at' => now(), 'error' => null])->save();
-        });
-    }
-
-    /** The next approved batch for the agent (a batch taken but not answered for half an hour is handed out again). */
-    public function claimNext(): ?OneCPriceBatch
-    {
-        return DB::transaction(function (): ?OneCPriceBatch {
-            $batch = OneCPriceBatch::query()
-                ->where(fn ($q) => $q->where('status', OneCPriceBatch::APPROVED)
-                    ->orWhere(fn ($q) => $q->where('status', OneCPriceBatch::SENDING)->where('picked_at', '<', now()->subMinutes(self::STALE_MINUTES))))
-                ->orderBy('approved_at')->orderBy('id')->lockForUpdate()->first();
-            $batch?->forceFill(['status' => OneCPriceBatch::SENDING, 'picked_at' => now()])->save();
-
-            return $batch;
+            $this->tasks->enqueue(PriceBatchTaskHandler::TYPE, $locked, 'Цены: пакет №'.$locked->id.', товаров '.$locked->items()->count(), $user);
         });
     }
 
@@ -135,12 +125,32 @@ class OneCPriceBatches
         return $batch;
     }
 
-    /** A failed batch goes back to the queue as it is, or to a draft to be corrected. */
+    /** A failed batch goes back to the agent's queue as it is, or (failed or still waiting) to a draft to be corrected. */
     public function retry(OneCPriceBatch $batch, bool $toDraft = false): void
     {
         if (! in_array($batch->status, [OneCPriceBatch::FAILED, OneCPriceBatch::APPROVED], true)) {
             throw new DomainException('Повторить можно только пакет с ошибкой.');
         }
-        $batch->forceFill(['status' => $toDraft ? OneCPriceBatch::DRAFT : OneCPriceBatch::APPROVED, 'picked_at' => null, 'finished_at' => null])->save();
+        $task = $this->tasks->activeFor($batch, PriceBatchTaskHandler::TYPE);
+        if ($toDraft) {
+            if ($task) {
+                $this->tasks->cancel($task);
+            }
+            $batch->forceFill(['status' => OneCPriceBatch::DRAFT, 'picked_at' => null, 'finished_at' => null])->save();
+
+            return;
+        }
+        if ($batch->status !== OneCPriceBatch::FAILED) {
+            throw new DomainException('Пакет и так ждёт агента 1С.');
+        }
+        $failed = OneCAgentTask::query()->whereMorphedTo('subject', $batch)->where('type', PriceBatchTaskHandler::TYPE)
+            ->where('status', OneCAgentTask::FAILED)->latest('id')->first();
+        if ($failed) {
+            $this->tasks->retry($failed);
+        } else {
+            $batch->forceFill(['status' => OneCPriceBatch::APPROVED, 'picked_at' => null, 'finished_at' => null, 'error' => null])->save();
+            $this->tasks->enqueue(PriceBatchTaskHandler::TYPE, $batch, 'Цены: пакет №'.$batch->id, null);
+        }
+        $batch->refresh();
     }
 }

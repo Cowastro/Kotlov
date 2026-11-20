@@ -1,5 +1,7 @@
 <?php
 
+use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
+
 return [
     // Until order exchange is commissioned, CRM workflow must not depend on 1C mapping.
     'order_queue_enabled' => (bool) env('ONEC_ORDER_QUEUE_ENABLED', false),
@@ -16,6 +18,15 @@ return [
         // Keep the latest raw CommerceML files briefly for diagnostics and
         // mapping review. Older session directories are removed by scheduler.
         'file_retention_hours' => (int) env('ONEC_EXCHANGE_FILE_RETENTION_HOURS', 48),
+    ],
+
+    // «Мост 1С»: the agent on the 1C server (public/downloads/onec-agent/agent.ps1) and the kinds of tasks it does.
+    'agent' => [
+        // The current agent.ps1; the panel asks to update an agent that reports an older one.
+        'version' => '2',
+        'handlers' => [
+            'price_batch' => PriceBatchTaskHandler::class,
+        ],
     ],
 
     // «Установка цен номенклатуры» the 1C agent creates from the site (ids of the 1C price types and currency).
