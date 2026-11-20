@@ -53,7 +53,7 @@
             </form>
             <p class="slots">Контакты клиента получат первые {{ $maxTakers }} монтажника. Уже взяли: {{ $takenCount }} из {{ $maxTakers }}.</p>
         @elseif($state === \App\Services\InstallerLeads\InstallerLeadTaker::FULL)
-            <p class="closed">Эту заявку уже взяли {{ $maxTakers }} монтажника. Следующая заявка в вашем регионе придёт на почту.</p>
+            <p class="closed">Эту заявку уже взяли {{ $maxTakers }} монтажника. Следующие заявки будут приходить на почту.</p>
         @else
             <p class="closed">Заявка уже закрыта.</p>
         @endif

@@ -28,8 +28,7 @@ class InstallerLeadMatcher
             ->when($request->installer_profile_id, fn ($q) => $q->whereKeyNot($request->installer_profile_id))
             ->get()
             ->filter(fn (InstallerProfile $profile): bool => $this->email($profile) !== null
-                && $this->worksIn($profile, $request)
-                && $this->doesKind($profile, $request))
+                && ($this->sendsToAll() || ($this->worksIn($profile, $request) && $this->doesKind($profile, $request))))
             ->sortByDesc(fn (InstallerProfile $profile): array => [
                 $profile->priority_until?->isFuture() ? 1 : 0,
                 $profile->is_verified ? 1 : 0,
@@ -38,6 +37,11 @@ class InstallerLeadMatcher
             ])
             ->take($limit)
             ->values();
+    }
+
+    public function sendsToAll(): bool
+    {
+        return (bool) config('installer_leads.send_to_all', true);
     }
 
     public function email(InstallerProfile $profile): ?string

@@ -21,7 +21,7 @@ class InstallerLeadsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.telegram.bot_token' => null]);
+        config(['services.telegram.bot_token' => null, 'installer_leads.send_to_all' => false]);
     }
 
     public function test_a_new_request_is_offered_to_installers_of_its_region_and_kind_once(): void
@@ -123,6 +123,26 @@ class InstallerLeadsTest extends TestCase
         $this->artisan('installers:send-leads')->assertSuccessful();
 
         Mail::assertNothingSent();
+    }
+
+    public function test_while_installers_are_few_every_one_gets_every_request_and_an_old_one_can_be_sent_by_hand(): void
+    {
+        config(['installer_leads.send_to_all' => true]);
+        Mail::fake();
+        $this->profile(['region' => 'Брестская область', 'specializations' => ['sauna'], 'email' => 'brest@example.com']);
+        $this->profile(['region' => 'Минск', 'email' => 'minsk@example.com']);
+        $this->profile(['region' => 'Минск', 'email' => 'off@example.com', 'lead_notifications' => false]);
+        $old = $this->request(['region' => 'Гомельская область', 'specialization' => 'pellet', 'source' => 'heat_pump_installation', 'leads_sent_at' => now()->subDay()]);
+
+        $this->artisan('installers:send-leads')->assertSuccessful();
+        Mail::assertNothingSent();
+
+        $this->artisan('installers:send-leads', ['--send' => $old->id])->expectsOutputToContain('metric.installer_leads.preview_recipients=2')->assertSuccessful();
+        Mail::assertNothingSent();
+
+        $this->artisan('installers:send-leads', ['--send' => $old->id, '--apply' => true])->expectsOutputToContain(':sent=2:failed=0')->assertSuccessful();
+        Mail::assertSent(InstallerLeadMail::class, 2);
+        Mail::assertNotSent(InstallerLeadMail::class, fn (InstallerLeadMail $mail): bool => $mail->hasTo('off@example.com'));
     }
 
     private function profile(array $data): InstallerProfile

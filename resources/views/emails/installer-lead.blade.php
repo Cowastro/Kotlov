@@ -8,7 +8,7 @@
     :notice="'Ссылка персональная и действует '.$linkDays.' дней. Вы получили письмо, потому что ваш профиль опубликован в каталоге монтажников KOTLOV.BY. Отказаться от заявок можно по той же ссылке.'"
 >
     <p style="margin:0 0 18px">
-        На KOTLOV.BY пришла заявка на монтаж в вашем регионе.
+        На KOTLOV.BY пришла новая заявка на монтаж. Посмотрите, подходит ли она вам по месту и виду работ.
     </p>
     <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;margin:0 0 18px;border-collapse:collapse">
         <tr><td style="padding:6px 0;color:#6b6b6b;width:38%">Работы</td><td style="padding:6px 0"><strong>{{ $kind }}</strong></td></tr>

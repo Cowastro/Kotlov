@@ -12,7 +12,10 @@ class SendInstallerLeadsCommand extends Command
 {
     protected $signature = 'installers:send-leads
         {--audit : Only count the installers who can get requests and the recent requests by source}
-        {--preview= : Only show how many installers a request ID would be offered to}';
+        {--preview= : Only show how many installers a request ID would be offered to}
+        {--send= : Offer this request ID by hand (made before the mailing or from another form); a preview without --apply}
+        {--apply : With --send, really send the e-mails}
+        {--recent=0 : List the last N requests (id, source, kind, date, offered/taken)}';
 
     protected $description = 'Offer new requests for installation to the matching installers by e-mail';
 
@@ -27,6 +30,31 @@ class SendInstallerLeadsCommand extends Command
             $profiles = $matcher->candidates($request);
             $this->line('metric.installer_leads.preview_recipients='.$profiles->count());
             $this->line('audit.installer_leads.preview='.$request->id.':'.$profiles->pluck('id')->implode(','));
+
+            return self::SUCCESS;
+        }
+
+        if ((int) $this->option('recent') > 0) {
+            InstallRequest::query()->withCount(['leads', 'leads as taken_count' => fn ($q) => $q->whereNotNull('taken_at')])
+                ->latest('id')->limit((int) $this->option('recent'))->get()
+                ->each(fn (InstallRequest $r) => $this->line('audit.installer_leads.recent='.$r->id.':'.preg_replace('/[^a-z0-9_]/', '_', (string) ($r->source ?: 'none'))
+                    .':'.preg_replace('/[^a-z0-9_]/', '_', (string) ($r->specialization ?: 'none')).':'.$r->created_at?->format('YmdHi').':'.$r->status
+                    .':offered='.$r->leads_count.':taken='.$r->taken_count));
+
+            return self::SUCCESS;
+        }
+
+        if ($this->option('send')) {
+            $request = InstallRequest::query()->findOrFail((int) $this->option('send'));
+            if (! $this->option('apply')) {
+                $profiles = $matcher->candidates($request);
+                $this->line('metric.installer_leads.preview_recipients='.$profiles->count());
+                $this->line('audit.installer_leads.preview='.$request->id.':'.$profiles->pluck('id')->implode(','));
+
+                return self::SUCCESS;
+            }
+            $result = $dispatcher->dispatch($request, again: true);
+            $this->line('audit.installer_leads.request='.$request->id.':matched='.$result['matched'].':sent='.$result['sent'].':failed='.$result['failed']);
 
             return self::SUCCESS;
         }

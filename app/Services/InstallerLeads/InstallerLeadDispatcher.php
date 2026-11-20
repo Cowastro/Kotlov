@@ -28,10 +28,15 @@ class InstallerLeadDispatcher
             ->get();
     }
 
-    /** @return array{matched:int, sent:int, failed:int} */
-    public function dispatch(InstallRequest $request): array
+    /**
+     * $again offers a request by hand: one already marked as sent (e.g. made before the mailing) or of another source.
+     *
+     * @return array{matched:int, sent:int, failed:int}
+     */
+    public function dispatch(InstallRequest $request, bool $again = false): array
     {
-        $claimed = InstallRequest::query()->whereKey($request->id)->whereNull('leads_sent_at')
+        $claimed = InstallRequest::query()->whereKey($request->id)
+            ->when(! $again, fn ($query) => $query->whereNull('leads_sent_at'))
             ->update(['leads_sent_at' => now()]);
         if ($claimed === 0) {
             return ['matched' => 0, 'sent' => 0, 'failed' => 0];
