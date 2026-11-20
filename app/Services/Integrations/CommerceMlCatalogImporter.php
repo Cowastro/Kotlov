@@ -40,6 +40,14 @@ class CommerceMlCatalogImporter
     /** @var array<string, array<int, int>> */
     private array $nameIndex = [];
 
+    /**
+     * Article / barcode of this source → the 1C ids that carry it. 1C sometimes gives two different items
+     * the same article (a copied card); such an identifier must not link a row to a card on its own.
+     *
+     * @var array<string, array<string, true>>
+     */
+    private array $identityOwners = [];
+
     /** @var array<string, array<int, int>> */
     private array $tokenIndex = [];
 
@@ -70,6 +78,15 @@ class CommerceMlCatalogImporter
         );
 
         $this->prepareIndexes();
+        $this->prepareIdentityOwners($source);
+        // Two new items of one file with the same article: neither links before both are known.
+        foreach ($documents as $document) {
+            foreach ($document->xpath('//*[local-name()="Товар"]') ?: [] as $node) {
+                $externalId = $this->text($node, './*[local-name()="Ид"]');
+                $this->rememberIdentity('article', $this->text($node, './*[local-name()="Артикул"]'), $externalId);
+                $this->rememberIdentity('barcode', $this->text($node, './*[local-name()="Штрихкод"]'), $externalId);
+            }
+        }
 
         $stats = [
             'categories' => 0,
@@ -140,6 +157,7 @@ class CommerceMlCatalogImporter
     {
         $source = IntegrationSource::query()->where('code', $sourceCode)->firstOrFail();
         $this->prepareIndexes();
+        $this->prepareIdentityOwners($source);
 
         $stats = [
             'matched' => 0,
@@ -294,6 +312,8 @@ class CommerceMlCatalogImporter
         if (! $item->product_id
             && $item->match_status !== 'ignored'
             && ! $this->hasUnchangedResearchDispute($item)) {
+            $this->rememberIdentity('article', (string) $item->external_sku, (string) $item->external_id);
+            $this->rememberIdentity('barcode', (string) $item->barcode, (string) $item->external_id);
             $item->fill($this->match($item, $this->needsNameMatching($item, $alreadyExists)));
         }
 
@@ -369,6 +389,8 @@ class CommerceMlCatalogImporter
         if (! $item->product_id
             && $item->match_status !== 'ignored'
             && ! $this->hasUnchangedResearchDispute($item)) {
+            $this->rememberIdentity('article', (string) $item->external_sku, (string) $item->external_id);
+            $this->rememberIdentity('barcode', (string) $item->barcode, (string) $item->external_id);
             $item->fill($this->match($item, $this->needsNameMatching($item, $alreadyExists)));
         }
 
@@ -568,14 +590,18 @@ class CommerceMlCatalogImporter
     /** @param bool $byName false: only exact identifiers; without one the row keeps its current suggestion */
     private function match(IntegrationProduct $item, bool $byName = true): array
     {
+        $sharedKinds = [];
         $exactMatches = collect([
             'article' => $item->external_sku,
             'barcode' => $item->barcode,
             'onec_code' => $item->external_code,
-        ])->filter()->flatMap(function (string $value, string $kind) use ($item): array {
+        ])->filter()->flatMap(function (string $value, string $kind) use ($item, &$sharedKinds): array {
             $identifier = $this->normalizeIdentifier($value);
             if ($identifier === '') {
                 return [];
+            }
+            if ($kind !== 'onec_code' && $this->identifierIsShared($kind, $identifier, (string) $item->external_id)) {
+                $sharedKinds[] = $kind;
             }
 
             return collect($this->skuIndex[$identifier] ?? [])
@@ -592,8 +618,12 @@ class CommerceMlCatalogImporter
 
         if ($exactMatches->count() === 1) {
             $match = $exactMatches->first();
+            $kind = explode('_to_', $match['method'], 2)[0];
 
-            return $this->matched($this->products->get($match['product_id']), $match['method'], 1.0);
+            // The same article on several 1C items: a manager confirms which of them the card is.
+            return in_array($kind, $sharedKinds, true)
+                ? $this->suggested($this->products->get($match['product_id']), $kind.'_shared_identifier', 0.7)
+                : $this->matched($this->products->get($match['product_id']), $match['method'], 1.0);
         }
 
         if ($exactMatches->count() > 1) {
@@ -684,6 +714,41 @@ class CommerceMlCatalogImporter
             'candidates' => $candidates->all(),
             'matched_at' => null,
         ];
+    }
+
+    private function prepareIdentityOwners(IntegrationSource $source): void
+    {
+        $this->identityOwners = [];
+        // A row «not for the site» and one 1C stopped sending a month ago (the item was re-created there)
+        // do not own the identifier any more.
+        IntegrationProduct::query()->where('integration_source_id', $source->id)
+            ->where(fn ($q) => $q->whereNotNull('external_sku')->orWhereNotNull('barcode'))
+            ->where(fn ($q) => $q->whereNull('match_status')->orWhere('match_status', '!=', 'ignored'))
+            ->where(fn ($q) => $q->whereNull('last_seen_at')->orWhere('last_seen_at', '>=', now()->subDays(30)))
+            ->select(['id', 'external_id', 'external_sku', 'barcode'])
+            ->chunkById(2000, function (Collection $rows): void {
+                foreach ($rows as $row) {
+                    $this->rememberIdentity('article', (string) $row->external_sku, (string) $row->external_id);
+                    $this->rememberIdentity('barcode', (string) $row->barcode, (string) $row->external_id);
+                }
+            });
+    }
+
+    private function rememberIdentity(string $kind, string $value, string $externalId): void
+    {
+        $identifier = $this->normalizeIdentifier($value);
+        if ($identifier !== '' && $externalId !== '') {
+            // Offers with characteristics («base#char») belong to one 1C item.
+            $this->identityOwners[$kind.'|'.$identifier][explode('#', $externalId, 2)[0]] = true;
+        }
+    }
+
+    private function identifierIsShared(string $kind, string $identifier, string $externalId): bool
+    {
+        $owners = $this->identityOwners[$kind.'|'.$identifier] ?? [];
+        $owners[explode('#', $externalId, 2)[0]] = true;
+
+        return count($owners) > 1;
     }
 
     private function prepareIndexes(): void

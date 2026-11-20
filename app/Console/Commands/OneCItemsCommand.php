@@ -31,6 +31,7 @@ class OneCItemsCommand extends Command
         {--relink : A row linked to another card leaves it (with its 1C price there) for the given one}
         {--reject=* : 1C code (or external id) of an unlinked row whose candidates are all wrong}
         {--ignore=* : 1C code (or external id) of an unlinked row that is not for the site (spare part to order, etc.)}
+        {--unlink=* : 1C code (or external id) of a row linked to a wrong card (e.g. it shares the article of another 1C item); the importer will not link it back}
         {--unarchive : With --link: return an archived card to the catalog before linking}
         {--apply : Write the links}';
 
@@ -134,6 +135,7 @@ class OneCItemsCommand extends Command
         $this->line('metric.onec_items.linked='.$linked);
         $this->rejectCandidates($source);
         $this->ignoreRows($source);
+        $this->unlinkRows($source);
 
         return self::SUCCESS;
     }
@@ -203,12 +205,56 @@ class OneCItemsCommand extends Command
         $this->line('metric.onec_items.ignored='.$ignored);
     }
 
+    /**
+     * A row linked to a card it is not leaves it and goes to «Не найдены» with that card rejected; the
+     * importer keeps the decision (manual_research_unresolved + source identity) until the 1C row changes.
+     */
+    private function unlinkRows(IntegrationSource $source): void
+    {
+        $unlinked = 0;
+        foreach ((array) $this->option('unlink') as $code) {
+            $item = IntegrationProduct::query()->where('integration_source_id', $source->id)
+                ->where(fn ($q) => $q->where('external_code', $code)->orWhere('external_id', $code))->first();
+            if (! $item || ! $item->product_id) {
+                $this->line('audit.onec_items.unlink_skipped='.Str::slug((string) $code));
+
+                continue;
+            }
+            $cardId = (int) $item->product_id;
+            if ($this->option('apply')) {
+                $this->unlink($item);
+                $item->forceFill([
+                    'match_method' => 'manual_research_unresolved',
+                    'candidates' => [[
+                        'type' => 'rejected_candidates',
+                        'name' => 'Привязка снята вручную: строка 1С не для этой карточки',
+                        'rejected_product_ids' => [$cardId],
+                        'source_identity' => [
+                            'external_id' => $item->external_id,
+                            'external_code' => $item->external_code,
+                            'external_sku' => $item->external_sku,
+                            'barcode' => $item->barcode,
+                            'name' => $item->name,
+                        ],
+                    ]],
+                ])->save();
+            }
+            $unlinked++;
+            $this->line(sprintf('audit.onec_items.unlinked=%d:%d', $item->id, $cardId));
+        }
+        $this->line('metric.onec_items.unlinked='.$unlinked);
+    }
+
     /** The row leaves the wrong card, and so does the 1C price the sync put on it. */
     private function unlink(IntegrationProduct $item): void
     {
         DB::transaction(function () use ($item): void {
             $article = trim((string) ($item->external_sku ?: $item->external_code));
-            if ($supplierId = $item->source?->supplier_id) {
+            // Another 1C row with the same article may still feed this card: its price row stays.
+            $sharedByAnotherRow = IntegrationProduct::query()->where('integration_source_id', $item->integration_source_id)
+                ->whereKeyNot($item->id)->where('product_id', $item->product_id)
+                ->where(fn ($q) => $q->where('external_sku', $article)->orWhere('external_code', $article))->exists();
+            if (($supplierId = $item->source?->supplier_id) && ! $sharedByAnotherRow) {
                 DB::table('supplier_products')->where('product_id', $item->product_id)->where('supplier_id', $supplierId)
                     ->where('supplier_article', $article)->delete();
             }

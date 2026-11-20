@@ -1309,6 +1309,34 @@ XML;
         $this->assertSame('matched', $item->fresh()->match_status);
     }
 
+    public function test_an_article_shared_by_two_1c_items_only_suggests_the_card(): void
+    {
+        $card = $this->createProduct(['sku' => 'TS.SHARED.150', 'name' => 'Тройник d150', 'slug' => 'tee-150']);
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Каталог><Товары>
+    <Товар><Ид>tee-150</Ид><Артикул>TS.SHARED.150</Артикул><Наименование>Тройник d150</Наименование></Товар>
+    <Товар><Ид>tee-115</Ид><Артикул>TS.SHARED.150</Артикул><Наименование>Тройник d115</Наименование></Товар>
+    <Товар><Ид>own-1</Ид><Артикул>OWN-1</Артикул><Наименование>Другой товар</Наименование></Товар>
+  </Товары></Каталог>
+</КоммерческаяИнформация>
+XML;
+        $other = $this->createProduct(['sku' => 'OWN-1', 'name' => 'Другой товар', 'slug' => 'own-1']);
+
+        app(CommerceMlCatalogImporter::class)->import($xml);
+        app(CommerceMlCatalogImporter::class)->import($xml);
+
+        foreach (['tee-150', 'tee-115'] as $id) {
+            $row = IntegrationProduct::query()->where('external_id', $id)->firstOrFail();
+            $this->assertNull($row->product_id, $id);
+            $this->assertSame('suggested', $row->match_status, $id);
+            $this->assertSame('article_shared_identifier', $row->match_method, $id);
+            $this->assertSame($card->id, (int) $row->candidates[0]['product_id']);
+        }
+        $this->assertSame($other->id, (int) IntegrationProduct::query()->where('external_id', 'own-1')->value('product_id'));
+    }
+
     public function test_catalog_item_reads_onec_code_and_links_it_to_existing_sku(): void
     {
         $product = $this->createProduct([
@@ -2005,6 +2033,8 @@ XML;
             'external_sku' => 'LEARN-ME-100',
             'name' => 'Товар из внешней системы',
             'match_status' => 'matched',
+            // The external system re-created the item: the old id is not sent any more.
+            'last_seen_at' => now()->subDays(60),
         ]);
 
         $mapping = app(IntegrationManualMatchRecorder::class)->record($item);
