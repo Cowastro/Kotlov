@@ -3,16 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\IntegrationExchangeRun;
-use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderIntegrationDelivery;
-use App\Models\OrderItem;
 use App\Services\Integrations\CatalogStockSnapshotFinalizer;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use App\Services\Integrations\CommerceMlOrderImporter;
 use App\Services\Integrations\IntegrationExchangeJournal;
 use App\Services\Integrations\IntegrationMonitoringWindow;
+use App\Services\Integrations\OneCOrderReadiness;
 use App\Services\Integrations\OrderIntegrationRouter;
 use App\Services\Integrations\SupplierChannelTransitionPlanner;
 use Carbon\CarbonImmutable;
@@ -39,6 +38,7 @@ class OneCExchangeController extends Controller
         private readonly IntegrationMonitoringWindow $monitoringWindow,
         private readonly OrderIntegrationRouter $orderRouter,
         private readonly SupplierChannelTransitionPlanner $transitionPlanner,
+        private readonly OneCOrderReadiness $orderReadiness,
     ) {}
 
     public function __invoke(Request $request, string $source = 'onec'): Response
@@ -335,12 +335,6 @@ class OneCExchangeController extends Controller
             ->orderBy('id')
             ->get();
 
-        $externalIds = IntegrationProduct::query()
-            ->whereNotNull('product_id')
-            ->where('integration_source_id', $source->id)
-            ->whereIn('product_id', $orders->flatMap->items->pluck('product_id')->filter()->unique())
-            ->pluck('external_id', 'product_id');
-
         $xml = new XMLWriter;
         $xml->openMemory();
         $xml->startDocument('1.0', 'UTF-8');
@@ -349,9 +343,10 @@ class OneCExchangeController extends Controller
         $xml->writeAttribute('ДатаФормирования', now()->format('Y-m-d\TH:i:s'));
 
         foreach ($orders as $order) {
+            $readiness = $this->orderReadiness->check($order, $source);
             $sourceItems = $this->orderRouter->itemsForSource($order, $source);
             $order->setRelation('items', $sourceItems);
-            $this->writeOrder($xml, $order, $externalIds, $source);
+            $this->writeOrder($xml, $order, $readiness);
         }
 
         $xml->endElement();
@@ -484,6 +479,7 @@ class OneCExchangeController extends Controller
                 ->pluck('id')
                 ->map(fn ($id): int => (int) $id)
                 ->all();
+            $ids = $this->withoutBlockedOrders($ids, $source);
 
             $run = $this->startRun($request, $source, 'outbound', 'orders');
             $this->storeOrderBatch($run, $ids);
@@ -495,6 +491,39 @@ class OneCExchangeController extends Controller
 
             return ['run' => $run, 'order_ids' => $ids];
         });
+    }
+
+    /**
+     * An order whose line has no single 1C item never goes: 1C would create a new item for the unknown
+     * id. It stays in the queue as failed with the reason, for the manager to link and send again.
+     *
+     * @param  array<int, int>  $ids
+     * @return array<int, int>
+     */
+    private function withoutBlockedOrders(array $ids, IntegrationSource $source): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $ready = [];
+        foreach (Order::query()->whereIn('id', $ids)->with(['items.integrationProduct', 'user'])->orderBy('id')->get() as $order) {
+            $problems = $this->orderReadiness->check($order, $source)['problems'];
+            if ($problems === []) {
+                $ready[] = (int) $order->id;
+
+                continue;
+            }
+            OrderIntegrationDelivery::query()->where('order_id', $order->id)->where('integration_source_id', $source->id)
+                ->whereNull('exported_at')
+                ->update([
+                    'status' => OrderIntegrationDelivery::STATUS_FAILED,
+                    'last_error' => mb_substr('Не отправлен в 1С: '.implode('; ', $problems), 0, 2000),
+                    'last_attempted_at' => now(),
+                ]);
+        }
+
+        return $ready;
     }
 
     /** @return Collection<int, IntegrationExchangeRun> */
@@ -605,13 +634,9 @@ class OneCExchangeController extends Controller
         }
     }
 
-    /** @param Collection<int, string> $externalIds */
-    private function writeOrder(
-        XMLWriter $xml,
-        Order $order,
-        Collection $externalIds,
-        IntegrationSource $source,
-    ): void {
+    /** @param array{problems: list<string>, external_ids: array<int, string>, partner: array{b2b: bool, id: string, name: string, full_name: string, tax_id: string}} $readiness */
+    private function writeOrder(XMLWriter $xml, Order $order, array $readiness): void
+    {
         $xml->startElement('Документ');
         $this->element($xml, 'Ид', 'kotlov-order-'.$order->id);
         $this->element($xml, 'Номер', $order->number);
@@ -625,47 +650,38 @@ class OneCExchangeController extends Controller
             : (float) $order->items->sum('total');
         $this->element($xml, 'Сумма', number_format($sourceTotal, 2, '.', ''));
 
+        // A retail buyer is always the one «Розничный покупатель» counterparty of 1C: the person's name and
+        // phone go into the order's requisites, never into a new counterparty or its contacts.
+        $partner = $readiness['partner'];
+        $isB2bPartner = $partner['b2b'];
+        $partnerExternalId = $partner['id'];
         $xml->startElement('Контрагенты');
         $xml->startElement('Контрагент');
-        $b2bSnapshot = is_array($order->b2b_commercial_terms_snapshot)
-            ? $order->b2b_commercial_terms_snapshot
-            : [];
-        $isB2bPartner = (filled($b2bSnapshot['b2b_client_id'] ?? null) || $order->user?->isB2B() === true)
-            && $order->items->contains(fn (OrderItem $item): bool => $item->pricing_type === 'b2b');
-        $companyAccountUserId = (int) ($b2bSnapshot['company_account_user_id'] ?? $order->user_id);
-        $partnerExternalId = $isB2bPartner
-            ? 'kotlov-b2b-user-'.$companyAccountUserId
-            : 'kotlov-customer-'.$order->id;
-        $partnerName = $isB2bPartner
-            ? (($b2bSnapshot['company_name'] ?? null) ?: $order->user?->company_name ?: $order->company_name ?: $order->customer_name)
-            : $order->customer_name;
-        $partnerFullName = $order->company_name
-            ?: ($b2bSnapshot['company_name'] ?? null)
-            ?: $order->user?->company_name
-            ?: $order->customer_name;
-        $partnerTaxId = trim((string) ($order->company_unp ?: ($b2bSnapshot['company_unp'] ?? null) ?: $order->user?->company_inn));
-
         $this->element($xml, 'Ид', $partnerExternalId);
-        $this->element($xml, 'Наименование', $partnerName);
-        $this->element($xml, 'ПолноеНаименование', $partnerFullName);
-        if ($partnerTaxId !== '') {
-            $this->element($xml, 'ИНН', $partnerTaxId);
+        $this->element($xml, 'Наименование', $partner['name']);
+        $this->element($xml, 'ПолноеНаименование', $partner['full_name']);
+        if ($partner['tax_id'] !== '') {
+            $this->element($xml, 'ИНН', $partner['tax_id']);
         }
         $this->element($xml, 'Роль', 'Покупатель');
-        $xml->startElement('Контакты');
-        $this->writeContact($xml, 'Телефон рабочий', $order->customer_phone);
-        $this->writeContact($xml, 'Почта', $order->customer_email);
-        $xml->endElement();
+        if ($isB2bPartner) {
+            $xml->startElement('Контакты');
+            $this->writeContact($xml, 'Телефон рабочий', $order->customer_phone);
+            $this->writeContact($xml, 'Почта', $order->customer_email);
+            $xml->endElement();
+        }
         $xml->endElement();
         $xml->endElement();
 
         $xml->startElement('Товары');
         foreach ($order->items as $item) {
+            // Only the 1C item id: never the site sku or a made-up id, which 1C would turn into a new item.
+            $externalId = $readiness['external_ids'][$item->id] ?? null;
+            if ($externalId === null) {
+                continue;
+            }
             $xml->startElement('Товар');
-            $externalId = (int) $item->integrationProduct?->integration_source_id === (int) $source->id
-                ? $item->integrationProduct->external_id
-                : $externalIds->get($item->product_id);
-            $this->element($xml, 'Ид', $externalId ?: ($item->product_sku ?: 'kotlov-product-'.$item->product_id));
+            $this->element($xml, 'Ид', $externalId);
             $this->element($xml, 'Артикул', $item->product_sku ?: '');
             $this->element($xml, 'Наименование', $item->product_name);
             $this->element($xml, 'ЦенаЗаЕдиницу', number_format((float) $item->price, 2, '.', ''));
@@ -685,6 +701,9 @@ class OneCExchangeController extends Controller
             $order->delivery_address,
         ]))));
         $this->writeRequisite($xml, 'Комментарий', $order->comment ?: '');
+        if (! $isB2bPartner) {
+            $this->writeRequisite($xml, 'Покупатель', trim(implode(', ', array_filter([$order->customer_name, $order->customer_phone, $order->customer_email]))));
+        }
         $this->writeRequisite($xml, 'Тип документа 1С', 'Заказ клиента');
         $this->writeRequisite($xml, 'ID заказа KOTLOV', 'kotlov-order-'.$order->id);
         if ($isB2bPartner) {

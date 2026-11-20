@@ -2494,7 +2494,9 @@ XML;
         $sourceAResponse->assertOk()
             ->assertSee('ORD-MULTI-SOURCE', false)
             ->assertSee('Строка только для источника А', false)
-            ->assertSee('Старая розничная строка остаётся в KOTLOV', false)
+            // A line without a 1C item never goes: 1C would make a new item of «LEGACY-RETAIL-SKU».
+            ->assertDontSee('Старая розничная строка остаётся в KOTLOV', false)
+            ->assertDontSee('LEGACY-RETAIL-SKU', false)
             ->assertSee('<Сумма>24.00</Сумма>', false)
             ->assertDontSee('Строка только для источника Б', false)
             ->assertDontSee('<Сумма>124.00</Сумма>', false);
@@ -2508,13 +2510,13 @@ XML;
             'integration_source_id' => $sourceA->id,
             'status' => OrderIntegrationDelivery::STATUS_SENT,
         ]);
-        $this->assertDatabaseHas('order_integration_deliveries', [
-            'order_id' => $legacyRetailOrder->id,
-            'integration_source_id' => $sourceA->id,
-            'status' => OrderIntegrationDelivery::STATUS_SENT,
-        ]);
+        $legacyDelivery = OrderIntegrationDelivery::query()->where('order_id', $legacyRetailOrder->id)
+            ->where('integration_source_id', $sourceA->id)->firstOrFail();
+        $this->assertSame(OrderIntegrationDelivery::STATUS_FAILED, $legacyDelivery->status);
+        $this->assertStringContainsString('карточка не привязана к товару 1С', (string) $legacyDelivery->last_error);
+        $this->assertNull($legacyDelivery->exported_at);
         $this->assertNotNull($order->fresh()->onec_exported_at);
-        $this->assertNotNull($legacyRetailOrder->fresh()->onec_exported_at);
+        $this->assertNull($legacyRetailOrder->fresh()->onec_exported_at);
 
         $sourceBResponse = $this->withBasicAuth('supplier-b-user', 'supplier-b-secret')
             ->get('/1c/exchange/supplier-b?type=sale&mode=query');
