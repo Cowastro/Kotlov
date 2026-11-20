@@ -59,7 +59,7 @@ class SendInstallerLeadsCommand extends Command
             return self::SUCCESS;
         }
 
-        if (! config('installer_leads.enabled')) {
+        if (! config('installer_leads.enabled') || ! config('installer_leads.auto')) {
             return self::SUCCESS;
         }
 

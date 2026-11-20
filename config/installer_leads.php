@@ -4,6 +4,10 @@ return [
     // Off switch for the whole mailing.
     'enabled' => (bool) env('INSTALLER_LEADS_ENABLED', true),
 
+    // Automatic mailing of every new request from the sources below; off — managers send a request with the
+    // «Монтажникам» button in the admin.
+    'auto' => (bool) env('INSTALLER_LEADS_AUTO', false),
+
     // While there are few installers every one gets every request; false = only their region and kind of work.
     'send_to_all' => (bool) env('INSTALLER_LEADS_SEND_TO_ALL', true),
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\InstallRequests\Pages\ListInstallRequests;
 use App\Mail\InstallerLeadMail;
 use App\Models\InstallerProfile;
 use App\Models\InstallRequest;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Services\InstallerLeads\InstallerLeadDispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class InstallerLeadsTest extends TestCase
@@ -21,7 +23,7 @@ class InstallerLeadsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.telegram.bot_token' => null, 'installer_leads.send_to_all' => false]);
+        config(['services.telegram.bot_token' => null, 'installer_leads.send_to_all' => false, 'installer_leads.auto' => true]);
     }
 
     public function test_a_new_request_is_offered_to_installers_of_its_region_and_kind_once(): void
@@ -143,6 +145,27 @@ class InstallerLeadsTest extends TestCase
         $this->artisan('installers:send-leads', ['--send' => $old->id, '--apply' => true])->expectsOutputToContain(':sent=2:failed=0')->assertSuccessful();
         Mail::assertSent(InstallerLeadMail::class, 2);
         Mail::assertNotSent(InstallerLeadMail::class, fn (InstallerLeadMail $mail): bool => $mail->hasTo('off@example.com'));
+    }
+
+    public function test_a_manager_sends_a_request_to_the_installers_with_the_button_and_again_only_to_new_ones(): void
+    {
+        config(['installer_leads.send_to_all' => true, 'installer_leads.auto' => false]);
+        Mail::fake();
+        $this->profile(['region' => 'Брестская область', 'email' => 'brest@example.com']);
+        $this->profile(['region' => 'Минск', 'email' => 'minsk@example.com']);
+        $request = $this->request(['region' => 'Минская область', 'city' => 'Г.Логойск', 'specialization' => 'fireplace', 'source' => 'fireplace_installation']);
+
+        $this->artisan('installers:send-leads')->assertSuccessful();
+        Mail::assertNothingSent();
+
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        Livewire::test(ListInstallRequests::class)->callTableAction('sendToInstallers', $request)->assertHasNoTableActionErrors();
+        Mail::assertSent(InstallerLeadMail::class, 2);
+
+        $this->profile(['region' => 'Гомельская область', 'email' => 'new@example.com']);
+        Livewire::test(ListInstallRequests::class)->callTableAction('sendToInstallers', $request)->assertHasNoTableActionErrors();
+        Mail::assertSent(InstallerLeadMail::class, 3);
+        Mail::assertSent(InstallerLeadMail::class, fn (InstallerLeadMail $mail): bool => $mail->hasTo('new@example.com'));
     }
 
     private function profile(array $data): InstallerProfile
