@@ -35,10 +35,12 @@ class InstallerLeadDispatcher
      */
     public function dispatch(InstallRequest $request, bool $again = false): array
     {
+        // MySQL counts only changed rows: a second press within the same second «changes» nothing, so a
+        // send by hand does not depend on the count.
         $claimed = InstallRequest::query()->whereKey($request->id)
             ->when(! $again, fn ($query) => $query->whereNull('leads_sent_at'))
             ->update(['leads_sent_at' => now()]);
-        if ($claimed === 0) {
+        if ($claimed === 0 && ! $again) {
             return ['matched' => 0, 'sent' => 0, 'failed' => 0];
         }
 
