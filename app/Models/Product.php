@@ -185,6 +185,21 @@ class Product extends Model
         return $days !== null ? (int) $days : null;
     }
 
+    /** Dated supplier statement, for display when the live balance needs confirmation. */
+    public function lastReportedSupplierStock(): ?SupplierProduct
+    {
+        if ($this->manual_stock_management || $this->requires_price_confirmation) {
+            return null;
+        }
+
+        return $this->operationalSupplierProducts()
+            ->filter(fn (SupplierProduct $offer) => $offer->supplier->code === 'termteplosistem'
+                && $offer->in_stock && $offer->stock_quantity > 0
+                && $offer->last_stock_synced_at !== null && ! $offer->hasFreshPositiveStock())
+            ->sortByDesc('last_stock_synced_at')
+            ->first();
+    }
+
     /** The same resolved state is used by public labels, the cart and checkout. */
     public function publicAvailabilityStatus(): string
     {

@@ -216,6 +216,21 @@ class UnconfirmedProductCheckoutTest extends TestCase
         $this->assertDatabaseCount((new Order)->getTable(), $orderCount);
     }
 
+    public function test_product_shows_current_or_dated_termteplo_quantity(): void
+    {
+        $product = $this->unconfirmedProduct();
+        $offer = $product->supplierProducts()->sole();
+        $offer->supplier->update(['code' => 'termteplosistem']);
+        $offer->update(['stock_status' => 'in_stock', 'in_stock' => true, 'stock_quantity' => 20,
+            'last_stock_synced_at' => now()]);
+        $url = '/'.$product->category->slug.'/'.$product->slug;
+        $this->get($url)->assertOk()->assertSeeText('В наличии: 20 шт.');
+        $date = now()->subDays(2);
+        $offer->update(['last_stock_synced_at' => $date]);
+        $this->get($url)->assertOk()->assertSeeText('В наличии на '.$date->copy()->setTimezone('Europe/Minsk')->format('d.m.Y'))
+            ->assertSeeText('20 шт.')->assertDontSeeText('В наличии: 20 шт.');
+    }
+
     private function unconfirmedProduct(): Product
     {
         $category = Category::query()->firstOrCreate(
