@@ -101,7 +101,7 @@ class ViewOrder extends ViewRecord
                 ->color(fn (): string => app(OrderWorkflow::class)->step($this->record)['color'] ?? 'gray')
                 ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->visible(fn (): bool => app(OrderWorkflow::class)->step($this->record) !== null
-                    && ! $this->record->needsFulfillmentConfirmation()
+                    && (! $this->record->usesGuidedFulfillment() || ! $this->record->needsFulfillmentConfirmation())
                     && ! $this->record->needsEvropochtaShipment())
                 ->disabled(fn (): bool => app(OrderWorkflow::class)->blocker($this->record) !== null)
                 ->tooltip(fn (): ?string => app(OrderWorkflow::class)->blocker($this->record))
@@ -866,7 +866,9 @@ class ViewOrder extends ViewRecord
                 Select::make('fulfillment_route')->label('Как исполняем')
                     ->options(OrderItem::FULFILLMENT_ROUTES)->required()->live()
                     ->afterStateUpdated(function (Get $get, Set $set): void {
-                        $supplierId = array_key_first($this->fulfillmentOffers($get));
+                        $item = $this->record->items->find((int) $get('order_item_id'));
+                        $supplierId = $item?->product_id || $get('fulfillment_route') === 'own_stock'
+                            ? array_key_first($this->fulfillmentOffers($get)) : null;
                         $set('supplier_id', $supplierId);
                         $this->fillFulfillmentOffer($get, $set, $supplierId);
                     }),
@@ -874,7 +876,9 @@ class ViewOrder extends ViewRecord
                     ->options(fn (Get $get): array => array_map(fn (array $offer): string => $offer['label'], $this->fulfillmentOffers($get)))
                     ->visible(fn (Get $get): bool => in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
                     ->required()->searchable()->live()
-                    ->helperText('Показаны поставщики этой позиции. Для разовой закупки используйте «Назначить поставщика» в строке товара.')
+                    ->helperText(fn (Get $get): string => $this->record->items->find((int) $get('order_item_id'))?->product_id
+                        ? 'Показаны поставщики этой позиции. Для разовой закупки используйте «Назначить поставщика» в строке товара.'
+                        : 'Позиция без карточки товара. Выберите поставщика вручную.')
                     ->afterStateUpdated(fn (Get $get, Set $set, $state) => $this->fillFulfillmentOffer($get, $set, $state)),
                 Placeholder::make('fulfillment_source')->label('Склад и остаток')
                     ->visible(fn (Get $get): bool => filled($get('fulfillment_route')))
@@ -901,7 +905,7 @@ class ViewOrder extends ViewRecord
                 $own = $data['fulfillment_route'] === 'own_stock';
                 $offers = $this->offersForRoute($item, $data['fulfillment_route']);
                 $supplierId = $own
-                    ? app(OrderItemFulfillmentPicker::class)->defaults($item, $offers)['supplier_id']
+                    ? (app(OrderItemFulfillmentPicker::class)->defaults($item, $offers)['supplier_id'] ?? array_key_first($offers))
                     : ($data['supplier_id'] ?? null);
                 if (! isset($offers[$supplierId])) {
                     throw ValidationException::withMessages([

@@ -347,6 +347,11 @@ class Order extends Model
         }
     }
 
+    public function usesGuidedFulfillment(): bool
+    {
+        return ! str_starts_with((string) $this->number, 'DBY-');
+    }
+
     public function needsFulfillmentConfirmation(): bool
     {
         if (! in_array($this->status, ['new', 'checking', 'confirmed', 'processing'], true)) {
@@ -360,13 +365,13 @@ class Order extends Model
 
     public function needsEvropochtaShipment(): bool
     {
-        return $this->status === 'processing' && $this->delivery_type === 'evropochta'
+        return $this->usesGuidedFulfillment() && $this->status === 'processing' && $this->delivery_type === 'evropochta'
             && blank($this->evropochta_tracking_number);
     }
 
     public function workflowNextStep(): string
     {
-        if ($this->needsFulfillmentConfirmation()) {
+        if ($this->usesGuidedFulfillment() && $this->needsFulfillmentConfirmation()) {
             return 'Нажмите «Подтвердить исполнение» и проверьте склад и наличие для каждой позиции.';
         }
 
@@ -378,9 +383,11 @@ class Order extends Model
 
         return match ($this->status) {
             'new' => 'Принять заказ и начать проверку наличия.',
-            'checking' => $this->hasConfirmedFulfillmentForAllItems()
-                ? 'Нажмите «Подтвердить наличие», чтобы подтвердить заказ для клиента.'
-                : 'Добавьте позиции, чтобы подтвердить наличие.',
+            'checking' => match (true) {
+                ! $this->usesGuidedFulfillment() => 'Проверить наличие и способ исполнения каждой позиции.',
+                $this->hasConfirmedFulfillmentForAllItems() => 'Нажмите «Подтвердить наличие», чтобы подтвердить заказ для клиента.',
+                default => 'Добавьте позиции, чтобы подтвердить наличие.',
+            },
             'confirmed' => 'Нажмите «Передать в исполнение».',
             'processing' => $this->procurementStep().'Соберите заказ и нажмите «Передать в доставку».',
             'shipped' => 'Контролировать доставку и отметить получение клиентом.',

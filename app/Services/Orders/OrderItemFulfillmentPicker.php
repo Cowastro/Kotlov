@@ -17,6 +17,18 @@ final class OrderItemFulfillmentPicker
         $item->loadMissing(['supplySupplier', 'fulfillmentSupplier', 'product.warehouseStocks.supplier',
             'product.integrationProducts.source.latestSuccessfulCatalogExchangeRun']);
         $product = $item->product;
+        if ($product === null) {
+            return Supplier::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'code'])
+                ->mapWithKeys(fn (Supplier $supplier): array => [$supplier->id => [
+                    'label' => $supplier->name,
+                    'own' => $supplier->code === 'sanbusinessgroup',
+                    'quantity' => null,
+                    'price' => (int) $item->supply_supplier_id === $supplier->id && $item->supply_purchase_price !== null
+                        ? (float) $item->supply_purchase_price : null,
+                    'source' => null,
+                ]])->all();
+        }
+
         $integrations = collect($product?->operationalIntegrationProducts())->groupBy(fn ($offer) => $offer->source->supplier_id);
         $legacyOffers = collect($product?->operationalSupplierProducts())->groupBy('supplier_id');
         $warehouses = collect($product?->warehouseStocks)->groupBy('supplier_id');
@@ -72,7 +84,10 @@ final class OrderItemFulfillmentPicker
     {
         $ownInStock = array_filter($offers, fn (array $offer): bool => $offer['own'] && $offer['quantity'] >= $item->quantity);
         $preferred = $item->fulfillment_supplier_id ?: array_key_first($ownInStock) ?: $item->supply_supplier_id;
-        $supplierId = isset($offers[$preferred]) ? $preferred : array_key_first($offers);
+        $supplierId = isset($offers[$preferred]) ? $preferred : ($item->product_id ? array_key_first($offers) : null);
+        if ($supplierId === null && $item->fulfillment_route === 'own_stock') {
+            $supplierId = array_key_first(array_filter($offers, fn (array $offer): bool => $offer['own']));
+        }
         $offer = $offers[$supplierId] ?? null;
         $route = $item->fulfillment_route ?? ($offer === null ? null : ($offer['own'] ? 'own_stock' : 'supplier_purchase'));
         if ($offer !== null) {
