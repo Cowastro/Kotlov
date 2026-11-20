@@ -81,12 +81,15 @@ class TermTeploSupplierTest extends TestCase
         $category = Category::create(['name' => 'Котлы', 'slug' => 'local-links']);
         $names = ['Электрический котел Arderia E9, v3', 'Электрический котел Arderia E9, v2',
             'Датчик Test T-27', 'Насос Test N-15', 'Насос Test N-15'];
+        $gasTitle = 'Котел газовый отопительный водогрейный Arderia D24 Atmo';
+        $gas = Product::create(['category_id' => $category->id, 'sku' => 'PS-011.780', 'name' => $gasTitle.', v3',
+            'slug' => 'local-d24-atmo', 'is_active' => true, 'is_archived' => false, 'price' => 0]);
         foreach ($names as $i => $name) {
             Product::create(['category_id' => $category->id, 'sku' => "local-$i", 'name' => $name,
                 'slug' => "local-$i", 'price' => 0, 'requires_price_confirmation' => true]);
         }
         $rows = [];
-        foreach (['2202210' => 'Электрический котел Arderia E9', 'tmp-1' => $names[2], 'tmp-2' => $names[3]] as $code => $name) {
+        foreach (['2202210' => 'Электрический котел Arderia E9', '2201383' => $gasTitle, 'tmp-1' => $names[2], 'tmp-2' => $names[3]] as $code => $name) {
             $rows[$code] = ['article' => is_numeric($code) ? (string) $code : '', 'name' => $name,
                 'title' => '', 'quantity' => 19, 'retail' => 1470, 'cost' => 1095, 'specs' => []];
         }
@@ -95,7 +98,8 @@ class TermTeploSupplierTest extends TestCase
         $feed->shouldReceive('download')->andReturnNull();
         $feed->shouldReceive('read')->andReturn([$rows, [], []]);
         Http::fake(['drive.google.com/*' => Http::response('folder')]);
-        $this->artisan('supplier:sync-termteplo --apply')->expectsOutput('metric.termteplo.linked=2')->assertSuccessful();
+        $this->artisan('supplier:sync-termteplo --apply')->expectsOutput('metric.termteplo.linked=3')->assertSuccessful();
+        $this->assertEquals($gas->id, SupplierProduct::whereSupplierArticle('2201383')->sole()->product_id);
         $card = Product::whereSku('local-0')->sole();
         $this->assertEquals($card->id, SupplierProduct::whereSupplierArticle('2202210')->sole()->product_id);
         $this->assertFalse($card->requires_price_confirmation);
