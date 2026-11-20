@@ -70,7 +70,8 @@ final class QuickOrderAction
                                 ->live()
                                 ->searchDebounce(250)
                                 ->getSearchResultsUsing(self::searchProducts(...))
-                                ->getOptionLabelUsing(fn ($value): ?string => app(QuickCommercialOfferService::class)->productLabels([(int) $value])[(int) $value] ?? null)
+                                ->getOptionLabelUsing(fn ($value): ?string => app(QuickCommercialOfferService::class)
+                                    ->productLabels([(int) $value], withStockQuantity: true)[(int) $value] ?? null)
                                 ->afterStateUpdated(function ($state, Set $set): void {
                                     $product = $state ? Product::query()->find((int) $state) : null;
                                     if ($product) {
@@ -184,7 +185,7 @@ final class QuickOrderAction
             return [];
         }
 
-        $labels = app(QuickCommercialOfferService::class)->productLabels($ids);
+        $labels = app(QuickCommercialOfferService::class)->productLabels($ids, withStockQuantity: true);
 
         return array_intersect_key(array_replace(array_fill_keys($ids, ''), $labels), $labels);
     }

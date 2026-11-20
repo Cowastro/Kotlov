@@ -367,11 +367,17 @@ class QuickCommercialOfferService
     /** @param array<int|string> $ids
      * @return array<int, string>
      */
-    public function productLabels(array $ids): array
+    public function productLabels(array $ids, bool $withStockQuantity = false): array
     {
-        return Product::query()->with(['supplierProducts.supplier', 'integrationProducts.source'])
-            ->whereIn('id', $ids)->get()
-            ->mapWithKeys(fn (Product $product): array => [$product->id => $this->productLabel($product)])
+        $relations = $withStockQuantity ? [
+            'supplierProducts.supplier.latestChannelTransition',
+            'integrationProducts.source.supplier',
+            'integrationProducts.source.latestSuccessfulCatalogExchangeRun',
+            'purchasePriceSources.supplier',
+        ] : ['supplierProducts.supplier', 'integrationProducts.source'];
+
+        return Product::query()->with($relations)->whereIn('id', $ids)->get()
+            ->mapWithKeys(fn (Product $product): array => [$product->id => $this->productLabel($product, $withStockQuantity)])
             ->all();
     }
 
@@ -640,7 +646,7 @@ class QuickCommercialOfferService
         return null;
     }
 
-    private function productLabel(Product $product): string
+    private function productLabel(Product $product, bool $withStockQuantity = false): string
     {
         $suppliers = $product->supplierProducts
             ->map(fn ($offer): ?string => $offer->supplier?->name ?: $offer->supplier_name)
@@ -650,7 +656,7 @@ class QuickCommercialOfferService
             $product->name,
             $product->sku ? 'арт. '.$product->sku : 'без артикула',
             number_format((float) $product->price, 2, ',', ' ').' BYN',
-            $product->availabilityLabel(),
+            $withStockQuantity ? $product->publicAvailabilityLabel() : $product->availabilityLabel(),
             $suppliers !== '' ? 'поставщик: '.$suppliers : null,
         ]));
     }
