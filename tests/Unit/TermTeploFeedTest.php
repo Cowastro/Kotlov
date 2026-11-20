@@ -43,4 +43,16 @@ class TermTeploFeedTest extends TestCase
         $this->assertSame([], $catalog->specifications('ABC123', $html));
         $this->assertSame(['Габариты упаковки · Высота, мм' => '800'], $catalog->specifications('ABC123RU', $html));
     }
+
+    public function test_preposted_statement_becomes_current_at_midnight_in_minsk(): void
+    {
+        $folder = '<div id="entry-price"><b class="flip-entry-title">Прайс ООО ТермТеплоСистем 12.10.26</b></div>
+            <div id="entry-old"><b class="flip-entry-title">остатки 19.11.26.xlsx</b></div>
+            <div id="entry-new"><b class="flip-entry-title">остатки 23.11.26.xlsx</b></div>';
+        $feed = new TermTeploFeed;
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-22 23:59:00', 'Europe/Minsk'));
+        $this->assertSame('old', $feed->sources($folder)['stock']['id']);
+        $this->travel(1)->minutes();
+        $this->assertSame('new', $feed->sources($folder)['stock']['id']);
+    }
 }

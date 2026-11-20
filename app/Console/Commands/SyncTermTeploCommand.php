@@ -21,7 +21,7 @@ class SyncTermTeploCommand extends Command
 {
     private const CODE = 'termteplosistem';
 
-    protected $signature = 'supplier:sync-termteplo {--apply : Сохранить проверенные предложения} {--dry-run : Только проверить}';
+    protected $signature = 'supplier:sync-termteplo {--apply : Сохранить проверенные предложения} {--dry-run : Только проверить} {--if-new : Пропускать недавно обработанную версию файлов}';
 
     protected $description = 'ТермТеплоСистем — актуальный прайс, характеристики и свободные остатки из Google Drive';
 
@@ -37,6 +37,13 @@ class SyncTermTeploCommand extends Command
         try {
             $folder = Http::timeout(30)->retry(2, 500)->get('https://drive.google.com/embeddedfolderview', ['id' => TermTeploFeed::FOLDER])->throw()->body();
             $sources = $feed->sources($folder);
+            $versionKey = 'supplier:termteplo:last-successful-version';
+            if ($this->option('if-new') && $this->option('apply') && ! $this->option('dry-run')
+                && Cache::get($versionKey) === $sources) {
+                $this->info('Ведомость и прайс уже обработаны.');
+
+                return self::SUCCESS;
+            }
             foreach ($sources as $kind => $file) {
                 $paths[$kind] = tempnam(sys_get_temp_dir(), 'termteplo-');
                 $feed->download($file, $kind, $paths[$kind]);
@@ -54,6 +61,7 @@ class SyncTermTeploCommand extends Command
             }
             if ($this->option('apply') && ! $this->option('dry-run')) {
                 DB::transaction(fn () => $this->save($rows, $sources, $duplicates));
+                Cache::put($versionKey, $sources, now()->addDay());
             }
 
             return self::SUCCESS;
