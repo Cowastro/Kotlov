@@ -75,4 +75,31 @@ class TermTeploSupplierTest extends TestCase
         $this->assertEquals(2200, $card->fresh()->price);
         $this->assertSame(['Проверен', '24'], array_column($card->fresh()->specs, 'value'));
     }
+
+    public function test_local_import_links_v3_and_unique_full_titles_but_skips_duplicate_cards(): void
+    {
+        $category = Category::create(['name' => 'Котлы', 'slug' => 'local-links']);
+        $names = ['Электрический котел Arderia E9, v3', 'Электрический котел Arderia E9, v2',
+            'Датчик Test T-27', 'Насос Test N-15', 'Насос Test N-15'];
+        foreach ($names as $i => $name) {
+            Product::create(['category_id' => $category->id, 'sku' => "local-$i", 'name' => $name,
+                'slug' => "local-$i", 'price' => 0, 'requires_price_confirmation' => true]);
+        }
+        $rows = [];
+        foreach (['2202210' => 'Электрический котел Arderia E9', 'tmp-1' => $names[2], 'tmp-2' => $names[3]] as $code => $name) {
+            $rows[$code] = ['article' => is_numeric($code) ? (string) $code : '', 'name' => $name,
+                'title' => '', 'quantity' => 19, 'retail' => 1470, 'cost' => 1095, 'specs' => []];
+        }
+        $feed = $this->mock(TermTeploFeed::class);
+        $feed->shouldReceive('sources')->andReturn(['price' => [], 'stock' => ['date' => '2026-11-19']]);
+        $feed->shouldReceive('download')->andReturnNull();
+        $feed->shouldReceive('read')->andReturn([$rows, [], []]);
+        Http::fake(['drive.google.com/*' => Http::response('folder')]);
+        $this->artisan('supplier:sync-termteplo --apply')->expectsOutput('metric.termteplo.linked=2')->assertSuccessful();
+        $card = Product::whereSku('local-0')->sole();
+        $this->assertEquals($card->id, SupplierProduct::whereSupplierArticle('2202210')->sole()->product_id);
+        $this->assertFalse($card->requires_price_confirmation);
+        $this->assertEquals(1470, $card->price);
+        $this->assertNull(SupplierProduct::whereSupplierArticle('tmp-2')->sole()->product_id);
+    }
 }
