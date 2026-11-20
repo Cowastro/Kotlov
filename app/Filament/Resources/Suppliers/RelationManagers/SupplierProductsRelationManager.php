@@ -59,11 +59,13 @@ class SupplierProductsRelationManager extends RelationManager
                     ->placeholder('—'),
                 TextColumn::make('stock_status')
                     ->label('Наличие / срок')
-                    ->state(fn (SupplierProduct $record): string => match ($record->stock_status) {
-                        SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE => 'Минск · в наличии',
-                        'preorder' => 'До '.((int) $record->delivery_days ?: 10).' раб. дней',
-                        default => $record->stock_text ?: 'Не указано',
-                    })
+                    ->state(fn (SupplierProduct $record): string => $this->getOwnerRecord()->code === 'termteplosistem'
+                        ? ($record->stock_quantity !== null ? $record->stock_quantity.' шт.' : 'Остаток не указан')
+                        : match ($record->stock_status) {
+                            SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE => 'Минск · в наличии',
+                            'preorder' => 'До '.((int) $record->delivery_days ?: 10).' раб. дней',
+                            default => $record->stock_text ?: 'Не указано',
+                        })
                     ->badge()
                     ->color(fn (SupplierProduct $record): string => match ($record->stock_status) {
                         SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE => 'success',
