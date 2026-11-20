@@ -250,7 +250,7 @@ Schedule::command('supplier:sync-smolkom --from-drive --apply')
     ->appendOutputTo(storage_path('logs/smolkom-sync.log'));
 
 Schedule::command('supplier:sync-termteplo --apply --if-new')
-    ->everyFifteenMinutes()
+    ->twiceDaily(0, 12)
     ->timezone($supplierSyncTimezone)
     ->withoutOverlapping(60)
     ->runInBackground()
