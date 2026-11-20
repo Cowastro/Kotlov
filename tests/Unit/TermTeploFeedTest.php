@@ -4,11 +4,24 @@ namespace Tests\Unit;
 
 use App\Services\Suppliers\HaierTechnicalCatalog;
 use App\Services\Suppliers\TermTeploFeed;
+use App\Services\Suppliers\TermTeploModel;
 use RuntimeException;
 use Tests\TestCase;
 
 class TermTeploFeedTest extends TestCase
 {
+    public function test_complete_models_disambiguate_the_krats_price_typo_and_keep_accessories_and_variants_separate(): void
+    {
+        $this->assertSame('KEB-12VW-ECO', TermTeploModel::article('KEB-24VW', 'Котел электрический KRATS ECO 12кВт 1к настенный 220/380В Wi-Fi (Насос KRATS)'));
+        $this->assertSame('KEB-24VW', TermTeploModel::article('KEB-24VW', 'Котел электрический KRATS 24кВт 1к настенный 380В Wi-Fi (Насос Grundfos)'));
+        $this->assertNull(TermTeploModel::key('Клапан для KRATS ECO 12кВт'));
+        $this->assertNotSame(TermTeploModel::key('KRATS ECO 12кВт'), TermTeploModel::key('KRATS 12кВт'));
+        $this->assertSame(TermTeploModel::key('Haier ES80V-A2'), TermTeploModel::key('ES80V-А2 Водонагреватель Хайер'));
+        $this->assertNull(TermTeploModel::key('Электрический водонагреватель Haier ES10V-Q2(R) / Q1(R)'));
+        $this->assertSame(TermTeploModel::family('Haier Proline 28'), TermTeploModel::family('ProLine S 2.28 TiW', 'Haier'));
+        $this->assertNotSame(TermTeploModel::key('Haier Proline 28'), TermTeploModel::key('ProLine S 2.28 TiW', 'Haier'));
+    }
+
     public function test_rotating_stock_file_is_selected_by_report_date(): void
     {
         $folder = '<span id="entry-price"><span class="flip-entry-title">Прайс ООО ТермТеплоСистем 12.10.24</span></span>

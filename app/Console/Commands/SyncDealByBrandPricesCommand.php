@@ -7,7 +7,8 @@ use App\Models\SupplierProduct;
 use App\Services\Marketplaces\DealByClient;
 use App\Services\Suppliers\AkvateploservisPriceList;
 use App\Services\Suppliers\FirewayTeplodvorCatalog;
-use App\Services\Suppliers\HaierTechnicalCatalog;
+use App\Services\Suppliers\TermTeploModel;
+use App\Services\Suppliers\TermTeploMarketplaceLinks;
 use App\Services\Suppliers\KaminproffPriceList;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -40,6 +41,7 @@ class SyncDealByBrandPricesCommand extends Command
 
     protected $signature = 'deal:sync-brand-prices
         {--supplier= : Audit products linked to an allowed supplier code instead of the default brands}
+        {--review-unmatched : Показать по каждой непривязанной карточке кандидатов SBG для проверки}
         {--inspect-id= : Emit safe price and discount fields for one Deal.by product ID}
         {--pair=* : Fireway: a shop item linked by hand, deal id or the slug of its name:card slug (kept on the offer with --apply)}
         {--export-missing= : Fireway: a deal.by import xlsx of the cards missing on the shop, a file name under public/exports}
@@ -57,6 +59,9 @@ class SyncDealByBrandPricesCommand extends Command
             $this->supplierCode = $this->resolveSupplierCode();
             $localProducts = $this->targetProducts();
             $remoteProducts = $this->loadRemoteProducts($client);
+            if ($this->supplierCode === 'termteplosistem' && $remoteProducts->isEmpty()) {
+                throw new RuntimeException('Каталог SBG пуст. Сохранённые привязки оставлены для следующей сверки.');
+            }
 
             if (filled($this->option('inspect-id'))) {
                 return $this->inspectRemoteProduct($remoteProducts, (int) $this->option('inspect-id'));
@@ -66,6 +71,31 @@ class SyncDealByBrandPricesCommand extends Command
             $plan = $this->buildPlan($localProducts, $remoteProducts);
 
             $this->metrics($localProducts, $remoteProducts, $plan);
+            if ($this->supplierCode === 'termteplosistem') {
+                $offers = $plan['supplier_offers'];
+                $links = $plan['supplier_links'];
+                $this->line('metric.deal_brand_prices.supplier_links='.count($links));
+                $this->line('metric.deal_brand_prices.links_without_active_card='.$offers->whereIn('id', array_keys($links))->whereNotIn('product_id', $localProducts->pluck('id'))->count());
+                if ($this->option('apply')) {
+                    DB::transaction(function () use ($offers, $links) {
+                        foreach ($offers as $offer) {
+                            $id = $links[$offer->id] ?? null;
+                            if (($offer->raw['sbg_catalog_id'] ?? null) !== $id) {
+                                SupplierProduct::whereKey($offer->id)->update(['raw->sbg_catalog_id' => $id]);
+                            }
+                        }
+                    });
+                }
+            }
+            if ($this->option('review-unmatched') && $this->supplierCode === 'termteplosistem') {
+                $available = $remoteProducts->whereNotIn('id', $plan['matched_remote_ids']);
+                $families = $available->groupBy(fn ($item) => TermTeploModel::family($item['name'] ?? '') ?? '')->forget('');
+                foreach ($localProducts->whereNotIn('id', $plan['matched_local_ids']) as $card) {
+                    $family = TermTeploModel::family($card->name, $card->brand?->name ?? '');
+                    $ids = $family ? $families->get($family, collect())->pluck('id')->implode(',') : '';
+                    $this->line("audit.termteplo.review={$card->id}:".($ids ?: 'none'));
+                }
+            }
             if (filled($this->option('export-missing'))) {
                 $cards = array_filter(array_map('intval', explode(',', (string) $this->option('export-cards'))));
                 // Listed cards are exported whatever their brand or supplier (a one-off: new goods of our own stock).
@@ -81,7 +111,7 @@ class SyncDealByBrandPricesCommand extends Command
                 if ($localVezuviy === 0 || $localTatra === 0) {
                     throw new RuntimeException('Безопасная остановка: в рабочей базе не найдена одна из целевых групп товаров.');
                 }
-            } elseif ($localProducts->isEmpty()) {
+            } elseif ($localProducts->isEmpty() && ! $plan['supplier_links']) {
                 throw new RuntimeException('Безопасная остановка: у поставщика нет активных товаров с ценой.');
             }
 
@@ -91,6 +121,11 @@ class SyncDealByBrandPricesCommand extends Command
                 return self::SUCCESS;
             }
 
+            if ($this->supplierCode === 'termteplosistem' && $plan['supplier_links'] && $plan['matched'] === 0) {
+                $this->info('Связи предложений сохранены. Активных пар для обновления цен пока нет.');
+
+                return self::SUCCESS;
+            }
             if ($plan['matched'] === 0) {
                 throw new RuntimeException('Безопасная остановка: ни один целевой товар не связан с Deal.by.');
             }
@@ -181,11 +216,10 @@ class SyncDealByBrandPricesCommand extends Command
         $termOffers = $this->supplierCode === 'termteplosistem'
             ? SupplierProduct::where('supplier_id', $supplierId)->get() : collect();
         $termByProduct = $termOffers->groupBy('product_id');
-        $modelKey = static fn ($name) => str_contains(mb_strtolower($name), 'haier') ? HaierTechnicalCatalog::model($name) : null;
-        $remoteModels = $termOffers->isEmpty() ? collect() : $remoteProducts
-            ->map(fn ($item) => $modelKey((string) ($item['name'] ?? '')))->filter()->countBy();
-        $termModels = $termOffers->filter(fn ($offer) => str_contains(mb_strtolower($offer->supplier_name.' '.($offer->raw['title'] ?? '')), 'haier'))
-            ->groupBy(fn ($offer) => HaierTechnicalCatalog::model($offer->supplier_name) ?? '')->forget('');
+        $termLinks = $termOffers->isEmpty() ? [] : (new TermTeploMarketplaceLinks)->resolve(
+            $termOffers->reject(fn ($offer) => $offer->stock_status === 'missing_from_feed'), $remoteProducts
+        );
+        $termByRemoteId = $termOffers->whereIn('id', array_keys($termLinks))->keyBy(fn ($offer) => $termLinks[$offer->id]);
         $localByArticle = $supplierId > 0
             ? $localProducts->flatMap(fn (Product $product) => $product->supplierProducts
                 ->where('supplier_id', $supplierId)
@@ -265,6 +299,12 @@ class SyncDealByBrandPricesCommand extends Command
             $local = null;
             $externalId = trim((string) ($remote['external_id'] ?? ''));
             $remoteSku = $this->normalizeSku($remote['sku'] ?? null);
+            if ($this->supplierCode === 'termteplosistem' && $remoteSku !== ''
+                && TermTeploModel::article((string) $remote['sku'], $remote['name'] ?? '') !== (string) $remote['sku']) {
+                $ambiguous++;
+
+                continue;
+            }
 
             if (preg_match('/^kotlov-(\d+)$/i', $externalId, $match) === 1) {
                 $local = $localById->get((int) $match[1]);
@@ -290,11 +330,8 @@ class SyncDealByBrandPricesCommand extends Command
             }
 
             $remoteName = $this->normalizeName($remote['name'] ?? null);
-            if (! $local && $this->supplierCode === 'termteplosistem' && $externalId === '' && $remoteSku === '') {
-                $key = $modelKey((string) ($remote['name'] ?? ''));
-                if ($key && ($remoteModels[$key] ?? 0) === 1 && ($termModels[$key] ?? collect())->count() === 1) {
-                    $local = $localById->get($termModels[$key]->first()->product_id);
-                }
+            if (! $local && $this->supplierCode === 'termteplosistem' && $externalId === '') {
+                $local = $localById->get($termByRemoteId->get($remote['id'] ?? null)?->product_id);
             }
             if (! $local && $this->supplierCode !== 'termteplosistem' && $remoteName !== '' && ($remoteNameCounts[$remoteName] ?? 0) === 1) {
                 $nameCandidates = $localByName->get($remoteName, collect());
@@ -391,6 +428,8 @@ class SyncDealByBrandPricesCommand extends Command
             'invalid_remote_price' => $invalidRemotePrice,
             'matched_local_ids' => $matchedLocalIds->unique()->values()->all(),
             'matched_remote_ids' => $matchedRemoteIds->unique()->values()->all(),
+            'supplier_offers' => $termOffers,
+            'supplier_links' => $termLinks,
         ];
     }
 
@@ -403,7 +442,7 @@ class SyncDealByBrandPricesCommand extends Command
      */
     private function dealPairs(Collection $localProducts, Collection $remoteProducts): array
     {
-        if (! in_array($this->supplierCode, self::MODEL_SUPPLIERS, true)) {
+        if (! in_array($this->supplierCode, [...self::MODEL_SUPPLIERS, 'termteplosistem'], true)) {
             return [];
         }
         $supplierId = (int) DB::table('suppliers')->where('code', $this->supplierCode)->value('id');
@@ -423,6 +462,14 @@ class SyncDealByBrandPricesCommand extends Command
             }
             $product = $localProducts->firstWhere('slug', trim($slug));
             $offer = $product ? $offers->firstWhere('product_id', $product->id) : null;
+            if ($this->supplierCode === 'termteplosistem') {
+                $remote = $remoteProducts->firstWhere('id', (int) $dealId);
+                if (! $remote || ! $product || (filled($remote['external_id'] ?? null) && $remote['external_id'] !== 'kotlov-'.$product->id)
+                    || (isset($pairs[(int) $dealId]) && $pairs[(int) $dealId] !== (int) $product->id)
+                    || (in_array((int) $product->id, $pairs, true) && ($pairs[(int) $dealId] ?? null) !== (int) $product->id)) {
+                    throw new RuntimeException("Проверьте ID и существующие связи для пары {$pair}");
+                }
+            }
             if (! ctype_digit(trim($dealId)) || ! $offer) {
                 $this->warn("--pair {$pair}: карточка поставщика не найдена.");
 

@@ -87,6 +87,7 @@ class TermTeploFeed
                 throw new RuntimeException("Нечисловой остаток {$name}");
             }
             $sum += (float) $qty;
+            $article = TermTeploModel::article(trim((string) $article), $name);
             $key = self::key($article, $name);
             $stockRows[$key] = ['article' => trim((string) $article), 'name' => trim($name), 'unit' => trim($unit)];
             if ($qty !== null && trim($unit) === 'шт') {
@@ -160,7 +161,8 @@ class TermTeploFeed
                     continue;
                 }
                 $parsed++;
-                $article = $get('Артикул');
+                $sourceArticle = $get('Артикул');
+                $article = TermTeploModel::article($sourceArticle, $name);
                 $key = self::key($article, $name);
                 if (isset($offers[$key]) || isset($conflicts[$key])) {
                     $conflicts[$key] = true;
@@ -175,6 +177,7 @@ class TermTeploFeed
                     }
                 }
                 $offers[$key] = compact('article', 'name', 'cost', 'retail', 'specs', 'title') + [
+                    'source_article' => $sourceArticle,
                     'row' => $i + 1, 'quantity' => isset($quantities[$key]) ? max(0, $quantities[$key]) : null,
                 ];
             }

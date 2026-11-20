@@ -12,8 +12,10 @@ class HaierTechnicalCatalog
     /** Only complete model names, including every capacity, generation and suffix. */
     public static function model(string $name): ?string
     {
-        $name = mb_strtoupper(str_replace('ё', 'е', $name));
-        $name = preg_replace('/\b(?:HAIER|НАСТЕННЫЙ|ГАЗОВЫЙ|КОТЕЛ|ЭЛЕКТРИЧЕСКИЙ|НАКОПИТЕЛЬНЫЙ|ПРОТОЧНЫЙ|ВОДОНАГРЕВАТЕЛЬ)\b/u', '', $name);
+        $name = str_replace(['Ё', '‑', '–'], ['Е', '-', '-'], mb_strtoupper($name));
+        $name = preg_replace('/\b(?:HAIER|ХАЙЕР|НАСТЕННЫЙ|ГАЗОВЫЙ|КОТЕЛ|ЭЛЕКТРИЧЕСКИЙ|НАКОПИТЕЛЬНЫЙ|ПРОТОЧНЫЙ|ВОДОНАГРЕВАТЕЛЬ)\b/u', '', $name);
+        $name = preg_replace('/\s+(?:ПОД|НАД)\s+РАКОВИНОЙ\s*$/u', '', $name);
+        $name = strtr($name, ['А' => 'A', 'В' => 'B', 'С' => 'C', 'Е' => 'E', 'Н' => 'H', 'К' => 'K', 'М' => 'M', 'О' => 'O', 'Р' => 'P', 'Т' => 'T', 'Х' => 'X']);
         $model = trim(preg_replace('/\s+/u', ' ', $name));
         if (! preg_match('/^[A-Z0-9][A-Z0-9 .()\-]*$/D', $model) || ! preg_match('/[0-9]/', $model)) {
             return null;

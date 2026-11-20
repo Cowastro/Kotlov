@@ -35,6 +35,7 @@ class SupplierProductsRelationManager extends RelationManager
                     ->label('Предложение поставщика')
                     ->description(fn (SupplierProduct $record): string => collect([
                         $record->supplier_article ? 'Арт. '.$record->supplier_article : null,
+                        data_get($record->raw, 'sbg_catalog_id') ? 'SBG №'.data_get($record->raw, 'sbg_catalog_id') : null,
                         $record->supplier_catalog_code ? 'Код каталога: '.$record->supplier_catalog_code : null,
                         data_get($record->raw, 'model'),
                     ])->filter()->implode(' · '))
