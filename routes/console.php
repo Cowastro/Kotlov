@@ -249,6 +249,27 @@ Schedule::command('supplier:sync-smolkom --from-drive --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/smolkom-sync.log'));
 
+Schedule::command('supplier:sync-termteplo --apply')
+    ->dailyAt('07:35')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/termteplo-sync.log'));
+
+Schedule::command('supplier:termteplo-haier-specs --apply')
+    ->dailyAt('08:15')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/termteplo-specs.log'));
+
+Schedule::command('deal:sync-brand-prices --supplier=termteplosistem --apply')
+    ->dailyAt('08:25')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/termteplo-sbg.log'));
+
 // ООО «БЛК7» (b2b.blk7.by): Lavoro stock, retail and wholesale prices from the open brand page, every 3 hours.
 Schedule::command('supplier:sync-blk7 --brand=lavoro --apply')
     ->cron('35 7-21/3 * * *')

@@ -7,6 +7,7 @@ use App\Models\SupplierProduct;
 use App\Services\Marketplaces\DealByClient;
 use App\Services\Suppliers\AkvateploservisPriceList;
 use App\Services\Suppliers\FirewayTeplodvorCatalog;
+use App\Services\Suppliers\HaierTechnicalCatalog;
 use App\Services\Suppliers\KaminproffPriceList;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -21,7 +22,7 @@ class SyncDealByBrandPricesCommand extends Command
 {
     private const PAGE_SIZE = 100;
 
-    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall', 'kaminproff', 'akvateploservis', 'teplov', 'metabel'];
+    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall', 'kaminproff', 'akvateploservis', 'teplov', 'metabel', 'termteplosistem'];
 
     /** Galmet and Apamet goods of the shop by their name (Акватеплосервис). */
     private const GALMET_NAME = '/galmet|apamet|галмет|апамет/ui';
@@ -97,6 +98,7 @@ class SyncDealByBrandPricesCommand extends Command
                 $response = $client->editProducts($chunk->map(fn (array $item): array => [
                     'id' => $item['deal_id'],
                     'price' => $item['new_price'],
+                    ...($item['stock_update'] ?? []),
                 ])->values()->all());
 
                 if (filled($response['error'] ?? null) || collect($response['errors'] ?? [])->filter()->isNotEmpty()) {
@@ -144,7 +146,7 @@ class SyncDealByBrandPricesCommand extends Command
             });
         }
 
-        $products = $query->get(['id', 'brand_id', 'name', 'sku', 'slug', 'price']);
+        $products = $query->get(['id', 'brand_id', 'name', 'sku', 'slug', 'price', 'stock_qty', 'in_stock']);
 
         if ($this->supplierCode !== null) {
             return $products->values();
@@ -175,6 +177,14 @@ class SyncDealByBrandPricesCommand extends Command
         $supplierId = $this->supplierCode !== null
             ? (int) DB::table('suppliers')->where('code', $this->supplierCode)->value('id')
             : 0;
+        $termOffers = $this->supplierCode === 'termteplosistem'
+            ? SupplierProduct::where('supplier_id', $supplierId)->get() : collect();
+        $termByProduct = $termOffers->groupBy('product_id');
+        $modelKey = static fn ($name) => str_contains(mb_strtolower($name), 'haier') ? HaierTechnicalCatalog::model($name) : null;
+        $remoteModels = $termOffers->isEmpty() ? collect() : $remoteProducts
+            ->map(fn ($item) => $modelKey((string) ($item['name'] ?? '')))->filter()->countBy();
+        $termModels = $termOffers->filter(fn ($offer) => str_contains(mb_strtolower($offer->supplier_name.' '.($offer->raw['title'] ?? '')), 'haier'))
+            ->groupBy(fn ($offer) => HaierTechnicalCatalog::model($offer->supplier_name) ?? '')->forget('');
         $localByArticle = $supplierId > 0
             ? $localProducts->flatMap(fn (Product $product) => $product->supplierProducts
                 ->where('supplier_id', $supplierId)
@@ -257,6 +267,9 @@ class SyncDealByBrandPricesCommand extends Command
 
             if (preg_match('/^kotlov-(\d+)$/i', $externalId, $match) === 1) {
                 $local = $localById->get((int) $match[1]);
+                if ($this->supplierCode === 'termteplosistem' && ! $local) {
+                    continue;
+                }
             }
             if (! $local && isset($this->dealPairs[(int) ($remote['id'] ?? 0)])) {
                 $local = $localById->get($this->dealPairs[(int) $remote['id']]);
@@ -276,7 +289,13 @@ class SyncDealByBrandPricesCommand extends Command
             }
 
             $remoteName = $this->normalizeName($remote['name'] ?? null);
-            if (! $local && $remoteName !== '' && ($remoteNameCounts[$remoteName] ?? 0) === 1) {
+            if (! $local && $this->supplierCode === 'termteplosistem' && $externalId === '' && $remoteSku === '') {
+                $key = $modelKey((string) ($remote['name'] ?? ''));
+                if ($key && ($remoteModels[$key] ?? 0) === 1 && ($termModels[$key] ?? collect())->count() === 1) {
+                    $local = $localById->get($termModels[$key]->first()->product_id);
+                }
+            }
+            if (! $local && $this->supplierCode !== 'termteplosistem' && $remoteName !== '' && ($remoteNameCounts[$remoteName] ?? 0) === 1) {
                 $nameCandidates = $localByName->get($remoteName, collect());
                 if ($nameCandidates->count() === 1) {
                     $local = $nameCandidates->first();
@@ -299,7 +318,7 @@ class SyncDealByBrandPricesCommand extends Command
                 }
             }
 
-            if (! $local && $this->looksLikeTatra($remote['name'] ?? null)) {
+            if (! $local && $this->supplierCode !== 'termteplosistem' && $this->looksLikeTatra($remote['name'] ?? null)) {
                 $model = $this->tatraModelKey($remote['name'] ?? null, $remote['sku'] ?? null);
                 $modelCandidates = $model !== null ? $localByTatraModel->get($model, collect()) : collect();
 
@@ -326,7 +345,21 @@ class SyncDealByBrandPricesCommand extends Command
 
             $remotePrice = round((float) $remote['price'], 2);
             $localPrice = round((float) $local->price, 2);
-            if (abs($remotePrice - $localPrice) < 0.01) {
+            $stockUpdate = [];
+            if ($this->supplierCode === 'termteplosistem') {
+                $offers = $termByProduct->get($local->id, collect());
+                $offer = $offers->count() === 1 ? $offers->first() : null;
+                if ($offer && $offer->last_stock_synced_at?->gte(now()->subDay()) && $offer->stock_quantity !== null
+                    && $local->stock_qty !== null && (int) $local->stock_qty === $offer->stock_quantity
+                    && (bool) $local->in_stock === ($offer->stock_quantity > 0)) {
+                    $presence = $offer->stock_quantity > 0 ? 'available' : 'not_available';
+                    if (($remote['presence'] ?? '') !== $presence || ! is_numeric($remote['quantity_in_stock'] ?? null)
+                        || (int) $remote['quantity_in_stock'] !== $offer->stock_quantity) {
+                        $stockUpdate = ['presence' => $presence, 'quantity_in_stock' => $offer->stock_quantity];
+                    }
+                }
+            }
+            if (abs($remotePrice - $localPrice) < 0.01 && ! $stockUpdate) {
                 $unchanged++;
 
                 continue;
@@ -340,6 +373,7 @@ class SyncDealByBrandPricesCommand extends Command
                 'group' => $group,
                 'old_price' => $remotePrice,
                 'new_price' => $localPrice,
+                'stock_update' => $stockUpdate,
             ]);
         }
 
