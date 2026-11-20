@@ -15,6 +15,16 @@
         $controlLabel = 'Срок контроля не назначен';
     }
     $context = $isTable ? ['table' => true, 'recordKey' => (string) $order->getKey()] : [];
+    $shipmentAction = null;
+    if (! $isTable && $order->needsEvropochtaShipment() && ! $order->needsFulfillmentConfirmation()
+        && \App\Filament\Resources\Orders\OrderResource::canEdit($order)) {
+        $shipments = app(\App\Services\Shipping\EvropochtaOrderShipment::class);
+        if ($shipments->unavailableReason($order) === null) {
+            $shipmentAction = ['createEvropochtaShipment', 'Оформить Европочту и открыть ярлык'];
+        } elseif ($shipments->preparationUnavailableReason($order) === null) {
+            $shipmentAction = ['prepareEvropochtaShipment', 'Подготовить отправление Европочтой'];
+        }
+    }
 @endphp
 <section class="order-deal {{ $isTable ? 'order-deal--compact' : 'order-deal--full' }}"
     wire:key="order-deal-layout-v3-{{ $order->getKey() }}-{{ $isTable ? 'table' : 'card' }}-{{ $order->effectiveDealStage() }}"
@@ -67,7 +77,16 @@
     @if (! $isTable)
         <div class="order-deal__next">
             <strong>Следующий шаг</strong>
-            <p>{{ $active && filled($order->deal_next_action) ? $order->deal_next_action : $order->workflowNextStep() }}</p>
+            <p>{{ $order->workflowNextStep() }}</p>
+            @if ($shipmentAction)
+                <x-filament::link tag="button" icon="heroicon-o-cube"
+                    wire:click="mountAction('{{ $shipmentAction[0] }}')">
+                    {{ $shipmentAction[1] }}
+                </x-filament::link>
+            @endif
+            @if ($active && filled($order->deal_next_action))
+                <p class="text-gray-500 dark:text-gray-400">{{ $order->deal_next_action }}</p>
+            @endif
         </div>
     @elseif ($active && filled($order->deal_next_action))
         <div class="order-deal__next" title="{{ $order->deal_next_action }}">{{ $order->deal_next_action }}</div>

@@ -18,6 +18,7 @@ use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\Orders\OrderAvailabilityConfirmation;
 use App\Services\Orders\OrderItemFulfillmentManager;
+use App\Services\Orders\OrderItemFulfillmentPicker;
 use App\Services\Orders\OrderPortal;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\OrderWorkflow;
@@ -30,11 +31,13 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\DB;
@@ -91,12 +94,15 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            $this->confirmFulfillmentAction(),
             Action::make('advanceWorkflow')
                 ->label(fn (): string => app(OrderWorkflow::class)->step($this->record)['label'] ?? 'Следующий этап')
                 ->icon(fn (): string => app(OrderWorkflow::class)->step($this->record)['icon'] ?? 'heroicon-o-arrow-right')
                 ->color(fn (): string => app(OrderWorkflow::class)->step($this->record)['color'] ?? 'gray')
                 ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
-                ->visible(fn (): bool => app(OrderWorkflow::class)->step($this->record) !== null)
+                ->visible(fn (): bool => app(OrderWorkflow::class)->step($this->record) !== null
+                    && (! $this->record->usesGuidedFulfillment() || ! $this->record->needsFulfillmentConfirmation())
+                    && ! $this->record->needsEvropochtaShipment())
                 ->disabled(fn (): bool => app(OrderWorkflow::class)->blocker($this->record) !== null)
                 ->tooltip(fn (): ?string => app(OrderWorkflow::class)->blocker($this->record))
                 ->requiresConfirmation()
@@ -138,85 +144,6 @@ class ViewOrder extends ViewRecord
             ActionGroup::make([
                 FindOrderItemAnalogAction::make()
                     ->extraAttributes(['class' => 'order-view-action order-view-action--primary']),
-                Action::make('confirmFulfillment')
-                ->label('Подтвердить исполнение')
-                ->icon('heroicon-o-check-badge')
-                ->color('warning')
-                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
-                ->disabled(fn (): bool => $this->record->items->isNotEmpty()
-                    && $this->record->items->every(fn (OrderItem $item): bool => filled($item->fulfillment_confirmed_at)))
-                ->tooltip(fn (): ?string => $this->record->items->isNotEmpty()
-                    && $this->record->items->every(fn (OrderItem $item): bool => filled($item->fulfillment_confirmed_at))
-                        ? 'Исполнение всех позиций уже подтверждено.'
-                        : null)
-                ->modalHeading('Подтверждение исполнителя позиции')
-                ->modalDescription('Рекомендация системы останется в снимке заказа. Здесь фиксируется решение менеджера и его история.')
-                ->schema([
-                    Select::make('order_item_id')
-                        ->label('Позиция заказа')
-                        ->options(fn (): array => $this->record->items
-                            ->filter(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at))
-                            ->mapWithKeys(fn (OrderItem $item): array => [
-                                $item->id => $item->product_name.' · '.($item->product_sku ?: 'без артикула'),
-                            ])->all())
-                        ->searchable()
-                        ->required(),
-                    Select::make('fulfillment_route')
-                        ->label('Как исполняем')
-                        ->options(OrderItem::FULFILLMENT_ROUTES)
-                        ->required(),
-                    Select::make('supplier_id')
-                        ->label('Поставщик')
-                        ->options(fn (): array => Supplier::query()
-                            ->where('is_active', true)
-                            ->orderBy('name')
-                            ->pluck('name', 'id')
-                            ->all())
-                        ->searchable()
-                        ->required()
-                        ->helperText('Обязателен для любой позиции, включая товар с нашего склада.'),
-                    Select::make('availability_status')
-                        ->label('Решение по наличию')
-                        ->options(OrderItem::FULFILLMENT_AVAILABILITY_STATUSES)
-                        ->required(),
-                    TextInput::make('purchase_price')
-                        ->label('Подтверждённая входная цена за единицу, BYN')
-                        ->numeric()
-                        ->minValue(0)
-                        ->helperText('Если выбран рекомендованный поставщик, пустое поле наследует цену снимка заказа. Для другого поставщика цену нужно указать вручную.'),
-                    Textarea::make('note')
-                        ->label('Комментарий менеджера')
-                        ->rows(3)
-                        ->maxLength(2000),
-                ])
-                ->action(function (array $data): void {
-                    $item = $this->record->items()->findOrFail($data['order_item_id']);
-                    $supplier = filled($data['supplier_id'] ?? null)
-                        ? Supplier::query()->findOrFail($data['supplier_id'])
-                        : null;
-
-                    app(OrderItemFulfillmentManager::class)->confirm(
-                        $item,
-                        $data['fulfillment_route'],
-                        $supplier,
-                        auth()->user(),
-                        $data['note'] ?? null,
-                        filled($data['purchase_price'] ?? null) ? (float) $data['purchase_price'] : null,
-                        $data['availability_status'],
-                    );
-
-                    if ($this->record->status === 'new') {
-                        $this->record->transitionTo('checking', 'Заказ принят автоматически при начале проверки исполнения.', $this->managerAttributes());
-                    }
-
-                    $this->reloadRecord();
-
-                    Notification::make()
-                        ->success()
-                        ->title('Исполнитель позиции подтверждён')
-                        ->body('Решение сохранено в истории заказа.')
-                        ->send();
-                }),
             Action::make('buildSupplierRequests')
                 ->label('Сформировать заявки')
                 ->icon('heroicon-o-document-duplicate')
@@ -905,6 +832,140 @@ class ViewOrder extends ViewRecord
                 ->dropdownMaxHeight('65vh')
                 ->button(),
         ];
+    }
+
+    private function confirmFulfillmentAction(): Action
+    {
+        return Action::make('confirmFulfillment')
+            ->label('Подтвердить исполнение')
+            ->icon('heroicon-o-check-badge')
+            ->color('primary')
+            ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
+            ->authorize(fn (): bool => OrderResource::canEdit($this->record))
+            ->visible(fn (): bool => $this->record->needsFulfillmentConfirmation())
+            ->disabled(fn (): bool => ! $this->record->needsFulfillmentConfirmation())
+            ->modalHeading('Подтвердить исполнение позиции')
+            ->modalSubmitActionLabel('Подтвердить исполнение')
+            ->fillForm(function (): array {
+                $item = $this->record->items->first(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at));
+
+                return $item ? ['order_item_id' => $item->id] + $this->fulfillmentDefaults($item) : [];
+            })
+            ->schema([
+                Select::make('order_item_id')->label('Позиция заказа')
+                    ->options(fn (): array => $this->record->items
+                        ->filter(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at))
+                        ->mapWithKeys(fn (OrderItem $item): array => [$item->id => $item->product_name.' · '.($item->product_sku ?: 'без артикула')])
+                        ->all())
+                    ->searchable()->required()->live()
+                    ->afterStateUpdated(function ($state, Set $set): void {
+                        foreach ($this->fulfillmentDefaults($this->record->items->find((int) $state)) as $field => $value) {
+                            $set($field, $value);
+                        }
+                    }),
+                Select::make('fulfillment_route')->label('Как исполняем')
+                    ->options(OrderItem::FULFILLMENT_ROUTES)->required()->live()
+                    ->afterStateUpdated(function (Get $get, Set $set): void {
+                        $item = $this->record->items->find((int) $get('order_item_id'));
+                        $supplierId = $item?->product_id || $get('fulfillment_route') === 'own_stock'
+                            ? array_key_first($this->fulfillmentOffers($get)) : null;
+                        $set('supplier_id', $supplierId);
+                        $this->fillFulfillmentOffer($get, $set, $supplierId);
+                    }),
+                Select::make('supplier_id')->label('Поставщик')
+                    ->options(fn (Get $get): array => array_map(fn (array $offer): string => $offer['label'], $this->fulfillmentOffers($get)))
+                    ->visible(fn (Get $get): bool => in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
+                    ->required()->searchable()->live()
+                    ->helperText(fn (Get $get): string => $this->record->items->find((int) $get('order_item_id'))?->product_id
+                        ? 'Показаны поставщики этой позиции. Для разовой закупки используйте «Назначить поставщика» в строке товара.'
+                        : 'Позиция без карточки товара. Выберите поставщика вручную.')
+                    ->afterStateUpdated(fn (Get $get, Set $set, $state) => $this->fillFulfillmentOffer($get, $set, $state)),
+                Placeholder::make('fulfillment_source')->label('Склад и остаток')
+                    ->visible(fn (Get $get): bool => filled($get('fulfillment_route')))
+                    ->content(function (Get $get): string {
+                        $offers = $this->fulfillmentOffers($get);
+                        $offer = $offers[$get('supplier_id')] ?? ($get('fulfillment_route') === 'own_stock' ? reset($offers) : null);
+                        if (! $offer) {
+                            return 'Источник для позиции не определён.';
+                        }
+
+                        $stock = $offer['quantity'] === null ? 'Точный остаток не подтверждён' : 'Подтверждённый остаток: '.$offer['quantity'].' шт.';
+
+                        return implode(' · ', array_filter([$offer['label'], $offer['source'], $stock]));
+                    }),
+                Select::make('availability_status')->label('Наличие')
+                    ->options(OrderItem::FULFILLMENT_AVAILABILITY_STATUSES)->required(),
+                TextInput::make('purchase_price')->label('Входная цена за единицу, BYN')
+                    ->numeric()->minValue(0)
+                    ->visible(fn (Get $get): bool => in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true)),
+                Textarea::make('note')->label('Комментарий')->rows(2)->maxLength(2000),
+            ])
+            ->action(function (array $data): void {
+                $item = $this->record->items()->whereNull('fulfillment_confirmed_at')->findOrFail($data['order_item_id']);
+                $own = $data['fulfillment_route'] === 'own_stock';
+                $offers = $this->offersForRoute($item, $data['fulfillment_route']);
+                $supplierId = $own
+                    ? (app(OrderItemFulfillmentPicker::class)->defaults($item, $offers)['supplier_id'] ?? array_key_first($offers))
+                    : ($data['supplier_id'] ?? null);
+                if (! isset($offers[$supplierId])) {
+                    throw ValidationException::withMessages([
+                        $own ? 'fulfillment_route' : 'supplier_id' => $own
+                            ? 'Для позиции не найден наш склад. Проверьте источник товара.'
+                            : 'Выберите поставщика, у которого есть эта позиция.',
+                    ]);
+                }
+                $supplier = Supplier::query()->where('is_active', true)->findOrFail($supplierId);
+                $purchasePrice = filled($data['purchase_price'] ?? null)
+                    ? (float) $data['purchase_price'] : $offers[$supplierId]['price'];
+
+                app(OrderItemFulfillmentManager::class)->confirm(
+                    $item, $data['fulfillment_route'], $supplier, auth()->user(),
+                    $data['note'] ?? null, $purchasePrice, $data['availability_status'],
+                );
+
+                if ($this->record->status === 'new') {
+                    $this->record->transitionTo('checking', 'Начата проверка исполнения заказа.', $this->managerAttributes());
+                }
+
+                $this->reloadRecord();
+                Notification::make()->success()->title('Исполнение позиции подтверждено')
+                    ->body($this->record->workflowNextStep())->send();
+            });
+    }
+
+    private function fulfillmentDefaults(?OrderItem $item): array
+    {
+        if (! $item) {
+            return array_fill_keys(['fulfillment_route', 'supplier_id', 'availability_status', 'purchase_price', 'note'], null);
+        }
+
+        $picker = app(OrderItemFulfillmentPicker::class);
+
+        return $picker->defaults($item, $picker->offers($item));
+    }
+
+    private function fulfillmentOffers(Get $get): array
+    {
+        return $this->offersForRoute($this->record->items->find((int) $get('order_item_id')), $get('fulfillment_route'));
+    }
+
+    private function offersForRoute(?OrderItem $item, ?string $route): array
+    {
+        if (! $item || $route === null) {
+            return [];
+        }
+
+        $offers = app(OrderItemFulfillmentPicker::class)->offers($item);
+
+        return array_filter($offers, fn (array $offer): bool => $offer['own'] === ($route === 'own_stock'));
+    }
+
+    private function fillFulfillmentOffer(Get $get, Set $set, int|string|null $supplierId): void
+    {
+        $item = $this->record->items->find((int) $get('order_item_id'));
+        $offer = $this->fulfillmentOffers($get)[$supplierId] ?? null;
+        $set('availability_status', $offer && $item && $offer['quantity'] >= $item->quantity ? 'available' : null);
+        $set('purchase_price', $offer['price'] ?? null);
     }
 
     /** @return array<string, mixed> */

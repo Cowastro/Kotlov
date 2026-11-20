@@ -347,18 +347,62 @@ class Order extends Model
         }
     }
 
+    public function usesGuidedFulfillment(): bool
+    {
+        return ! str_starts_with((string) $this->number, 'DBY-');
+    }
+
+    public function needsFulfillmentConfirmation(): bool
+    {
+        if (! in_array($this->status, ['new', 'checking', 'confirmed', 'processing'], true)) {
+            return false;
+        }
+
+        return $this->relationLoaded('items')
+            ? $this->items->contains(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at))
+            : $this->items()->whereNull('fulfillment_confirmed_at')->exists();
+    }
+
+    public function needsEvropochtaShipment(): bool
+    {
+        return $this->usesGuidedFulfillment() && $this->status === 'processing' && $this->delivery_type === 'evropochta'
+            && blank($this->evropochta_tracking_number);
+    }
+
     public function workflowNextStep(): string
     {
+        if ($this->usesGuidedFulfillment() && $this->needsFulfillmentConfirmation()) {
+            return 'Нажмите «Подтвердить исполнение» и проверьте склад и наличие для каждой позиции.';
+        }
+
+        if ($this->needsEvropochtaShipment()) {
+            $tariffStep = blank($this->evropochta_quote) ? 'Сначала подготовьте отправление и рассчитайте тариф. ' : '';
+
+            return $this->procurementStep().$tariffStep.'В меню «Европочта» нажмите «Оформить Европочту и открыть ярлык». Трек-номер сохранится в заказе. Распечатайте ярлык, затем нажмите «Передать в доставку».';
+        }
+
         return match ($this->status) {
             'new' => 'Принять заказ и начать проверку наличия.',
-            'checking' => 'Проверить наличие и способ исполнения каждой позиции.',
-            'confirmed' => 'Передать подтверждённый заказ в исполнение.',
-            'processing' => 'Закупить или собрать товар, затем передать в доставку.',
+            'checking' => match (true) {
+                ! $this->usesGuidedFulfillment() => 'Проверить наличие и способ исполнения каждой позиции.',
+                $this->hasConfirmedFulfillmentForAllItems() => 'Нажмите «Подтвердить наличие», чтобы подтвердить заказ для клиента.',
+                default => 'Добавьте позиции, чтобы подтвердить наличие.',
+            },
+            'confirmed' => 'Нажмите «Передать в исполнение».',
+            'processing' => $this->procurementStep().'Соберите заказ и нажмите «Передать в доставку».',
             'shipped' => 'Контролировать доставку и отметить получение клиентом.',
             'delivered' => 'Заказ выполнен. Проверить оплату и взаиморасчёты.',
             'cancelled' => 'Заказ закрыт. Дальнейшая передача не требуется.',
             default => 'Уточнить текущее состояние заказа.',
         };
+    }
+
+    private function procurementStep(): string
+    {
+        $needsPurchase = $this->items->contains(fn (OrderItem $item): bool => in_array($item->fulfillment_route, ['supplier_purchase', 'direct_supplier'], true)
+            && $item->fulfillment_availability_status !== 'reserved');
+
+        return $needsPurchase ? 'Для закупки откройте «Исполнение и закупки → Сформировать заявки». ' : '';
     }
 
     public function workflowDestination(): string

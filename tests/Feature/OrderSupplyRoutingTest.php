@@ -315,7 +315,7 @@ class OrderSupplyRoutingTest extends TestCase
         $this->actingAs($manager)
             ->get(OrderResource::getUrl('view', ['record' => $fixture['order']], panel: 'admin'))
             ->assertOk()
-            ->assertSeeText('Подтвердить исполнение')
+            ->assertDontSeeText('Подтвердить исполнение')
             ->assertSeeText('Итог исполнения')
             ->assertSeeText('Передать поставщику напрямую')
             ->assertSeeText('История решений по исполнению')
@@ -364,6 +364,41 @@ class OrderSupplyRoutingTest extends TestCase
         );
     }
 
+    public function test_own_stock_is_prefilled_and_evropochta_label_is_the_next_step(): void
+    {
+        $fixture = $this->fixture();
+        $order = $fixture['order'];
+        $order->forceFill(['status' => 'processing', 'delivery_type' => 'evropochta'])->save();
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail();
+        config(['services.evropochta.token' => 'fake-token']);
+
+        $page = Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->id])
+            ->assertActionVisible('confirmFulfillment')
+            ->assertActionHidden('advanceWorkflow')
+            ->mountAction('confirmFulfillment');
+        $instance = $page->instance();
+        $schema = $instance->getSchema($instance->getMountedActionSchemaName());
+        $this->assertSame($fixture['item']->id, (int) $schema->getComponent('order_item_id')->getState());
+        $this->assertSame('own_stock', $schema->getComponent('fulfillment_route')->getState());
+        $this->assertSame('available', $schema->getComponent('availability_status')->getState());
+        $this->assertNull($schema->getComponent('supplier_id'));
+        $page->callMountedAction()->assertHasNoActionErrors();
+        $item = $fixture['item']->fresh();
+        $this->assertSame($supplier->id, $item->fulfillment_supplier_id);
+        $this->assertSame('96.00', $item->fulfillment_purchase_price);
+        $this->assertSame('processing', $order->fresh()->status);
+        $page->assertSee('Трек-номер сохранится в заказе')
+            ->assertActionHidden('advanceWorkflow');
+
+        $order->forceFill(['evropochta_tracking_number' => 'BY080027046773'])->save();
+        Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->id])
+            ->assertActionVisible('advanceWorkflow')
+            ->assertActionHasLabel('advanceWorkflow', 'Передать в доставку')
+            ->assertActionVisible('printEvropochtaLabel_thermal')
+            ->assertActionVisible('printEvropochtaLabel_address');
+    }
+
     public function test_first_fulfillment_confirmation_starts_availability_check_and_does_not_confirm_the_order(): void
     {
         $fixture = $this->fixture();
@@ -372,18 +407,28 @@ class OrderSupplyRoutingTest extends TestCase
             'role' => 'admin',
             'is_active' => true,
         ]);
-        $supplier = Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail();
+        $supplier = Supplier::query()->where('code', 'legacy-route-supplier-1')->firstOrFail();
 
-        Livewire::actingAs($manager)
+        Supplier::query()->create(['code' => 'unrelated-supplier', 'name' => 'Не связан с позицией', 'is_active' => true]);
+        $page = Livewire::actingAs($manager)
             ->test(ViewOrder::class, ['record' => $fixture['order']->id])
             ->assertActionEnabled('confirmFulfillment')
-            ->callAction('confirmFulfillment', [
+            ->mountAction('confirmFulfillment')
+            ->set('mountedActions.0.data.fulfillment_route', 'supplier_purchase');
+        $instance = $page->instance();
+        $schema = $instance->getSchema($instance->getMountedActionSchemaName());
+        $this->assertSame([$supplier->id => $supplier->name], $schema->getComponent('supplier_id')->getOptions());
+        $this->assertSame($supplier->id, (int) $schema->getComponent('supplier_id')->getState());
+        $this->assertEquals(70, $schema->getComponent('purchase_price')->getState());
+
+        $page->setActionData([
                 'order_item_id' => $fixture['item']->id,
                 'fulfillment_route' => 'supplier_purchase',
                 'supplier_id' => $supplier->id,
                 'purchase_price' => 96,
                 'availability_status' => 'available',
             ])
+            ->callMountedAction()
             ->assertHasNoActionErrors()
             ->assertActionDisabled('confirmFulfillment');
 
@@ -404,13 +449,13 @@ class OrderSupplyRoutingTest extends TestCase
     {
         $fixture = $this->fixture();
         $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $supplier = Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail();
+        $supplier = Supplier::query()->where('code', 'legacy-route-supplier-1')->firstOrFail();
 
         $fixture['order']->transitionTo('checking', 'Начата проверка наличия.');
 
         Livewire::actingAs($manager)
             ->test(ViewOrder::class, ['record' => $fixture['order']->id])
-            ->assertActionDisabled('advanceWorkflow')
+            ->assertActionHidden('advanceWorkflow')
             ->callAction('confirmFulfillment', [
                 'order_item_id' => $fixture['item']->id,
                 'fulfillment_route' => 'supplier_purchase',
