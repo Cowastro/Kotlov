@@ -8,6 +8,11 @@ class EurotermCatalog
 {
     public const BASE_URL = 'https://euroterm.by';
 
+    public static function containsStorefrontText(string $copy): bool
+    {
+        return preg_match('~\.overprice-price\s*\{|\.ozon-btn\s*\{|function\s+sendpost\s*\(|owlCarousel\s*\(|купить\s+в\s+Euroterm\.by~iu', strip_tags($copy)) === 1;
+    }
+
     /** @return array<int,array{title:string,url:string,image:string}> */
     public function crawl(string $categoryUrl, int $maxPages = 25): array
     {
