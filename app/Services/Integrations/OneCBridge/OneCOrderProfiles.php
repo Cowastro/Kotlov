@@ -44,7 +44,10 @@ class OneCOrderProfiles
     /** Fields of the document itself, never copied to another order. */
     private const DOCUMENT_FIELDS = ['Ref_Key', 'DataVersion', 'Number', 'Date', 'Posted', 'DeletionMark', 'СуммаДокумента', 'Автор_Key',
         'Сделка_Key', 'КонтактноеЛицо_Key', 'КартаЛояльности_Key', 'ДокументОснование', 'ДокументОснование_Type', 'НомерПоДаннымКлиента',
-        'ДатаПоДаннымКлиента', 'Объект', 'Объект_Type'];
+        'ДатаПоДаннымКлиента', 'Объект', 'Объект_Type', 'ИдентификаторПлатежа', 'МаксимальныйКодСтроки', 'Назначение_Key'];
+
+    /** The only field the customer's address goes to (not the carrier's, not the structured «…Значение»). */
+    public const ADDRESS_FIELD = 'АдресДоставки';
 
     /** Fields of a goods row worth keeping (the rest is the item and its sums). */
     private const ROW_FIELDS = ['ВариантОбеспечения', 'СтавкаНДС_Key', 'ВидЦены_Key', 'Отменено'];
@@ -74,7 +77,7 @@ class OneCOrderProfiles
             if (is_string($value) && ! str_ends_with($key, '_Key') && ! str_ends_with($key, '_Type')
                 && preg_match('/Адрес|Информация|Телефон|Email|Почт|Контакт|Комментарий|Примечание/u', $key)) {
                 // The customer's own texts: the site writes them for each order.
-                if (str_contains($key, 'Адрес') && ! str_contains($key, 'ЗначенияПолей')) {
+                if ($key === self::ADDRESS_FIELD) {
                     $meta['address'][] = $key;
                 } elseif (str_contains($key, 'Информация')) {
                     $meta['info'][] = $key;
