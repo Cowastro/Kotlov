@@ -5,6 +5,7 @@ namespace App\Services\Integrations\OneCBridge;
 use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Models\OneCAgentTask;
 use App\Models\OneCPriceBatch;
+use App\Models\Order;
 use App\Models\User;
 use DomainException;
 
@@ -39,17 +40,25 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             ->where(fn ($q) => $q->whereNull('onec_posted')->orWhere('onec_posted', false))
             ->where('onec_deleted', false)->where('finished_at', '>', now()->subDays(self::DAYS))
             ->orderBy('id')->pluck('onec_document_key')->unique()->values();
-        if ($keys->isEmpty()) {
+        // Orders until 1C closes them: the manager moves them through «К обеспечению», «К выполнению»…
+        $orders = Order::query()->whereNotNull('onec_order_guid')->where(fn ($q) => $q->whereNotNull('onec_profile_id')->orWhereNotNull('onec_checked_at'))->where('onec_deleted', false)
+            ->where(fn ($q) => $q->whereNull('onec_doc_status')->orWhere('onec_doc_status', '!=', 'Закрыт'))
+            ->where('onec_exported_at', '>', now()->subDays(self::DAYS))->orderBy('id')->pluck('onec_order_guid')->unique()->values();
+        if ($keys->isEmpty() && $orders->isEmpty()) {
             return null;
         }
         $queries = [];
+        $filter = fn ($chunk): string => $chunk->map(fn (string $key): string => "Ref_Key eq guid'".$key."'")->implode(' or ');
         foreach ($keys->chunk(self::CHUNK)->values() as $i => $chunk) {
-            $filter = $chunk->map(fn (string $key): string => "Ref_Key eq guid'".$key."'")->implode(' or ');
             $queries['prices_'.($i + 1)] = ODataReadTaskHandler::path('Document_УстановкаЦенНоменклатуры',
-                ['$filter' => $filter, '$select' => 'Ref_Key,Number,Posted,DeletionMark']);
+                ['$filter' => $filter($chunk), '$select' => 'Ref_Key,Number,Posted,DeletionMark']);
+        }
+        foreach ($orders->chunk(self::CHUNK)->values() as $i => $chunk) {
+            $queries['orders_'.($i + 1)] = ODataReadTaskHandler::path('Document_ЗаказКлиента',
+                ['$filter' => $filter($chunk), '$select' => 'Ref_Key,Number,Posted,DeletionMark,Статус']);
         }
         try {
-            return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.$keys->count(), $user, ['queries' => $queries]);
+            return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.($keys->count() + $orders->count()), $user, ['queries' => $queries]);
         } catch (DomainException) {
             return null;
         }
@@ -74,6 +83,21 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             $part = ODataReadTaskHandler::part($task, $name);
             foreach ($part['code'] === 200 ? (array) data_get($part['json'], 'value', []) : [] as $row) {
                 $key = strtolower((string) ($row['Ref_Key'] ?? ''));
+                if (str_starts_with($name, 'orders_')) {
+                    $order = $key !== '' ? Order::query()->where('onec_order_guid', $key)->first() : null;
+                    if ($order) {
+                        $checked++;
+                        $posted += ($row['Posted'] ?? false) ? 1 : 0;
+                        $order->forceFill(['onec_posted' => (bool) ($row['Posted'] ?? false), 'onec_deleted' => (bool) ($row['DeletionMark'] ?? false),
+                            'onec_doc_status' => ($row['Статус'] ?? '') ?: $order->onec_doc_status, 'onec_checked_at' => now(),
+                            'onec_order_number' => ($row['Number'] ?? '') ?: $order->onec_order_number])->save();
+                        OneCAgentTask::query()->where('type', OrderTaskHandler::TYPE)->where('subject_type', $order->getMorphClass())
+                            ->where('subject_id', $order->id)->where('status', OneCAgentTask::DONE)
+                            ->update(['summary' => OrderTaskHandler::summary($order)]);
+                    }
+
+                    continue;
+                }
                 $batch = $key !== '' ? OneCPriceBatch::query()->where('onec_document_key', $key)->first() : null;
                 if (! $batch) {
                     continue;

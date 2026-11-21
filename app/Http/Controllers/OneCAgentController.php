@@ -7,6 +7,7 @@ use App\Models\OneCAgentToken;
 use App\Models\OneCPriceBatch;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 use App\Services\Integrations\OneCPriceBatches;
 use DomainException;
@@ -37,7 +38,10 @@ class OneCAgentController extends Controller
         if (! $this->authorized($request)) {
             return $this->denied();
         }
-        $task = $this->tasks->claimNext();
+        // An agent older than 4 cannot create orders: they wait for the updated agent.ps1.
+        $types = (int) $request->header('X-Kotlov-Agent', '1') < 4
+            ? array_values(array_diff(array_keys($this->tasks->types()), [OrderTaskHandler::TYPE])) : null;
+        $task = $this->tasks->claimNext($types);
         if (! $task) {
             return $this->text("none\n");
         }

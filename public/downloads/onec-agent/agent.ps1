@@ -1,12 +1,13 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 3: «Мост 1С».
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 4: «Мост 1С».
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
-# Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; odata_read, doc_status — read-only lists of 1C.
+# Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
+# odata_read, doc_status — read-only lists of 1C.
 #   agent.ps1 -Check   read-only check: the site key and the 1C OData user work
 #   agent.ps1          one run (the scheduler starts it every 5 minutes): does every task waiting in the queue
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '3'
+$AgentVersion = '4'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -155,6 +156,43 @@ function Do-ODataRead([string]$id, [string[]]$lines) {
     return @(('read=' + $n))
 }
 
+# ---- onec_order: an UNPOSTED «Заказ клиента»; the site prepared the document, the agent first looks for it ----
+function Do-Order([string[]]$lines) {
+    $find = ''; $b64 = ''
+    foreach ($l in $lines) {
+        $i = $l.IndexOf('|')
+        if ($i -lt 0) { continue }
+        $k = $l.Substring(0, $i); $v = $l.Substring($i + 1)
+        if ($k -eq 'find') { $find = $v }
+        if ($k -eq 'body') { $b64 = $v }
+    }
+    if (-not $b64) { throw 'В задаче нет заказа' }
+
+    # The same order already in 1C (an answer to the site was lost): report it instead of a second one.
+    if ($find) {
+        if ($find -notmatch '^[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$') { throw 'Недопустимый поиск заказа' }
+        $code = Invoke-Curl ($OData + $find) 'GET' @('Accept: application/json') $ODataUser $null @() $Out
+        $answer = Read-Answer $Out
+        if ($code -ne '200') { throw ('1С не ответила на поиск заказа: ' + $code + ' ' + $answer) }
+        if ($answer -match '"Ref_Key"\s*:\s*"([0-9a-fA-F-]{36})"') {
+            $key = $matches[1]; $number = ''
+            if ($answer -match '"Number"\s*:\s*"([^"]*)"') { $number = $matches[1] }
+            return @(('document_number=' + $number), ('document_key=' + $key), 'existed=1')
+        }
+    }
+
+    [IO.File]::WriteAllBytes($Body, [Convert]::FromBase64String($b64))
+    $url = $OData + [Uri]::EscapeDataString('Document_ЗаказКлиента') + '?$format=json'
+    $code = Invoke-Curl $url 'POST' @('Content-Type: application/json; charset=utf-8', 'Accept: application/json') $ODataUser $Body @() $Out
+    $answer = Read-Answer $Out
+    if ($code -ne '201' -and $code -ne '200') { throw ('1С ответила ' + $code + ': ' + $answer) }
+
+    $number = ''; $key = ''
+    if ($answer -match '"Number"\s*:\s*"([^"]*)"') { $number = $matches[1] }
+    if ($answer -match '"Ref_Key"\s*:\s*"([0-9a-fA-F-]{36})"') { $key = $matches[1] }
+    return @(('document_number=' + $number), ('document_key=' + $key), 'existed=0')
+}
+
 # Sends the result; the «done» file (what was already created in 1C) is kept until the site has accepted it.
 function Send-Result([string]$id, [string[]]$form, [string]$doneFile) {
     $code = Invoke-Curl ($Site + '/1c/agent/tasks/' + $id + '/result') 'POST' $SiteHeaders $null $null $form $Out
@@ -193,6 +231,7 @@ for ($round = 0; $round -lt 20; $round++) {
             'price_batch' { $data = Do-PriceBatch $lines }
             'odata_read' { $data = Do-ODataRead $id $lines }
             'doc_status' { $data = Do-ODataRead $id $lines }
+            'onec_order' { $data = Do-Order $lines }
             default { throw ('Агент версии ' + $AgentVersion + ' не умеет задачи «' + $type + '»: обновите agent.ps1 с сайта') }
         }
         $form = @('ok=1') + $data

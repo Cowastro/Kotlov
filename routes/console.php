@@ -627,3 +627,12 @@ Schedule::command('onec:check-documents')
     ->everyThirtyMinutes()
     ->between('07:00', '22:00')
     ->withoutOverlapping(10);
+
+// «Мост 1С»: the 1C lists for the order form every morning, the orders managers enter in 1C by hand every hour.
+Schedule::command('onec:sync-references')
+    ->dailyAt('06:40')
+    ->withoutOverlapping(10);
+Schedule::command('onec:sync-references --orders-only --days=3')
+    ->hourlyAt(20)
+    ->between('08:00', '21:30')
+    ->withoutOverlapping(10);

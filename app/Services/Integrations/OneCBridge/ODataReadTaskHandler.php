@@ -4,14 +4,13 @@ namespace App\Services\Integrations\OneCBridge;
 
 use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Models\OneCAgentTask;
-use App\Models\User;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Read-only: the agent GETs a few 1C lists through OData and uploads each answer as it is. Used to learn the
- * keys of organizations, warehouses, partners and agreements and the exact shape of «Заказ клиента».
+ * Read-only: the agent GETs a few 1C lists through OData and uploads each answer as it is. «Обновить справочники
+ * 1С» (OneCReferences) then keeps a copy of the lists on the site for the order form.
  */
 class ODataReadTaskHandler implements OneCAgentTaskHandler
 {
@@ -19,39 +18,9 @@ class ODataReadTaskHandler implements OneCAgentTaskHandler
 
     public const MAX_BYTES = 8 * 1024 * 1024;
 
-    /** What the order export needs to know about this 1C base. name => [entity, query] */
-    public const ORDER_REFERENCES = [
-        'organizations' => ['Catalog_Организации', ['$select' => 'Ref_Key,Description,DeletionMark', '$top' => '50']],
-        'warehouses' => ['Catalog_Склады', ['$select' => 'Ref_Key,Description,IsFolder,DeletionMark', '$top' => '300']],
-        'retail_partner' => ['Catalog_Партнеры', ['$filter' => "substringof('Розничн',Description)", '$top' => '20']],
-        'agreements' => ['Catalog_СоглашенияСКлиентами', ['$top' => '300']],
-        'counterparty_sample' => ['Catalog_Контрагенты', ['$top' => '3']],
-        'vat_rates' => ['Catalog_СтавкиНДС', ['$top' => '50']],
-        'currencies' => ['Catalog_Валюты', ['$select' => 'Ref_Key,Description,Code']],
-        'order_sample' => ['Document_ЗаказКлиента', ['$top' => '2', '$orderby' => 'Date desc']],
-        // Retail goes from «СБГ бай ООО» to «Розничный покупатель», wholesale from «СанБизнесГруп» to the company.
-        'retail_order_sample' => ['Document_ЗаказКлиента', ['$filter' => "Организация_Key eq guid'6e310ed3-97e4-11e9-b722-1c1b0d1de7c2'",
-            '$top' => '3', '$orderby' => 'Date desc']],
-        'retail_agreement_sample' => ['Catalog_СоглашенияСКлиентами', ['$filter' => "substringof('Розничн',Description)", '$top' => '10']],
-        'retail_counterparty_sample' => ['Catalog_Контрагенты', ['$filter' => "substringof('Розничн',Description)", '$top' => '10']],
-        'contract_sample' => ['Catalog_ДоговорыКонтрагентов', ['$filter' => "substringof('Розничн',Description)", '$top' => '10']],
-    ];
-
-    public function __construct(private readonly OneCAgentTasks $tasks) {}
-
     public function label(): string
     {
         return 'Чтение 1С';
-    }
-
-    public function enqueueOrderReferences(?User $user): OneCAgentTask
-    {
-        $queries = [];
-        foreach (self::ORDER_REFERENCES as $name => [$entity, $query]) {
-            $queries[$name] = self::path($entity, $query);
-        }
-
-        return $this->tasks->enqueue(self::TYPE, null, 'Справочники 1С для заказов', $user, ['queries' => $queries]);
     }
 
     /** @param array<string, string> $query */
@@ -118,8 +87,22 @@ class ODataReadTaskHandler implements OneCAgentTaskHandler
         $task->refresh();
         $asked = count((array) data_get($task->payload, 'queries', []));
         $read = collect((array) data_get($task->payload, 'parts', []))->filter(fn (array $p): bool => $p['code'] === 200)->count();
+        if (! $result['ok']) {
+            return null;
+        }
+        if (data_get($task->payload, 'sync')) {
+            $missing = collect(OneCReferences::LISTS)->filter(fn (array $list): bool => data_get($task->payload, 'parts.'.$list[0].'.code') !== 200)
+                ->map(fn (array $list): string => $list[3])->values();
+            $lists = collect(OneCReferences::LISTS)->contains(fn (array $list): bool => array_key_exists($list[0], (array) data_get($task->payload, 'queries', [])));
+            $refs = app(OneCReferences::class);
+            $refs->import($task);
+            $orders = $refs->importOrders($task);
 
-        return $result['ok'] ? 'Прочитано '.$read.' из '.$asked : null;
+            return 'Прочитано '.$read.' из '.$asked.', заказов 1С: '.$orders
+                .($lists && $missing->isNotEmpty() ? '. Не отдала 1С (добавьте в состав REST): '.$missing->implode(', ') : '');
+        }
+
+        return 'Прочитано '.$read.' из '.$asked;
     }
 
     public function requeued(OneCAgentTask $task): void

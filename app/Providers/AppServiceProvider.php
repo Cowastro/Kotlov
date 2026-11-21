@@ -31,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton('db.connector.mysql', fn (): RetryingMySqlConnector => new RetryingMySqlConnector);
         $this->app->scoped(B2bCatalogOfferResolver::class);
+        $this->app->scoped(\App\Services\Integrations\OneCBridge\OneCOrderMatcher::class);
         $this->app->afterResolving('mail.manager', fn ($manager) => TransactionalMailbox::configure($manager));
     }
 

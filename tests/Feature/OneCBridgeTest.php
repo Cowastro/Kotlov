@@ -11,6 +11,7 @@ use App\Models\IntegrationSource;
 use App\Models\OneCAgentTask;
 use App\Models\OneCAgentToken;
 use App\Models\OneCPriceBatch;
+use App\Models\OneCReference;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
@@ -158,7 +159,7 @@ class OneCBridgeTest extends TestCase
 
         $lines = explode("\n", trim($this->agent()->get('/1c/agent/tasks/next')->assertOk()->getContent()));
         $this->assertSame('task|'.$task->id.'|odata_read', $lines[0]);
-        $this->assertContains('get|warehouses|Catalog_%D0%A1%D0%BA%D0%BB%D0%B0%D0%B4%D1%8B?$format=json&$select=Ref_Key%2CDescription%2CIsFolder%2CDeletionMark&$top=300', $lines);
+        $this->assertContains('get|warehouses|Catalog_%D0%A1%D0%BA%D0%BB%D0%B0%D0%B4%D1%8B?$format=json&$select=Ref_Key%2CDescription%2CIsFolder%2CDeletionMark', $lines);
         foreach (array_slice($lines, 1, -1) as $line) {
             $this->assertMatchesRegularExpression('/^get\|[a-z0-9_]+\|[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$/', $line);
         }
@@ -168,7 +169,8 @@ class OneCBridgeTest extends TestCase
         $this->sendPart('/1c/agent/tasks/'.$task->id.'/part?name=vat_rates&code=404', '{"odata.error":{"message":{"value":"Нет такого"}}}')->assertOk();
         $this->sendPart('/1c/agent/tasks/'.$task->id.'/part?name=passwords&code=200', '{}')->assertStatus(409);
         $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1', 'read' => '1'])->assertOk();
-        $this->assertSame('Прочитано 1 из 12', $task->fresh()->summary);
+        $this->assertStringStartsWith('Прочитано 1 из 18, заказов 1С: 0. Не отдала 1С (добавьте в состав REST): Организации', $task->fresh()->summary);
+        $this->assertSame('Основной склад', OneCReference::query()->where('kind', 'warehouse')->value('description'));
 
         Livewire::test(ViewOneCAgentTask::class, ['record' => $task->getRouteKey()])
             ->assertOk()->assertSee('Основной склад')->assertSee('aaaaaaaa-0000-0000-0000-000000000001')->assertSee('Нет такого');
