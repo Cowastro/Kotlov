@@ -29,6 +29,12 @@ class ODataReadTaskHandler implements OneCAgentTaskHandler
         'vat_rates' => ['Catalog_СтавкиНДС', ['$top' => '50']],
         'currencies' => ['Catalog_Валюты', ['$select' => 'Ref_Key,Description,Code']],
         'order_sample' => ['Document_ЗаказКлиента', ['$top' => '2', '$orderby' => 'Date desc']],
+        // Retail goes from «СБГ бай ООО» to «Розничный покупатель», wholesale from «СанБизнесГруп» to the company.
+        'retail_order_sample' => ['Document_ЗаказКлиента', ['$filter' => "Организация_Key eq guid'6e310ed3-97e4-11e9-b722-1c1b0d1de7c2'",
+            '$top' => '3', '$orderby' => 'Date desc']],
+        'retail_agreement_sample' => ['Catalog_СоглашенияСКлиентами', ['$filter' => "substringof('Розничн',Description)", '$top' => '10']],
+        'retail_counterparty_sample' => ['Catalog_Контрагенты', ['$filter' => "substringof('Розничн',Description)", '$top' => '10']],
+        'contract_sample' => ['Catalog_ДоговорыКонтрагентов', ['$filter' => "substringof('Розничн',Description)", '$top' => '10']],
     ];
 
     public function __construct(private readonly OneCAgentTasks $tasks) {}

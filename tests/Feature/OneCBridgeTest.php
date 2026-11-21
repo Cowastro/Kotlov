@@ -168,7 +168,7 @@ class OneCBridgeTest extends TestCase
         $this->sendPart('/1c/agent/tasks/'.$task->id.'/part?name=vat_rates&code=404', '{"odata.error":{"message":{"value":"Нет такого"}}}')->assertOk();
         $this->sendPart('/1c/agent/tasks/'.$task->id.'/part?name=passwords&code=200', '{}')->assertStatus(409);
         $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1', 'read' => '1'])->assertOk();
-        $this->assertSame('Прочитано 1 из 8', $task->fresh()->summary);
+        $this->assertSame('Прочитано 1 из 12', $task->fresh()->summary);
 
         Livewire::test(ViewOneCAgentTask::class, ['record' => $task->getRouteKey()])
             ->assertOk()->assertSee('Основной склад')->assertSee('aaaaaaaa-0000-0000-0000-000000000001')->assertSee('Нет такого');
