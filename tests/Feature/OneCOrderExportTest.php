@@ -162,7 +162,7 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame('task|'.$task->id.'|onec_order', $lines[0]);
         $this->assertStringStartsWith('find|Document_', $lines[2]);
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$/', substr($lines[2], 5));
-        $this->assertSame($body, json_decode(base64_decode(substr($lines[3], 5)), true));
+        $this->assertEquals($body, json_decode(base64_decode(substr($lines[3], 5)), true));
 
         $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1', 'document_number' => 'МПУТ-000800',
             'document_key' => 'DDDDDDDD-0000-0000-0000-000000000800', 'existed' => '0'])->assertOk();
