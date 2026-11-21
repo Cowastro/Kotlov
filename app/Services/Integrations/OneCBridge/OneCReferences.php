@@ -218,8 +218,9 @@ class OneCReferences
     /** The task with the freshest 1C lists. */
     public function lastSync(): ?OneCAgentTask
     {
+        // The hourly read of recent 1C orders is a sync too, but without the lists and the order samples.
         return OneCAgentTask::query()->where('type', ODataReadTaskHandler::TYPE)->where('status', OneCAgentTask::DONE)
-            ->where('payload->sync', true)->latest('id')->first();
+            ->where('payload->sync', true)->whereNotNull('payload->queries->'.self::TEMPLATES)->latest('id')->first();
     }
 
     /** @return list<array<string, mixed>> recent 1C orders as 1C gave them */

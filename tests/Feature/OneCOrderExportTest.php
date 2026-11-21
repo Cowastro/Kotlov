@@ -202,6 +202,12 @@ class OneCOrderExportTest extends TestCase
     public function test_a_scheme_is_made_from_a_1c_order_and_edited_in_the_admin(): void
     {
         $this->syncReferences();
+        // The hourly read of recent orders comes later and has no samples: the samples stay.
+        $hourly = app(OneCReferences::class)->enqueueSync(null, 3, false);
+        $this->agent()->get('/1c/agent/tasks/next')->assertOk()->assertSee('task|'.$hourly->id.'|odata_read');
+        $this->sendPart($hourly->id, 'orders_1', 200, ['value' => []])->assertOk();
+        $this->agent()->post('/1c/agent/tasks/'.$hourly->id.'/result', ['ok' => '1'])->assertOk();
+        $this->assertCount(1, app(OneCReferences::class)->templates());
         $this->actingAs($this->admin);
         Livewire::test(ListOneCOrderProfiles::class)
             ->callAction('fromTemplate', ['template' => 't0', 'name' => 'Розница СБГ бай', 'customer_mode' => OneCOrderProfile::RETAIL])
