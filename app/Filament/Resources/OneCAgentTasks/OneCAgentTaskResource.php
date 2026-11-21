@@ -109,7 +109,8 @@ class OneCAgentTaskResource extends Resource
                 SelectFilter::make('type')->label('Что')->options(fn (): array => $tasks->types()),
             ])
             // The regular checks of document states are many and say nothing new; only a failed one is shown.
-            ->modifyQueryUsing(fn ($query) => $query->whereNot(fn ($q) => $q->where('type', DocumentStatusTaskHandler::TYPE)->where('status', OneCAgentTask::DONE)))
+            ->modifyQueryUsing(fn ($query) => $query->whereNot(fn ($q) => $q->where('status', OneCAgentTask::DONE)
+                ->where(fn ($q) => $q->where('type', DocumentStatusTaskHandler::TYPE)->orWhere('title', 'like', 'Заказы 1С за%'))))
             ->defaultSort('id', 'desc')
             ->poll('30s')
             ->recordActions([

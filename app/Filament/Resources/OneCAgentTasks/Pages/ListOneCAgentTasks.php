@@ -4,10 +4,11 @@ namespace App\Filament\Resources\OneCAgentTasks\Pages;
 
 use App\Filament\Resources\OneCAgentTasks\Actions\IssueAgentKeyAction;
 use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
+use App\Filament\Resources\OneCOrderProfiles\OneCOrderProfileResource;
 use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
-use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\OneCReferences;
 use App\Services\Integrations\OneCPriceBatches;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -60,15 +61,15 @@ class ListOneCAgentTasks extends ListRecords
                     $this->redirect(OneCPriceBatchResource::getUrl('view', ['record' => $batch]));
                 }),
             Action::make('readOrderReferences')
-                ->label('Прочитать справочники 1С')
+                ->label('Обновить справочники 1С')
                 ->icon('heroicon-o-magnifying-glass')
                 ->color('gray')
                 ->requiresConfirmation()
-                ->modalHeading('Прочитать справочники 1С для заказов?')
-                ->modalDescription('Агент только читает: организации, склады, партнёр «Розничный покупатель», соглашения, ставки НДС, валюты и пример «Заказа клиента». В 1С ничего не меняется. Результат откроется в задаче.')
+                ->modalHeading('Обновить справочники 1С?')
+                ->modalDescription('Агент только читает: организации, склады, партнёры, контрагенты, соглашения, договоры, подразделения, менеджеры, ставки НДС и заказы клиентов за 60 дней. В 1С ничего не меняется. Само обновление идёт каждое утро, заказы 1С — каждый час.')
                 ->action(function (): void {
                     try {
-                        $task = app(ODataReadTaskHandler::class)->enqueueOrderReferences(auth()->user());
+                        $task = app(OneCReferences::class)->enqueueSync(auth()->user());
                         Notification::make()->success()->title('Задача №'.$task->id.' в очереди: агент прочитает за 5 минут')->send();
                     } catch (\DomainException $e) {
                         Notification::make()->warning()->title($e->getMessage())->send();
@@ -84,6 +85,8 @@ class ListOneCAgentTasks extends ListRecords
                         ? Notification::make()->success()->title('Агент проверит документы в 1С за 5 минут')->send()
                         : Notification::make()->info()->title('Все документы уже проведены, или проверка уже в очереди')->send();
                 }),
+            Action::make('orderProfiles')->label('Схемы заказов')->icon('heroicon-o-document-duplicate')->color('gray')
+                ->url(OneCOrderProfileResource::getUrl('index')),
             Action::make('prices')->label('Пакеты цен')->icon('heroicon-o-currency-dollar')->color('gray')
                 ->url(OneCPriceBatchResource::getUrl('index')),
             Action::make('download')->label('Скачать агента')->icon('heroicon-o-arrow-down-tray')->color('gray')

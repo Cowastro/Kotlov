@@ -9,7 +9,8 @@ use App\Filament\Resources\Orders\Actions\AssignOrderToPartnerAction;
 use App\Filament\Resources\Orders\Actions\CreateCommercialDocumentFromOrderAction;
 use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
 use App\Filament\Resources\Orders\Actions\EvropochtaOrderActions;
-use App\Filament\Resources\Orders\Actions\OneCOrderPreviewAction;
+use App\Filament\Resources\Orders\Actions\OneCOrderExportAction;
+use App\Filament\Resources\Orders\Actions\OneCOrderLinkAction;
 use App\Models\Order;
 use App\Models\OrderAccountingRequest;
 use App\Models\OrderItem;
@@ -130,7 +131,8 @@ class ViewOrder extends ViewRecord
                             ->send();
                     }
                 }),
-            OneCOrderPreviewAction::make(),
+            OneCOrderExportAction::make(),
+            OneCOrderLinkAction::make(),
             ActionGroup::make([
                 EvropochtaOrderActions::track(),
                 EvropochtaOrderActions::printLabel('thermal'),
