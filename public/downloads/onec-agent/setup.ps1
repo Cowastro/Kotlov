@@ -34,14 +34,15 @@ Write-Host 'agent.config записан. Проверка: powershell -Execution
 
 if ($InstallTask) {
     # run.cmd: PowerShell 2.0 started by the scheduler as SYSTEM without a console may wait for input at the end
-    # and block every next run, so it gets -NonInteractive and an empty input; task.log shows each start and exit.
+    # and block every next run, so it gets -NonInteractive and an empty input; task.log shows each start and exit
+    # (the redirect goes first: «exit 0>>file» would redirect stream 0 instead of writing «0»).
     $script = Join-Path $Root 'agent.ps1'
     $log = Join-Path $Root 'task.log'
     $run = Join-Path $Root 'run.cmd'
     $cmd = @(
-        ('@echo %date% %time% start>>"' + $log + '"'),
+        ('@>>"' + $log + '" echo %date% %time% start'),
         ('@powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script + '" >>"' + $log + '" 2>&1 <NUL'),
-        ('@echo %date% %time% exit %errorlevel%>>"' + $log + '"')
+        ('@>>"' + $log + '" echo %date% %time% exit %errorlevel%')
     )
     [IO.File]::WriteAllText($run, ($cmd -join "`r`n") + "`r`n", (New-Object System.Text.ASCIIEncoding))
 
