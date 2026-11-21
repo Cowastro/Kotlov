@@ -227,7 +227,8 @@ class OneCOrderExport
         $meta = $profile->meta ?? [];
         $has = fn (string $key): bool => in_array($key, (array) ($meta['keys'] ?? []), true);
         $now = now('Europe/Minsk')->format('Y-m-d\TH:i:s');
-        $doc = $profile->header;
+        // A scheme made before these fields were left out of samples: the payment id belongs to the sample order.
+        $doc = collect($profile->header)->except(['ИдентификаторПлатежа', 'МаксимальныйКодСтроки'])->all();
         foreach (array_keys(OneCOrderProfiles::FIELDS) as $field) {
             if (array_key_exists($field, $form['h'] ?? []) || array_key_exists($field, $doc)) {
                 $doc[$field] = ($form['h'][$field] ?? null) ?: OneCReferences::ZERO;
@@ -240,7 +241,7 @@ class OneCOrderExport
         if ($has('СпособДоставки') && filled($form['delivery'] ?? null)) {
             $doc['СпособДоставки'] = $form['delivery'];
         }
-        foreach ((array) ($meta['address'] ?? []) as $key) {
+        foreach (array_intersect((array) ($meta['address'] ?? []), [OneCOrderProfiles::ADDRESS_FIELD]) as $key) {
             $doc[$key] = (string) ($form['address'] ?? '');
         }
         foreach ((array) ($meta['info'] ?? []) as $key) {
@@ -291,6 +292,9 @@ class OneCOrderExport
             $totalVat += $vat;
         }
         $doc['Товары'] = $rows;
+        if ($has('МаксимальныйКодСтроки')) {
+            $doc['МаксимальныйКодСтроки'] = count($rows);
+        }
         $grossTotal = round($withVat ? $total : $total + $totalVat, 2);
         $doc['СуммаДокумента'] = $grossTotal;
 
