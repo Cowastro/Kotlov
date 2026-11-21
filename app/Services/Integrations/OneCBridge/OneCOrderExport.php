@@ -227,8 +227,8 @@ class OneCOrderExport
         $meta = $profile->meta ?? [];
         $has = fn (string $key): bool => in_array($key, (array) ($meta['keys'] ?? []), true);
         $now = now('Europe/Minsk')->format('Y-m-d\TH:i:s');
-        // A scheme made before these fields were left out of samples: the payment id belongs to the sample order.
-        $doc = collect($profile->header)->except(['ИдентификаторПлатежа', 'МаксимальныйКодСтроки'])->all();
+        // A scheme made before these fields were left out of samples: payment id and reserve designation belong to the sample order.
+        $doc = collect($profile->header)->except(['ИдентификаторПлатежа', 'МаксимальныйКодСтроки', 'Назначение_Key'])->all();
         foreach (array_keys(OneCOrderProfiles::FIELDS) as $field) {
             if (array_key_exists($field, $form['h'] ?? []) || array_key_exists($field, $doc)) {
                 $doc[$field] = ($form['h'][$field] ?? null) ?: OneCReferences::ZERO;

@@ -44,7 +44,7 @@ class OneCOrderProfiles
     /** Fields of the document itself, never copied to another order. */
     private const DOCUMENT_FIELDS = ['Ref_Key', 'DataVersion', 'Number', 'Date', 'Posted', 'DeletionMark', 'СуммаДокумента', 'Автор_Key',
         'Сделка_Key', 'КонтактноеЛицо_Key', 'КартаЛояльности_Key', 'ДокументОснование', 'ДокументОснование_Type', 'НомерПоДаннымКлиента',
-        'ДатаПоДаннымКлиента', 'Объект', 'Объект_Type', 'ИдентификаторПлатежа', 'МаксимальныйКодСтроки'];
+        'ДатаПоДаннымКлиента', 'Объект', 'Объект_Type', 'ИдентификаторПлатежа', 'МаксимальныйКодСтроки', 'Назначение_Key'];
 
     /** The only field the customer's address goes to (not the carrier's, not the structured «…Значение»). */
     public const ADDRESS_FIELD = 'АдресДоставки';
