@@ -36,7 +36,7 @@ class ListOneCAgentTasks extends ListRecords
             $when = $h['seen_at']->timezone('Europe/Minsk')->format('d.m.Y H:i');
             $parts[] = $h['online']
                 ? '<span style="color:#16a34a">● Агент 1С на связи</span> (последний раз '.$when.')'
-                : '<span style="color:#dc2626">● Агент 1С молчит с '.$when.'</span>: проверьте сервер 1С и задачу «KOTLOV 1C agent» в Планировщике.';
+                : '<span style="color:#dc2626">● Агент 1С молчит с '.$when.'</span>: проверьте сервер 1С: журнал запусков C:\kotlov-agent\task.log и задачу «KOTLOV 1C agent» в Планировщике.';
             $parts[] = 'Версия агента: '.e($h['version'] ?: '1').($h['outdated']
                 ? ' — <span style="color:#d97706">устарела, скачайте agent.ps1 версии '.e($latest).' на сервер 1С</span>' : '').'.';
         }
