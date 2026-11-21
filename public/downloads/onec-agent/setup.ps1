@@ -33,8 +33,30 @@ $config = @(
 Write-Host 'agent.config записан. Проверка: powershell -ExecutionPolicy Bypass -File agent.ps1 -Check'
 
 if ($InstallTask) {
+    # run.cmd: PowerShell 2.0 started by the scheduler as SYSTEM without a console may wait for input at the end
+    # and block every next run, so it gets -NonInteractive and an empty input; task.log shows each start and exit
+    # (the redirect goes first: «exit 0>>file» would redirect stream 0 instead of writing «0»).
     $script = Join-Path $Root 'agent.ps1'
-    & schtasks.exe /Create /F /TN 'KOTLOV 1C agent' /SC MINUTE /MO 5 /RU SYSTEM /RL HIGHEST `
-        /TR ('powershell.exe -NoProfile -ExecutionPolicy Bypass -File ' + $script)
-    Write-Host 'Задача «KOTLOV 1C agent» создана: запуск каждые 5 минут.'
+    $log = Join-Path $Root 'task.log'
+    $run = Join-Path $Root 'run.cmd'
+    $cmd = @(
+        ('@>>"' + $log + '" echo %date% %time% start'),
+        ('@powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $script + '" >>"' + $log + '" 2>&1 <NUL'),
+        ('@>>"' + $log + '" echo %date% %time% exit %errorlevel%')
+    )
+    [IO.File]::WriteAllText($run, ($cmd -join "`r`n") + "`r`n", (New-Object System.Text.ASCIIEncoding))
+
+    & schtasks.exe /Create /F /TN 'KOTLOV 1C agent' /SC MINUTE /MO 5 /RU SYSTEM /RL HIGHEST /TR ('"' + $run + '"')
+    # Run also on a UPS seen as a battery, catch up a missed start, never two at once, cut a hung run after 15 minutes.
+    $s = New-Object -ComObject Schedule.Service
+    $s.Connect()
+    $folder = $s.GetFolder('\')
+    $d = $folder.GetTask('KOTLOV 1C agent').Definition
+    $d.Settings.DisallowStartIfOnBatteries = $false
+    $d.Settings.StopIfGoingOnBatteries = $false
+    $d.Settings.StartWhenAvailable = $true
+    $d.Settings.ExecutionTimeLimit = 'PT15M'
+    $d.Settings.MultipleInstances = 2
+    [void]$folder.RegisterTaskDefinition('KOTLOV 1C agent', $d, 6, 'SYSTEM', $null, 5)
+    Write-Host 'Задача «KOTLOV 1C agent» создана: запуск каждые 5 минут, журнал запусков task.log.'
 }
