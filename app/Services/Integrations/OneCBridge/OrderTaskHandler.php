@@ -4,6 +4,7 @@ namespace App\Services\Integrations\OneCBridge;
 
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\OneCAgentTask;
+use App\Models\OneCOrderProfile;
 use App\Models\Order;
 
 /**
@@ -35,8 +36,22 @@ class OrderTaskHandler implements OneCAgentTaskHandler
     public function finished(OneCAgentTask $task, array $result): ?string
     {
         $order = $task->subject;
-        if (! $result['ok'] || ! $order instanceof Order) {
+        if (! $order instanceof Order) {
             return null;
+        }
+        if (! $result['ok']) {
+            // 1C refused the order in its write handler without a reason: the same order goes again, one step simpler.
+            if (str_contains((string) $result['error'], 'ПриЗаписи') && ($next = app(OneCOrderExport::class)->retrySimpler($task))) {
+                return '1С не приняла заказ — пробую упрощённый вариант '.data_get($next->payload, 'variant').' (задача №'.$next->id.')';
+            }
+
+            return null;
+        }
+        // The variant that passed is kept in the scheme: the next orders go with it at once.
+        $variant = (int) data_get($task->payload, 'variant', 0);
+        $profile = OneCOrderProfile::query()->find(data_get($task->payload, 'profile_id'));
+        if ($profile && $variant > (int) ($profile->meta['variant'] ?? 0)) {
+            $profile->forceFill(['meta' => array_merge((array) $profile->meta, ['variant' => $variant])])->save();
         }
         $number = (string) ($result['data']['document_number'] ?? '');
         $key = strtolower((string) ($result['data']['document_key'] ?? ''));
@@ -53,7 +68,7 @@ class OrderTaskHandler implements OneCAgentTaskHandler
             'body' => ($existed ? 'Заказ уже был в 1С: ' : 'Создан заказ клиента в 1С: ').($number ?: $key).' (не проведён).',
         ]);
 
-        return self::summary($order, $existed);
+        return self::summary($order, $existed).($variant > 0 ? ' · упрощённый вариант '.$variant : '');
     }
 
     public static function summary(Order $order, bool $existed = false): string

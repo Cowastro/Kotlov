@@ -221,9 +221,29 @@ class OneCOrderExport
         return $problems;
     }
 
+    /**
+     * Simpler and simpler orders for a 1C that refuses one «ПриЗаписи» without saying why (OData gives no reason):
+     * 1 — no text in «Адрес доставки» (the address stays in the delivery info), 2 — no payment stage (1C takes it from
+     * the agreement), 3 — no service fields of the header and the lines, 4 — only the main fields. The variant that
+     * passes is kept in the scheme for the next orders.
+     */
+    public const MAX_VARIANT = 4;
+
+    private const SERVICE_FIELDS = ['СкидкиРассчитаны', 'Согласован', 'СуммаАвансаДоОбеспечения', 'СуммаПредоплатыДоОтгрузки', 'ДатаСогласования',
+        'МаксимальныйКодСтроки', 'АдресДоставкиЗначение', 'АдресДоставкиЗначенияПолей', 'ВремяДоставкиС', 'ВремяДоставкиПо'];
+
+    private const MAIN_FIELDS = ['Date', 'Организация_Key', 'Партнер_Key', 'Контрагент_Key', 'Соглашение_Key', 'Договор_Key', 'Склад_Key', 'Валюта_Key',
+        'Подразделение_Key', 'Менеджер_Key', 'НалогообложениеНДС', 'ХозяйственнаяОперация', 'ПорядокРасчетов', 'ЦенаВключаетНДС', 'Статус',
+        'СпособДоставки', 'ДополнительнаяИнформацияПоДоставке', 'ЖелаемаяДатаОтгрузки', 'ДатаОтгрузки', 'НомерПоДаннымКлиента', 'Комментарий',
+        'СуммаДокумента', 'Товары'];
+
+    private const MAIN_ROW_FIELDS = ['LineNumber', 'Номенклатура_Key', 'Характеристика_Key', 'КоличествоУпаковок', 'Количество', 'Цена', 'Сумма',
+        'СтавкаНДС_Key', 'СуммаНДС', 'СуммаСНДС', 'Склад_Key'];
+
     /** @return array<string, mixed> the «Заказ клиента» for OData */
-    public function body(Order $order, OneCOrderProfile $profile, array $form): array
+    public function body(Order $order, OneCOrderProfile $profile, array $form, ?int $variant = null): array
     {
+        $variant ??= (int) ($profile->meta['variant'] ?? 0);
         $meta = $profile->meta ?? [];
         $has = fn (string $key): bool => in_array($key, (array) ($meta['keys'] ?? []), true);
         $now = now('Europe/Minsk')->format('Y-m-d\TH:i:s');
@@ -314,6 +334,26 @@ class OneCOrderExport
             $doc['ЭтапыГрафикаОплаты'] = [$stage];
         }
 
+        return self::simplify($doc, $variant);
+    }
+
+    /** @param array<string, mixed> $doc */
+    public static function simplify(array $doc, int $variant): array
+    {
+        if ($variant >= 1 && array_key_exists(OneCOrderProfiles::ADDRESS_FIELD, $doc)) {
+            $doc[OneCOrderProfiles::ADDRESS_FIELD] = '';
+        }
+        if ($variant >= 2) {
+            unset($doc['ЭтапыГрафикаОплаты']);
+        }
+        if ($variant >= 3) {
+            $doc = collect($doc)->except(self::SERVICE_FIELDS)->all();
+            $doc['Товары'] = array_map(fn (array $row): array => collect($row)->only(self::MAIN_ROW_FIELDS)->all(), $doc['Товары'] ?? []);
+        }
+        if ($variant >= 4) {
+            $doc = collect($doc)->only(self::MAIN_FIELDS)->all();
+        }
+
         return $doc;
     }
 
@@ -342,6 +382,23 @@ class OneCOrderExport
             : null;
 
         return $this->tasks->enqueue(OrderTaskHandler::TYPE, $order, 'Заказ №'.$order->number.' → 1С ('.$profile->name.')', $user,
-            ['profile_id' => $profile->id, 'body' => $body, 'find' => $find]);
+            ['profile_id' => $profile->id, 'body' => $body, 'find' => $find, 'form' => $form, 'variant' => (int) ($profile->meta['variant'] ?? 0)]);
+    }
+
+    /** The same order, one step simpler, right after 1C refused it «ПриЗаписи» (the agent takes it in the same run). */
+    public function retrySimpler(OneCAgentTask $failed): ?OneCAgentTask
+    {
+        $order = $failed->subject;
+        $variant = (int) data_get($failed->payload, 'variant', 0) + 1;
+        $profile = OneCOrderProfile::query()->find(data_get($failed->payload, 'profile_id'));
+        $form = data_get($failed->payload, 'form');
+        if (! $order instanceof Order || ! $profile || ! is_array($form) || $variant > self::MAX_VARIANT) {
+            return null;
+        }
+
+        return OneCAgentTask::query()->create(['type' => OrderTaskHandler::TYPE, 'subject_type' => $order->getMorphClass(), 'subject_id' => $order->id,
+            'title' => mb_substr('Заказ №'.$order->number.' → 1С ('.$profile->name.', упрощённый вариант '.$variant.')', 0, 250),
+            'payload' => array_merge((array) $failed->payload, ['body' => $this->body($order->fresh(), $profile, $form, $variant), 'variant' => $variant]),
+            'status' => OneCAgentTask::QUEUED, 'created_by' => $failed->created_by]);
     }
 }
