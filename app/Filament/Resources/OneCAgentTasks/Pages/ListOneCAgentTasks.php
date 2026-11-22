@@ -85,6 +85,21 @@ class ListOneCAgentTasks extends ListRecords
                         ? Notification::make()->success()->title('Агент проверит документы в 1С за 5 минут')->send()
                         : Notification::make()->info()->title('Все документы уже проведены, или проверка уже в очереди')->send();
                 }),
+            Action::make('readPurchaseSamples')
+                ->label('Образцы закупок')
+                ->icon('heroicon-o-calculator')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Прочитать из 1С образцы закупок?')
+                ->modalDescription('Агент только читает: последние «Заказы поставщикам», «Приобретение товаров и услуг», виды цен, записи регистров «Себестоимость товаров» и «Цены номенклатуры». В 1С ничего не меняется.')
+                ->action(function (): void {
+                    try {
+                        $task = app(OneCReferences::class)->enqueueSamples('purchase', auth()->user());
+                        Notification::make()->success()->title('Задача №'.$task->id.' в очереди: агент прочитает за 5 минут')->send();
+                    } catch (\DomainException $e) {
+                        Notification::make()->warning()->title($e->getMessage())->send();
+                    }
+                }),
             Action::make('orderProfiles')->label('Схемы заказов')->icon('heroicon-o-document-duplicate')->color('gray')
                 ->url(OneCOrderProfileResource::getUrl('index')),
             Action::make('prices')->label('Пакеты цен')->icon('heroicon-o-currency-dollar')->color('gray')
