@@ -403,7 +403,7 @@
                                     $eurotermCopy = str_starts_with((string) $product->sku, 'EUROTERM-')
                                         || in_array(parse_url((string) $product->content_source_url, PHP_URL_HOST), ['euroterm.by', 'www.euroterm.by'], true);
                                 @endphp
-                                @if ($manufacturerPump)
+                                @if ($pumpCopy !== null)
                                     <p class="product-infor-desc cl-text-2 mb-12">{{ $pumpCopy['summary'] }}</p>
                                 @elseif ($product->short_description && !($eurotermCopy && \App\Services\Suppliers\EurotermCatalog::containsStorefrontText($product->short_description)))
                                     <p class="product-infor-desc cl-text-2 mb-12">
@@ -996,7 +996,7 @@
                 {{-- Описание --}}
                 <div class="tab-pane active show" id="description" role="tabpanel">
                     <div class="tab-content_desc site-prose">
-                        @if ($manufacturerPump)
+                        @if ($pumpCopy !== null)
                             <h2 class="h5 mb-3">{{ $product->name }}</h2>
                             <p>{{ $pumpCopy['intro'] }}</p>
                             @if ($pumpCopy['parameters'] !== '')
@@ -1005,6 +1005,9 @@
                             @endif
                             <h3 class="h6 mt-4 mb-2">Что учесть при выборе</h3>
                             <p>{{ $pumpCopy['selection'] }}</p>
+                            @foreach ($pumpCopy['limitations'] as $limitation)
+                                <p>{{ $limitation }}</p>
+                            @endforeach
                             @if ($pumpDetailDocument)
                                 <a class="link" href="{{ $pumpDetailDocument['url'] }}" target="_blank" rel="noopener">{{ $pumpDetailDocument['title'] }} ↗</a>
                             @endif
@@ -1066,8 +1069,8 @@
                                     @if ($fireplaceSpecs !== null)
                                         @foreach ($fireplaceSpecs as $label => $value)
                                             <tr>
-                                                <th scope="row" class="fw-medium" style="width:45%">{{ $manufacturerPump ? str_replace(['Артикул поставщика', 'Емкость кондексатора', 'Емкость конденсатора'], ['Артикул', 'Ёмкость конденсатора', 'Ёмкость конденсатора'], $label) : $label }}</th>
-                                                <td>{{ $manufacturerPump ? \App\Support\Catalog\PumpProductCopy::value($value) : $value }}</td>
+                                                <th scope="row" class="fw-medium" style="width:45%">{{ $pumpCopy !== null ? str_replace(['Артикул поставщика', 'Емкость кондексатора', 'Емкость конденсатора'], ['Артикул', 'Ёмкость конденсатора', 'Ёмкость конденсатора'], $label) : $label }}</th>
+                                                <td>{{ $pumpCopy !== null ? \App\Support\Catalog\PumpProductCopy::value($value) : $value }}</td>
                                             </tr>
                                         @endforeach
                                     @elseif ($attributeValues->count() > 0)

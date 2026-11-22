@@ -84,4 +84,58 @@ class TdPumpSpecificationsTest extends TestCase
         $this->assertSame([], $facts['numbers']);
         $this->assertSame(['no'], $facts['options']['verified']);
     }
+
+    public function test_other_td_pump_families_get_buyer_copy_and_only_explicit_model_facts(): void
+    {
+        [$product, $offer] = $this->pump();
+        foreach (['tsirkulyatsionnyie', 'nasosy-dlya-kolodtsa', 'fekalnye-nasosy', 'kanalizatsionnye-nasosy', 'nasosy-povysheniya-davleniya'] as $slug) {
+            $category = Category::create(['name' => $slug, 'slug' => $slug, 'parent_id' => 0, 'is_active' => true]);
+            $name = 'Насос модели TEST-'.$slug;
+            $product->update(['name' => $name, 'category_id' => $category->id, 'content' => '<p>Пример другой модели: 999 м</p>']);
+            $raw = $offer->raw;
+            $raw['name'] = $name;
+            $raw['description'] = "Мощность, Вт: 750\nМаксимальный напор: 12 м\nМаксимальная производительность: 100 л/мин\nПример: другая модель\nМаксимальный напор: 999 м";
+            $offer->update(['raw' => $raw]);
+            $this->get('https://kotlov.by/'.$slug.'/'.$product->slug)->assertOk()
+                ->assertViewHas('pumpCopy', fn ($copy) => $copy['intro'] !== '' && str_contains($copy['parameters'], '750 Вт'))
+                ->assertSee('Особенности модели')->assertSee('12 м')
+                ->assertDontSee('999 м')->assertDontSee('выгрузка ТД Комплект');
+        }
+    }
+
+    public function test_speed_values_are_not_promoted_to_maxima_and_empty_source_does_not_decode_the_title(): void
+    {
+        [$product, $offer] = $this->pump();
+        $category = Category::create(['name' => 'Циркуляционные', 'slug' => 'tsirkulyatsionnyie', 'parent_id' => 0, 'is_active' => true]);
+        $product->update(['name' => 'Насос NOC 65/12 DM', 'category_id' => $category->id]);
+        $raw = $offer->raw;
+        $raw['name'] = $product->name;
+        $raw['description'] = "Мощность, Вт: III 100, II 70, I 55\nНапор (высота подъема), м: III 6, II 5, I 3.5";
+        $offer->update(['raw' => $raw]);
+        $this->get('https://kotlov.by/tsirkulyatsionnyie/'.$product->slug)->assertOk()
+            ->assertSee('III 100, II 70, I 55')
+            ->assertViewHas('pumpCopy', fn ($copy) => $copy['parameters'] === '');
+        $raw['description'] = '';
+        $offer->update(['raw' => $raw]);
+        $this->get('https://kotlov.by/tsirkulyatsionnyie/'.$product->slug)->assertOk()
+            ->assertViewHas('pumpCopy', fn ($copy) => $copy['parameters'] === '')
+            ->assertDontSee('id="specifications"', false);
+    }
+
+    public function test_reviewed_external_wilo_uses_manufacturer_facts_instead_of_unsupported_editorial_promises(): void
+    {
+        [$product, $offer] = $this->pump();
+        $category = Category::create(['name' => 'Циркуляционные', 'slug' => 'tsirkulyatsionnyie', 'parent_id' => 0, 'is_active' => true]);
+        $product->update(['name' => 'Насос WILO atmos PICO 25/1-6', 'category_id' => $category->id,
+            'supplier_id' => null, 'content' => '<p>Обещание бесперебойной работы и универсальное применение для ГВС</p>']);
+        $raw = $offer->raw;
+        $raw['name'] = 'WILO Atmos PICO 25/1-6';
+        $raw['vendor_code'] = $raw['identity_vendor_code'] = '4232694';
+        $raw['brand'] = $raw['identity_brand'] = 'WILO';
+        $raw['description'] = 'Максимальный напор: 999 м';
+        $offer->update(['supplier_article' => '4232694', 'raw' => $raw]);
+        $this->get('https://kotlov.by/tsirkulyatsionnyie/'.$product->slug)->assertOk()
+            ->assertSee('6,1 м')->assertSee('180 мм')
+            ->assertDontSee('999 м')->assertDontSee('Обещание бесперебойной работы')->assertDontSee('универсальное применение для ГВС');
+    }
 }
