@@ -19,6 +19,7 @@ use App\Models\OrderPortalLink;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\Integrations\OneCBridge\OneCOrderPayments;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCSupplierOrderExport;
 use App\Services\Orders\OrderItemFulfillmentManager;
@@ -174,6 +175,7 @@ class OrdersTable
                     })
                     ->description(fn (Order $record): ?string => filled($record->onec_order_guid) && ! $record->onec_deleted
                         ? ($record->onec_posted ? '' : 'не проведён').($record->onec_doc_status ? ($record->onec_posted ? '' : ' · ').(OneCOrderProfiles::STATUSES[$record->onec_doc_status] ?? $record->onec_doc_status) : '')
+                            .($record->onec_to_pay !== null ? ' · оплачено '.OneCOrderPayments::money((float) $record->onec_paid).' из '.OneCOrderPayments::money((float) $record->onec_to_pay) : '')
                         : null)
                     ->width('120px')
                     ->grow(false)

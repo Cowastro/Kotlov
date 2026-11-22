@@ -49,7 +49,9 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         $supplierOrders = OneCSupplierOrder::query()->whereNotNull('onec_order_guid')->where('onec_deleted', false)
             ->where(fn ($q) => $q->whereNull('onec_posted')->orWhere('onec_posted', false))->where('created_at', '>', now()->subDays(self::DAYS))
             ->orderBy('id')->pluck('onec_order_guid')->unique()->values();
-        if ($keys->isEmpty() && $orders->isEmpty() && $supplierOrders->isEmpty()) {
+        // Payments of linked orders: «Оплачен» follows 1C.
+        $payments = app(OneCOrderPayments::class)->queries();
+        if ($keys->isEmpty() && $orders->isEmpty() && $supplierOrders->isEmpty() && $payments === []) {
             return null;
         }
         $queries = [];
@@ -66,8 +68,9 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             $queries['supplier_orders_'.($i + 1)] = ODataReadTaskHandler::path(OneCSupplierOrderExport::ENTITY,
                 ['$filter' => $filter($chunk), '$select' => 'Ref_Key,Number,Posted,DeletionMark,Статус']);
         }
+        $queries += $payments;
         try {
-            return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.($keys->count() + $orders->count() + $supplierOrders->count()), $user, ['queries' => $queries]);
+            return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.($keys->count() + $orders->count() + $supplierOrders->count()).($payments ? ', оплаты: '.count($payments) : ''), $user, ['queries' => $queries]);
         } catch (DomainException) {
             return null;
         }
@@ -89,8 +92,16 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         $checked = 0;
         $posted = 0;
         $moved = 0;
+        $paid = 0;
+        $payments = app(OneCOrderPayments::class);
         foreach (array_keys((array) data_get($task->payload, 'queries', [])) as $name) {
             $part = ODataReadTaskHandler::part($task, $name);
+            if (str_starts_with($name, 'pay_')) {
+                $rows = $part['code'] === 200 ? (array) data_get($part['json'], 'value', []) : [];
+                str_starts_with($name, 'pay_keys_') ? $payments->rememberObjects($rows) : $paid += $payments->apply($rows);
+
+                continue;
+            }
             foreach ($part['code'] === 200 ? (array) data_get($part['json'], 'value', []) : [] as $row) {
                 $key = strtolower((string) ($row['Ref_Key'] ?? ''));
                 if (str_starts_with($name, 'supplier_orders_')) {
@@ -139,7 +150,7 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             }
         }
 
-        return 'Проверено '.$checked.', проведено '.$posted.($moved ? ', этапов заказов обновлено: '.$moved : '');
+        return 'Проверено '.$checked.', проведено '.$posted.($moved ? ', этапов заказов обновлено: '.$moved : '').($paid ? ', оплачено по 1С: '.$paid : '');
     }
 
     public function requeued(OneCAgentTask $task): void
