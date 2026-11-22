@@ -7,6 +7,7 @@
     $mobileLabels = array_replace($compactLabels, ['handover' => 'Выдача', 'completed' => 'Готово']);
     $currentIndex = array_search($order->effectiveDealStage(), array_keys($stages), true);
     $active = $order->dealIsActive();
+    $completed = $order->effectiveDealStage() === 'completed' && $order->status !== 'cancelled';
     $overdue = $active && $order->deal_control_at?->isPast();
     $today = $active && $order->deal_control_at?->timezone('Europe/Minsk')->isToday();
     $isTable ??= false;
@@ -50,7 +51,7 @@
                 }
             @endphp
             <button type="button"
-                class="order-deal__step {{ $loop->index < $currentIndex ? 'is-done' : '' }} {{ $loop->index === $currentIndex ? 'is-current' : '' }}"
+                class="order-deal__step {{ $loop->index < $currentIndex || $completed ? 'is-done' : '' }} {{ $loop->index === $currentIndex && ! $completed ? 'is-current' : '' }}"
                 @disabled(! $active)
                 @if ($active) wire:click.stop="mountAction('manageDeal', @js(['stage' => $key]), @js($context))" @endif
                 title="{{ $hint }}"
