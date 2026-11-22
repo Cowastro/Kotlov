@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Models\Category;
 use App\Models\CrmCounterparty;
@@ -18,6 +19,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
+use App\Services\Integrations\OneCBridge\OneCOrderJourney;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -81,6 +83,18 @@ class OneCSupplierOrderTest extends TestCase
             'pricing_type' => 'retail', 'fulfillment_route' => 'supplier_purchase', 'fulfillment_supplier_id' => $supplier->id, 'fulfillment_purchase_price' => 168]);
 
         $this->actingAs($admin);
+
+        // The order shows what to do next in 1C, and the list finds it among «нужно заказать у поставщика».
+        $journey = app(OneCOrderJourney::class);
+        $this->assertSame('Нажмите «Создать заказ в 1С».', $journey->next($order));
+        $steps = collect($journey->steps($order))->keyBy('title');
+        $this->assertSame('done', $steps['Товары связаны с 1С']['state']);
+        $this->assertSame('todo', $steps['Заказы поставщикам в 1С']['state']);
+        $this->assertSame('Поставщик-тест: не заказан', $steps['Заказы поставщикам в 1С']['detail']);
+        Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])->assertSee('1С: что сделано и что дальше')->assertSee('Создать заказ в 1С');
+        $listed = fn (): array => tap(Livewire::test(ListOrders::class), fn ($p) => $p->filterTable('onec_order', 'supplier_todo'))
+            ->instance()->getTableRecords()->pluck('id')->all();
+        $this->assertSame([$order->id], $listed());
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
             ->assertActionVisible('onecSupplierOrders')->assertActionHasLabel('onecSupplierOrders', 'Поставщикам в 1С: 0 из 1')
             ->mountAction('onecSupplierOrders')
@@ -111,6 +125,8 @@ class OneCSupplierOrderTest extends TestCase
         $record = OneCSupplierOrder::query()->sole();
         $this->assertSame('00УТ-000700', $record->onec_order_number);
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])->assertActionHasLabel('onecSupplierOrders', 'Поставщикам в 1С: 1 из 1');
+        $this->assertSame([], $listed());
+        $this->assertStringStartsWith('Поставщик-тест: 00УТ-000700', collect($journey->steps($order->fresh()))->keyBy('title')['Заказы поставщикам в 1С']['detail']);
 
         // The accountant posts it: the site sees it at the next check.
         $check = app(DocumentStatusTaskHandler::class)->enqueueCheck(null);

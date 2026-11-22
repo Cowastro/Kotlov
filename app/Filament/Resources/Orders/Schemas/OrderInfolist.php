@@ -22,6 +22,7 @@ use App\Services\Integrations\OneCBridge\ItemTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCBridge\OneCItemCreator;
+use App\Services\Integrations\OneCBridge\OneCOrderJourney;
 use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
@@ -131,6 +132,17 @@ class OrderInfolist
                             ->getStateUsing(fn ($record) => $record->manager
                                 ? $record->manager->name.($record->assigned_to ? ' ('.$record->assigned_to.')' : '')
                                 : ($record->assigned_to ?? null)),
+                    ]),
+
+                Section::make('1С: что сделано и что дальше')
+                    ->icon('heroicon-o-arrows-right-left')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->visible(fn (Order $record): bool => (bool) auth()->user()?->isManager() && app(OneCItemCreator::class)->source() !== null
+                        && $record->status !== 'cancelled')
+                    ->schema([
+                        TextEntry::make('onec_journey')->hiddenLabel()
+                            ->state(fn (Order $record): HtmlString => app(OneCOrderJourney::class)->render($record)),
                     ]),
 
                 Group::make([
