@@ -496,8 +496,7 @@ class OrderItemSupplyContextResolver
     {
         // Older legacy snapshots incorrectly recorded stale positive balances as false.
         // Preserve the stored historical values; correct their read-only interpretation.
-        return $item->supply_channel === 'legacy' && $item->supply_is_available === false && (float) $item->supply_stock_quantity > 0
-            ? null : $item->supply_is_available;
+        return $item->supplyAvailabilityForDisplay();
     }
 
     public function currentAvailabilityForDisplay(OrderItem $item): array

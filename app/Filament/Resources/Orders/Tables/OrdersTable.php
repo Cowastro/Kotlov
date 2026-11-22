@@ -678,7 +678,7 @@ class OrdersTable
                                 ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase'),
                             'supplier_id' => $item->fulfillment_supplier_id ?: $item->supply_supplier_id,
                             'availability_status' => $item->fulfillment_availability_status
-                                ?: match ($item->supply_is_available) {
+                                ?: match ($item->supplyAvailabilityForDisplay()) {
                                     true => 'available',
                                     false => 'unavailable',
                                     default => null,

@@ -84,7 +84,7 @@ final class FindOrderItemAnalogAction
         }
 
         return $order->items->filter(fn (OrderItem $item): bool => $item->fulfillment_availability_status === 'unavailable'
-            || $item->supply_is_available === false
+            || $item->supplyAvailabilityForDisplay() === false
             || (! $item->fulfillment_supplier_id && ! $item->supply_supplier_id)
         )->values();
     }
@@ -92,7 +92,7 @@ final class FindOrderItemAnalogAction
     private static function itemLabel(OrderItem $item): string
     {
         $reason = match (true) {
-            $item->fulfillment_availability_status === 'unavailable', $item->supply_is_available === false => 'нет в наличии',
+            $item->fulfillment_availability_status === 'unavailable', $item->supplyAvailabilityForDisplay() === false => 'нет в наличии',
             ! $item->fulfillment_supplier_id && ! $item->supply_supplier_id => 'поставщик не определён',
             default => 'требует проверки',
         };

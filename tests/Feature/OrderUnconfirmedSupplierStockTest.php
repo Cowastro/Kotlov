@@ -68,6 +68,7 @@ class OrderUnconfirmedSupplierStockTest extends TestCase
         [$order,$item] = $this->fixture(stock: 0, age: 1, inStock: false);
         $check = app(OrderItemAvailabilityChecker::class)->check($item);
         $this->assertFalse($check['is_available']);
+        $this->assertFalse($item->supplyAvailabilityForDisplay());
         $this->assertSame('Сейчас нет в наличии', $check['stock_label']);
         $summary = app(OrderItemSupplyContextResolver::class)->summarize($order->fresh());
         $this->assertSame(1, $summary['unavailable_count']);
@@ -91,6 +92,7 @@ class OrderUnconfirmedSupplierStockTest extends TestCase
         $before = $item->getAttributes();
         $context = app(OrderItemSupplyContextResolver::class)->resolve($item);
         $this->assertNull($context['is_available']);
+        $this->assertNull($item->supplyAvailabilityForDisplay());
         $this->assertStringContainsString('наличие не подтверждено', $context['stock_label']);
         $this->assertNull($item->currentAvailabilityForDisplay()['is_available']);
         $this->assertSame(130, $item->currentAvailabilityForDisplay()['stock_quantity']);
