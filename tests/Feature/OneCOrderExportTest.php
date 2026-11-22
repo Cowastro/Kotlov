@@ -289,6 +289,18 @@ class OneCOrderExportTest extends TestCase
         $this->assertNull(app(OneCOrderStages::class)->apply($order->fresh()));
     }
 
+    public function test_an_order_closed_in_1c_but_behind_on_the_site_is_checked_again_and_catches_up(): void
+    {
+        // Linked by hand before stages went all the way: closed in 1C, still «Передача клиенту» on the site.
+        $order = $this->order(['status' => 'shipped', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
+            'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'Закрыт', 'onec_posted' => true]);
+        $this->check1cOrder('Закрыт', true, [['Номенклатура_Key' => self::ITEM, 'Отменено' => false]]);
+        $this->assertSame('delivered', $order->fresh()->status);
+
+        // Once the site caught up, a closed 1C order is not read again.
+        $this->assertNull(app(DocumentStatusTaskHandler::class)->enqueueCheck(null));
+    }
+
     public function test_an_order_1c_refuses_on_write_goes_again_as_a_draft_and_the_scheme_keeps_drafts(): void
     {
         $this->syncReferences();
