@@ -58,7 +58,9 @@ class OneCOrderJourney
         };
 
         // 3. Supplier orders, when lines are bought from suppliers.
-        $groups = $this->suppliers->groups($order);
+        // A delivered order or a closed 1C order has nothing left to buy.
+        $finished = $order->status === 'delivered' || ($exported && $order->onec_doc_status === 'Закрыт');
+        $groups = $finished ? [] : $this->suppliers->groups($order);
         if ($groups !== []) {
             $parts = [];
             $sent = 0;
