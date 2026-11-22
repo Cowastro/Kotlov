@@ -55,7 +55,7 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         }
         foreach ($orders->chunk(self::CHUNK)->values() as $i => $chunk) {
             $queries['orders_'.($i + 1)] = ODataReadTaskHandler::path('Document_ЗаказКлиента',
-                ['$filter' => $filter($chunk), '$select' => 'Ref_Key,Number,Posted,DeletionMark,Статус']);
+                ['$filter' => $filter($chunk)]); // whole orders: the lines tell a closed order from a cancelled one
         }
         try {
             return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.($keys->count() + $orders->count()), $user, ['queries' => $queries]);
@@ -79,6 +79,7 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         $task->refresh();
         $checked = 0;
         $posted = 0;
+        $moved = 0;
         foreach (array_keys((array) data_get($task->payload, 'queries', [])) as $name) {
             $part = ODataReadTaskHandler::part($task, $name);
             foreach ($part['code'] === 200 ? (array) data_get($part['json'], 'value', []) : [] as $row) {
@@ -94,6 +95,8 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
                         OneCAgentTask::query()->where('type', OrderTaskHandler::TYPE)->where('subject_type', $order->getMorphClass())
                             ->where('subject_id', $order->id)->where('status', OneCAgentTask::DONE)
                             ->update(['summary' => OrderTaskHandler::summary($order)]);
+                        $lines = collect((array) ($row['Товары'] ?? []));
+                        $moved += app(OneCOrderStages::class)->apply($order, $lines->isNotEmpty() && $lines->every(fn ($l): bool => (bool) ($l['Отменено'] ?? false))) ? 1 : 0;
                     }
 
                     continue;
@@ -112,7 +115,7 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             }
         }
 
-        return 'Проверено '.$checked.', проведено '.$posted;
+        return 'Проверено '.$checked.', проведено '.$posted.($moved ? ', этапов заказов обновлено: '.$moved : '');
     }
 
     public function requeued(OneCAgentTask $task): void

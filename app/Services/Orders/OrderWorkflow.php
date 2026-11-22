@@ -4,6 +4,7 @@ namespace App\Services\Orders;
 
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Integrations\OneCBridge\OneCOrderStages;
 use App\Services\Integrations\OneCOrderQueue;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -120,6 +121,13 @@ class OrderWorkflow
         };
 
         app(OrderStatusCustomerNotifier::class)->notify($order->fresh(['user']));
+
+        // Already in 1C and posted there: the next stages follow 1C (a closed 1C order waits for the next check,
+        // which also looks at its lines).
+        $moved = app(OneCOrderStages::class)->apply($order, upTo: 'processing');
+        if ($moved) {
+            $result['body'] .= ' Заказ уже проведён в 1С — этап «'.Order::STATUSES[$moved].'» поставлен по 1С.';
+        }
 
         return $result;
     }

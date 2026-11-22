@@ -384,6 +384,10 @@ class Order extends Model
             return $this->procurementStep().$tariffStep.'В меню «Европочта» нажмите «Оформить Европочту и открыть ярлык». Трек-номер сохранится в заказе. Распечатайте ярлык, затем нажмите «Передать в доставку».';
         }
 
+        if (filled($this->onec_order_guid) && ! $this->onec_deleted && in_array($this->status, ['confirmed', 'processing', 'shipped'], true)) {
+            return 'Заказ в 1С ('.$this->onec_order_number.'): его ведут в 1С, этапы «В исполнении» и «Доставлен» сайт ставит сам по статусу 1С.';
+        }
+
         return match ($this->status) {
             'new' => 'Принять заказ и начать проверку наличия.',
             'checking' => match (true) {

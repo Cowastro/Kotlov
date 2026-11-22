@@ -186,6 +186,7 @@ class OneCOrderMatcher
             $order->managerComments()->create(['user_id' => $user?->id, 'author_name' => 'Мост 1С',
                 'body' => 'Связан с заказом 1С '.$ref->description.' (заведён в 1С вручную) — повторно в 1С не передаётся.']);
         });
+        app(OneCOrderStages::class)->apply($order, upTo: 'processing');
     }
 
     /** A wrong link is undone; an order the site created in 1C stays (it would be sent a second time). */

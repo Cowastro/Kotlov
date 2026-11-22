@@ -21,6 +21,7 @@ use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCOrderExport;
 use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
+use App\Services\Integrations\OneCBridge\OneCOrderStages;
 use App\Services\Integrations\OneCBridge\OneCReferences;
 use DomainException;
 use Filament\Actions\Testing\TestAction;
@@ -229,6 +230,54 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame('НеСогласован', $profile->header['Статус']);
         $this->assertSame(self::ORG, $profile->header['Организация_Key']);
         $this->assertSame('РеализацияКлиенту', $profile->header['ХозяйственнаяОперация']);
+    }
+
+    /** The agent answers the document check for one 1C order. */
+    private function check1cOrder(string $status, bool $posted, array $lines): void
+    {
+        $task = app(DocumentStatusTaskHandler::class)->enqueueCheck(null);
+        $this->agent()->get('/1c/agent/tasks/next')->assertOk();
+        $this->sendPart($task->id, 'orders_1', 200, ['value' => [['Ref_Key' => 'dddddddd-0000-0000-0000-000000000800', 'Number' => 'МПУТ-000800',
+            'Posted' => $posted, 'DeletionMark' => false, 'Статус' => $status, 'Товары' => $lines]]])->assertOk();
+        $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1'])->assertOk();
+    }
+
+    public function test_the_order_stages_follow_1c_once_the_customer_got_the_confirmation(): void
+    {
+        $order = $this->order(['status' => 'checking', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
+            'onec_profile_id' => 1, 'onec_exported_at' => now(), 'onec_doc_status' => 'НеСогласован', 'onec_posted' => false]);
+        $line = ['Номенклатура_Key' => self::ITEM, 'Отменено' => false];
+
+        // Posted «К выполнению», but the customer has not been confirmed yet: the site waits for the manager.
+        $this->check1cOrder('КВыполнению', true, [$line]);
+        $this->assertSame('checking', $order->fresh()->status);
+
+        // The manager confirms to the customer: the order is already in work in 1C, so it goes on to «В исполнении».
+        $order->items()->update(['fulfillment_confirmed_at' => now()]);
+        $order->forceFill(['status' => 'confirmed'])->save();
+        $this->assertSame('processing', app(OneCOrderStages::class)->apply($order->fresh()));
+        $this->assertSame('processing', $order->fresh()->status);
+        $this->assertStringStartsWith('Заказ в 1С (МПУТ-000800)', $order->fresh()->workflowNextStep());
+
+        // Closed in 1C with every line cancelled: not a delivery, the manager gets a note.
+        $this->check1cOrder('Закрыт', true, [array_merge($line, ['Отменено' => true])]);
+        $this->assertSame('processing', $order->fresh()->status);
+        $this->assertSame(1, $order->managerComments()->where('body', 'like', '%закрыт в 1С без отгрузки%')->count());
+    }
+
+    public function test_a_closed_1c_order_is_delivered_on_the_site(): void
+    {
+        $order = $this->order(['status' => 'processing', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
+            'onec_profile_id' => 1, 'onec_exported_at' => now(), 'onec_doc_status' => 'КВыполнению', 'onec_posted' => true]);
+        $this->check1cOrder('Закрыт', true, [['Номенклатура_Key' => self::ITEM, 'Отменено' => false]]);
+        $this->assertSame('delivered', $order->fresh()->status);
+        $this->assertSame('По 1С: заказ МПУТ-000800 проведён, «Закрыт».', $order->statusHistory()->latest('id')->value('comment'));
+
+        // Never backwards, never a cancelled order.
+        $cancelled = $this->order(['number' => 'K-3003', 'status' => 'cancelled', 'onec_order_guid' => 'eeeeeeee-0000-0000-0000-000000000801',
+            'onec_profile_id' => 1, 'onec_exported_at' => now(), 'onec_doc_status' => 'КВыполнению', 'onec_posted' => true]);
+        $this->assertNull(app(OneCOrderStages::class)->apply($cancelled));
+        $this->assertNull(app(OneCOrderStages::class)->apply($order->fresh()));
     }
 
     public function test_the_accountant_posting_the_order_in_1c_shows_on_the_site(): void
