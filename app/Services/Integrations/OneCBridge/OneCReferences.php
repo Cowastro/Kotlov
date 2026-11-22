@@ -59,8 +59,9 @@ class OneCReferences
         ],
         // «payments»: how a payment reaches a customer order (settlement objects, the balance of settlements).
         'payments' => [
-            'settlement_objects_sample' => ['Catalog_ОбъектыРасчетов', ['$top' => '3', '$orderby' => 'Code desc']],
-            'settlements_balance_sample' => ['AccumulationRegister_РасчетыСКлиентами/Balance', ['$top' => '5']],
+            // The agent reads plain entities only (no «/Balance»): the balance is summed from the records.
+            'settlement_objects_sample' => ['Catalog_ОбъектыРасчетов', ['$top' => '3']],
+            'settlements_recent_sample' => ['AccumulationRegister_РасчетыСКлиентами_RecordType', ['$top' => '10', '$orderby' => 'Period desc']],
         ],
         'purchase' => [
             'supplier_order_sample' => ['Document_ЗаказПоставщику', ['$top' => '3', '$orderby' => 'Date desc']],
