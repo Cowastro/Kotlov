@@ -12,7 +12,7 @@ class InternalOrderActions
 {
     public static function confirm(): Action
     {
-        return Action::make('confirmInternalOrder')->label('Подтвердить все')
+        return Action::make('confirmInternalOrder')->label('Подтвердить весь внутренний заказ')
             ->icon('heroicon-o-check-badge')->color('success')
             ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
             ->visible(fn (Order $record): bool => $record->dealIsActive() && (! $record->is_internal || $record->needsFulfillmentConfirmation()))
@@ -28,7 +28,7 @@ class InternalOrderActions
 
     public static function complete(): Action
     {
-        return Action::make('completeInternalOrder')->label('Закрыть успешно')
+        return Action::make('completeInternalOrder')->label('Закрыть внутренний заказ успешно')
             ->icon('heroicon-o-check-circle')->color('success')
             ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
             ->visible(fn (Order $record): bool => $record->is_internal && $record->dealIsActive())
