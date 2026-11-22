@@ -152,6 +152,19 @@ class OrderItem extends Model
         ]);
     }
 
+    /** A stale legacy balance did not prove absence when the order was created. */
+    public function supplyAvailabilityForDisplay(): ?bool
+    {
+        return $this->supply_channel === 'legacy' && $this->supply_is_available === false && (float) $this->supply_stock_quantity > 0
+            ? null : $this->supply_is_available;
+    }
+
+    /** Historical check presentation, without altering its audit snapshot. */
+    public function currentAvailabilityForDisplay(): array
+    {
+        return app(OrderItemSupplyContextResolver::class)->currentAvailabilityForDisplay($this);
+    }
+
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
