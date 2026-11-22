@@ -184,7 +184,8 @@ class OrderItemSupplyContextResolver
             'supplier_names' => $contexts->pluck('supplier_name')->filter()->unique()->values(),
             'unresolved_count' => $contexts->where('status', 'unresolved')->count(),
             'missing_price_count' => $contexts->where('has_purchase_price', false)->count(),
-            'unavailable_count' => $contexts->where('is_available', false)->count(),
+            'unavailable_count' => $contexts->whereStrict('is_available', false)->count(),
+            'unknown_availability_count' => $contexts->whereStrict('is_available', null)->count(),
             'negative_margin_count' => $pricedContexts->filter(
                 fn (array $context): bool => (float) $context['margin_total'] < 0,
             )->count(),
@@ -287,6 +288,16 @@ class OrderItemSupplyContextResolver
     /** @return array<string, mixed> */
     private function fromSupplierProduct(OrderItem $item, SupplierProduct $offer, int $candidateCount): array
     {
+        $available = $this->legacyAvailability($offer);
+        $quantity = $offer->stock_quantity !== null ? $this->stockQuantity((float) $offer->stock_quantity).' шт.' : null;
+        $label = match ($available) {
+            true => $quantity ?? 'Есть в наличии по данным поставщика',
+            false => 'Сейчас нет в наличии',
+            default => $quantity !== null
+                ? 'По загрузке: '.$quantity.' · наличие требует уточнения'
+                : 'Наличие у поставщика требует уточнения',
+        };
+
         return $this->pricedContext($item, (float) $offer->price_byn, [
             'status' => 'supplier_purchase',
             'route_label' => 'Закупка у поставщика',
@@ -303,10 +314,8 @@ class OrderItemSupplyContextResolver
             'stock_updated_at' => $offer->last_stock_synced_at
                 ?? $offer->last_synced_at
                 ?? $offer->updated_at,
-            'stock_label' => $this->legacyOfferAvailable($offer)
-                ? ($offer->stock_quantity !== null ? number_format((int) $offer->stock_quantity, 0, '.', ' ').' шт.' : 'Есть в наличии')
-                : 'Сейчас нет в наличии',
-            'is_available' => $this->legacyOfferAvailable($offer),
+            'stock_label' => $label,
+            'is_available' => $available,
             'candidate_count' => $candidateCount,
             'is_explicit' => false,
             'is_current_recommendation' => true,
@@ -372,7 +381,7 @@ class OrderItemSupplyContextResolver
             'stock_quantity' => $item->supply_stock_quantity !== null ? (float) $item->supply_stock_quantity : null,
             'stock_updated_at' => $item->supply_captured_at,
             'stock_label' => $this->snapshotStockLabel($item),
-            'is_available' => $item->supply_is_available,
+            'is_available' => $this->snapshotAvailability($item),
             'candidate_count' => (int) $item->supply_candidate_count,
             'is_explicit' => true,
             'is_current_recommendation' => false,
@@ -382,7 +391,11 @@ class OrderItemSupplyContextResolver
 
     private function snapshotStockLabel(OrderItem $item): string
     {
-        if ($item->supply_is_available === null) {
+        if ($this->snapshotAvailability($item) === null) {
+            if ((float) $item->supply_stock_quantity > 0) {
+                return 'При заказе: по загрузке '.$this->stockQuantity((float) $item->supply_stock_quantity).' шт. · наличие не подтверждено';
+            }
+
             return 'Наличие не было известно';
         }
 
@@ -457,6 +470,50 @@ class OrderItemSupplyContextResolver
     private function integrationWholesalePrice(IntegrationProduct $offer): float
     {
         return $offer->normalizedPriceByn() ?? 0.0;
+    }
+
+    /** A missing/faded confirmation is unknown, never evidence of zero stock. */
+    private function legacyAvailability(SupplierProduct $offer): ?bool
+    {
+        if (! $offer->supplier?->is_active || ! $offer->supplier->usesLegacyChannel()) {
+            return null;
+        }
+        if ($offer->in_stock && $offer->stock_status === SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE) {
+            return true;
+        }
+        $updatedAt = $offer->last_stock_synced_at ?? $offer->last_synced_at ?? $offer->updated_at;
+        if (! $updatedAt || $updatedAt->lt(now()->subHours(SupplierProduct::STALE_AFTER_HOURS)) || $offer->stock_quantity === null) {
+            return null;
+        }
+        if ((float) $offer->stock_quantity <= 0 && $offer->in_stock) {
+            return null; // Conflicting flags need clarification too.
+        }
+
+        return (float) $offer->stock_quantity > 0;
+    }
+
+    private function snapshotAvailability(OrderItem $item): ?bool
+    {
+        // Older legacy snapshots incorrectly recorded stale positive balances as false.
+        // Preserve the stored historical values; correct their read-only interpretation.
+        return $item->supply_channel === 'legacy' && $item->supply_is_available === false && (float) $item->supply_stock_quantity > 0
+            ? null : $item->supply_is_available;
+    }
+
+    public function currentAvailabilityForDisplay(OrderItem $item): array
+    {
+        $check = $item->current_availability ?? [];
+        if ($item->supply_channel === 'legacy' && ($check['is_available'] ?? null) === false && (float) ($check['stock_quantity'] ?? 0) > 0) {
+            $check['is_available'] = null;
+            $check['stock_label'] = 'По загрузке: '.$this->stockQuantity((float) $check['stock_quantity']).' шт. · наличие требует уточнения';
+        }
+
+        return $check;
+    }
+
+    private function stockQuantity(float $quantity): string
+    {
+        return rtrim(rtrim(number_format($quantity, 3, '.', ' '), '0'), '.');
     }
 
     private function legacyOfferAvailable(SupplierProduct $offer): bool

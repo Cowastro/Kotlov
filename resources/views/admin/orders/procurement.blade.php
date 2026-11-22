@@ -92,20 +92,11 @@
                         @endif
                     @elseif($item->fulfillment_confirmed_at)
                         Исполнение подтверждено менеджером
-                    @elseif(data_get($item->current_availability, 'stock_quantity') !== null)
-                        {{ rtrim(rtrim(number_format((float) data_get($item->current_availability, 'stock_quantity'), 3, ',', ' '), '0'), ',') }} шт.
-                    @elseif(data_get($item->current_availability, 'is_available') === true)
-                        В наличии, количество не указано
-                    @elseif(data_get($item->current_availability, 'is_available') === false)
-                        Нет в наличии по последней проверке
-                    @elseif($item->supply_stock_quantity !== null)
-                        {{ rtrim(rtrim(number_format((float) $item->supply_stock_quantity, 3, ',', ' '), '0'), ',') }} шт.
-                    @elseif($item->supply_is_available === true)
-                        В наличии, количество не указано
-                    @elseif($item->supply_is_available === false)
-                        Нет подтверждённого остатка
                     @else
-                        Неизвестно
+                        {{ $item->current_availability_checked_at
+                            ? data_get($item->currentAvailabilityForDisplay(), 'stock_label', 'Наличие требует уточнения')
+                            : $item->supplyContext()['stock_label'] }}
+                        <br><span class="muted">Исполнение менеджером ещё не подтверждено</span>
                     @endif
                 </td>
                 <td>{!! nl2br(e($item->currentSupplyContact() ?: '—')) !!}</td>

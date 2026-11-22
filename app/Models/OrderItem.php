@@ -152,6 +152,12 @@ class OrderItem extends Model
         ]);
     }
 
+    /** Historical check presentation, without altering its audit snapshot. */
+    public function currentAvailabilityForDisplay(): array
+    {
+        return app(OrderItemSupplyContextResolver::class)->currentAvailabilityForDisplay($this);
+    }
+
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);

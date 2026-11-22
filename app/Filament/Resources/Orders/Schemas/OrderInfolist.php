@@ -423,7 +423,7 @@ class OrderInfolist
                                                 return $snapshot;
                                             }
 
-                                            $current = (string) ($record->current_availability['stock_label'] ?? 'Неизвестно');
+                                            $current = (string) ($record->currentAvailabilityForDisplay()['stock_label'] ?? 'Неизвестно');
                                             $current = preg_replace('/^Сейчас\s+/u', '', $current) ?: $current;
                                             $current = mb_strtolower(mb_substr($current, 0, 1)).mb_substr($current, 1);
 
@@ -432,9 +432,9 @@ class OrderInfolist
                                         ->helperText(function (OrderItem $record): ?string {
                                             if ($record->fulfillment_availability_status) {
                                                 $current = $record->current_availability_checked_at
-                                                    ? (string) data_get($record->current_availability, 'stock_label', 'Неизвестно')
+                                                    ? (string) data_get($record->currentAvailabilityForDisplay(), 'stock_label', 'Неизвестно')
                                                     : null;
-                                                $sourceUpdatedAt = data_get($record->current_availability, 'source_updated_at');
+                                                $sourceUpdatedAt = data_get($record->currentAvailabilityForDisplay(), 'source_updated_at');
 
                                                 return collect([
                                                     $record->fulfillment_confirmed_at
@@ -450,13 +450,14 @@ class OrderInfolist
                                             }
 
                                             if (! $record->current_availability_checked_at) {
-                                                return 'Актуальное наличие ещё не уточняли';
+                                                return 'По данным загрузки; исполнение менеджером ещё не подтверждено. Актуальное наличие ещё не уточняли';
                                             }
 
-                                            $sourceUpdatedAt = data_get($record->current_availability, 'source_updated_at');
+                                            $sourceUpdatedAt = data_get($record->currentAvailabilityForDisplay(), 'source_updated_at');
                                             $parts = [
-                                                'Проверено '.$record->current_availability_checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i'),
+                                                'Сверено с загрузкой '.$record->current_availability_checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i'),
                                                 $record->currentAvailabilityCheckedBy?->name,
+                                                'Исполнение менеджером ещё не подтверждено',
                                                 $sourceUpdatedAt ? 'данные склада от '.Carbon::parse($sourceUpdatedAt)->timezone('Europe/Minsk')->format('d.m.Y H:i') : null,
                                             ];
 
@@ -469,10 +470,10 @@ class OrderInfolist
                                                 'unavailable' => 'danger',
                                                 default => 'gray',
                                             }
-                                            : match (data_get($record->current_availability, 'is_available')) {
+                                            : match (data_get($record->currentAvailabilityForDisplay(), 'is_available')) {
                                                 true => 'success',
                                                 false => 'danger',
-                                                default => 'gray',
+                                                default => 'warning',
                                             })
                                         ->weight('bold')
                                         ->suffixAction(
