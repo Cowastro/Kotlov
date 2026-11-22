@@ -9,6 +9,7 @@ use App\Models\OneCItem;
 use App\Models\Product;
 use App\Models\User;
 use DomainException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -52,32 +53,66 @@ class OneCItemCreator
             ->where(fn ($q) => $q->whereNull('match_status')->orWhere('match_status', '!=', 'ignored'))->first() : null;
     }
 
-    /** @return array<int, string> 1C items that may be this card: by article and by the words of the name */
-    public function similar(Product $product, int $limit = 8): array
+    /**
+     * 1C items that may be this card, best first: the same article, then the most words of the name in common
+     * («ЭТНА», «Панорама», «18»…), so the right one is not lost among other stoves.
+     *
+     * @return list<array{row: IntegrationProduct, score: int}>
+     */
+    public function candidates(Product $product, int $limit = 8): array
     {
         $source = $this->source();
         if (! $source) {
             return [];
         }
-        // The first words say what the thing is («Датчик загазованности…»); the database compares without case.
-        $words = collect(preg_split('/[\s,.;:()«»"\/+]+/u', (string) $product->name))
-            ->filter(fn (string $w): bool => mb_strlen($w) >= 3)->take(2)->values();
+        $words = self::words((string) $product->name);
+        // The longest words find the candidates (the short ones match half the catalog), all words rank them.
+        $search = $words->sortByDesc(fn (string $w): int => mb_strlen($w))->take(3)->values();
         $rows = IntegrationProduct::query()->where('integration_source_id', $source->id)
-            ->where(function ($q) use ($product, $words): void {
+            ->where(fn ($q) => $q->whereNull('match_status')->orWhere('match_status', '!=', 'ignored'))
+            ->where(function ($q) use ($product, $search): void {
                 if (filled($product->sku)) {
                     $q->orWhere('external_sku', $product->sku);
                 }
-                if ($words->count() >= 2) {
-                    $q->orWhere(function ($q) use ($words): void {
-                        foreach ($words as $word) {
-                            $q->where('name', 'like', '%'.$word.'%');
-                        }
-                    });
+                foreach ($search as $word) {
+                    // As written and with a capital letter: not every database compares Cyrillic without case.
+                    $q->orWhere('name', 'like', '%'.$word.'%')->orWhere('name', 'like', '%'.mb_convert_case($word, MB_CASE_TITLE).'%');
                 }
-            })->limit($limit)->get(['id', 'external_code', 'name', 'product_id', 'stock_quantity']);
+            })->limit(400)->get(['id', 'external_id', 'external_code', 'external_sku', 'name', 'product_id', 'stock_quantity']);
 
-        return $rows->mapWithKeys(fn (IntegrationProduct $p): array => [$p->id => trim(($p->external_code ? $p->external_code.' · ' : '').$p->name)
-            .($p->product_id ? ' (уже у карточки #'.$p->product_id.')' : '')])->all();
+        return $rows->map(function (IntegrationProduct $row) use ($words, $product): array {
+            $have = self::words((string) $row->name);
+            $score = $words->intersect($have)->count() + (filled($product->sku) && $row->external_sku === $product->sku ? 5 : 0);
+
+            return ['row' => $row, 'score' => $score];
+        })->filter(fn (array $c): bool => $c['score'] >= 2)
+            ->sortByDesc('score')->take($limit)->values()->all();
+    }
+
+    /** @return array<int, string> 1C items that may be this card, for the window */
+    public function similar(Product $product, int $limit = 8): array
+    {
+        return collect($this->candidates($product, $limit))->mapWithKeys(fn (array $c): array => [$c['row']->id => trim(($c['row']->external_code ? $c['row']->external_code.' · ' : '').$c['row']->name)
+            .($c['row']->product_id ? ' (уже у карточки #'.$c['row']->product_id.')' : '')])->all();
+    }
+
+    /** The free 1C item that is clearly this card (most of its words, ahead of the next one), or null. */
+    public function obviousMatch(Product $product): ?IntegrationProduct
+    {
+        $words = self::words((string) $product->name)->count();
+        $list = $this->candidates($product, 5);
+        $best = $list[0] ?? null;
+        if (! $best || $best['row']->product_id || $best['score'] < max(3, (int) ceil($words * 0.6))) {
+            return null;
+        }
+
+        return ($list[1]['score'] ?? 0) < $best['score'] ? $best['row'] : null;
+    }
+
+    /** @return Collection<int, string> the words of a name, lower case, without one-letter ones */
+    public static function words(string $name): Collection
+    {
+        return collect(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($name)))->filter(fn (string $w): bool => mb_strlen($w) >= 2)->unique()->values();
     }
 
     /** The 1C group a new item goes to by default: the group of its sample. */

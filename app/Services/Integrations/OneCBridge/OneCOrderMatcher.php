@@ -2,6 +2,7 @@
 
 namespace App\Services\Integrations\OneCBridge;
 
+use App\Models\OneCItem;
 use App\Models\OneCReference;
 use App\Models\Order;
 use App\Models\User;
@@ -187,6 +188,7 @@ class OneCOrderMatcher
                 'body' => 'Связан с заказом 1С '.$ref->description.' (заведён в 1С вручную) — повторно в 1С не передаётся.']);
         });
         app(OneCOrderStages::class)->apply($order, upTo: 'processing');
+        $this->linkItemsFrom($order->fresh(), strtolower($refKey), $user);
     }
 
     /** A wrong link is undone; an order the site created in 1C stays (it would be sent a second time). */
@@ -206,5 +208,68 @@ class OneCOrderMatcher
             $order->managerComments()->create(['user_id' => $user?->id, 'author_name' => 'Мост 1С',
                 'body' => 'Связь с заказом 1С '.$number.' снята.']);
         });
+    }
+
+    /** Site orders linked with 1C orders entered by hand: their lines get the 1C items of those orders. @return int lines linked */
+    public function linkItemsOfLinkedOrders(int $days = 60): int
+    {
+        $n = 0;
+        Order::query()->whereNotNull('onec_order_guid')->whereNull('onec_profile_id')->where('onec_deleted', false)
+            ->where('created_at', '>', now()->subDays($days))->with('items.integrationProduct')
+            ->chunkById(100, function ($orders) use (&$n): void {
+                foreach ($orders as $order) {
+                    $n += count($this->linkItemsFrom($order, strtolower((string) $order->onec_order_guid)));
+                }
+            });
+
+        return $n;
+    }
+
+    /**
+     * The 1C order a manager entered by hand names the 1C items of the order: a site line not linked with 1C gets the
+     * free 1C item of that order — the only one left, or the one whose name is clearly the same. Never an item of
+     * another card. @return list<string> what was linked
+     */
+    public function linkItemsFrom(Order $order, string $refKey, ?User $user = null): array
+    {
+        $ref = OneCReference::query()->where('kind', 'order')->where('ref_key', $refKey)->first();
+        $keys = collect($ref?->data['items'] ?? [])->pluck(0)->filter()->unique()->values();
+        $open = collect($this->export->lines($order))->filter(fn (array $l): bool => $l['key'] === null && $l['item']->product)->values();
+        if ($keys->isEmpty() || $open->isEmpty()) {
+            return [];
+        }
+        $items = OneCItem::query()->whereIn('ref_key', $keys)->get()->keyBy('ref_key');
+        $taken = collect($this->export->lines($order))->pluck('key')->filter();
+        $free = $keys->reject(fn (string $k): bool => $taken->contains($k) || ($items[$k]->product_id ?? null))->values();
+        $creator = app(OneCItemCreator::class);
+        $done = [];
+        foreach ($open as $line) {
+            $pick = null;
+            if ($open->count() === 1 && $free->count() === 1) {
+                $pick = $free->first();
+            } else {
+                $words = OneCItemCreator::words($line['name']);
+                $scored = $free->map(fn (string $k): array => ['key' => $k, 'score' => $words->intersect(OneCItemCreator::words((string) ($items[$k]->description ?? '')))->count()])
+                    ->sortByDesc('score')->values();
+                $best = $scored[0] ?? null;
+                if ($best && $best['score'] >= 3 && ($scored[1]['score'] ?? 0) < $best['score']) {
+                    $pick = $best['key'];
+                }
+            }
+            if (! $pick || ! isset($items[$pick])) {
+                continue;
+            }
+            $result = $creator->link($line['item']->product, $pick, (string) $items[$pick]->code, (string) $items[$pick]->description, false);
+            if (str_contains($result, 'привязана')) {
+                $done[] = '«'.$line['name'].'» → '.($items[$pick]->code ?: $items[$pick]->description);
+                $free = $free->reject(fn (string $k): bool => $k === $pick)->values();
+            }
+        }
+        if ($done !== []) {
+            $order->managerComments()->create(['user_id' => $user?->id, 'author_name' => 'Мост 1С',
+                'body' => 'Карточки привязаны к товарам 1С из заказа '.$ref->description.': '.implode('; ', $done).'.']);
+        }
+
+        return $done;
     }
 }
