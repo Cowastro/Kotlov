@@ -1,4 +1,4 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 6: «Мост 1С».
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 7: «Мост 1С».
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
@@ -8,7 +8,7 @@
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '6'
+$AgentVersion = '7'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -39,8 +39,9 @@ function Read-Config {
     return $c
 }
 
-# A value for curl's config file: in double quotes, \ and " escaped.
-function Q([string]$s) { return '"' + $s.Replace('\', '\\').Replace('"', '\"') + '"' }
+# A value for curl's config file: one line in double quotes, \ and " escaped (a line break would end the value and
+# break the config, e.g. a 1C error text of several lines).
+function Q([string]$s) { return '"' + ($s -replace '[\r\n\t]+', ' ').Replace('\', '\\').Replace('"', '\"') + '"' }
 
 # A JSON string.
 function Js([string]$s) { return '"' + $s.Replace('\', '\\').Replace('"', '\"') + '"' }
@@ -250,9 +251,10 @@ for ($round = 0; $round -lt 20; $round++) {
         Log ('Задача №' + $id + ': готово ' + ($data -join ' '))
         if (-not (Send-Result $id $form $doneFile)) { exit 1 }
     } catch {
-        $err = [string]$_
+        $err = ([string]$_) -replace '\s+', ' '
         if ($err.Length -gt 1500) { $err = $err.Substring(0, 1500) }
         Log ('Задача №' + $id + ': ошибка ' + $err)
-        [void](Send-Result $id @('ok=0', ('error=' + $err)) $null)
+        # The error goes to the site; if even that fails, the run goes on with the next task.
+        try { [void](Send-Result $id @('ok=0', ('error=' + $err)) $null) } catch { Log ('Задача №' + $id + ': ошибка не ушла на сайт: ' + [string]$_) }
     }
 }
