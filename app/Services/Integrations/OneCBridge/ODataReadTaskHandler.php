@@ -31,7 +31,8 @@ class ODataReadTaskHandler implements OneCAgentTaskHandler
             $parts[] = $key.'='.rawurlencode($value);
         }
 
-        return rawurlencode($entity).'?'.implode('&', $parts);
+        // A virtual table keeps its slash: AccumulationRegister_…/Balance.
+        return implode('/', array_map('rawurlencode', explode('/', $entity))).'?'.implode('&', $parts);
     }
 
     public function lines(OneCAgentTask $task): array
