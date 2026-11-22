@@ -96,9 +96,15 @@ class PricelessStockPriceProposal
         return $this->result($row, $card, $retailSite, $purchase, $market, $retail, $wholesale, $verdict, implode('; ', $notes));
     }
 
-    /** The lowest purchase price the site knows: a hand-set one, supplier price lists, official sources. */
+    /**
+     * What the card costs: its last purchase in 1C (with VAT) when 1C has one — that is what was really paid;
+     * otherwise the lowest purchase price the site knows: a hand-set one, supplier price lists, official sources.
+     */
     private function purchase(Product $card): ?float
     {
+        if ((float) $card->onec_cost_vat_byn > 0) {
+            return round((float) $card->onec_cost_vat_byn, 2);
+        }
         $prices = collect([(float) $card->manual_purchase_price_byn])
             ->concat($card->operationalSupplierProducts()->pluck('price_byn'))
             ->concat($card->usablePurchasePriceSources()->pluck('price_byn'))

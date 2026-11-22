@@ -109,6 +109,14 @@ class ProductInfolist
                                     ->money('BYN')
                                     ->placeholder('—'),
 
+                                TextEntry::make('onec_cost_vat_byn')
+                                    ->label('Себестоимость 1С (с НДС)')
+                                    ->money('BYN')
+                                    ->placeholder('нет поступлений в 1С')
+                                    ->helperText(fn ($record): ?string => $record->onec_cost_date
+                                        ? 'без НДС '.number_format((float) $record->onec_cost_byn, 2, ',', ' ').' · поступление '.$record->onec_cost_doc.' от '.$record->onec_cost_date->format('d.m.Y')
+                                        : null),
+
                                 TextEntry::make('currency')
                                     ->label('Валюта'),
 

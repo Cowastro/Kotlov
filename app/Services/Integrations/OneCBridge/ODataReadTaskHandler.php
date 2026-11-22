@@ -90,6 +90,9 @@ class ODataReadTaskHandler implements OneCAgentTaskHandler
         if (! $result['ok']) {
             return null;
         }
+        if (data_get($task->payload, 'purchases')) {
+            return app(OneCPurchaseCosts::class)->import($task);
+        }
         if (data_get($task->payload, 'create_item')) {
             return app(OneCItemCreator::class)->afterRead($task);
         }
