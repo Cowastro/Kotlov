@@ -3,20 +3,24 @@
 namespace App\Filament\Resources\Orders\Tables;
 
 use App\Filament\Exports\OrderExporter;
+use App\Filament\Resources\Orders\Actions\AssignOrderManagerAction;
 use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
+use App\Filament\Resources\Orders\Actions\InternalOrderActions;
 use App\Filament\Resources\Orders\Actions\ManageOrderDealAction;
+use App\Filament\Resources\Orders\Actions\OrderReviewLinkAction;
+use App\Filament\Resources\Orders\Actions\OrderReviewSmsAction;
 use App\Filament\Resources\Orders\Actions\RequestOrderSupplierReserveAction;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Order;
-use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
-use App\Services\Integrations\OneCBridge\OneCSupplierOrderExport;
 use App\Models\OrderItem;
 use App\Models\OrderPortalLink;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
+use App\Services\Integrations\OneCBridge\OneCSupplierOrderExport;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderPortal;
 use App\Services\Orders\OrderSettlementManager;
@@ -558,7 +562,8 @@ class OrdersTable
                         'found' => $query->whereNull('onec_order_guid')->whereNotNull('onec_match_guid'),
                         'none' => $query->whereNull('onec_order_guid')->whereNull('onec_match_guid'),
                         // A line bought from a supplier whose supplier order is not in 1C (nor on its way there).
-                        'supplier_todo' => $query->where('status', '!=', 'cancelled')->whereHas('items', fn (Builder $items): Builder => $items
+                        'supplier_todo' => $query->whereNotIn('status', ['cancelled', 'delivered'])
+                            ->where(fn (Builder $q): Builder => $q->whereNull('onec_doc_status')->orWhere('onec_doc_status', '!=', 'Закрыт'))->whereHas('items', fn (Builder $items): Builder => $items
                             ->whereIn('fulfillment_route', OneCSupplierOrderExport::ROUTES)->whereNotNull('fulfillment_supplier_id')
                             ->whereNotExists(fn ($sent) => $sent->from('onec_supplier_orders')
                                 ->whereColumn('onec_supplier_orders.order_id', 'order_items.order_id')
@@ -824,10 +829,10 @@ class OrdersTable
                     ->tooltip('Открыть заказ'),
                 ActionGroup::make([
                     FindOrderItemAnalogAction::make(),
-                    \App\Filament\Resources\Orders\Actions\InternalOrderActions::confirm(),
-                    \App\Filament\Resources\Orders\Actions\InternalOrderActions::complete(),
-                    \App\Filament\Resources\Orders\Actions\OrderReviewLinkAction::make(),
-                    \App\Filament\Resources\Orders\Actions\OrderReviewSmsAction::make(),
+                    InternalOrderActions::confirm(),
+                    InternalOrderActions::complete(),
+                    OrderReviewLinkAction::make(),
+                    OrderReviewSmsAction::make(),
                     RequestOrderSupplierReserveAction::make(),
                     Action::make('openOrderOnline')
                         ->label('Открыть онлайн-заказ')
@@ -838,7 +843,7 @@ class OrdersTable
                             ? app(OrderPortal::class)->url($link)
                             : null)
                         ->openUrlInNewTab(),
-                    \App\Filament\Resources\Orders\Actions\AssignOrderManagerAction::make(),
+                    AssignOrderManagerAction::make(),
                     EditAction::make('correctOrder')
                         ->label('Корректировать заказ')
                         ->icon('heroicon-o-pencil-square')

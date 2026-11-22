@@ -50,6 +50,13 @@ class OneCReferences
      * «purchase»: supplier orders (to create them from the site) and where purchase prices and cost live.
      */
     public const SAMPLE_SETS = [
+        // «order_states»: where this 1C keeps the state of a customer order and its payment.
+        'order_states' => [
+            'order_states_sample' => ['InformationRegister_СостоянияЗаказовКлиентов', ['$top' => '5']],
+            'customer_settlements_sample' => ['AccumulationRegister_РасчетыСКлиентами_RecordType', ['$top' => '5']],
+            'cash_receipt_sample' => ['Document_ПриходныйКассовыйОрдер', ['$top' => '2', '$orderby' => 'Date desc']],
+            'bank_receipt_sample' => ['Document_ПоступлениеБезналичныхДенежныхСредств', ['$top' => '2', '$orderby' => 'Date desc']],
+        ],
         'purchase' => [
             'supplier_order_sample' => ['Document_ЗаказПоставщику', ['$top' => '3', '$orderby' => 'Date desc']],
             'supplier_order_list' => ['Document_ЗаказПоставщику', ['$select' => 'Ref_Key,Number,Date,Posted,DeletionMark,Статус,Организация_Key,Партнер_Key,Контрагент_Key,СуммаДокумента',
