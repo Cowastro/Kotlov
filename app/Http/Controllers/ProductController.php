@@ -110,6 +110,7 @@ class ProductController extends Controller
         $manufacturerPump = in_array($productCategory->slug, PumpCatalog::MANUFACTURER_CATEGORIES, true);
         $pumpDetailDocument = null;
         $pumpSupplierSpecs = [];
+        $tdPumpRow = \App\Support\Catalog\TdPumpSpecifications::sourceRow($product);
         if ($manufacturerPump) {
             $catalog = app(PumpCatalog::class);
             $pumpFacts = $catalog->productFacts($product, $productCategory->slug, $catalog->dimensions($productCategory->slug));
@@ -117,18 +118,21 @@ class ProductController extends Controller
             $fireplaceSpecs = $pumpFacts['details'];
             $pumpDetailDocument = HouseholdPumpFacts::document($product, $productCategory->slug);
             if (! $pumpDetailDocument) {
-                $pumpSupplierSpecs = \App\Support\Catalog\TdPumpSpecifications::details($product);
+                $pumpSupplierSpecs = $tdPumpRow !== null ? \App\Support\Catalog\TdPumpSpecifications::details($product, $tdPumpRow) : [];
                 if ($pumpSupplierSpecs !== []) {
                     $fireplaceSpecs = $pumpSupplierSpecs;
                 }
             }
+        } elseif ($tdPumpRow !== null) {
+            $pumpSupplierSpecs = \App\Support\Catalog\TdPumpSpecifications::details($product, $tdPumpRow);
+            $fireplaceSpecs = $pumpSupplierSpecs;
         }
         $heaterEquipment = HeaterEquipment::details($product);
         if ($manufacturerPump && ! $pumpDetailDocument && $pumpSupplierSpecs === []) {
             $fireplaceSpecs = [];
         }
-        $pumpCopy = $manufacturerPump
-            ? \App\Support\Catalog\PumpProductCopy::make($product, $productCategory->slug, $fireplaceSpecs ?? [])
+        $pumpCopy = ($manufacturerPump || $tdPumpRow !== null)
+            ? \App\Support\Catalog\PumpProductCopy::make($product, $productCategory->slug, $fireplaceSpecs ?? [], $tdPumpRow['description'] ?? '')
             : null;
         $heaterEquipmentGroups = HeaterEquipment::relatedGroups($product, $heaterEquipment);
         if (isset(HeaterCatalog::NAMES[$productCategory->slug])) {
@@ -246,11 +250,11 @@ class ProductController extends Controller
         if (isset(RadiatorCatalog::NAMES[$productCategory->slug])) {
             $seoHighlights = collect($fireplaceSpecs)->map(fn ($value, $label) => $label.': '.$value)->values();
         }
-        if (in_array($productCategory->slug, PumpCatalog::MANUFACTURER_CATEGORIES, true)) {
+        if ($pumpCopy !== null) {
             $seoHighlights = collect($pumpCopy['highlights']);
         }
         $seoProduct = $product;
-        if ($manufacturerPump) {
+        if ($pumpCopy !== null) {
             // Generate metadata from the reviewed fields, not an older imported claim.
             $seoProduct = clone $product;
             $seoProduct->meta_description = null;
@@ -288,7 +292,7 @@ class ProductController extends Controller
             $schema['mpn'] = (string) $product->sku;
         }
 
-        $schemaDescription = $manufacturerPump ? $product->name.'. '.implode(' ', array_filter([
+        $schemaDescription = $pumpCopy !== null ? $product->name.'. '.implode(' ', array_filter([
             $pumpCopy['intro'], $pumpCopy['parameters'], $pumpCopy['selection'],
         ])) : trim(strip_tags((string) (
             $product->short_description
