@@ -135,6 +135,21 @@ class OneCItemCreateTest extends TestCase
         $creator->request($this->card, self::SAMPLE, null, $this->admin);
     }
 
+    public function test_the_sample_is_the_1c_item_most_like_the_card_not_the_latest_of_its_category(): void
+    {
+        $add = function (string $key, string $name, ?Product $card = null): void {
+            IntegrationProduct::query()->create(['integration_source_id' => $this->source->id, 'external_id' => $key, 'name' => $name, 'price' => 0,
+                'product_id' => $card?->id, 'match_status' => $card ? 'matched' : 'unmatched', 'matched_at' => now()]);
+        };
+        $boilerCard = Product::query()->create(['category_id' => $this->category->id, 'name' => 'Электрический котел Arderia E6', 'slug' => 'arderia', 'price' => 900]);
+        $add('11111111-0000-0000-0000-000000000001', 'Модуль отопительный электрического конвектора Ballu Evolution Transformer BEC/EVU-2000');
+        $add('11111111-0000-0000-0000-000000000002', 'Конвектор электрический Ballu BEC/HMM-1500');
+        $add('11111111-0000-0000-0000-000000000003', 'Электрический котел Arderia E6, v3', $boilerCard);
+        $convector = Product::query()->create(['category_id' => $this->category->id, 'name' => 'Ballu BEC/EMT-2000', 'slug' => 'ballu-emt', 'sku' => 'KOTLOV-000878', 'price' => 210]);
+
+        $this->assertSame('11111111-0000-0000-0000-000000000002', app(OneCItemCreator::class)->defaultTemplate($convector));
+    }
+
     public function test_an_item_1c_already_has_is_linked_instead_of_a_second_one(): void
     {
         $read = app(OneCItemCreator::class)->request($this->card, self::SAMPLE, null, $this->admin);
