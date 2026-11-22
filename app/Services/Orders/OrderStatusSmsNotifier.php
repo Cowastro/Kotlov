@@ -15,7 +15,7 @@ final class OrderStatusSmsNotifier
 
     public function record(Order $order, string $status, string $eventKey): void
     {
-        if (! $this->sms->configuredForSms() || str_starts_with($order->number, 'DBY-')) {
+        if ($order->is_internal || ! $this->sms->configuredForSms() || str_starts_with($order->number, 'DBY-')) {
             return;
         }
 

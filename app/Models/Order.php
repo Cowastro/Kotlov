@@ -161,6 +161,7 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'is_internal' => 'boolean',
         'deal_control_at' => 'datetime',
         'deal_stage_changed_at' => 'datetime',
         'deal_control_notified_at' => 'datetime',

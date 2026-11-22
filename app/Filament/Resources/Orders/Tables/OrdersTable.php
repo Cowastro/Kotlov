@@ -142,7 +142,7 @@ class OrdersTable
                         $date = $record->created_at?->format('d.m.Y H:i') ?? 'Дата не указана';
                         $status = $record->isArchivedAsIrrelevant() ? 'Архив' : ($statusNames[$record->status] ?? $record->status);
 
-                        return new HtmlString(e($date).'<span class="order-summary-status">'.e($status).'</span>'
+                        return new HtmlString(e($date).($record->is_internal ? '<span class="order-summary-status">Внутренний заказ</span>' : '').'<span class="order-summary-status">'.e($status).'</span>'
                             .'<span class="order-summary-total">'.e(self::formatMoney((float) $record->total)).'</span>');
                     })
                     ->width('114px')
@@ -653,6 +653,8 @@ class OrdersTable
                     ->action(fn (ListOrders $livewire) => $livewire->selectOrderTab('all')),
             ])
             ->recordActions([
+                \App\Filament\Resources\Orders\Actions\InternalOrderActions::confirm()->iconButton()->tooltip('Внутренний заказ: подтвердить все позиции'),
+                \App\Filament\Resources\Orders\Actions\InternalOrderActions::complete()->iconButton()->tooltip('Внутренний заказ: закрыть успешно'),
                 ManageOrderDealAction::make()->iconButton()->tooltip('Этап сделки и контроль'),
                 Action::make('advanceWorkflow')
                     ->label(fn (Order $record): string => self::compactWorkflowLabel($record))
