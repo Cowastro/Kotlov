@@ -15,6 +15,10 @@ use App\Models\OrderStatusHistory;
 use App\Models\Supplier;
 use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
+use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
+use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
+use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Models\SupplierOrderRequest;
 use App\Services\Orders\OrderItemAvailabilityChecker;
 use App\Services\Orders\OrderItemFulfillmentManager;
@@ -78,6 +82,13 @@ class OrderInfolist
                             ->badge()
                             ->color($statusColor)
                             ->formatStateUsing(fn (string $state) => Order::STATUSES[$state] ?? $state),
+
+                        TextEntry::make('onec_state')
+                            ->label('Заказ в 1С')
+                            ->badge()
+                            ->state(fn (Order $record): string => self::onecState($record)[0])
+                            ->color(fn (Order $record): string => self::onecState($record)[1])
+                            ->helperText(fn (Order $record): ?string => self::onecState($record)[2]),
 
                         TextEntry::make('created_at')
                             ->label('Создан')
@@ -1422,4 +1433,23 @@ class OrderInfolist
         return new HtmlString($escaped);
     }
 
+    /** @return array{0: string, 1: string, 2: ?string} what 1C knows about the order: badge, colour, line under it */
+    public static function onecState(Order $order): array
+    {
+        if (filled($order->onec_order_guid) && ! $order->onec_deleted) {
+            $status = OneCOrderProfiles::STATUSES[$order->onec_doc_status] ?? $order->onec_doc_status;
+
+            return [(string) $order->onec_order_number, $order->onec_posted ? "success" : "info",
+                ($order->onec_posted ? "проведён" : "не проведён").($status ? " · ".mb_strtolower((string) $status) : "")];
+        }
+        if (app(OneCAgentTasks::class)->activeFor($order, OrderTaskHandler::TYPE)) {
+            return ["отправляется", "gray", "агент 1С создаст заказ"];
+        }
+        $found = app(OneCOrderMatcher::class)->found($order);
+        if ($found) {
+            return ["найден: ".$found["ref"]->description, "warning", "проверьте и свяжите"];
+        }
+
+        return [$order->onec_deleted ? "помечен на удаление" : "нет", $order->onec_deleted ? "danger" : "gray", null];
+    }
 }

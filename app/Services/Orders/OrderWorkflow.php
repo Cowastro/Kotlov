@@ -23,12 +23,13 @@ class OrderWorkflow
         ],
         'checking' => [
             'next' => 'confirmed',
-            'label' => 'Подтвердить наличие',
+            // Availability is confirmed line by line in the goods; this step confirms the whole order to the customer.
+            'label' => 'Подтвердить заказ клиенту',
             'icon' => 'heroicon-o-check-badge',
             'color' => 'success',
-            'heading' => 'Подтвердить наличие клиенту?',
-            'description' => 'Заказ станет доступен клиенту в личном кабинете. Клиенту будет отправлено уведомление со ссылкой на заказ.',
-            'submit' => 'Подтвердить наличие',
+            'heading' => 'Подтвердить заказ клиенту?',
+            'description' => 'Наличие всех позиций подтверждено. Заказ станет доступен клиенту в личном кабинете, клиенту уйдёт уведомление со ссылкой на заказ.',
+            'submit' => 'Подтвердить заказ',
         ],
         'confirmed' => [
             'next' => 'processing',

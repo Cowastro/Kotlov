@@ -465,7 +465,7 @@ class OrderSupplyRoutingTest extends TestCase
             ])
             ->assertHasNoActionErrors()
             ->assertActionEnabled('advanceWorkflow')
-            ->assertActionHasLabel('advanceWorkflow', 'Подтвердить наличие')
+            ->assertActionHasLabel('advanceWorkflow', 'Подтвердить заказ клиенту')
             ->callAction('advanceWorkflow')
             ->assertHasNoActionErrors();
 

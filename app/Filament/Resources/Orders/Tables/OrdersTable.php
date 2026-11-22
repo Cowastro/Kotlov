@@ -10,6 +10,7 @@ use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Order;
+use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Models\OrderItem;
 use App\Models\OrderPortalLink;
 use App\Models\Product;
@@ -146,6 +147,29 @@ class OrdersTable
                     ->width('114px')
                     ->grow(false)
                     ->weight('bold'),
+
+                TextColumn::make('onec_order')
+                    ->label('1С')
+                    ->badge()
+                    ->state(fn (Order $record): string => match (true) {
+                        filled($record->onec_order_guid) && ! $record->onec_deleted => (string) $record->onec_order_number,
+                        filled($record->onec_match_number) => 'найден: '.$record->onec_match_number,
+                        default => '—',
+                    })
+                    ->color(fn (Order $record): string => match (true) {
+                        filled($record->onec_order_guid) && ! $record->onec_deleted => $record->onec_posted ? 'success' : 'info',
+                        filled($record->onec_match_number) => 'warning',
+                        default => 'gray',
+                    })
+                    ->tooltip(fn (Order $record): ?string => match (true) {
+                        filled($record->onec_order_guid) && ! $record->onec_deleted => ($record->onec_posted ? 'Проведён в 1С' : 'Не проведён в 1С')
+                            .($record->onec_doc_status ? ' · '.(OneCOrderProfiles::STATUSES[$record->onec_doc_status] ?? $record->onec_doc_status) : ''),
+                        filled($record->onec_match_number) => 'Похоже, заказ уже заведён в 1С ('.$record->onec_match_reasons.'): откройте заказ и свяжите',
+                        default => 'Заказа в 1С нет',
+                    })
+                    ->width('120px')
+                    ->grow(false)
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->label('Дата')
@@ -524,6 +548,18 @@ class OrdersTable
                     ->label('Филиал партнёра')
                     ->relationship('partnerBranch', 'name')
                     ->searchable(),
+
+                SelectFilter::make('onec_order')
+                    ->label('Заказ в 1С')
+                    ->options(['in' => 'В 1С', 'found' => 'Найден в 1С — связать', 'none' => 'Нет в 1С', 'unposted' => 'В 1С, не проведён'])
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'in' => $query->whereNotNull('onec_order_guid')->where('onec_deleted', false),
+                        'found' => $query->whereNull('onec_order_guid')->whereNotNull('onec_match_guid'),
+                        'none' => $query->whereNull('onec_order_guid')->whereNull('onec_match_guid'),
+                        'unposted' => $query->whereNotNull('onec_order_guid')->where('onec_deleted', false)
+                            ->where(fn (Builder $q): Builder => $q->whereNull('onec_posted')->orWhere('onec_posted', false)),
+                        default => $query,
+                    }),
 
                 SelectFilter::make('onec_sync')
                     ->label('Состояние 1С')
