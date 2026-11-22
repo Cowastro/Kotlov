@@ -251,4 +251,15 @@ class OneCBridgeTest extends TestCase
         $this->expectExceptionMessage('уже в очереди');
         $refs->enqueueSync(null, 3, false);
     }
+
+    public function test_a_task_the_agent_took_and_went_silent_on_can_be_cancelled_after_15_minutes(): void
+    {
+        $task = app(OneCReferences::class)->enqueueSync(null, 3, false);
+        $task->forceFill(['status' => OneCAgentTask::SENDING, 'picked_at' => now()->subMinutes(5)])->save();
+        $this->assertFalse(OneCAgentTasks::cancellable($task->fresh()));
+        $task->forceFill(['picked_at' => now()->subMinutes(20)])->save();
+        $this->assertTrue(OneCAgentTasks::cancellable($task->fresh()));
+        app(OneCAgentTasks::class)->cancel($task->fresh());
+        $this->assertSame(OneCAgentTask::CANCELLED, $task->fresh()->status);
+    }
 }

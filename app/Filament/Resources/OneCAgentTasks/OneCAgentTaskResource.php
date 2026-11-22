@@ -121,9 +121,9 @@ class OneCAgentTaskResource extends Resource
                     ->modalDescription('Задача снова встанет в очередь, агент выполнит её в течение 5 минут.')
                     ->action(fn (OneCAgentTask $record) => self::run(fn () => $tasks->retry($record), 'Задача снова в очереди')),
                 Action::make('cancel')->label('Отменить')->icon('heroicon-o-x-mark')->color('gray')
-                    ->visible(fn (OneCAgentTask $record): bool => in_array($record->status, [OneCAgentTask::QUEUED, OneCAgentTask::FAILED], true))
+                    ->visible(fn (OneCAgentTask $record): bool => OneCAgentTasks::cancellable($record))
                     ->requiresConfirmation()
-                    ->modalDescription('Агент не будет её выполнять. Пакет цен вернётся в черновик.')
+                    ->modalDescription('Агент не будет её выполнять. Пакет цен вернётся в черновик; заказ можно будет отправить заново.')
                     ->action(fn (OneCAgentTask $record) => self::run(fn () => $tasks->cancel($record), 'Задача отменена')),
             ]);
     }

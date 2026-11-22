@@ -50,9 +50,9 @@ class OneCSupplierOrderTest extends TestCase
             'Организация_Key' => self::ORG, 'Склад_Key' => 'c532218f-0f48-11e9-bad6-1c1b0d1de7c2', 'Валюта_Key' => '11867b41-09b8-11e9-bad6-1c1b0d1de7c2',
             'Договор_Key' => '99999999-0000-0000-0000-000000000001', 'ЦенаВключаетНДС' => false, 'Статус' => 'Закрыт', 'СуммаДокумента' => 1.2,
             'НалогообложениеНДС' => 'ПродажаОблагаетсяНДС', 'ХозяйственнаяОперация' => 'ЗакупкаУПоставщика', 'ПорядокРасчетов' => 'ПоДоговорамКонтрагентов',
-            'ДатаСогласования' => '2026-11-20T00:00:00', 'Комментарий' => 'старый', 'ИдентификаторПлатежа' => 'ЗП2611', 'МаксимальныйКодСтроки' => '1',
+            'ДатаСогласования' => '2026-11-20T00:00:00', 'ЖелаемаяДатаПоступления' => '0001-01-01T00:00:00', 'ДатаПоступления' => '2026-11-24T00:00:00', 'Комментарий' => 'старый', 'ИдентификаторПлатежа' => 'ЗП2611', 'МаксимальныйКодСтроки' => '1',
             'Товары' => [['LineNumber' => '1', 'Номенклатура_Key' => 'ffffffff-0000-0000-0000-000000000001', 'Количество' => 1, 'Цена' => 1,
-                'СтавкаНДС_Key' => self::VAT20, 'ВидЦеныПоставщика_Key' => 'eeeeeeee-0000-0000-0000-000000000001', 'КодСтроки' => 1, 'Отменено' => false]],
+                'СтавкаНДС_Key' => self::VAT20, 'ВидЦеныПоставщика_Key' => 'eeeeeeee-0000-0000-0000-000000000001', 'КодСтроки' => 1, 'Отменено' => false, 'ДатаПоступления' => '2026-11-24T00:00:00']],
             'ЭтапыГрафикаОплаты' => [['LineNumber' => '1', 'ВариантОплаты' => 'КредитПослеПоступления', 'ВариантОтсчета' => 'ОтДатыЗаказа',
                 'ДатаПлатежа' => '2026-11-20T00:00:00', 'ПроцентПлатежа' => 100, 'СуммаПлатежа' => 1.2]]];
     }
@@ -80,7 +80,7 @@ class OneCSupplierOrderTest extends TestCase
             'delivery_type' => 'pickup', 'subtotal' => 210, 'total' => 210, 'onec_order_number' => 'МПУТ-000800']);
         $order->save();
         OrderItem::query()->create(['order_id' => $order->id, 'product_id' => $card->id, 'product_name' => $card->name, 'price' => 210, 'quantity' => 1, 'total' => 210,
-            'pricing_type' => 'retail', 'fulfillment_route' => 'supplier_purchase', 'fulfillment_supplier_id' => $supplier->id, 'fulfillment_purchase_price' => 168]);
+            'pricing_type' => 'retail', 'fulfillment_route' => 'supplier_purchase', 'fulfillment_supplier_id' => $supplier->id, 'fulfillment_purchase_price' => 168, 'supply_delivery_days' => 5]);
 
         $this->actingAs($admin);
 
@@ -113,6 +113,11 @@ class OneCSupplierOrderTest extends TestCase
         $this->assertEquals(168, $body['Товары'][0]['СуммаСНДС']);
         $this->assertSame(self::ITEM, $body['Товары'][0]['Номенклатура_Key']);
         $this->assertArrayNotHasKey('ВидЦеныПоставщика_Key', $body['Товары'][0]);
+        // The goods come in 5 days (the supplier's delivery time of the line).
+        $arrive = now('Europe/Minsk')->startOfDay()->addDays(5)->format('Y-m-d\TH:i:s');
+        $this->assertSame($arrive, $body['ЖелаемаяДатаПоступления']);
+        $this->assertSame($arrive, $body['ДатаПоступления']);
+        $this->assertSame($arrive, $body['Товары'][0]['ДатаПоступления']);
         $this->assertEquals(168, $body['ЭтапыГрафикаОплаты'][0]['СуммаПлатежа']);
 
         [, $key] = OneCAgentToken::issue('test', $admin->id);

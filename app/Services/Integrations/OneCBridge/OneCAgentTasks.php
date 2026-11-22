@@ -115,12 +115,21 @@ class OneCAgentTasks
         });
     }
 
+    /** A run of the agent lasts at most 15 minutes (the scheduler stops it): a task taken longer ago is hung. */
+    public const HUNG_MINUTES = 15;
+
+    public static function cancellable(OneCAgentTask $task): bool
+    {
+        return in_array($task->status, [OneCAgentTask::QUEUED, OneCAgentTask::FAILED], true)
+            || ($task->status === OneCAgentTask::SENDING && $task->picked_at?->lt(now()->subMinutes(self::HUNG_MINUTES)));
+    }
+
     public function cancel(OneCAgentTask $task): void
     {
         DB::transaction(function () use ($task): void {
             $task = OneCAgentTask::query()->lockForUpdate()->findOrFail($task->id);
-            if (! in_array($task->status, [OneCAgentTask::QUEUED, OneCAgentTask::FAILED], true)) {
-                throw new DomainException('Отменить можно задачу в очереди или с ошибкой: агент уже выполняет её.');
+            if (! self::cancellable($task)) {
+                throw new DomainException('Отменить можно задачу в очереди, с ошибкой или зависшую (агент молчит больше '.self::HUNG_MINUTES.' минут).');
             }
             $task->forceFill(['status' => OneCAgentTask::CANCELLED, 'finished_at' => now()])->save();
             $this->handler($task->type)->cancelled($task);
