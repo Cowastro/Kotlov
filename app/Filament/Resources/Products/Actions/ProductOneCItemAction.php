@@ -39,9 +39,10 @@ class ProductOneCItemAction
             ->visible(fn (): bool => (bool) auth()->user()?->isManager() && app(OneCItemCreator::class)->source() !== null)
             ->modalHeading(fn ($record): string => app(OneCItemCreator::class)->linked($card($record)) ? 'Товар в 1С' : 'Создать товар в 1С')
             ->modalDescription(fn ($record): HtmlString => self::description($card($record)))
-            ->modalSubmitActionLabel('Создать в 1С')
+            ->modalSubmitActionLabel('Привязать или создать в 1С')
             ->modalSubmitAction(fn ($record, Action $action) => self::busy($card($record)) ? false : $action)
-            ->fillForm(fn ($record): array => ['template' => $template = app(OneCItemCreator::class)->defaultTemplate($card($record)),
+            ->fillForm(fn ($record): array => ['existing' => app(OneCItemCreator::class)->obviousMatch($card($record))?->id,
+                'template' => $template = app(OneCItemCreator::class)->defaultTemplate($card($record)),
                 'group' => app(OneCItemCreator::class)->templateGroup($template),
                 'name' => mb_substr((string) $card($record)->name, 0, 100)])
             ->schema(fn ($record): array => self::busy($card($record)) ? [] : self::schema($card($record)))
@@ -123,7 +124,7 @@ class ProductOneCItemAction
                 ->placeholder('Найдите по названию или коду 1С')
                 ->getSearchResultsUsing(fn (string $search): array => app(OneCOrderExport::class)->searchItems($search))
                 ->getOptionLabelUsing(fn ($value): ?string => app(OneCOrderExport::class)->itemLabel((int) $value))
-                ->helperText('Если выбрать — товар не создаётся, карточка просто привязывается.'),
+                ->helperText('Если товар выбран — он не создаётся, карточка просто привязывается к нему. Сайт сам подставляет самый похожий свободный товар 1С: если это не он — очистите поле (×), тогда товар создастся по образцу.'),
             Select::make('template')->label('Образец — похожий товар 1С')->searchable()
                 ->getSearchResultsUsing(fn (string $search): array => $creator->searchTemplates($search))
                 ->getOptionLabelUsing(fn ($value): ?string => $creator->templateLabel((string) $value))

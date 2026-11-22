@@ -9,12 +9,15 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\OneCAgentTask;
 use App\Models\OneCAgentToken;
+use App\Models\OneCItem;
 use App\Models\OneCOrderProfile;
+use App\Models\OneCReference;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\OneCItemCreator;
+use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use DomainException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -210,5 +213,47 @@ class OneCItemCreateTest extends TestCase
             ->assertNotified('Карточка привязана к товару 1С УТ-00000888');
         $this->assertSame($this->card->id, $free->fresh()->product_id);
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])->assertSee('1С: УТ-00000888')->assertDontSee('нет в 1С — нажмите ⊕');
+    }
+
+    public function test_the_1c_item_named_a_bit_differently_is_found_first_and_put_in_the_window(): void
+    {
+        $etna = Product::query()->create(['category_id' => $this->category->id, 'name' => 'Чугунная печь для бани ЭТНА Стандарт 18 (Панорама) "М" Закрытая каменка',
+            'slug' => 'etna-18', 'price' => 1852]);
+        $add = fn (string $key, string $code, string $name) => IntegrationProduct::query()->create(['integration_source_id' => $this->source->id,
+            'external_id' => $key, 'external_code' => $code, 'name' => $name, 'price' => 0]);
+        $add('e0000000-0000-0000-0000-000000000012', 'УТ-00001212', 'Чугунная печь для бани ЭТНА 12 (Панорама) "М"');
+        $right = $add('e0000000-0000-0000-0000-000000000018', 'УТ-00001818', 'Чугунная печь для бани ЭТНА 18 (Панорама) "М" Закрытая каменка');
+        $add('e0000000-0000-0000-0000-000000000099', 'УТ-00009999', 'Печь для бани Термофор Бирюса');
+
+        $creator = app(OneCItemCreator::class);
+        $this->assertSame($right->id, $creator->candidates($etna)[0]['row']->id);
+        $this->assertSame($right->id, $creator->obviousMatch($etna)?->id);
+
+        $this->actingAs($this->admin);
+        Livewire::test(EditProduct::class, ['record' => $etna->getRouteKey()])->mountAction('onecItem')->assertActionDataSet(['existing' => $right->id])
+            ->callMountedAction()->assertNotified('Карточка привязана к товару 1С УТ-00001818');
+        $this->assertSame($etna->id, $right->fresh()->product_id);
+    }
+
+    public function test_linking_a_site_order_with_a_1c_order_links_its_lines_with_the_1c_items_of_that_order(): void
+    {
+        $etna = Product::query()->create(['category_id' => $this->category->id, 'name' => 'Чугунная печь для бани ЭТНА Стандарт 18 (Панорама) "М"',
+            'slug' => 'etna-18', 'price' => 1852]);
+        OneCItem::query()->create(['ref_key' => 'e0000000-0000-0000-0000-000000000018', 'code' => 'УТ-00001818',
+            'description' => 'Чугунная печь для бани ЭТНА 18 (Панорама) "М" Закрытая каменка']);
+        OneCReference::query()->create(['kind' => 'order', 'ref_key' => 'aaaa0000-0000-0000-0000-000000000741', 'description' => 'МПУТ-000741',
+            'code' => now()->format('Y-m-d\TH:i:s'), 'data' => ['sum' => 1852, 'status' => 'КВыполнению', 'posted' => true,
+                'items' => [['e0000000-0000-0000-0000-000000000018', 1, 1852]]]]);
+        $order = (new Order)->forceFill(['number' => 'K-8008', 'status' => 'checking', 'customer_name' => 'Тестов Иван', 'customer_phone' => '+375 29 000-11-22',
+            'delivery_type' => 'courier', 'subtotal' => 1852, 'total' => 1852]);
+        $order->save();
+        OrderItem::query()->create(['order_id' => $order->id, 'product_id' => $etna->id, 'product_name' => $etna->name, 'price' => 1852, 'quantity' => 1,
+            'total' => 1852, 'pricing_type' => 'retail']);
+
+        app(OneCOrderMatcher::class)->link($order, 'aaaa0000-0000-0000-0000-000000000741', $this->admin);
+
+        $linked = app(OneCItemCreator::class)->linked($etna->fresh());
+        $this->assertSame('УТ-00001818', $linked?->external_code);
+        $this->assertSame(1, $order->managerComments()->where('body', 'like', 'Карточки привязаны к товарам 1С из заказа МПУТ-000741%')->count());
     }
 }
