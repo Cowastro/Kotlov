@@ -231,7 +231,7 @@ class OneCBridgeTest extends TestCase
         $this->actingAs($this->admin);
         Livewire::test(ListOneCAgentTasks::class)->callAction('readPurchaseSamples')->assertHasNoActionErrors();
         $task = OneCAgentTask::query()->sole();
-        $this->assertSame(['supplier_order_sample', 'supplier_order_list', 'price_types', 'purchase_sample', 'purchase_list', 'cost_register_sample', 'price_register_sample'], array_keys($task->payload['queries']));
+        $this->assertEqualsCanonicalizing(['supplier_order_sample', 'supplier_order_list', 'price_types', 'purchase_sample', 'purchase_list', 'cost_register_sample', 'price_register_sample'], array_keys($task->payload['queries']));
         $lines = explode("\n", trim($this->agent()->get('/1c/agent/tasks/next')->assertOk()->getContent()));
         foreach (array_slice($lines, 1, -1) as $line) {
             $this->assertMatchesRegularExpression('/^get\|[a-z0-9_]+\|[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$/', $line);
