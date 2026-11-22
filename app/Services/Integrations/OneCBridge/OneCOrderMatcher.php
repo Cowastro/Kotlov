@@ -102,6 +102,13 @@ class OneCOrderMatcher
             .(isset($d['status']) ? ' · '.mb_strtolower(OneCOrderProfiles::STATUSES[$d['status']] ?? (string) $d['status']) : '');
     }
 
+    public function labelFor(string $refKey): ?string
+    {
+        $ref = OneCReference::query()->where('kind', 'order')->where('ref_key', strtolower($refKey))->first();
+
+        return $ref ? $this->label($ref) : null;
+    }
+
     /** @return array<string, string> 1C orders by number, for a manual search */
     public function search(string $text): array
     {

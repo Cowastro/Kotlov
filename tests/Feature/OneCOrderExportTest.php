@@ -297,4 +297,28 @@ class OneCOrderExportTest extends TestCase
         $this->assertNotNull(app(DocumentStatusTaskHandler::class)->enqueueCheck(null));
         $this->assertSame(1, OneCAgentTask::query()->where('type', 'doc_status')->count());
     }
+
+    public function test_the_manager_links_a_pickup_order_from_its_page(): void
+    {
+        $order = $this->order(['delivery_type' => 'pickup', 'delivery_city' => 'Минск', 'delivery_address' => null]);
+        $this->syncReferences([
+            ['Ref_Key' => 'aaaa0000-0000-0000-0000-000000000758', 'Number' => 'МПУТ-000758', 'Date' => now()->format('Y-m-d\TH:i:s'),
+                'Партнер_Key' => self::RETAIL, 'СуммаДокумента' => 49.98, 'Статус' => 'КОбеспечению', 'Posted' => false, 'DeletionMark' => false,
+                'ДополнительнаяИнформацияПоДоставке' => "Самовывоз\nТелефон: +375 (29) 000-11-22",
+                'Товары' => [['Номенклатура_Key' => self::ITEM, 'Количество' => 2, 'СуммаСНДС' => 49.98]]],
+        ]);
+        app(OneCOrderProfiles::class)->fromTemplate(app(OneCReferences::class)->templates()[0], 'Розница СБГ бай', OneCOrderProfile::RETAIL);
+        $this->actingAs($this->admin);
+
+        $page = Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionVisible('onecLink')
+            ->mountAction('onecOrder')->assertSuccessful();
+        $this->assertSame(['aaaa0000-0000-0000-0000-000000000758'], array_keys(app(OneCOrderMatcher::class)->search('000758')));
+        $page = Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->mountAction('onecLink')->assertSuccessful()
+            ->setActionData(['manual' => 'aaaa0000-0000-0000-0000-000000000758'])->callMountedAction()->assertHasNoActionErrors()->assertNotified('Заказ связан с 1С: МПУТ-000758');
+        $this->assertSame('МПУТ-000758', $order->fresh()->onec_order_number);
+        Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionHidden('onecLink')->mountAction('onecOrder')->assertSuccessful();
+    }
 }
