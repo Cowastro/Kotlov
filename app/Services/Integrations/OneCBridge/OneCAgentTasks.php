@@ -44,8 +44,10 @@ class OneCAgentTasks
     public function enqueue(string $type, ?Model $subject, string $title, ?User $user, ?array $payload = null): OneCAgentTask
     {
         $this->handler($type);
+        // The same work is not queued twice; different reads without a subject (lists, recent orders, purchases)
+        // are told apart by their title and may wait together.
         $active = OneCAgentTask::query()->where('type', $type)
-            ->when($subject, fn ($q) => $q->whereMorphedTo('subject', $subject), fn ($q) => $q->whereNull('subject_id'))
+            ->when($subject, fn ($q) => $q->whereMorphedTo('subject', $subject), fn ($q) => $q->whereNull('subject_id')->where('title', mb_substr($title, 0, 250)))
             ->whereIn('status', OneCAgentTask::ACTIVE)->exists();
         if ($active) {
             throw new DomainException('Задача уже в очереди агента 1С.');

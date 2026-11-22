@@ -16,6 +16,8 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\OneCPurchaseCosts;
+use App\Services\Integrations\OneCBridge\OneCReferences;
 use App\Services\Integrations\OneCPriceBatches;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -236,5 +238,17 @@ class OneCBridgeTest extends TestCase
         foreach (array_slice($lines, 1, -1) as $line) {
             $this->assertMatchesRegularExpression('/^get\|[a-z0-9_]+\|[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$/', $line);
         }
+    }
+
+    public function test_different_1c_reads_wait_together_the_same_read_does_not(): void
+    {
+        $refs = app(OneCReferences::class);
+        $refs->enqueueSync(null, 3, false);
+        app(OneCPurchaseCosts::class)->enqueue(null, 10);
+        $refs->enqueueSync(null);
+        $this->assertSame(3, OneCAgentTask::query()->where('type', 'odata_read')->count());
+
+        $this->expectExceptionMessage('уже в очереди');
+        $refs->enqueueSync(null, 3, false);
     }
 }
