@@ -161,6 +161,10 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame(24.99, $body['Товары'][0]['Цена']);
         $this->assertSame(8.33, $body['Товары'][0]['СуммаНДС']);
         $this->assertSame('Отгрузить', $body['Товары'][0]['ВариантОбеспечения']);
+        // 1C has 2, the order wants 3: not «Отгрузить» (1C refuses to write it) but «Обеспечить».
+        $more = $this->order(['number' => 'K-1003']);
+        $more->items()->update(['quantity' => 3, 'total' => 74.97]);
+        $this->assertSame('Требуется', $export->body($more->fresh(), $profile, $export->defaults($more->fresh()))['Товары'][0]['ВариантОбеспечения']);
         // No planned delivery: tomorrow, in the header and on the line.
         $tomorrow = now('Europe/Minsk')->addDay()->format('Y-m-d').'T00:00:00';
         $this->assertSame($tomorrow, $body['ЖелаемаяДатаОтгрузки']);
