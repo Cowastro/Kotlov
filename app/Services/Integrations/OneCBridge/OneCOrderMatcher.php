@@ -15,6 +15,12 @@ use Illuminate\Support\Facades\DB;
  */
 class OneCOrderMatcher
 {
+    /** From this score the order is shown as «найден в 1С» (e.g. phone and sum, or sum and the same items). */
+    public const FOUND = 55;
+
+    /** Site order statuses that are not looked for in 1C any more. */
+    private const CLOSED = ['cancelled'];
+
     public function __construct(
         private readonly OneCOrderExport $export,
         private readonly OneCReferences $refs,
@@ -91,6 +97,38 @@ class OneCOrderMatcher
         return collect($found)->sortByDesc('score')->take(8)->values()->all();
     }
 
+    /** The best 1C order when it is a strong match. */
+    public function found(Order $order): ?array
+    {
+        $best = $this->candidates($order, 1)[0] ?? null;
+
+        return $best && $best['score'] >= self::FOUND ? $best : null;
+    }
+
+    /**
+     * Remembers on each recent site order not yet in 1C the 1C order it was most likely entered as, for the order
+     * list and its filter. Runs after every read of 1C orders.
+     */
+    public function refreshSuggestions(int $days = 60): int
+    {
+        $found = 0;
+        Order::query()->whereNull('onec_order_guid')->whereNotIn('status', self::CLOSED)->whereNull('archived_at')
+            ->where('created_at', '>', now()->subDays($days))->with('items.integrationProduct')
+            ->chunkById(100, function ($orders) use (&$found): void {
+                foreach ($orders as $order) {
+                    $best = $this->found($order);
+                    $found += $best ? 1 : 0;
+                    $values = ['onec_match_guid' => $best['ref']->ref_key ?? null, 'onec_match_number' => $best['ref']->description ?? null,
+                        'onec_match_reasons' => $best ? mb_substr(implode(', ', $best['reasons']), 0, 255) : null];
+                    if ($values['onec_match_guid'] !== $order->onec_match_guid || $values['onec_match_reasons'] !== $order->onec_match_reasons) {
+                        Order::query()->whereKey($order->id)->update($values);
+                    }
+                }
+            });
+
+        return $found;
+    }
+
     /** «МПУТ-000756 от 20.11.2026 · Розничный покупатель · 440,99 · к выполнению» */
     public function label(OneCReference $ref): string
     {
@@ -144,9 +182,28 @@ class OneCOrderMatcher
             $d = $ref->data ?? [];
             $order->forceFill(['onec_order_guid' => $ref->ref_key, 'onec_order_number' => $ref->description, 'onec_exported_at' => now(),
                 'onec_doc_status' => $d['status'] ?? null, 'onec_posted' => (bool) ($d['posted'] ?? false), 'onec_deleted' => false,
-                'onec_checked_at' => now()])->save();
+                'onec_checked_at' => now(), 'onec_profile_id' => null, 'onec_match_guid' => null, 'onec_match_number' => null, 'onec_match_reasons' => null])->save();
             $order->managerComments()->create(['user_id' => $user?->id, 'author_name' => 'Мост 1С',
                 'body' => 'Связан с заказом 1С '.$ref->description.' (заведён в 1С вручную) — повторно в 1С не передаётся.']);
+        });
+    }
+
+    /** A wrong link is undone; an order the site created in 1C stays (it would be sent a second time). */
+    public function unlink(Order $order, ?User $user): void
+    {
+        DB::transaction(function () use ($order, $user): void {
+            $order = Order::query()->lockForUpdate()->findOrFail($order->id);
+            if (! $order->onec_order_guid) {
+                return;
+            }
+            if ($order->onec_profile_id) {
+                throw new DomainException('Этот заказ создан в 1С с сайта — его отвязка привела бы к повторной отправке. Пометьте заказ 1С на удаление в 1С.');
+            }
+            $number = $order->onec_order_number;
+            $order->forceFill(['onec_order_guid' => null, 'onec_order_number' => null, 'onec_exported_at' => null, 'onec_doc_status' => null,
+                'onec_posted' => null, 'onec_deleted' => false, 'onec_checked_at' => null])->save();
+            $order->managerComments()->create(['user_id' => $user?->id, 'author_name' => 'Мост 1С',
+                'body' => 'Связь с заказом 1С '.$number.' снята.']);
         });
     }
 }

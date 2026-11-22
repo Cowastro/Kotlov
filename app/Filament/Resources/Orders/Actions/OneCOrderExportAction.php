@@ -48,21 +48,33 @@ class OneCOrderExportAction
         'priority' => 'Приоритет_Key',
     ];
 
-    public static function make(): Action
+    /**
+     * The one 1C button of an order: «1С: МПУТ-…» once the order is in 1C, «Ждёт агента 1С» while it goes there,
+     * «Создать заказ в 1С» when 1C has nothing like it (a likely 1C order shows «Найден в 1С» instead, see
+     * OneCOrderLinkAction). $nested: the same form opened from the «Найден в 1С» window for a different order.
+     */
+    public static function make(string $name = 'onecOrder', bool $nested = false): Action
     {
-        return Action::make('onecOrder')
-            ->label(fn (Order $record): string => self::label($record))
-            ->icon('heroicon-o-arrow-up-tray')
-            ->color(fn (Order $record): string => self::exported($record) ? 'success' : (self::lastTask($record)?->status === OneCAgentTask::FAILED ? 'danger' : 'gray'))
-            ->visible(fn (): bool => (bool) auth()->user()?->isManager())
+        return Action::make($name)
+            ->label(fn (Order $record): string => $nested ? 'Это другой заказ — создать новый в 1С' : self::label($record))
+            ->icon(fn (Order $record): string => self::exported($record) ? 'heroicon-o-check-badge' : 'heroicon-o-arrow-up-tray')
+            ->color(fn (Order $record): string => match (true) {
+                $nested => 'gray',
+                self::exported($record) => $record->onec_posted ? 'success' : 'info',
+                self::lastTask($record)?->status === OneCAgentTask::FAILED => 'danger',
+                default => 'primary',
+            })
+            ->visible(fn (Order $record): bool => self::canManage() && ($nested || ! self::foundShown($record)))
             ->modalHeading(fn (Order $record): string => self::exported($record) ? 'Заказ в 1С' : 'Создать заказ клиента в 1С')
             ->modalDescription(fn (Order $record): HtmlString => self::state($record))
-            ->modalWidth(Width::FiveExtraLarge)
+            ->modalWidth(fn (Order $record): Width => self::exported($record) || self::waiting($record) ? Width::Large : Width::FiveExtraLarge)
             ->modalSubmitActionLabel('Отправить в 1С')
             ->modalSubmitAction(fn (Order $record, Action $action) => self::exported($record) || self::waiting($record) ? false : $action)
+            ->modalCancelActionLabel(fn (Order $record): string => self::exported($record) || self::waiting($record) ? 'Закрыть' : 'Отмена')
+            ->extraModalFooterActions(fn (Order $record): array => $nested ? [] : self::footer($record))
             ->fillForm(fn (Order $record): array => self::formState(app(OneCOrderExport::class)->defaults($record)))
             ->schema(fn (Order $record): array => self::exported($record) || self::waiting($record) ? [] : self::schema($record))
-            ->action(function (Order $record, array $data): void {
+            ->action(function (Order $record, array $data, Action $action) use ($nested): void {
                 $export = app(OneCOrderExport::class);
                 try {
                     foreach ((array) ($data['links'] ?? []) as $itemId => $integrationProductId) {
@@ -74,16 +86,30 @@ class OneCOrderExportAction
                     $record->unsetRelation('items');
                     $task = $export->enqueue($record->fresh(), self::toForm($data), auth()->user());
                     Notification::make()->success()->title('Заказ в очереди агента 1С (задача №'.$task->id.')')
-                        ->body('Агент создаст непроведённый «Заказ клиента» в течение 5 минут. Номер 1С появится здесь.')->send();
+                        ->body('Агент создаст непроведённый «Заказ клиента» в течение 5 минут. Номер 1С появится на кнопке.')->send();
+                    if ($nested) {
+                        $action->cancelParentActions();
+                    }
                 } catch (DomainException $e) {
                     Notification::make()->danger()->title('Заказ не отправлен')->body($e->getMessage())->persistent()->send();
                 }
             });
     }
 
-    private static function exported(Order $order): bool
+    public static function canManage(): bool
+    {
+        return (bool) auth()->user()?->isManager();
+    }
+
+    public static function exported(Order $order): bool
     {
         return filled($order->onec_order_guid) && ! $order->onec_deleted;
+    }
+
+    /** 1C has a likely copy of the order: the page shows «Найден в 1С» instead of «Создать заказ в 1С». */
+    public static function foundShown(Order $order): bool
+    {
+        return ! self::exported($order) && ! self::waiting($order) && app(OneCOrderMatcher::class)->found($order) !== null;
     }
 
     private static function lastTask(Order $order): ?OneCAgentTask
@@ -91,7 +117,7 @@ class OneCOrderExportAction
         return OneCAgentTask::query()->where('type', OrderTaskHandler::TYPE)->whereMorphedTo('subject', $order)->latest('id')->first();
     }
 
-    private static function waiting(Order $order): bool
+    public static function waiting(Order $order): bool
     {
         return app(OneCAgentTasks::class)->activeFor($order, OrderTaskHandler::TYPE) !== null;
     }
@@ -99,11 +125,35 @@ class OneCOrderExportAction
     private static function label(Order $order): string
     {
         return match (true) {
-            self::exported($order) => '1С: '.($order->onec_order_number ?: 'заказ создан'),
+            self::exported($order) => '1С: '.($order->onec_order_number ?: 'заказ создан').($order->onec_posted ? ' · проведён' : ''),
             self::waiting($order) => 'Ждёт агента 1С',
             self::lastTask($order)?->status === OneCAgentTask::FAILED => 'В 1С: ошибка, повторить',
             default => 'Создать заказ в 1С',
         };
+    }
+
+    /** @return list<Action> */
+    private static function footer(Order $order): array
+    {
+        if (self::exported($order)) {
+            return $order->onec_profile_id ? [] : [
+                Action::make('onecUnlink')->label('Отвязать')->color('danger')->link()
+                    ->requiresConfirmation()
+                    ->modalHeading('Снять связь с заказом 1С '.$order->onec_order_number.'?')
+                    ->modalDescription('Делайте это, только если заказ связали не с тем заказом 1С. Сам заказ в 1С не меняется.')
+                    ->action(function (Order $record, Action $action): void {
+                        try {
+                            app(OneCOrderMatcher::class)->unlink($record, auth()->user());
+                            Notification::make()->success()->title('Связь с 1С снята')->send();
+                            $action->cancelParentActions();
+                        } catch (DomainException $e) {
+                            Notification::make()->danger()->title('Связь не снята')->body($e->getMessage())->send();
+                        }
+                    }),
+            ];
+        }
+
+        return self::waiting($order) ? [] : [OneCOrderLinkAction::make('onecLinkManual', nested: true)];
     }
 
     private static function state(Order $order): HtmlString
@@ -111,7 +161,10 @@ class OneCOrderExportAction
         $task = self::lastTask($order);
         $link = $task ? ' <a href="'.e(OneCAgentTaskResource::getUrl('view', ['record' => $task])).'" style="text-decoration:underline">задача №'.$task->id.'</a>' : '';
         if (self::exported($order)) {
-            return new HtmlString(e(OrderTaskHandler::summary($order)).'.'.$link.' Статус и «проведён» сайт сверяет с 1С каждые 30 минут.');
+            return new HtmlString(self::card($order).'<div style="margin-top:8px;color:#6b7280">'
+                .($order->onec_profile_id ? 'Создан с сайта по схеме «'.e((string) OneCOrderProfile::query()->whereKey($order->onec_profile_id)->value('name')).'».'.$link
+                    : 'Связан с заказом, заведённым в 1С вручную.')
+                .' Статус и «проведён» сайт сверяет с 1С каждые 30 минут. Дальше заказ ведут в 1С.</div>');
         }
         if (self::waiting($order)) {
             return new HtmlString('Заказ в очереди: агент на сервере 1С создаст его в течение 5 минут.'.$link);
@@ -119,11 +172,19 @@ class OneCOrderExportAction
         $failed = $task?->status === OneCAgentTask::FAILED
             ? '<div style="margin-bottom:6px;color:#b91c1c">Прошлая попытка: '.e(mb_substr((string) $task->error, 0, 400)).$link.'</div>' : '';
 
-        $similar = app(OneCOrderMatcher::class)->candidates($order, 3);
-        $warning = $similar !== [] ? '<div style="margin-bottom:6px;padding:8px 10px;border-radius:8px;background:#fffbeb;color:#92400e"><b>Похоже, заказ уже заведён в 1С вручную:</b> '
-            .collect($similar)->map(fn (array $c): string => e($c['label']))->implode('; ').'. Свяжите его кнопкой «Уже есть в 1С?», а не создавайте второй.</div>' : '';
+        return new HtmlString($failed.'Заказ создаётся в 1С <b>непроведённым</b>: проверьте и проведите его в 1С. Товары в 1С не создаются — каждая строка должна быть связана с существующей номенклатурой 1С. '
+            .'Если менеджер уже завёл этот заказ в 1С — нажмите внизу «Уже есть в 1С — связать».');
+    }
 
-        return new HtmlString($warning.$failed.'Заказ создаётся в 1С <b>непроведённым</b>: проверьте и проведите его в 1С. Товары в 1С не создаются — каждая строка должна быть связана с существующей номенклатурой 1С.');
+    /** «МПУТ-000758 · не проведён · к обеспечению» as a small card. */
+    public static function card(Order $order): string
+    {
+        $state = $order->onec_posted ? '<span style="color:#16a34a">проведён</span>' : '<span style="color:#d97706">не проведён</span>';
+        $status = OneCOrderProfiles::STATUSES[$order->onec_doc_status] ?? $order->onec_doc_status;
+
+        return '<div style="padding:10px 12px;border-radius:8px;border:1px solid rgba(127,127,127,.3)"><div style="font-size:18px;font-weight:700">'
+            .e((string) $order->onec_order_number).'</div><div>'.$state.($status ? ' · '.e(mb_strtolower((string) $status)) : '')
+            .($order->onec_checked_at ? ' · сверено '.e($order->onec_checked_at->timezone('Europe/Minsk')->format('d.m H:i')) : '').'</div></div>';
     }
 
     /** @return array<string, mixed> */

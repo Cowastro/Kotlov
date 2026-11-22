@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\OneCOrderProfiles\Pages\EditOneCOrderProfile;
 use App\Filament\Resources\OneCOrderProfiles\Pages\ListOneCOrderProfiles;
+use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
@@ -22,6 +23,7 @@ use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCReferences;
 use DomainException;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
@@ -193,7 +195,7 @@ class OneCOrderExportTest extends TestCase
         $this->actingAs($this->admin);
 
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->assertActionVisible('onecOrder')->assertActionVisible('onecLink')
+            ->assertActionVisible('onecOrder')->assertActionHidden('onecLink')
             ->mountAction('onecOrder')
             ->setActionData(['links' => [$item->id => $free->id]])
             ->callMountedAction()->assertHasNoActionErrors();
@@ -298,9 +300,11 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame(1, OneCAgentTask::query()->where('type', 'doc_status')->count());
     }
 
-    public function test_the_manager_links_a_pickup_order_from_its_page(): void
+    public function test_a_found_order_shows_only_linking_and_once_linked_only_its_1c_number(): void
     {
         $order = $this->order(['delivery_type' => 'pickup', 'delivery_city' => 'Минск', 'delivery_address' => null]);
+        $other = $this->order(['number' => 'K-2002', 'customer_phone' => '+375 33 999-88-77', 'customer_name' => 'Другой Клиент', 'total' => 300]);
+        OrderItem::query()->where('order_id', $other->id)->update(['quantity' => 12, 'total' => 300]);
         $this->syncReferences([
             ['Ref_Key' => 'aaaa0000-0000-0000-0000-000000000758', 'Number' => 'МПУТ-000758', 'Date' => now()->format('Y-m-d\TH:i:s'),
                 'Партнер_Key' => self::RETAIL, 'СуммаДокумента' => 49.98, 'Статус' => 'КОбеспечению', 'Posted' => false, 'DeletionMark' => false,
@@ -310,15 +314,35 @@ class OneCOrderExportTest extends TestCase
         app(OneCOrderProfiles::class)->fromTemplate(app(OneCReferences::class)->templates()[0], 'Розница СБГ бай', OneCOrderProfile::RETAIL);
         $this->actingAs($this->admin);
 
-        $page = Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->assertActionVisible('onecLink')
-            ->mountAction('onecOrder')->assertSuccessful();
-        $this->assertSame(['aaaa0000-0000-0000-0000-000000000758'], array_keys(app(OneCOrderMatcher::class)->search('000758')));
-        $page = Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->mountAction('onecLink')->assertSuccessful()
-            ->setActionData(['manual' => 'aaaa0000-0000-0000-0000-000000000758'])->callMountedAction()->assertHasNoActionErrors()->assertNotified('Заказ связан с 1С: МПУТ-000758');
-        $this->assertSame('МПУТ-000758', $order->fresh()->onec_order_number);
+        // The read of 1C orders remembers the match for the order list.
+        $this->assertSame('МПУТ-000758', $order->fresh()->onec_match_number);
+        $this->assertNull($other->fresh()->onec_match_number);
+        Livewire::test(ListOrders::class)->filterTable('onec_order', 'found')
+            ->assertCanSeeTableRecords([$order])->assertCanNotSeeTableRecords([$other]);
+
+        // Found in 1C: only «Найден в 1С: МПУТ-000758», no «Создать заказ в 1С».
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->assertActionHidden('onecLink')->mountAction('onecOrder')->assertSuccessful();
+            ->assertActionVisible('onecLink')->assertActionHasLabel('onecLink', 'Найден в 1С: МПУТ-000758')
+            ->assertActionHidden('onecOrder')
+            ->mountAction('onecLink')->assertSuccessful()
+            ->assertActionDataSet(['candidate' => 'aaaa0000-0000-0000-0000-000000000758'])
+            ->callMountedAction()->assertHasNoActionErrors()->assertNotified('Заказ связан с 1С: МПУТ-000758');
+        $order->refresh();
+        $this->assertSame('МПУТ-000758', $order->onec_order_number);
+        $this->assertNull($order->onec_match_guid);
+
+        // Linked: one button «1С: МПУТ-000758», the link can be undone from it.
+        Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionHidden('onecLink')->assertActionHasLabel('onecOrder', '1С: МПУТ-000758')
+            ->assertSee('МПУТ-000758')
+            ->callAction([TestAction::make('onecOrder'), TestAction::make('onecUnlink')])->assertNotified('Связь с 1С снята');
+        $this->assertNull($order->fresh()->onec_order_guid);
+
+        // Nothing like it in 1C: «Создать заказ в 1С», linking by number is inside its window.
+        Livewire::test(ViewOrder::class, ['record' => $other->getRouteKey()])
+            ->assertActionHidden('onecLink')->assertActionHasLabel('onecOrder', 'Создать заказ в 1С')
+            ->callAction([TestAction::make('onecOrder'), TestAction::make('onecLinkManual')], ['manual' => 'aaaa0000-0000-0000-0000-000000000758'])
+            ->assertNotified('Заказ связан с 1С: МПУТ-000758');
+        $this->assertSame('МПУТ-000758', $other->fresh()->onec_order_number);
     }
 }

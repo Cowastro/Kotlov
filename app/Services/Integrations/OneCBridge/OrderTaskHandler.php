@@ -45,6 +45,7 @@ class OrderTaskHandler implements OneCAgentTaskHandler
             'onec_order_guid' => $key ?: null, 'onec_order_number' => $number ?: null, 'onec_exported_at' => now(),
             'onec_profile_id' => data_get($task->payload, 'profile_id'),
             'onec_doc_status' => data_get($task->payload, 'body.Статус'), 'onec_posted' => false, 'onec_deleted' => false,
+            'onec_match_guid' => null, 'onec_match_number' => null, 'onec_match_reasons' => null,
         ])->save();
         $order->managerComments()->create([
             'user_id' => $task->created_by,

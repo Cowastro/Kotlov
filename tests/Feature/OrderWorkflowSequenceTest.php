@@ -25,7 +25,7 @@ class OrderWorkflowSequenceTest extends TestCase
         $workflow = app(OrderWorkflow::class);
 
         $this->assertSame('Проверить наличие', $workflow->step($this->order('new'))['label']);
-        $this->assertSame('Подтвердить наличие', $workflow->step($this->order('checking'))['label']);
+        $this->assertSame('Подтвердить заказ клиенту', $workflow->step($this->order('checking'))['label']);
         $this->assertSame('Передать в исполнение', $workflow->step($this->order('confirmed'))['label']);
         $this->assertSame('Передать в доставку', $workflow->step($this->order('processing'))['label']);
         $this->assertSame('Отметить доставленным', $workflow->step($this->order('shipped'))['label']);

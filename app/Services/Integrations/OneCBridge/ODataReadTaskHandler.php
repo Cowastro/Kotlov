@@ -97,8 +97,9 @@ class ODataReadTaskHandler implements OneCAgentTaskHandler
             $refs = app(OneCReferences::class);
             $refs->import($task);
             $orders = $refs->importOrders($task);
+            $found = $orders > 0 ? app(OneCOrderMatcher::class)->refreshSuggestions() : 0;
 
-            return 'Прочитано '.$read.' из '.$asked.', заказов 1С: '.$orders
+            return 'Прочитано '.$read.' из '.$asked.', заказов 1С: '.$orders.($found ? ', заказов сайта найдено в 1С: '.$found : '')
                 .($lists && $missing->isNotEmpty() ? '. Не отдала 1С (добавьте в состав REST): '.$missing->implode(', ') : '');
         }
 

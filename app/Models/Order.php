@@ -388,7 +388,7 @@ class Order extends Model
             'new' => 'Принять заказ и начать проверку наличия.',
             'checking' => match (true) {
                 ! $this->usesGuidedFulfillment() => 'Проверить наличие и способ исполнения каждой позиции.',
-                $this->hasConfirmedFulfillmentForAllItems() => 'Нажмите «Подтвердить наличие», чтобы подтвердить заказ для клиента.',
+                $this->hasConfirmedFulfillmentForAllItems() => 'Наличие всех позиций подтверждено. Нажмите «Подтвердить заказ клиенту».',
                 default => 'Добавьте позиции, чтобы подтвердить наличие.',
             },
             'confirmed' => 'Нажмите «Передать в исполнение».',
