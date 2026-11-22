@@ -81,6 +81,7 @@ class OrderInfolist
                     ->schema([
                         TextEntry::make('number')
                             ->label('Номер заказа')
+                            ->helperText(fn (Order $record): ?string => $record->is_internal ? 'Внутренний заказ' : null)
                             ->copyable()
                             ->weight('bold'),
 
