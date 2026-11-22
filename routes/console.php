@@ -637,6 +637,12 @@ Schedule::command('onec:sync-references --orders-only --days=3')
     ->between('08:00', '21:30')
     ->withoutOverlapping(10);
 
+// «Мост 1С»: stock and reserve of the selling warehouse, read-only.
+Schedule::command('onec:sync-stock')
+    ->everyThirtyMinutes()
+    ->between('07:00', '22:00')
+    ->withoutOverlapping(10);
+
 // «Мост 1С»: the cost of cards after the purchases posted in 1C (the last 10 days, every morning).
 Schedule::command('onec:sync-purchases --days=10')
     ->dailyAt('06:50')

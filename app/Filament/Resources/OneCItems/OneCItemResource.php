@@ -7,6 +7,7 @@ use App\Filament\Resources\Products\ProductResource;
 use App\Models\OneCItem;
 use App\Services\Integrations\OneCBridge\OneCNomenclature;
 use App\Services\Integrations\OneCBridge\OneCReferences;
+use App\Services\Integrations\OneCBridge\OneCStock;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
@@ -73,6 +74,9 @@ class OneCItemResource extends Resource
                 TextColumn::make('description')->label('Наименование')->searchable()->sortable()->wrap()
                     ->weight(fn (OneCItem $r): string => $r->is_folder ? 'bold' : 'normal')
                     ->description(fn (OneCItem $r): ?string => $r->path),
+                TextColumn::make('stock_on_hand')->label('Основной: своб.')->sortable()->toggleable()
+                    ->state(fn (OneCItem $record): ?string => $record->is_folder || ! OneCStock::fresh($record) ? null : OneCStock::label($record))
+                    ->placeholder('—'),
                 TextColumn::make('article')->label('Артикул')->searchable()->toggleable()->fontFamily('mono'),
                 TextColumn::make('kind')->label('Вид номенклатуры')->toggleable()
                     ->state(fn (OneCItem $r): ?string => $r->kind_key ? $refs->label('item_kind', $r->kind_key) : null),

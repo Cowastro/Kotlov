@@ -5,6 +5,7 @@ namespace App\Services\Integrations\OneCBridge;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\OneCAgentTask;
+use App\Models\OneCItem;
 use App\Models\OneCOrderProfile;
 use App\Models\OneCReference;
 use App\Models\Order;
@@ -34,6 +35,17 @@ class OneCOrderExport
      *
      * @return list<array{item: OrderItem, name: string, qty: float, gross: float, key: ?string, characteristic: ?string, onec_code: ?string, onec_name: ?string, problem: ?string}>
      */
+    /** Free stock of the 1C item on the selling warehouse; the exchange stock while 1C stock is not read. */
+    private function stock(?IntegrationProduct $row): float
+    {
+        if (! $row) {
+            return 0.0;
+        }
+        $item = OneCItem::query()->where('ref_key', strtolower((string) $row->external_id))->first();
+
+        return OneCStock::fresh($item) ? OneCStock::free($item) : (float) $row->stock_quantity;
+    }
+
     public function lines(Order $order): array
     {
         $order->loadMissing('items.integrationProduct');
@@ -76,7 +88,7 @@ class OneCOrderExport
             $lines[] = ['item' => $item, 'name' => (string) $item->product_name, 'qty' => $qty, 'gross' => $gross,
                 'key' => $row ? strtolower((string) $key) : null,
                 'characteristic' => $row && $characteristic && preg_match('/^[0-9a-f-]{36}$/i', $characteristic) ? strtolower($characteristic) : null,
-                'onec_code' => $row?->external_code, 'onec_name' => $row?->name, 'stock' => $row ? (float) $row->stock_quantity : 0.0,
+                'onec_code' => $row?->external_code, 'onec_name' => $row?->name, 'stock' => $this->stock($row),
                 'problem' => $qty > 0 ? $problem : 'количество 0'];
         }
 
