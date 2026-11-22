@@ -137,7 +137,7 @@ class HouseholdPumpPickerTest extends TestCase
         $related->fill(['name' => 'Unverified related pump', 'slug' => 'unverified-related-pump', 'sku' => 'UNVERIFIED-RELATED'])->save();
         $response = $this->get('https://kotlov.by/poverhnostnyie/'.$p->slug)->assertOk()
             ->assertViewHas('fireplaceSpecs', fn ($rows) => $rows['Макс. напор'] === '33 м')
-            ->assertSee('Номинальные и табличные значения показаны отдельно')
+            ->assertSee('Что учесть при выборе')
             ->assertSee('Katalog-2026', false)->assertDontSee('999 м');
         // Only description and specifications link the main pump's PDF. Related
         // unverified products must not inherit the parent's document variable.

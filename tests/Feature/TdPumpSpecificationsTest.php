@@ -33,8 +33,11 @@ class TdPumpSpecificationsTest extends TestCase
         [$product] = $this->pump();
         $this->get('https://kotlov.by/skvajinnye-nasosy/'.$product->slug)->assertOk()
             ->assertViewHas('pumpSupplierSpecs', fn ($facts) => $facts['Макс. высота напора'] === '115 м')
-            ->assertSee('Источник характеристик — выгрузка ТД Комплект')
-            ->assertSee('1500 Вт')->assertSee('75 м')->assertSee('5,4 м3ч')
+            ->assertSee('Скважинный насос для подачи воды из скважины')
+            ->assertSee('Особенности модели')->assertSee('Что учесть при выборе')
+            ->assertDontSee('Источник характеристик — выгрузка ТД Комплект')
+            ->assertDontSee('Проверка по паспорту производителя')
+            ->assertSee('1500 Вт')->assertSee('75 м')->assertSee('5,4 м³/ч')
             ->assertDontSee('999 м')->assertDontSee('Присоединительное отверстие')
             ->assertDontSee('Указаны подтверждённые параметры этого исполнения');
         $facts = (new PumpCatalog)->productFacts($product, 'skvajinnye-nasosy', []);
@@ -74,7 +77,8 @@ class TdPumpSpecificationsTest extends TestCase
         $this->get('https://kotlov.by/drenajnyie/'.$product->slug)->assertOk()
             ->assertViewHas('pumpSupplierSpecs', fn ($facts) => $facts['Максимальный напор'] === '7 м'
                 && $facts['Потребляемая мощность'] === '600 Вт' && $facts['Производительность'] === '10000 л/ч')
-            ->assertSee('Источник характеристик — выгрузка ТД Комплект')
+            ->assertSee('Дренажный насос для откачивания')
+            ->assertDontSee('Источник характеристик — выгрузка ТД Комплект')
             ->assertSee('35 мм')->assertSee('10 м')->assertDontSee('пример другого режима');
         $facts = (new PumpCatalog)->productFacts($product, 'drenajnyie', []);
         $this->assertSame([], $facts['numbers']);
