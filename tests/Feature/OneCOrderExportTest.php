@@ -292,12 +292,44 @@ class OneCOrderExportTest extends TestCase
     public function test_an_order_closed_in_1c_but_behind_on_the_site_is_checked_again_and_catches_up(): void
     {
         // Linked by hand before stages went all the way: closed in 1C, still «Передача клиенту» on the site.
-        $order = $this->order(['status' => 'shipped', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
+        $order = $this->order(['status' => 'shipped', 'payment_status' => 'paid', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
             'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'Закрыт', 'onec_posted' => true]);
         $this->check1cOrder('Закрыт', true, [['Номенклатура_Key' => self::ITEM, 'Отменено' => false]]);
         $this->assertSame('delivered', $order->fresh()->status);
 
         // Once the site caught up, a closed 1C order is not read again.
+        $this->assertNull(app(DocumentStatusTaskHandler::class)->enqueueCheck(null));
+    }
+
+    public function test_an_order_paid_in_1c_becomes_paid_on_the_site(): void
+    {
+        $guid = 'dddddddd-0000-0000-0000-000000000900';
+        $object = 'ffffffff-0000-0000-0000-000000000900';
+        $order = $this->order(['status' => 'delivered', 'payment_status' => 'pending', 'onec_order_guid' => $guid, 'onec_order_number' => 'МПУТ-000900',
+            'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'Закрыт', 'onec_posted' => true]);
+        $read = function (string $name, array $rows): void {
+            $task = app(DocumentStatusTaskHandler::class)->enqueueCheck(null);
+            $this->assertArrayHasKey($name, $task->payload['queries']);
+            $this->agent()->get('/1c/agent/tasks/next')->assertOk();
+            $this->sendPart($task->id, $name, 200, ['value' => $rows])->assertOk();
+            $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1'])->assertOk();
+        };
+
+        // First the settlement object of the order: from the records the 1C order made itself.
+        $read('pay_keys_1', [['Recorder' => $guid, 'Recorder_Type' => 'StandardODATA.Document_ЗаказКлиента', 'ОбъектРасчетов_Key' => $object]]);
+        $this->assertSame($object, $order->fresh()->onec_settlement_key);
+
+        // Then its records: 49.98 planned by the order, 30 paid by bank — not yet paid.
+        $plan = ['ОбъектРасчетов_Key' => $object, 'Recorder_Type' => 'StandardODATA.Document_ЗаказКлиента', 'RecordType' => 'Receipt', 'Active' => true, 'КОплате' => 49.98, 'Сумма' => 0];
+        $bank = ['ОбъектРасчетов_Key' => $object, 'Recorder_Type' => 'StandardODATA.Document_ПоступлениеБезналичныхДенежныхСредств', 'RecordType' => 'Expense', 'Active' => true, 'КОплате' => 30, 'Сумма' => 30];
+        $read('pay_1', [$plan, $bank]);
+        $this->assertSame('pending', $order->fresh()->payment_status);
+        $this->assertSame('30.00', $order->fresh()->onec_paid);
+
+        // The rest comes by cash: paid on the site, the manager sees it.
+        $read('pay_1', [$plan, $bank, array_merge($bank, ['Recorder_Type' => 'StandardODATA.Document_ПриходныйКассовыйОрдер', 'КОплате' => 19.98, 'Сумма' => 19.98])]);
+        $this->assertSame('paid', $order->fresh()->payment_status);
+        $this->assertSame(1, $order->managerComments()->where('body', 'like', '%МПУТ-000900 оплачен полностью (49,98 BYN)%')->count());
         $this->assertNull(app(DocumentStatusTaskHandler::class)->enqueueCheck(null));
     }
 
