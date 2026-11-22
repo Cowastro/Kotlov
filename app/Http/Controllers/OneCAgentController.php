@@ -40,9 +40,9 @@ class OneCAgentController extends Controller
         if (! $this->authorized($request)) {
             return $this->denied();
         }
-        // A task waits for the agent version that can do it: orders from 4, items from 5, supplier orders from 6.
+        // A task waits for the agent version that can do it: customer orders from 8 (drafts), items from 5, supplier orders from 6.
         $version = (int) $request->header('X-Kotlov-Agent', '1');
-        $tooNew = array_merge($version < 4 ? [OrderTaskHandler::TYPE] : [], $version < 5 ? [ItemTaskHandler::TYPE] : [], $version < 6 ? [SupplierOrderTaskHandler::TYPE] : []);
+        $tooNew = array_merge($version < 8 ? [OrderTaskHandler::TYPE] : [], $version < 5 ? [ItemTaskHandler::TYPE] : [], $version < 6 ? [SupplierOrderTaskHandler::TYPE] : []);
         $types = $tooNew !== [] ? array_values(array_diff(array_keys($this->tasks->types()), $tooNew)) : null;
         $task = $this->tasks->claimNext($types);
         if (! $task) {

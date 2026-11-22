@@ -1,4 +1,4 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 7: «Мост 1С».
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 8: «Мост 1С».
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
@@ -8,7 +8,7 @@
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '7'
+$AgentVersion = '8'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -173,7 +173,7 @@ function Read-Created([string]$answer, [string]$existed) {
 # ---- onec_order / onec_item: an UNPOSTED «Заказ клиента» or a new «Номенклатура». The site prepared the object,
 # the agent first looks for it (the same order number, the same article) and creates it only when 1C has none ----
 function Do-Create([string[]]$lines, [string]$entity) {
-    $find = ''; $b64 = ''
+    $find = ''; $b64 = ''; $load = $false
     foreach ($l in $lines) {
         $i = $l.IndexOf('|')
         if ($i -lt 0) { continue }
@@ -181,6 +181,7 @@ function Do-Create([string[]]$lines, [string]$entity) {
         if ($k -eq 'entity') { $entity = $v }
         if ($k -eq 'find') { $find = $v }
         if ($k -eq 'body') { $b64 = $v }
+        if ($k -eq 'mode' -and $v -eq 'load') { $load = $true }
     }
     if (-not $b64) { throw 'В задаче нет объекта для 1С' }
     if ($CreatableEntities -notcontains $entity) { throw ('Агент не создаёт «' + $entity + '»') }
@@ -196,7 +197,11 @@ function Do-Create([string[]]$lines, [string]$entity) {
 
     [IO.File]::WriteAllBytes($Body, [Convert]::FromBase64String($b64))
     $url = $OData + [Uri]::EscapeDataString($entity) + '?$format=json'
-    $code = Invoke-Curl $url 'POST' @('Content-Type: application/json; charset=utf-8', 'Accept: application/json') $ODataUser $Body @() $Out
+    # «mode|load»: 1C writes the object as a draft without its write handlers (1C_OData-DataLoadMode); all its
+    # logic and checks run when a manager posts it in 1C.
+    $headers = @('Content-Type: application/json; charset=utf-8', 'Accept: application/json')
+    if ($load) { $headers += '1C_OData-DataLoadMode: true' }
+    $code = Invoke-Curl $url 'POST' $headers $ODataUser $Body @() $Out
     $answer = Read-Answer $Out
     if ($code -ne '201' -and $code -ne '200') { throw ('1С ответила ' + $code + ': ' + $answer) }
 
