@@ -15,7 +15,12 @@ use App\Models\OrderStatusHistory;
 use App\Models\Supplier;
 use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
+use App\Filament\Resources\Products\Actions\ProductOneCItemAction;
+use App\Models\Product;
+use App\Services\Integrations\OneCBridge\ItemTaskHandler;
+use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\OneCItemCreator;
 use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
@@ -169,7 +174,20 @@ class OrderInfolist
                                         ->columnSpan(2)
                                         ->placeholder('—')
                                         ->fontFamily('mono')
-                                        ->copyable(),
+                                        ->copyable()
+                                        // The card's 1C item: its code, or «нет в 1С» with linking / creating right here.
+                                        ->helperText(fn (OrderItem $record): ?HtmlString => self::onecItemLine($record))
+                                        ->suffixAction(
+                                            ProductOneCItemAction::make('orderItemOneC', fn (OrderItem $record): ?Product => $record->product)
+                                                ->iconButton()
+                                                ->icon(fn (OrderItem $record): string => $record->product && app(OneCItemCreator::class)->linked($record->product)
+                                                    ? 'heroicon-o-check-badge' : 'heroicon-o-plus-circle')
+                                                ->color(fn (OrderItem $record): string => $record->product && app(OneCItemCreator::class)->linked($record->product) ? 'success' : 'warning')
+                                                ->tooltip(fn (OrderItem $record): string => $record->product && app(OneCItemCreator::class)->linked($record->product)
+                                                    ? 'Товар 1С' : 'Связать с товаром 1С или создать в 1С')
+                                                ->visible(fn (OrderItem $record): bool => (bool) auth()->user()?->isManager() && $record->product !== null
+                                                    && app(OneCItemCreator::class)->source() !== null)
+                                        ),
 
                                     TextEntry::make('quantity')
                                         ->label('Кол-во')
@@ -1451,5 +1469,22 @@ class OrderInfolist
         }
 
         return [$order->onec_deleted ? "помечен на удаление" : "нет", $order->onec_deleted ? "danger" : "gray", null];
+    }
+
+    /** «1С: УТ-00000123» under the article, or «нет в 1С» while creating / when missing. */
+    public static function onecItemLine(OrderItem $item): ?HtmlString
+    {
+        $creator = app(OneCItemCreator::class);
+        if (! $item->product || $creator->source() === null) {
+            return $item->product_id ? null : new HtmlString('<span style="color:#b91c1c">без карточки — в 1С не связать</span>');
+        }
+        $linked = $creator->linked($item->product);
+        if ($linked) {
+            return new HtmlString('<span style="color:#16a34a">1С: '.e($linked->external_code ?: 'связан').'</span>');
+        }
+        $tasks = app(OneCAgentTasks::class);
+        $waiting = $tasks->activeFor($item->product, ItemTaskHandler::TYPE) || $tasks->activeFor($item->product, ODataReadTaskHandler::TYPE);
+
+        return new HtmlString($waiting ? '<span style="color:#2563eb">создаётся в 1С…</span>' : '<span style="color:#d97706">нет в 1С — нажмите ⊕</span>');
     }
 }

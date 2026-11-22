@@ -169,4 +169,31 @@ class OneCItemCreateTest extends TestCase
         $this->assertSame(1, OneCAgentTask::query()->where('type', 'odata_read')->whereMorphedTo('subject', $this->card)->count());
         $this->assertSame(0, OneCAgentTask::query()->where('type', 'onec_order')->count());
     }
+
+    public function test_each_order_line_shows_its_1c_item_or_offers_to_link_one(): void
+    {
+        $order = (new Order)->forceFill(['number' => 'K-6006', 'status' => 'checking', 'customer_name' => 'Тестов Иван', 'customer_phone' => '+375 29 000-11-22',
+            'delivery_type' => 'pickup', 'subtotal' => 200, 'total' => 200]);
+        $order->save();
+        $linkedCard = Product::query()->where('slug', 'co777')->firstOrFail();
+        OrderItem::query()->create(['order_id' => $order->id, 'product_id' => $linkedCard->id, 'product_name' => $linkedCard->name,
+            'price' => 60, 'quantity' => 1, 'total' => 60, 'pricing_type' => 'retail']);
+        OrderItem::query()->create(['order_id' => $order->id, 'product_id' => $this->card->id, 'product_name' => $this->card->name,
+            'price' => 70, 'quantity' => 2, 'total' => 140, 'pricing_type' => 'retail']);
+        $this->actingAs($this->admin);
+
+        Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])->assertOk()
+            ->assertSee('1С: УТ-00000777')->assertSee('нет в 1С — нажмите ⊕');
+
+        // ⊕ on the line: link the card to a free 1C item right from the order.
+        $free = IntegrationProduct::query()->create(['integration_source_id' => $this->source->id, 'external_id' => 'abababab-0000-0000-0000-000000000888',
+            'external_code' => 'УТ-00000888', 'name' => 'Датчик загазованности CO+CH GKB CO888', 'price' => 0]);
+        $line = $order->items()->orderBy('id')->pluck('product_id')->search($this->card->id);
+        Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertInfolistActionExists('items.'.$line.'.product_sku', 'orderItemOneC')
+            ->callInfolistAction('items.'.$line.'.product_sku', 'orderItemOneC', ['existing' => $free->id])
+            ->assertNotified('Карточка привязана к товару 1С УТ-00000888');
+        $this->assertSame($this->card->id, $free->fresh()->product_id);
+        Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])->assertSee('1С: УТ-00000888')->assertDontSee('нет в 1С — нажмите ⊕');
+    }
 }
