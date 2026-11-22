@@ -114,6 +114,16 @@ class OneCOrderPayments
         return is_string($key) && preg_match('/^[0-9a-f-]{36}$/i', $key) && $key !== '00000000-0000-0000-0000-000000000000';
     }
 
+    /** As 1C puts it, short: the sum is the order's own. */
+    public static function label(float $paid, float $toPay): string
+    {
+        return match (true) {
+            $toPay > 0 && $paid >= $toPay - 0.01 => 'оплачен',
+            $paid > 0 => 'оплачен частично',
+            default => 'ожидается оплата',
+        };
+    }
+
     public static function money(float $sum): string
     {
         return number_format($sum, 2, ',', ' ');

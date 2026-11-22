@@ -63,6 +63,13 @@ class OneCReferences
             'settlement_objects_sample' => ['Catalog_ОбъектыРасчетов', ['$top' => '3']],
             'settlements_recent_sample' => ['AccumulationRegister_РасчетыСКлиентами_RecordType', ['$top' => '10', '$orderby' => 'Period desc']],
         ],
+        // «stock» (agent 9+): stock and reserves per item and warehouse.
+        'stock' => [
+            'free_stock_sample' => ['AccumulationRegister_СвободныеОстатки/Balance', ['$top' => '5']],
+            'warehouse_stock_sample' => ['AccumulationRegister_ТоварыНаСкладах/Balance', ['$top' => '5']],
+            'to_ship_sample' => ['AccumulationRegister_ТоварыКОтгрузке/Balance', ['$top' => '5']],
+            'warehouses_sample' => ['Catalog_Склады', ['$top' => '30', '$select' => 'Ref_Key,Description,IsFolder,DeletionMark']],
+        ],
         'purchase' => [
             'supplier_order_sample' => ['Document_ЗаказПоставщику', ['$top' => '3', '$orderby' => 'Date desc']],
             'supplier_order_list' => ['Document_ЗаказПоставщику', ['$select' => 'Ref_Key,Number,Date,Posted,DeletionMark,Статус,Организация_Key,Партнер_Key,Контрагент_Key,СуммаДокумента',

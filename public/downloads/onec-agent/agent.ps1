@@ -8,7 +8,7 @@
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '8'
+$AgentVersion = '9'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -147,7 +147,7 @@ function Do-ODataRead([string]$id, [string[]]$lines) {
         if ($p[0] -ne 'get') { continue }
         $name = $p[1]; $path = $p[2]
         # Only a path inside the OData publication: no other host, no other folder.
-        if ($name -notmatch '^[a-z0-9_]+$' -or $path -notmatch '^[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$') { throw ('Недопустимый запрос: ' + $name) }
+        if ($name -notmatch '^[a-z0-9_]+$' -or $path -notmatch '^[A-Za-z0-9%_.~-]+(/Balance)?\?[A-Za-z0-9%_.~$=&-]+$') { throw ('Недопустимый запрос: ' + $name) }
         $code = Invoke-Curl ($OData + $path) 'GET' @('Accept: application/json') $ODataUser $null @() $Out
         $up = Join-Path $Root 'last-upload.txt'
         $sent = Invoke-Curl ($Site + '/1c/agent/tasks/' + $id + '/part?name=' + $name + '&code=' + $code) 'POST' ($SiteHeaders + @('Content-Type: application/octet-stream')) $null $Out @() $up
