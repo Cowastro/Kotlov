@@ -41,7 +41,7 @@ class OneCOrderExport
         $linked = $source ? IntegrationProduct::query()->where('integration_source_id', $source->id)
             ->whereIn('product_id', $order->items->pluck('product_id')->filter()->unique())
             ->where(fn ($q) => $q->whereNull('match_status')->orWhere('match_status', '!=', 'ignored'))
-            ->get(['id', 'product_id', 'external_id', 'external_code', 'name'])->groupBy('product_id') : collect();
+            ->get(['id', 'product_id', 'external_id', 'external_code', 'name', 'stock_quantity'])->groupBy('product_id') : collect();
 
         $lines = [];
         foreach ($order->items as $item) {
@@ -76,7 +76,8 @@ class OneCOrderExport
             $lines[] = ['item' => $item, 'name' => (string) $item->product_name, 'qty' => $qty, 'gross' => $gross,
                 'key' => $row ? strtolower((string) $key) : null,
                 'characteristic' => $row && $characteristic && preg_match('/^[0-9a-f-]{36}$/i', $characteristic) ? strtolower($characteristic) : null,
-                'onec_code' => $row?->external_code, 'onec_name' => $row?->name, 'problem' => $qty > 0 ? $problem : 'количество 0'];
+                'onec_code' => $row?->external_code, 'onec_name' => $row?->name, 'stock' => $row ? (float) $row->stock_quantity : 0.0,
+                'problem' => $qty > 0 ? $problem : 'количество 0'];
         }
 
         return $lines;
@@ -229,6 +230,11 @@ class OneCOrderExport
      */
     public const MAX_VARIANT = 4;
 
+    /** «Действия» of a line: ship from stock, or provide (order from a supplier, reserve when it comes). */
+    public const SHIP = 'Отгрузить';
+
+    public const PROVIDE = 'Требуется';
+
     private const SERVICE_FIELDS = ['СкидкиРассчитаны', 'Согласован', 'СуммаАвансаДоОбеспечения', 'СуммаПредоплатыДоОтгрузки', 'ДатаСогласования',
         'МаксимальныйКодСтроки', 'АдресДоставкиЗначение', 'АдресДоставкиЗначенияПолей', 'ВремяДоставкиС', 'ВремяДоставкиПо'];
 
@@ -307,6 +313,11 @@ class OneCOrderExport
                 'СуммаСНДС' => $gross,
                 'Склад_Key' => $doc['Склад_Key'] ?? OneCReferences::ZERO,
             ]);
+            // «Отгрузить» only what 1C has in stock; the rest «Обеспечить» (it comes by the supplier order). 1C refuses
+            // to write an order that ships goods it does not have.
+            if (($row['ВариантОбеспечения'] ?? null) === self::SHIP && $line['stock'] < $line['qty']) {
+                $row['ВариантОбеспечения'] = self::PROVIDE;
+            }
             foreach (['КодСтроки' => $n, 'КлючСвязи' => $n, 'ИдентификаторСтроки' => (string) Str::uuid(), 'ДатаОтгрузки' => $ship] as $key => $value) {
                 if (in_array($key, $rowKeys, true)) {
                     $row[$key] = $value;
