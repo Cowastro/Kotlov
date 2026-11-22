@@ -90,6 +90,9 @@ class ODataReadTaskHandler implements OneCAgentTaskHandler
         if (! $result['ok']) {
             return null;
         }
+        if (data_get($task->payload, 'create_item')) {
+            return app(OneCItemCreator::class)->afterRead($task);
+        }
         if (data_get($task->payload, 'sync')) {
             $missing = collect(OneCReferences::LISTS)->filter(fn (array $list): bool => data_get($task->payload, 'parts.'.$list[0].'.code') !== 200)
                 ->map(fn (array $list): string => $list[3])->values();

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OneCAgentTask;
 use App\Models\OneCAgentToken;
 use App\Models\OneCPriceBatch;
+use App\Services\Integrations\OneCBridge\ItemTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
@@ -38,9 +39,10 @@ class OneCAgentController extends Controller
         if (! $this->authorized($request)) {
             return $this->denied();
         }
-        // An agent older than 4 cannot create orders: they wait for the updated agent.ps1.
-        $types = (int) $request->header('X-Kotlov-Agent', '1') < 4
-            ? array_values(array_diff(array_keys($this->tasks->types()), [OrderTaskHandler::TYPE])) : null;
+        // A task waits for the agent version that can do it: orders from 4, items from 5.
+        $version = (int) $request->header('X-Kotlov-Agent', '1');
+        $tooNew = array_merge($version < 4 ? [OrderTaskHandler::TYPE] : [], $version < 5 ? [ItemTaskHandler::TYPE] : []);
+        $types = $tooNew !== [] ? array_values(array_diff(array_keys($this->tasks->types()), $tooNew)) : null;
         $task = $this->tasks->claimNext($types);
         if (! $task) {
             return $this->text("none\n");

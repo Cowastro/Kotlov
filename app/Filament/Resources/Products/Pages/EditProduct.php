@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Pages;
 
+use App\Filament\Resources\Products\Actions\ProductOneCItemAction;
 use App\Filament\Resources\Products\Pages\Concerns\HasProductMarketResearchActions;
 use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\RunProductSourceEnrichment;
@@ -29,6 +30,7 @@ class EditProduct extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            ProductOneCItemAction::make(),
             ...$this->productMarketResearchActions(),
             Action::make('enrich_from_source_url')
                 ->label('Обновить из ссылки')

@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
+use App\Services\Integrations\OneCBridge\ItemTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
@@ -26,12 +27,13 @@ return [
     // «Мост 1С»: the agent on the 1C server (public/downloads/onec-agent/agent.ps1) and the kinds of tasks it does.
     'agent' => [
         // The current agent.ps1; the panel asks to update an agent that reports an older one.
-        'version' => '4',
+        'version' => '5',
         'handlers' => [
             'price_batch' => PriceBatchTaskHandler::class,
             'odata_read' => ODataReadTaskHandler::class,
             'doc_status' => DocumentStatusTaskHandler::class,
             'onec_order' => OrderTaskHandler::class,
+            'onec_item' => ItemTaskHandler::class,
         ],
     ],
 
