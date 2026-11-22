@@ -11,6 +11,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\OneCAgentTask;
 use App\Models\OneCAgentToken;
+use App\Models\OneCItem;
 use App\Models\OneCOrderProfile;
 use App\Models\OneCReference;
 use App\Models\Order;
@@ -23,6 +24,7 @@ use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCOrderStages;
 use App\Services\Integrations\OneCBridge\OneCReferences;
+use App\Services\Integrations\OneCBridge\OneCStock;
 use App\Services\Orders\OrderStatusCustomerNotifier;
 use DomainException;
 use Filament\Actions\Testing\TestAction;
@@ -344,6 +346,34 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame('paid', $order->fresh()->payment_status);
         $this->assertSame(1, $order->managerComments()->where('body', 'like', '%МПУТ-000900 оплачен полностью (49,98 BYN)%')->count());
         $this->assertNull(app(DocumentStatusTaskHandler::class)->enqueueCheck(null));
+    }
+
+    public function test_the_stock_of_the_main_warehouse_comes_from_1c_and_decides_ship_or_provide(): void
+    {
+        OneCReference::query()->create(['kind' => 'warehouse', 'ref_key' => 'aaaaaaaa-0000-0000-0000-00000000000a', 'description' => 'Основной', 'is_folder' => false, 'deletion_mark' => false]);
+        OneCReference::query()->create(['kind' => 'warehouse', 'ref_key' => 'aaaaaaaa-0000-0000-0000-00000000000b', 'description' => 'Магазин Борисов', 'is_folder' => false, 'deletion_mark' => false]);
+        $item = OneCItem::query()->create(['ref_key' => self::ITEM, 'code' => 'УТ-00000001', 'description' => 'Переход Моно', 'product_id' => $this->card->id]);
+        OneCItem::query()->create(['ref_key' => 'bbbbbbbb-0000-0000-0000-000000000002', 'code' => 'УТ-00000002', 'description' => 'Другое', 'stock_on_hand' => 5]);
+
+        $task = app(OneCStock::class)->enqueue(null);
+        $this->assertStringContainsString('aaaaaaaa-0000-0000-0000-00000000000a', urldecode($task->payload['queries']['stock']));
+        $this->assertStringNotContainsString('00000000000b', $task->payload['queries']['stock']);
+        $this->agent()->get('/1c/agent/tasks/next')->assertOk();
+        // Two lines of the same item (two series): 3 in stock, 2 promised to orders.
+        $this->sendPart($task->id, 'stock', 200, ['value' => [
+            ['Номенклатура_Key' => self::ITEM, 'ВНаличииBalance' => 2, 'КОтгрузкеBalance' => 2],
+            ['Номенклатура_Key' => self::ITEM, 'ВНаличииBalance' => 1, 'КОтгрузкеBalance' => 0],
+        ]])->assertOk();
+        $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1'])->assertOk();
+
+        $item->refresh();
+        $this->assertSame([3.0, 2.0], [$item->stock_on_hand, $item->stock_reserved]);
+        $this->assertSame('своб. 1 (в нал. 3, резерв 2)', OneCStock::label($item));
+        $this->assertSame(0.0, OneCItem::query()->where('code', 'УТ-00000002')->value('stock_on_hand') + 0.0, 'not in the answer — none in stock');
+
+        // The order wants 2: the exchange says 2 in stock, but only 1 is free in 1C.
+        $lines = app(OneCOrderExport::class)->lines($this->order());
+        $this->assertSame(1.0, $lines[0]['stock']);
     }
 
     public function test_an_order_1c_refuses_on_write_goes_again_as_a_draft_and_the_scheme_keeps_drafts(): void

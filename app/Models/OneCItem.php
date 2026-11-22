@@ -11,13 +11,16 @@ class OneCItem extends Model
     protected $table = 'onec_items';
 
     protected $fillable = ['ref_key', 'code', 'description', 'article', 'parent_key', 'is_folder', 'deletion_mark', 'kind_key', 'unit_key',
-        'path', 'product_id', 'created_from_site', 'same_name_count', 'synced_at'];
+        'path', 'product_id', 'created_from_site', 'same_name_count', 'synced_at', 'stock_on_hand', 'stock_reserved', 'stock_synced_at'];
 
     protected $casts = [
         'is_folder' => 'boolean',
         'deletion_mark' => 'boolean',
         'created_from_site' => 'boolean',
         'synced_at' => 'datetime',
+        'stock_on_hand' => 'float',
+        'stock_reserved' => 'float',
+        'stock_synced_at' => 'datetime',
     ];
 
     public function product(): BelongsTo

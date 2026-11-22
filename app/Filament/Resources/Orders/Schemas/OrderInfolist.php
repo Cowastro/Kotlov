@@ -7,6 +7,7 @@ use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Models\IntegrationIssue;
+use App\Models\OneCItem;
 use App\Models\Order;
 use App\Models\OrderAccountingRequest;
 use App\Models\OrderEconomicSnapshot;
@@ -25,6 +26,7 @@ use App\Services\Integrations\OneCBridge\OneCItemCreator;
 use App\Services\Integrations\OneCBridge\OneCOrderJourney;
 use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
+use App\Services\Integrations\OneCBridge\OneCStock;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Models\SupplierOrderRequest;
 use App\Services\Orders\OrderItemAvailabilityChecker;
@@ -1487,6 +1489,14 @@ class OrderInfolist
     }
 
     /** «1С: УТ-00000123» under the article, or «нет в 1С» while creating / when missing. */
+    /** « · своб. 2 (в нал. 3, резерв 1)» on the selling warehouse, when 1C stock is fresh. */
+    private static function onecStock(?string $key): string
+    {
+        $item = $key ? OneCItem::query()->where('ref_key', strtolower($key))->first() : null;
+
+        return OneCStock::fresh($item) ? ' <span style="color:#64748b" title="Склад: '.e(implode(', ', OneCStock::WAREHOUSES)).'">· '.e(OneCStock::label($item)).'</span>' : '';
+    }
+
     public static function onecItemLine(OrderItem $item): ?HtmlString
     {
         $creator = app(OneCItemCreator::class);
@@ -1496,7 +1506,8 @@ class OrderInfolist
         $linked = $creator->linked($item->product);
         if ($linked) {
             return new HtmlString('<a href="'.e(OneCItemResource::getUrl('index', ['tableSearch' => $linked->external_code ?: $linked->name]))
-                .'" style="color:#16a34a;text-decoration:underline" title="Показать в номенклатуре 1С">1С: '.e($linked->external_code ?: 'связан').'</a>');
+                .'" style="color:#16a34a;text-decoration:underline" title="Показать в номенклатуре 1С">1С: '.e($linked->external_code ?: 'связан').'</a>'
+                .self::onecStock($linked->external_id));
         }
         $tasks = app(OneCAgentTasks::class);
         $waiting = $tasks->activeFor($item->product, ItemTaskHandler::TYPE) || $tasks->activeFor($item->product, ODataReadTaskHandler::TYPE);
