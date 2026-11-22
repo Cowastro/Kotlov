@@ -64,7 +64,10 @@ class UnconfirmedProductCheckoutTest extends TestCase
         $this->assertDatabaseCount((new Order)->getTable(), $orderCount + 1);
         $this->assertDatabaseHas('order_items', [
             'product_id' => $product->id,
-            'supply_is_available' => false,
+            // No balance was supplied: unknown is not a confirmed zero.
+            'supply_is_available' => null,
+            'supply_stock_quantity' => null,
+            'fulfillment_confirmed_at' => null,
         ]);
         Notification::assertSentTo(
             $manager,
