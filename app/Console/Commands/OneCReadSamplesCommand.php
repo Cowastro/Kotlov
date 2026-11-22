@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 /** Queues a read-only look at how 1C keeps something (OneCReferences::SAMPLE_SETS), e.g. «purchase». */
 class OneCReadSamplesCommand extends Command
 {
-    protected $signature = 'onec:read-samples {set : purchase}';
+    protected $signature = 'onec:read-samples {set : purchase or order_states}';
 
     protected $description = '«Мост 1С»: queue a read-only read of 1C samples';
 

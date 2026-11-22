@@ -187,7 +187,7 @@ class OneCOrderMatcher
             $order->managerComments()->create(['user_id' => $user?->id, 'author_name' => 'Мост 1С',
                 'body' => 'Связан с заказом 1С '.$ref->description.' (заведён в 1С вручную) — повторно в 1С не передаётся.']);
         });
-        app(OneCOrderStages::class)->apply($order, upTo: 'processing');
+        app(OneCOrderStages::class)->apply($order);
         $this->linkItemsFrom($order->fresh(), strtolower($refKey), $user);
     }
 
@@ -219,6 +219,8 @@ class OneCOrderMatcher
             ->chunkById(100, function ($orders) use (&$n): void {
                 foreach ($orders as $order) {
                     $n += count($this->linkItemsFrom($order, strtolower((string) $order->onec_order_guid)));
+                    // The stage follows the 1C order (check-documents refreshes its state every 30 minutes).
+                    app(OneCOrderStages::class)->apply($order);
                 }
             });
 

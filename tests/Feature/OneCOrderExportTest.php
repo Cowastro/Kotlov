@@ -399,6 +399,21 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame(1, OneCAgentTask::query()->where('type', 'doc_status')->count());
     }
 
+    public function test_linking_with_a_closed_1c_order_delivers_the_site_order_at_once(): void
+    {
+        $order = $this->order();
+        $this->syncReferences([
+            ['Ref_Key' => 'aaaa0000-0000-0000-0000-000000000728', 'Number' => 'МПУТ-000728', 'Date' => now()->format('Y-m-d\TH:i:s'),
+                'Партнер_Key' => self::RETAIL, 'СуммаДокумента' => 49.98, 'Статус' => 'Закрыт', 'Posted' => true, 'DeletionMark' => false,
+                'Товары' => [['Номенклатура_Key' => self::ITEM, 'Количество' => 2, 'СуммаСНДС' => 49.98]]],
+        ]);
+
+        app(OneCOrderMatcher::class)->link($order, 'aaaa0000-0000-0000-0000-000000000728', $this->admin);
+        $order->refresh();
+        $this->assertSame('delivered', $order->status);
+        $this->assertSame('По 1С: заказ МПУТ-000728 проведён, «Закрыт».', $order->statusHistory()->latest('id')->value('comment'));
+    }
+
     public function test_a_found_order_shows_only_linking_and_once_linked_only_its_1c_number(): void
     {
         $order = $this->order(['delivery_type' => 'pickup', 'delivery_city' => 'Минск', 'delivery_address' => null]);
