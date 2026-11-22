@@ -1,13 +1,14 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 4: «Мост 1С».
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 5: «Мост 1С».
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
+# onec_item — a new «Номенклатура» (only when 1C has no item with that article);
 # odata_read, doc_status — read-only lists of 1C.
 #   agent.ps1 -Check   read-only check: the site key and the 1C OData user work
 #   agent.ps1          one run (the scheduler starts it every 5 minutes): does every task waiting in the queue
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '4'
+$AgentVersion = '5'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -156,41 +157,49 @@ function Do-ODataRead([string]$id, [string[]]$lines) {
     return @(('read=' + $n))
 }
 
-# ---- onec_order: an UNPOSTED «Заказ клиента»; the site prepared the document, the agent first looks for it ----
-function Do-Order([string[]]$lines) {
+# What the agent may create in 1C. Nothing else, whatever the site asks.
+$CreatableEntities = @('Document_ЗаказКлиента', 'Catalog_Номенклатура')
+
+# The number (document) or code (catalog item) and the key of the first object in a 1C answer.
+function Read-Created([string]$answer, [string]$existed) {
+    $number = ''; $code = ''; $key = ''
+    if ($answer -match '"Number"\s*:\s*"([^"]*)"') { $number = $matches[1] }
+    if ($answer -match '"Code"\s*:\s*"([^"]*)"') { $code = $matches[1] }
+    if ($answer -match '"Ref_Key"\s*:\s*"([0-9a-fA-F-]{36})"') { $key = $matches[1] }
+    return @(('document_number=' + $number), ('document_code=' + $code), ('document_key=' + $key), ('existed=' + $existed))
+}
+
+# ---- onec_order / onec_item: an UNPOSTED «Заказ клиента» or a new «Номенклатура». The site prepared the object,
+# the agent first looks for it (the same order number, the same article) and creates it only when 1C has none ----
+function Do-Create([string[]]$lines, [string]$entity) {
     $find = ''; $b64 = ''
     foreach ($l in $lines) {
         $i = $l.IndexOf('|')
         if ($i -lt 0) { continue }
         $k = $l.Substring(0, $i); $v = $l.Substring($i + 1)
+        if ($k -eq 'entity') { $entity = $v }
         if ($k -eq 'find') { $find = $v }
         if ($k -eq 'body') { $b64 = $v }
     }
-    if (-not $b64) { throw 'В задаче нет заказа' }
+    if (-not $b64) { throw 'В задаче нет объекта для 1С' }
+    if ($CreatableEntities -notcontains $entity) { throw ('Агент не создаёт «' + $entity + '»') }
 
-    # The same order already in 1C (an answer to the site was lost): report it instead of a second one.
+    # Already in 1C (made by hand, or an answer to the site was lost): report it instead of a second one.
     if ($find) {
-        if ($find -notmatch '^[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$') { throw 'Недопустимый поиск заказа' }
+        if ($find -notmatch '^[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$') { throw 'Недопустимый поиск в 1С' }
         $code = Invoke-Curl ($OData + $find) 'GET' @('Accept: application/json') $ODataUser $null @() $Out
         $answer = Read-Answer $Out
-        if ($code -ne '200') { throw ('1С не ответила на поиск заказа: ' + $code + ' ' + $answer) }
-        if ($answer -match '"Ref_Key"\s*:\s*"([0-9a-fA-F-]{36})"') {
-            $key = $matches[1]; $number = ''
-            if ($answer -match '"Number"\s*:\s*"([^"]*)"') { $number = $matches[1] }
-            return @(('document_number=' + $number), ('document_key=' + $key), 'existed=1')
-        }
+        if ($code -ne '200') { throw ('1С не ответила на поиск: ' + $code + ' ' + $answer) }
+        if ($answer -match '"Ref_Key"\s*:\s*"([0-9a-fA-F-]{36})"') { return Read-Created $answer '1' }
     }
 
     [IO.File]::WriteAllBytes($Body, [Convert]::FromBase64String($b64))
-    $url = $OData + [Uri]::EscapeDataString('Document_ЗаказКлиента') + '?$format=json'
+    $url = $OData + [Uri]::EscapeDataString($entity) + '?$format=json'
     $code = Invoke-Curl $url 'POST' @('Content-Type: application/json; charset=utf-8', 'Accept: application/json') $ODataUser $Body @() $Out
     $answer = Read-Answer $Out
     if ($code -ne '201' -and $code -ne '200') { throw ('1С ответила ' + $code + ': ' + $answer) }
 
-    $number = ''; $key = ''
-    if ($answer -match '"Number"\s*:\s*"([^"]*)"') { $number = $matches[1] }
-    if ($answer -match '"Ref_Key"\s*:\s*"([0-9a-fA-F-]{36})"') { $key = $matches[1] }
-    return @(('document_number=' + $number), ('document_key=' + $key), 'existed=0')
+    return Read-Created $answer '0'
 }
 
 # Sends the result; the «done» file (what was already created in 1C) is kept until the site has accepted it.
@@ -231,7 +240,8 @@ for ($round = 0; $round -lt 20; $round++) {
             'price_batch' { $data = Do-PriceBatch $lines }
             'odata_read' { $data = Do-ODataRead $id $lines }
             'doc_status' { $data = Do-ODataRead $id $lines }
-            'onec_order' { $data = Do-Order $lines }
+            'onec_order' { $data = Do-Create $lines 'Document_ЗаказКлиента' }
+            'onec_item' { $data = Do-Create $lines 'Catalog_Номенклатура' }
             default { throw ('Агент версии ' + $AgentVersion + ' не умеет задачи «' + $type + '»: обновите agent.ps1 с сайта') }
         }
         $form = @('ok=1') + $data

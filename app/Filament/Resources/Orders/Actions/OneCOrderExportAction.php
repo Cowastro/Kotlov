@@ -8,6 +8,7 @@ use App\Models\OneCAgentTask;
 use App\Models\OneCOrderProfile;
 use App\Models\Order;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\OneCItemCreator;
 use App\Services\Integrations\OneCBridge\OneCOrderExport;
 use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
@@ -19,6 +20,7 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -82,6 +84,22 @@ class OneCOrderExportAction
                         if ($item && $integrationProductId) {
                             $export->link($item, (int) $integrationProductId);
                         }
+                    }
+                    // Lines 1C has no item for: the items are created first, the order goes after them.
+                    $create = collect((array) ($data['create'] ?? []))->filter()->keys();
+                    if ($create->isNotEmpty()) {
+                        $creator = app(OneCItemCreator::class);
+                        foreach ($create as $itemId) {
+                            $item = $record->items->firstWhere('id', (int) $itemId);
+                            if ($item?->product && blank($data['links'][$itemId] ?? null)) {
+                                $creator->request($item->product, (string) $creator->defaultTemplate($item->product), null, auth()->user());
+                            }
+                        }
+                        Notification::make()->success()->title('Товары создаются в 1С: '.$create->count())
+                            ->body('Агент проверит, нет ли их в 1С, и создаст в течение 5 минут — карточки привяжутся сами. Затем отправьте заказ ещё раз.')
+                            ->persistent()->send();
+
+                        return;
                     }
                     $record->unsetRelation('items');
                     $task = $export->enqueue($record->fresh(), self::toForm($data), auth()->user());
@@ -233,6 +251,12 @@ class OneCOrderExportAction
                     ->searchable()
                     ->getSearchResultsUsing(fn (string $search): array => $export->searchItems($search))
                     ->getOptionLabelUsing(fn ($value): ?string => $export->itemLabel((int) $value));
+                $template = app(OneCItemCreator::class)->defaultTemplate($line['item']->product);
+                $linkFields[] = Toggle::make('create.'.$line['item']->id)
+                    ->label('Нет в 1С — создать товар «'.$line['name'].'» в 1С')
+                    ->helperText($template ? 'По образцу '.app(OneCItemCreator::class)->templateLabel($template).'. Другой образец — кнопка «Создать в 1С» в карточке товара.'
+                        : 'Нет образца в этой категории — создайте товар из карточки товара (кнопка «Создать в 1С»).')
+                    ->disabled($template === null);
             }
         }
 
