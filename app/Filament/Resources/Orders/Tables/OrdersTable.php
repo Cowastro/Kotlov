@@ -11,6 +11,7 @@ use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Order;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
+use App\Services\Integrations\OneCBridge\OneCSupplierOrderExport;
 use App\Models\OrderItem;
 use App\Models\OrderPortalLink;
 use App\Models\Product;
@@ -551,11 +552,19 @@ class OrdersTable
 
                 SelectFilter::make('onec_order')
                     ->label('Заказ в 1С')
-                    ->options(['in' => 'В 1С', 'found' => 'Найден в 1С — связать', 'none' => 'Нет в 1С', 'unposted' => 'В 1С, не проведён'])
+                    ->options(['in' => 'В 1С', 'found' => 'Найден в 1С — связать', 'none' => 'Нет в 1С', 'unposted' => 'В 1С, не проведён', 'supplier_todo' => 'Нужно заказать у поставщика в 1С'])
                     ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
                         'in' => $query->whereNotNull('onec_order_guid')->where('onec_deleted', false),
                         'found' => $query->whereNull('onec_order_guid')->whereNotNull('onec_match_guid'),
                         'none' => $query->whereNull('onec_order_guid')->whereNull('onec_match_guid'),
+                        // A line bought from a supplier whose supplier order is not in 1C (nor on its way there).
+                        'supplier_todo' => $query->where('status', '!=', 'cancelled')->whereHas('items', fn (Builder $items): Builder => $items
+                            ->whereIn('fulfillment_route', OneCSupplierOrderExport::ROUTES)->whereNotNull('fulfillment_supplier_id')
+                            ->whereNotExists(fn ($sent) => $sent->from('onec_supplier_orders')
+                                ->whereColumn('onec_supplier_orders.order_id', 'order_items.order_id')
+                                ->whereColumn('onec_supplier_orders.supplier_id', 'order_items.fulfillment_supplier_id')
+                                ->where(fn ($s) => $s->where('onec_supplier_orders.status', 'queued')
+                                    ->orWhere(fn ($s) => $s->whereNotNull('onec_supplier_orders.onec_order_guid')->where('onec_supplier_orders.onec_deleted', false))))),
                         'unposted' => $query->whereNotNull('onec_order_guid')->where('onec_deleted', false)
                             ->where(fn (Builder $q): Builder => $q->whereNull('onec_posted')->orWhere('onec_posted', false)),
                         default => $query,
