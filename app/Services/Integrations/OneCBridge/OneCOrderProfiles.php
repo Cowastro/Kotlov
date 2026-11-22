@@ -56,7 +56,7 @@ class OneCOrderProfiles
     private const PAYMENT_FIELDS = ['ВариантОплаты', 'ВариантОтсчета', 'Сдвиг'];
 
     /** @param array<string, mixed> $order a «Заказ клиента» as 1C gave it */
-    public function fromTemplate(array $order, string $name, string $mode): OneCOrderProfile
+    public function fromTemplate(array $order, string $name, string $mode, string $document = OneCOrderProfile::CUSTOMER_ORDER): OneCOrderProfile
     {
         $header = [];
         $meta = ['keys' => [], 'address' => [], 'info' => [], 'dates' => []];
@@ -95,8 +95,8 @@ class OneCOrderProfiles
         $meta['row_keys'] = array_keys((array) data_get($order, 'Товары.0', []));
 
         return OneCOrderProfile::query()->create([
-            'name' => $name, 'customer_mode' => $mode, 'is_active' => true,
-            'is_default' => ! OneCOrderProfile::query()->where('is_default', true)->exists(),
+            'name' => $name, 'document' => $document, 'customer_mode' => $mode, 'is_active' => true,
+            'is_default' => ! OneCOrderProfile::query()->where('document', $document)->where('is_default', true)->exists(),
             'header' => $header, 'row_defaults' => $row, 'payment_stage' => $payment ?: null, 'meta' => $meta,
             'template_number' => (string) ($order['Number'] ?? ''),
         ]);
@@ -105,7 +105,7 @@ class OneCOrderProfiles
     /** The scheme for an order: a company order takes the first company scheme, the rest the default one. */
     public function forOrder(bool $company): ?OneCOrderProfile
     {
-        $active = OneCOrderProfile::query()->where('is_active', true)->orderByDesc('is_default')->orderBy('sort')->orderBy('id')->get();
+        $active = OneCOrderProfile::query()->where('document', OneCOrderProfile::CUSTOMER_ORDER)->where('is_active', true)->orderByDesc('is_default')->orderBy('sort')->orderBy('id')->get();
 
         return ($company ? $active->firstWhere('customer_mode', OneCOrderProfile::COMPANY) : null)
             ?? $active->firstWhere('is_default', true) ?? $active->first();

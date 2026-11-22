@@ -11,6 +11,7 @@ use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
 use App\Filament\Resources\Orders\Actions\EvropochtaOrderActions;
 use App\Filament\Resources\Orders\Actions\OneCOrderExportAction;
 use App\Filament\Resources\Orders\Actions\OneCOrderLinkAction;
+use App\Filament\Resources\Orders\Actions\OneCSupplierOrdersAction;
 use App\Models\Order;
 use App\Models\OrderAccountingRequest;
 use App\Models\OrderItem;
@@ -133,6 +134,7 @@ class ViewOrder extends ViewRecord
                 }),
             OneCOrderExportAction::make(),
             OneCOrderLinkAction::make(),
+            OneCSupplierOrdersAction::make(),
             ActionGroup::make([
                 EvropochtaOrderActions::track(),
                 EvropochtaOrderActions::printLabel('thermal'),

@@ -106,6 +106,7 @@ class OneCOrderProfileResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')->label('Схема')->weight('bold'),
+                TextColumn::make('document')->label('Документ')->badge()->formatStateUsing(fn (?string $state): string => OneCOrderProfile::DOCUMENTS[$state ?: OneCOrderProfile::CUSTOMER_ORDER] ?? (string) $state),
                 TextColumn::make('customer_mode')->label('Покупатель')->formatStateUsing(fn (string $state): string => OneCOrderProfile::CUSTOMER_MODES[$state] ?? $state),
                 TextColumn::make('org')->label('Организация')->state(fn (OneCOrderProfile $r): ?string => $refs->label('organization', $r->header['Организация_Key'] ?? null)),
                 TextColumn::make('partner')->label('Клиент')->state(fn (OneCOrderProfile $r): ?string => $refs->label('partner', $r->header['Партнер_Key'] ?? null)),

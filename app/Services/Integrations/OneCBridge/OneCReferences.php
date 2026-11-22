@@ -33,6 +33,9 @@ class OneCReferences
     /** Recent 1C orders: a scheme is made from one of them. */
     public const TEMPLATES = 'order_templates';
 
+    /** Recent 1C supplier orders: a supplier order scheme is made from one of them. */
+    public const SUPPLIER_TEMPLATES = 'supplier_order_templates';
+
     public const ZERO = '00000000-0000-0000-0000-000000000000';
 
     public function __construct(private readonly OneCAgentTasks $tasks) {}
@@ -77,6 +80,7 @@ class OneCReferences
                 $queries[$name] = ODataReadTaskHandler::path($entity, $query);
             }
             $queries[self::TEMPLATES] = ODataReadTaskHandler::path('Document_ЗаказКлиента', ['$top' => '40', '$orderby' => 'Date desc']);
+            $queries[self::SUPPLIER_TEMPLATES] = ODataReadTaskHandler::path('Document_ЗаказПоставщику', ['$top' => '40', '$orderby' => 'Date desc']);
         }
         $to = now('Europe/Minsk')->addDay()->startOfDay();
         for ($i = 1; $orderDays > 0 && $i <= (int) ceil($orderDays / self::ORDER_DAYS_PER_PART); $i++) {
@@ -253,10 +257,10 @@ class OneCReferences
     }
 
     /** @return list<array<string, mixed>> recent 1C orders as 1C gave them */
-    public function templates(): array
+    public function templates(string $kind = self::TEMPLATES): array
     {
         $task = $this->lastSync();
-        $part = $task ? ODataReadTaskHandler::part($task, self::TEMPLATES) : null;
+        $part = $task ? ODataReadTaskHandler::part($task, $kind) : null;
 
         return $part && $part['code'] === 200 ? array_values((array) data_get($part['json'], 'value', [])) : [];
     }

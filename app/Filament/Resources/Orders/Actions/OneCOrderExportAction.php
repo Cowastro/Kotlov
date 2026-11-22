@@ -231,7 +231,7 @@ class OneCOrderExportAction
     {
         $refs = app(OneCReferences::class);
         $export = app(OneCOrderExport::class);
-        $profiles = OneCOrderProfile::query()->where('is_active', true)->orderByDesc('is_default')->orderBy('sort')->orderBy('id')->pluck('name', 'id')->all();
+        $profiles = OneCOrderProfile::query()->where('document', OneCOrderProfile::CUSTOMER_ORDER)->where('is_active', true)->orderByDesc('is_default')->orderBy('sort')->orderBy('id')->pluck('name', 'id')->all();
         $select = fn (string $alias, string $kind): Select => Select::make('h.'.$alias)
             ->label(OneCOrderProfiles::FIELDS[self::KEYS[$alias]][0])
             ->options(fn (?string $state): array => $refs->options($kind, current: $state))->searchable();
