@@ -27,7 +27,7 @@ class InternalOrderActionsTest extends TestCase
         $supplier = Supplier::create(['name' => 'Чистый берег', 'code' => 'bereg-test', 'is_active' => true]);
         $order = Order::create(['number' => 'ORD-INTERNAL-TEST', 'status' => 'new',
             'customer_name' => 'Монтажник', 'customer_phone' => '+375291234567', 'payment_type' => 'cash',
-            'payment_status' => 'unpaid', 'delivery_type' => 'pickup', 'subtotal' => 340, 'total' => 340]);
+            'payment_status' => 'pending', 'delivery_type' => 'pickup', 'subtotal' => 340, 'total' => 340]);
         foreach (range(1, 17) as $index) {
             $order->items()->create(['product_name' => 'Фитинг '.$index, 'product_sku' => 'FIT-'.$index,
                 'quantity' => 2, 'price' => 10, 'total' => 20, 'supply_supplier_id' => $supplier->id,
@@ -62,7 +62,7 @@ class InternalOrderActionsTest extends TestCase
         $order->refresh();
         $this->assertSame('delivered', $order->status);
         $this->assertSame('completed', $order->effectiveDealStage());
-        $this->assertSame('unpaid', $order->payment_status);
+        $this->assertSame('pending', $order->payment_status);
         $this->assertSame('340.00', $order->total);
         $this->assertNull($order->onec_order_guid);
         $this->assertSame($before, $order->items()->get(['id', 'quantity', 'price', 'total', 'supply_stock_quantity', 'supply_is_available'])->toArray());
