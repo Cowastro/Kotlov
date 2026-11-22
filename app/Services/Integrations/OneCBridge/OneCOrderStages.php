@@ -7,8 +7,9 @@ use App\Services\Orders\OrderStatusCustomerNotifier;
 
 /**
  * Once an order is in 1C its logistics are done there, so the site moves its stages after 1C: a posted order «К
- * обеспечению» / «К выполнению» is «В исполнении», a closed one is «Доставлен». Only forward, only after the manager
- * confirmed the order to the customer (that step and its message stay the manager's), never a cancelled one.
+ * обеспечению» / «К выполнению» is «В исполнении», a closed one is «Доставлен». Only forward, never a cancelled one.
+ * The customer hears of every move of an order the manager confirmed on the site. An order 1C already has in work
+ * that was never confirmed on the site (an old one, agreed with the customer outside the site) moves silently.
  * A 1C order closed with every line cancelled is not a delivery: the manager gets a note instead.
  */
 class OneCOrderStages
@@ -45,12 +46,16 @@ class OneCOrderStages
             $target = $upTo;
         }
         $current = self::RANK[$order->status] ?? null;
-        if ($target === null || $current === null || $order->archived_at || $current < self::RANK['confirmed'] || self::RANK[$target] <= $current) {
+        if ($target === null || $current === null || $order->archived_at || self::RANK[$target] <= $current) {
             return null;
         }
+        $silent = $current < self::RANK['confirmed'];
         $status = OneCOrderProfiles::STATUSES[$order->onec_doc_status] ?? $order->onec_doc_status;
-        $order->transitionTo($target, 'По 1С: заказ '.$order->onec_order_number.' проведён, «'.$status.'».');
-        app(OrderStatusCustomerNotifier::class)->notify($order->fresh(['user']));
+        $order->transitionTo($target, 'По 1С: заказ '.$order->onec_order_number.' проведён, «'.$status.'»'
+            .($silent ? ' (не подтверждался на сайте — клиенту не сообщали).' : '.'));
+        if (! $silent) {
+            app(OrderStatusCustomerNotifier::class)->notify($order->fresh(['user']));
+        }
 
         return $target;
     }

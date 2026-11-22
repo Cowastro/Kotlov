@@ -23,6 +23,7 @@ use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCOrderStages;
 use App\Services\Integrations\OneCBridge\OneCReferences;
+use App\Services\Orders\OrderStatusCustomerNotifier;
 use DomainException;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -251,20 +252,32 @@ class OneCOrderExportTest extends TestCase
         $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1'])->assertOk();
     }
 
+    public function test_an_order_never_confirmed_on_the_site_follows_1c_silently(): void
+    {
+        // An old order the manager agreed with the customer outside the site: in work in 1C, never confirmed here.
+        $notifier = $this->spy(OrderStatusCustomerNotifier::class);
+        $order = $this->order(['status' => 'new', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
+            'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'НеСогласован', 'onec_posted' => false]);
+        $this->check1cOrder('КОбеспечению', true, [['Номенклатура_Key' => self::ITEM, 'Отменено' => false]]);
+        $this->assertSame('processing', $order->fresh()->status);
+        $this->assertStringContainsString('клиенту не сообщали', (string) $order->statusHistory()->latest('id')->value('comment'));
+        $notifier->shouldNotHaveReceived('notify');
+
+        // Once it is in work, every next move is the customer's news: closed in 1C → delivered, with the message.
+        $this->check1cOrder('Закрыт', true, [['Номенклатура_Key' => self::ITEM, 'Отменено' => false]]);
+        $this->assertSame('delivered', $order->fresh()->status);
+        $notifier->shouldHaveReceived('notify')->once();
+    }
+
     public function test_the_order_stages_follow_1c_once_the_customer_got_the_confirmation(): void
     {
-        $order = $this->order(['status' => 'checking', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
+        $order = $this->order(['status' => 'confirmed', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
             'onec_profile_id' => 1, 'onec_exported_at' => now(), 'onec_doc_status' => 'НеСогласован', 'onec_posted' => false]);
         $line = ['Номенклатура_Key' => self::ITEM, 'Отменено' => false];
 
-        // Posted «К выполнению», but the customer has not been confirmed yet: the site waits for the manager.
-        $this->check1cOrder('КВыполнению', true, [$line]);
-        $this->assertSame('checking', $order->fresh()->status);
-
-        // The manager confirms to the customer: the order is already in work in 1C, so it goes on to «В исполнении».
+        // Confirmed to the customer and posted «К выполнению» in 1C: «В исполнении».
         $order->items()->update(['fulfillment_confirmed_at' => now()]);
-        $order->forceFill(['status' => 'confirmed'])->save();
-        $this->assertSame('processing', app(OneCOrderStages::class)->apply($order->fresh()));
+        $this->check1cOrder('КВыполнению', true, [$line]);
         $this->assertSame('processing', $order->fresh()->status);
         $this->assertStringStartsWith('Заказ в 1С (МПУТ-000800)', $order->fresh()->workflowNextStep());
 
