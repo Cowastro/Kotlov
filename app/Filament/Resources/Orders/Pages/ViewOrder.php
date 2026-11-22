@@ -98,8 +98,6 @@ class ViewOrder extends ViewRecord
     {
         return [
             $this->confirmFulfillmentAction(),
-            \App\Filament\Resources\Orders\Actions\InternalOrderActions::confirm(),
-            \App\Filament\Resources\Orders\Actions\InternalOrderActions::complete(),
             Action::make('advanceWorkflow')
                 ->label(fn (): string => app(OrderWorkflow::class)->step($this->record)['label'] ?? 'Следующий этап')
                 ->icon(fn (): string => app(OrderWorkflow::class)->step($this->record)['icon'] ?? 'heroicon-o-arrow-right')
@@ -627,6 +625,8 @@ class ViewOrder extends ViewRecord
                 ->button(),
             ActionGroup::make([
                 ManageOrderDealAction::make(),
+                \App\Filament\Resources\Orders\Actions\InternalOrderActions::confirm(),
+                \App\Filament\Resources\Orders\Actions\InternalOrderActions::complete(),
                 AssignOrderToPartnerAction::make(),
                 \App\Filament\Resources\Orders\Actions\OrderReviewLinkAction::make(),
                 \App\Filament\Resources\Orders\Actions\OrderReviewSmsAction::make(),

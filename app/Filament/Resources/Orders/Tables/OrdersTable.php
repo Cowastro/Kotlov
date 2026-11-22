@@ -653,8 +653,6 @@ class OrdersTable
                     ->action(fn (ListOrders $livewire) => $livewire->selectOrderTab('all')),
             ])
             ->recordActions([
-                \App\Filament\Resources\Orders\Actions\InternalOrderActions::confirm()->iconButton()->tooltip('Внутренний заказ: подтвердить все позиции'),
-                \App\Filament\Resources\Orders\Actions\InternalOrderActions::complete()->iconButton()->tooltip('Внутренний заказ: закрыть успешно'),
                 ManageOrderDealAction::make()->iconButton()->tooltip('Этап сделки и контроль'),
                 Action::make('advanceWorkflow')
                     ->label(fn (Order $record): string => self::compactWorkflowLabel($record))
@@ -826,6 +824,8 @@ class OrdersTable
                     ->tooltip('Открыть заказ'),
                 ActionGroup::make([
                     FindOrderItemAnalogAction::make(),
+                    \App\Filament\Resources\Orders\Actions\InternalOrderActions::confirm(),
+                    \App\Filament\Resources\Orders\Actions\InternalOrderActions::complete(),
                     \App\Filament\Resources\Orders\Actions\OrderReviewLinkAction::make(),
                     \App\Filament\Resources\Orders\Actions\OrderReviewSmsAction::make(),
                     RequestOrderSupplierReserveAction::make(),
