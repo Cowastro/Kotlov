@@ -57,6 +57,11 @@ class OneCReferences
             'cash_receipt_sample' => ['Document_ПриходныйКассовыйОрдер', ['$top' => '2', '$orderby' => 'Date desc']],
             'bank_receipt_sample' => ['Document_ПоступлениеБезналичныхДенежныхСредств', ['$top' => '2', '$orderby' => 'Date desc']],
         ],
+        // «payments»: how a payment reaches a customer order (settlement objects, the balance of settlements).
+        'payments' => [
+            'settlement_objects_sample' => ['Catalog_ОбъектыРасчетов', ['$top' => '3', '$orderby' => 'Code desc']],
+            'settlements_balance_sample' => ['AccumulationRegister_РасчетыСКлиентами/Balance', ['$top' => '5']],
+        ],
         'purchase' => [
             'supplier_order_sample' => ['Document_ЗаказПоставщику', ['$top' => '3', '$orderby' => 'Date desc']],
             'supplier_order_list' => ['Document_ЗаказПоставщику', ['$select' => 'Ref_Key,Number,Date,Posted,DeletionMark,Статус,Организация_Key,Партнер_Key,Контрагент_Key,СуммаДокумента',

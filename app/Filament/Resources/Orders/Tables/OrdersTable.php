@@ -172,6 +172,9 @@ class OrdersTable
                         filled($record->onec_match_number) => 'Похоже, заказ уже заведён в 1С ('.$record->onec_match_reasons.'): откройте заказ и свяжите',
                         default => 'Заказа в 1С нет',
                     })
+                    ->description(fn (Order $record): ?string => filled($record->onec_order_guid) && ! $record->onec_deleted
+                        ? ($record->onec_posted ? '' : 'не проведён').($record->onec_doc_status ? ($record->onec_posted ? '' : ' · ').(OneCOrderProfiles::STATUSES[$record->onec_doc_status] ?? $record->onec_doc_status) : '')
+                        : null)
                     ->width('120px')
                     ->grow(false)
                     ->toggleable(),
