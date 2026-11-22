@@ -5,6 +5,7 @@ namespace App\Services\Integrations\OneCBridge;
 use App\Models\OneCAgentTask;
 use App\Models\OneCReference;
 use App\Models\User;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -38,6 +39,34 @@ class OneCReferences
 
     /** Days of 1C orders per request: an answer stays far below 8 MB. */
     private const ORDER_DAYS_PER_PART = 10;
+
+    /**
+     * Read-only samples to learn how this 1C keeps a thing before the site uses it. name => [entity, query]
+     * «purchase»: supplier orders (to create them from the site) and where purchase prices and cost live.
+     */
+    public const SAMPLE_SETS = [
+        'purchase' => [
+            'supplier_order_sample' => ['Document_ЗаказПоставщику', ['$top' => '3', '$orderby' => 'Date desc']],
+            'supplier_order_list' => ['Document_ЗаказПоставщику', ['$select' => 'Ref_Key,Number,Date,Posted,DeletionMark,Статус,Организация_Key,Партнер_Key,Контрагент_Key,СуммаДокумента',
+                '$top' => '30', '$orderby' => 'Date desc']],
+            'price_types' => ['Catalog_ВидыЦен', ['$top' => '50']],
+            'purchase_sample' => ['Document_ПриобретениеТоваровУслуг', ['$top' => '2', '$orderby' => 'Date desc']],
+            'purchase_list' => ['Document_ПриобретениеТоваровУслуг', ['$select' => 'Ref_Key,Number,Date,Posted,DeletionMark,Валюта_Key,ЦенаВключаетНДС,СуммаДокумента',
+                '$top' => '20', '$orderby' => 'Date desc']],
+            'cost_register_sample' => ['AccumulationRegister_СебестоимостьТоваров_RecordType', ['$top' => '5']],
+            'price_register_sample' => ['InformationRegister_ЦеныНоменклатуры_RecordType', ['$top' => '5']],
+        ],
+    ];
+
+    public function enqueueSamples(string $set, ?User $user): OneCAgentTask
+    {
+        $queries = [];
+        foreach (self::SAMPLE_SETS[$set] ?? throw new DomainException('Нет такого набора: '.$set) as $name => [$entity, $query]) {
+            $queries[$name] = ODataReadTaskHandler::path($entity, $query);
+        }
+
+        return $this->tasks->enqueue(ODataReadTaskHandler::TYPE, null, 'Образцы 1С: '.$set, $user, ['queries' => $queries, 'samples' => $set]);
+    }
 
     /** @param  int  $orderDays  1C orders of these last days are read too (0 = lists only) */
     public function enqueueSync(?User $user, int $orderDays = 60, bool $lists = true): OneCAgentTask
