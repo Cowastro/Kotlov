@@ -86,11 +86,46 @@ class OneCItemCreator
         if (! $source) {
             return null;
         }
+        if ($best = $this->closestByName($product, $source->id)) {
+            return self::itemKey($best);
+        }
         $linked = fn () => IntegrationProduct::query()->where('integration_source_id', $source->id)->whereNotNull('product_id')
             ->where('match_status', 'matched')->latest('matched_at');
         $row = $linked()->whereHas('product', fn ($q) => $q->where('category_id', $product->category_id))->first() ?? $linked()->first();
 
         return $row ? self::itemKey($row) : null;
+    }
+
+    /**
+     * The 1C item whose name shares most words with the card (brand, series, kind: «Ballu», «BEC», «конвектор»), so a
+     * convector is made after a convector, not after the latest boiler of a mixed site category. Ties: a short plain
+     * name («Конвектор … BEC/HMM-1500») before a part of a set («Модуль … для конвектора …»), then one of the same category.
+     */
+    private function closestByName(Product $product, int $sourceId): ?IntegrationProduct
+    {
+        $words = collect(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower((string) $product->name)))
+            // Bare numbers (power, size) say little about the kind of item: «2000» must not pull in a module for a 2000 W set.
+            ->filter(fn (string $w): bool => mb_strlen($w) >= 3 && ! ctype_digit($w))->unique()->values();
+        if ($words->isEmpty()) {
+            return null;
+        }
+        $rows = IntegrationProduct::query()->where('integration_source_id', $sourceId)
+            ->where(fn ($q) => $q->whereNull('match_status')->orWhere('match_status', '!=', 'ignored'))
+            ->where(function ($q) use ($words): void {
+                foreach ($words->take(4) as $word) {
+                    $q->orWhere('name', 'like', '%'.$word.'%');
+                }
+            })->limit(300)->with('product:id,category_id')->get(['id', 'external_id', 'name', 'product_id']);
+        $best = $rows->map(function (IntegrationProduct $row) use ($words, $product): array {
+            $name = mb_strtolower((string) $row->name);
+            $score = $words->filter(fn (string $w): bool => str_contains($name, $w))->count();
+
+            return ['row' => $row, 'score' => $score, 'same' => $row->product?->category_id === $product->category_id, 'len' => mb_strlen($name)];
+        })->filter(fn (array $c): bool => $c['score'] >= 2 && self::itemKey($c['row']) !== null)
+            ->sort(fn (array $a, array $b): int => [$b['score'], $b['same'], $a['len']] <=> [$a['score'], $a['same'], $b['len']])
+            ->first();
+
+        return $best['row'] ?? null;
     }
 
     /** @return array<string, string> 1C items (key => label) to choose a sample from */
