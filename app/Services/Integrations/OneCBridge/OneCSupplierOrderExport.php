@@ -112,6 +112,15 @@ class OneCSupplierOrderExport
         $doc['Контрагент_Key'] = $counterparty;
         $doc['Партнер_Key'] = $this->refs->find('counterparty', $counterparty)?->owner_key ?: ($doc['Партнер_Key'] ?? OneCReferences::ZERO);
         $doc['Договор_Key'] = $contract ?: OneCReferences::ZERO;
+        // When the goods come: today + the longest delivery time of the lines (3 days when unknown). 1C lists supplier
+        // orders by it; an empty one puts the order among old ones and leaves «Желаемая дата поступления» blank.
+        $days = (int) collect($group['lines'])->map(fn (array $l): int => (int) $l['item']->supply_delivery_days)->max();
+        $arrive = now('Europe/Minsk')->startOfDay()->addDays($days > 0 ? $days : 3)->format('Y-m-d\TH:i:s');
+        foreach (['ЖелаемаяДатаПоступления', 'ДатаПоступления'] as $key) {
+            if ($has($key)) {
+                $doc[$key] = $arrive;
+            }
+        }
         if (in_array('ДатаСогласования', (array) ($meta['dates'] ?? []), true)) {
             $doc['ДатаСогласования'] = $now;
         }
@@ -135,7 +144,7 @@ class OneCSupplierOrderExport
                 'Цена' => round($sum / max($line['qty'], 0.001), 2), 'Сумма' => $sum, 'СуммаНДС' => $vat, 'СуммаСНДС' => $gross,
                 'Склад_Key' => $doc['Склад_Key'] ?? OneCReferences::ZERO, 'Отменено' => false,
             ]);
-            foreach (['КодСтроки' => $n, 'ИдентификаторСтроки' => (string) Str::uuid()] as $key => $value) {
+            foreach (['КодСтроки' => $n, 'ИдентификаторСтроки' => (string) Str::uuid(), 'ДатаПоступления' => $arrive] as $key => $value) {
                 if (in_array($key, $rowKeys, true)) {
                     $row[$key] = $value;
                 }

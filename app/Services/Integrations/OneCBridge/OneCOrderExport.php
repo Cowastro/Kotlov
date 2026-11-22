@@ -250,8 +250,13 @@ class OneCOrderExport
         if (in_array('ДатаСогласования', (array) ($meta['dates'] ?? []), true)) {
             $doc['ДатаСогласования'] = $now;
         }
-        if (in_array('ЖелаемаяДатаОтгрузки', (array) ($meta['dates'] ?? []), true) && $order->planned_delivery_date) {
-            $doc['ЖелаемаяДатаОтгрузки'] = $order->planned_delivery_date->format('Y-m-d').'T00:00:00';
+        // The shipping date: the planned delivery of the site order, otherwise tomorrow. 1C needs it on the lines
+        // («Отгрузить») and lists orders by it, an empty one hides the order among old ones.
+        $ship = self::shipDate($order);
+        foreach (['ЖелаемаяДатаОтгрузки', 'ДатаОтгрузки'] as $key) {
+            if ($has($key)) {
+                $doc[$key] = $ship;
+            }
         }
         if ($has('НомерПоДаннымКлиента')) {
             $doc['НомерПоДаннымКлиента'] = self::clientNumber($order);
@@ -282,7 +287,7 @@ class OneCOrderExport
                 'СуммаСНДС' => $gross,
                 'Склад_Key' => $doc['Склад_Key'] ?? OneCReferences::ZERO,
             ]);
-            foreach (['КодСтроки' => $n, 'КлючСвязи' => $n, 'ИдентификаторСтроки' => (string) Str::uuid()] as $key => $value) {
+            foreach (['КодСтроки' => $n, 'КлючСвязи' => $n, 'ИдентификаторСтроки' => (string) Str::uuid(), 'ДатаОтгрузки' => $ship] as $key => $value) {
                 if (in_array($key, $rowKeys, true)) {
                     $row[$key] = $value;
                 }
@@ -310,6 +315,11 @@ class OneCOrderExport
         }
 
         return $doc;
+    }
+
+    public static function shipDate(Order $order): string
+    {
+        return ($order->planned_delivery_date ?: now('Europe/Minsk')->addDay())->format('Y-m-d').'T00:00:00';
     }
 
     /** «Номер заказа по данным клиента»: the agent looks for it before creating, so an order never goes twice. */
