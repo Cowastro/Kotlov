@@ -1,14 +1,14 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 5: «Мост 1С».
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 6: «Мост 1С».
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
-# onec_item — a new «Номенклатура» (only when 1C has no item with that article);
+# onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
 # odata_read, doc_status — read-only lists of 1C.
 #   agent.ps1 -Check   read-only check: the site key and the 1C OData user work
 #   agent.ps1          one run (the scheduler starts it every 5 minutes): does every task waiting in the queue
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '5'
+$AgentVersion = '6'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -158,7 +158,7 @@ function Do-ODataRead([string]$id, [string[]]$lines) {
 }
 
 # What the agent may create in 1C. Nothing else, whatever the site asks.
-$CreatableEntities = @('Document_ЗаказКлиента', 'Catalog_Номенклатура')
+$CreatableEntities = @('Document_ЗаказКлиента', 'Catalog_Номенклатура', 'Document_ЗаказПоставщику')
 
 # The number (document) or code (catalog item) and the key of the first object in a 1C answer.
 function Read-Created([string]$answer, [string]$existed) {
@@ -242,6 +242,7 @@ for ($round = 0; $round -lt 20; $round++) {
             'doc_status' { $data = Do-ODataRead $id $lines }
             'onec_order' { $data = Do-Create $lines 'Document_ЗаказКлиента' }
             'onec_item' { $data = Do-Create $lines 'Catalog_Номенклатура' }
+            'onec_supplier_order' { $data = Do-Create $lines 'Document_ЗаказПоставщику' }
             default { throw ('Агент версии ' + $AgentVersion + ' не умеет задачи «' + $type + '»: обновите agent.ps1 с сайта') }
         }
         $form = @('ok=1') + $data

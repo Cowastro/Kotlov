@@ -16,6 +16,16 @@ class OneCOrderProfile extends Model
     /** The customer is the company of the order, found in 1C by its УНП. */
     public const COMPANY = 'company';
 
+    /** The 1C document the scheme makes. */
+    public const CUSTOMER_ORDER = 'customer';
+
+    public const SUPPLIER_ORDER = 'supplier';
+
+    public const DOCUMENTS = [
+        self::CUSTOMER_ORDER => 'Заказ клиента',
+        self::SUPPLIER_ORDER => 'Заказ поставщику',
+    ];
+
     public const CUSTOMER_MODES = [
         self::RETAIL => 'Клиент из схемы (розничный покупатель)',
         self::COMPANY => 'Компания заказа — по УНП',
@@ -23,7 +33,7 @@ class OneCOrderProfile extends Model
 
     protected $table = 'onec_order_profiles';
 
-    protected $fillable = ['name', 'customer_mode', 'is_active', 'is_default', 'header', 'row_defaults', 'payment_stage', 'meta', 'template_number', 'sort'];
+    protected $fillable = ['name', 'document', 'customer_mode', 'is_active', 'is_default', 'header', 'row_defaults', 'payment_stage', 'meta', 'template_number', 'sort'];
 
     protected $casts = [
         'header' => 'array',
@@ -38,7 +48,8 @@ class OneCOrderProfile extends Model
     {
         static::saved(function (self $profile): void {
             if ($profile->is_default) {
-                static::query()->whereKeyNot($profile->id)->where('is_default', true)->update(['is_default' => false]);
+                static::query()->whereKeyNot($profile->id)->where('document', $profile->document ?: self::CUSTOMER_ORDER)
+                    ->where('is_default', true)->update(['is_default' => false]);
             }
         });
     }

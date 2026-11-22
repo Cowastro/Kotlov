@@ -5,6 +5,7 @@ namespace App\Services\Integrations\OneCBridge;
 use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Models\OneCAgentTask;
 use App\Models\OneCPriceBatch;
+use App\Models\OneCSupplierOrder;
 use App\Models\Order;
 use App\Models\User;
 use DomainException;
@@ -44,7 +45,10 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         $orders = Order::query()->whereNotNull('onec_order_guid')->where(fn ($q) => $q->whereNotNull('onec_profile_id')->orWhereNotNull('onec_checked_at'))->where('onec_deleted', false)
             ->where(fn ($q) => $q->whereNull('onec_doc_status')->orWhere('onec_doc_status', '!=', 'Закрыт'))
             ->where('onec_exported_at', '>', now()->subDays(self::DAYS))->orderBy('id')->pluck('onec_order_guid')->unique()->values();
-        if ($keys->isEmpty() && $orders->isEmpty()) {
+        $supplierOrders = OneCSupplierOrder::query()->whereNotNull('onec_order_guid')->where('onec_deleted', false)
+            ->where(fn ($q) => $q->whereNull('onec_posted')->orWhere('onec_posted', false))->where('created_at', '>', now()->subDays(self::DAYS))
+            ->orderBy('id')->pluck('onec_order_guid')->unique()->values();
+        if ($keys->isEmpty() && $orders->isEmpty() && $supplierOrders->isEmpty()) {
             return null;
         }
         $queries = [];
@@ -57,8 +61,12 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             $queries['orders_'.($i + 1)] = ODataReadTaskHandler::path('Document_ЗаказКлиента',
                 ['$filter' => $filter($chunk)]); // whole orders: the lines tell a closed order from a cancelled one
         }
+        foreach ($supplierOrders->chunk(self::CHUNK)->values() as $i => $chunk) {
+            $queries['supplier_orders_'.($i + 1)] = ODataReadTaskHandler::path(OneCSupplierOrderExport::ENTITY,
+                ['$filter' => $filter($chunk), '$select' => 'Ref_Key,Number,Posted,DeletionMark,Статус']);
+        }
         try {
-            return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.($keys->count() + $orders->count()), $user, ['queries' => $queries]);
+            return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.($keys->count() + $orders->count() + $supplierOrders->count()), $user, ['queries' => $queries]);
         } catch (DomainException) {
             return null;
         }
@@ -84,6 +92,21 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             $part = ODataReadTaskHandler::part($task, $name);
             foreach ($part['code'] === 200 ? (array) data_get($part['json'], 'value', []) : [] as $row) {
                 $key = strtolower((string) ($row['Ref_Key'] ?? ''));
+                if (str_starts_with($name, 'supplier_orders_')) {
+                    $record = $key !== '' ? OneCSupplierOrder::query()->where('onec_order_guid', $key)->first() : null;
+                    if ($record) {
+                        $checked++;
+                        $posted += ($row['Posted'] ?? false) ? 1 : 0;
+                        $record->forceFill(['onec_posted' => (bool) ($row['Posted'] ?? false), 'onec_deleted' => (bool) ($row['DeletionMark'] ?? false),
+                            'onec_doc_status' => ($row['Статус'] ?? '') ?: $record->onec_doc_status, 'onec_checked_at' => now(),
+                            'onec_order_number' => ($row['Number'] ?? '') ?: $record->onec_order_number])->save();
+                        OneCAgentTask::query()->where('type', SupplierOrderTaskHandler::TYPE)->where('subject_type', $record->getMorphClass())
+                            ->where('subject_id', $record->id)->where('status', OneCAgentTask::DONE)
+                            ->update(['summary' => SupplierOrderTaskHandler::summary($record)]);
+                    }
+
+                    continue;
+                }
                 if (str_starts_with($name, 'orders_')) {
                     $order = $key !== '' ? Order::query()->where('onec_order_guid', $key)->first() : null;
                     if ($order) {

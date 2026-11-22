@@ -10,6 +10,7 @@ use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
+use App\Services\Integrations\OneCBridge\SupplierOrderTaskHandler;
 use App\Services\Integrations\OneCPriceBatches;
 use DomainException;
 use Illuminate\Http\JsonResponse;
@@ -39,9 +40,9 @@ class OneCAgentController extends Controller
         if (! $this->authorized($request)) {
             return $this->denied();
         }
-        // A task waits for the agent version that can do it: orders from 4, items from 5.
+        // A task waits for the agent version that can do it: orders from 4, items from 5, supplier orders from 6.
         $version = (int) $request->header('X-Kotlov-Agent', '1');
-        $tooNew = array_merge($version < 4 ? [OrderTaskHandler::TYPE] : [], $version < 5 ? [ItemTaskHandler::TYPE] : []);
+        $tooNew = array_merge($version < 4 ? [OrderTaskHandler::TYPE] : [], $version < 5 ? [ItemTaskHandler::TYPE] : [], $version < 6 ? [SupplierOrderTaskHandler::TYPE] : []);
         $types = $tooNew !== [] ? array_values(array_diff(array_keys($this->tasks->types()), $tooNew)) : null;
         $task = $this->tasks->claimNext($types);
         if (! $task) {

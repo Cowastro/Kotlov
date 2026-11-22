@@ -320,7 +320,7 @@ class OneCOrderExport
 
     public function enqueue(Order $order, array $form, ?User $user): OneCAgentTask
     {
-        $profile = OneCOrderProfile::query()->where('is_active', true)->find($form['profile_id'] ?? null);
+        $profile = OneCOrderProfile::query()->where('document', OneCOrderProfile::CUSTOMER_ORDER)->where('is_active', true)->find($form['profile_id'] ?? null);
         $problems = $this->problems($order, $profile, $form);
         if ($problems !== []) {
             throw new DomainException(implode('; ', array_slice($problems, 0, 6)).(count($problems) > 6 ? '; и ещё '.(count($problems) - 6) : ''));
