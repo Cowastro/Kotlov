@@ -4,6 +4,7 @@ namespace App\Filament\Resources\OneCAgentTasks\Pages;
 
 use App\Filament\Resources\OneCAgentTasks\Actions\IssueAgentKeyAction;
 use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
+use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Filament\Resources\OneCOrderProfiles\OneCOrderProfileResource;
 use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
@@ -100,6 +101,8 @@ class ListOneCAgentTasks extends ListRecords
                         Notification::make()->warning()->title($e->getMessage())->send();
                     }
                 }),
+            Action::make('nomenclature')->label('Номенклатура 1С')->icon('heroicon-o-rectangle-stack')->color('gray')
+                ->url(OneCItemResource::getUrl('index')),
             Action::make('orderProfiles')->label('Схемы заказов')->icon('heroicon-o-document-duplicate')->color('gray')
                 ->url(OneCOrderProfileResource::getUrl('index')),
             Action::make('prices')->label('Пакеты цен')->icon('heroicon-o-currency-dollar')->color('gray')
