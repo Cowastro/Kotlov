@@ -404,7 +404,7 @@
                                         || in_array(parse_url((string) $product->content_source_url, PHP_URL_HOST), ['euroterm.by', 'www.euroterm.by'], true);
                                 @endphp
                                 @if ($manufacturerPump)
-                                    <p class="product-infor-desc cl-text-2 mb-12">{{ $pumpDetailDocument ? 'Параметры этого исполнения и документ производителя — во вкладке «Технические характеристики».' : 'Паспортные параметры этого исполнения уточняются. Для подбора сообщите менеджеру точный артикул или данные с шильдика.' }}</p>
+                                    <p class="product-infor-desc cl-text-2 mb-12">{{ $pumpCopy['summary'] }}</p>
                                 @elseif ($product->short_description && !($eurotermCopy && \App\Services\Suppliers\EurotermCatalog::containsStorefrontText($product->short_description)))
                                     <p class="product-infor-desc cl-text-2 mb-12">
                                         {!! $product->short_description !!}
@@ -997,14 +997,16 @@
                 <div class="tab-pane active show" id="description" role="tabpanel">
                     <div class="tab-content_desc site-prose">
                         @if ($manufacturerPump)
-                            <p>{{ $product->name }}</p>
+                            <h2 class="h5 mb-3">{{ $product->name }}</h2>
+                            <p>{{ $pumpCopy['intro'] }}</p>
+                            @if ($pumpCopy['parameters'] !== '')
+                                <h3 class="h6 mt-4 mb-2">Особенности модели</h3>
+                                <p>{{ $pumpCopy['parameters'] }}</p>
+                            @endif
+                            <h3 class="h6 mt-4 mb-2">Что учесть при выборе</h3>
+                            <p>{{ $pumpCopy['selection'] }}</p>
                             @if ($pumpDetailDocument)
-                                <p>Подтверждённые параметры указаны в технических характеристиках. Максимальные напор и расход достигаются в разных точках; для подбора проверьте рабочую точку по кривой производителя и условия установки.</p>
                                 <a class="link" href="{{ $pumpDetailDocument['url'] }}" target="_blank" rel="noopener">{{ $pumpDetailDocument['title'] }} ↗</a>
-                            @elseif ($pumpSupplierSpecs !== [])
-                                <p>Характеристики из выгрузки ТД Комплект приведены во вкладке «Технические характеристики». Проверка по паспорту производителя для этого исполнения ещё не завершена.</p>
-                            @else
-                                <p>Для этого исполнения требуется документация производителя. Уточните артикул, год выпуска и параметры на шильдике — менеджер поможет проверить подходящую модель.</p>
                             @endif
                         @elseif ($product->content)
                             <div class="box-desc">
@@ -1041,13 +1043,8 @@
                 @if ($hasSpecs)
                     <div class="tab-pane" id="specifications" role="tabpanel">
                         <div class="tab-content_desc site-prose">
-                            @if (in_array($product->category->slug, \App\Support\Catalog\PumpCatalog::MANUFACTURER_CATEGORIES, true))
+                            @if ($manufacturerPump && $pumpDetailDocument)
                                 <div class="border rounded-3 p-3 mb-3 text-secondary">
-                                    @if ($pumpSupplierSpecs !== [])
-                                        <p class="mb-2">Источник характеристик — выгрузка ТД Комплект. Проверка по паспорту производителя ещё не завершена. Максимальные напор и расход достигаются в разных точках; рабочую точку необходимо проверить по кривой производителя.</p>
-                                    @else
-                                        <p class="mb-2">Указаны подтверждённые параметры этого исполнения. Максимальные напор и расход достигаются в разных точках. Номинальные и табличные значения показаны отдельно; рабочую точку проверяют по кривой производителя.</p>
-                                    @endif
                                     @if ($pumpDetailDocument)
                                         <a href="{{ $pumpDetailDocument['url'] }}" target="_blank" rel="noopener">{{ $pumpDetailDocument['title'] }} ↗</a>
                                         @foreach ($pumpDetailDocument['manuals'] ?? [] as $manual)
@@ -1069,8 +1066,8 @@
                                     @if ($fireplaceSpecs !== null)
                                         @foreach ($fireplaceSpecs as $label => $value)
                                             <tr>
-                                                <th scope="row" class="fw-medium" style="width:45%">{{ $label }}</th>
-                                                <td>{{ $value }}</td>
+                                                <th scope="row" class="fw-medium" style="width:45%">{{ $manufacturerPump ? str_replace(['Артикул поставщика', 'Емкость кондексатора', 'Емкость конденсатора'], ['Артикул', 'Ёмкость конденсатора', 'Ёмкость конденсатора'], $label) : $label }}</th>
+                                                <td>{{ $manufacturerPump ? \App\Support\Catalog\PumpProductCopy::value($value) : $value }}</td>
                                             </tr>
                                         @endforeach
                                     @elseif ($attributeValues->count() > 0)

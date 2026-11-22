@@ -124,6 +124,12 @@ class ProductController extends Controller
             }
         }
         $heaterEquipment = HeaterEquipment::details($product);
+        if ($manufacturerPump && ! $pumpDetailDocument && $pumpSupplierSpecs === []) {
+            $fireplaceSpecs = [];
+        }
+        $pumpCopy = $manufacturerPump
+            ? \App\Support\Catalog\PumpProductCopy::make($product, $productCategory->slug, $fireplaceSpecs ?? [])
+            : null;
         $heaterEquipmentGroups = HeaterEquipment::relatedGroups($product, $heaterEquipment);
         if (isset(HeaterCatalog::NAMES[$productCategory->slug])) {
             $catalog = app(HeaterCatalog::class);
@@ -241,7 +247,7 @@ class ProductController extends Controller
             $seoHighlights = collect($fireplaceSpecs)->map(fn ($value, $label) => $label.': '.$value)->values();
         }
         if (in_array($productCategory->slug, PumpCatalog::MANUFACTURER_CATEGORIES, true)) {
-            $seoHighlights = collect($productCardSpecs)->except('Данные')->map(fn ($value, $label) => $label.': '.$value)->values();
+            $seoHighlights = collect($pumpCopy['highlights']);
         }
         $seoProduct = $product;
         if ($manufacturerPump) {
@@ -282,7 +288,9 @@ class ProductController extends Controller
             $schema['mpn'] = (string) $product->sku;
         }
 
-        $schemaDescription = $manufacturerPump ? $description : trim(strip_tags((string) (
+        $schemaDescription = $manufacturerPump ? $product->name.'. '.implode(' ', array_filter([
+            $pumpCopy['intro'], $pumpCopy['parameters'], $pumpCopy['selection'],
+        ])) : trim(strip_tags((string) (
             $product->short_description
                 ?: $product->content
                 ?: $description
@@ -475,7 +483,7 @@ class ProductController extends Controller
         return view('pages.product', compact(
             'product',
             'attributeValues',
-            'fireplaceSpecs', 'productCardSpecs', 'pumpDetailDocument', 'pumpSupplierSpecs', 'manufacturerPump',
+            'fireplaceSpecs', 'productCardSpecs', 'pumpDetailDocument', 'pumpSupplierSpecs', 'pumpCopy', 'manufacturerPump',
             'compatibleElectricProducts',
             'heaterEquipment', 'heaterEquipmentGroups',
             'showCompatibleInserts',
