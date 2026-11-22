@@ -63,7 +63,7 @@ class OneCOrderExportTest extends TestCase
         [, $this->key] = OneCAgentToken::issue('test', $this->admin->id);
     }
 
-    private function agent(string $version = '4'): static
+    private function agent(string $version = '8'): static
     {
         return $this->withHeaders(['Authorization' => 'Bearer '.$this->key, 'X-Kotlov-Agent' => $version]);
     }
@@ -71,7 +71,7 @@ class OneCOrderExportTest extends TestCase
     private function sendPart(int $task, string $name, int $code, array $json): TestResponse
     {
         return $this->call('POST', '/1c/agent/tasks/'.$task.'/part?name='.$name.'&code='.$code, [], [], [], ['HTTP_AUTHORIZATION' => 'Bearer '.$this->key,
-            'HTTP_X_KOTLOV_AGENT' => '4', 'CONTENT_TYPE' => 'application/octet-stream'], json_encode($json, JSON_UNESCAPED_UNICODE));
+            'HTTP_X_KOTLOV_AGENT' => '8', 'CONTENT_TYPE' => 'application/octet-stream'], json_encode($json, JSON_UNESCAPED_UNICODE));
     }
 
     /** A retail order of «СБГ бай» as 1C gives it (МПУТ-000756). */
@@ -285,40 +285,41 @@ class OneCOrderExportTest extends TestCase
         $this->assertNull(app(OneCOrderStages::class)->apply($order->fresh()));
     }
 
-    public function test_an_order_1c_refuses_on_write_goes_again_simpler_and_the_scheme_keeps_what_passed(): void
+    public function test_an_order_1c_refuses_on_write_goes_again_as_a_draft_and_the_scheme_keeps_drafts(): void
     {
         $this->syncReferences();
         $profile = app(OneCOrderProfiles::class)->fromTemplate(app(OneCReferences::class)->templates()[0], 'Розница СБГ бай', OneCOrderProfile::RETAIL);
         $order = $this->order();
         $export = app(OneCOrderExport::class);
         $first = $export->enqueue($order, $export->defaults($order), $this->admin);
-        $this->assertSame('Тестовск, Ул. Примерная, 1', $first->payload['body']['АдресДоставки']);
-        $refuse = function (OneCAgentTask $task): OneCAgentTask {
-            $this->agent()->get('/1c/agent/tasks/next')->assertOk()->assertSee('task|'.$task->id.'|onec_order');
-            $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '0',
-                'error' => '1С ответила 500: { "odata.error": { "message": { "value": "Ошибка при выполнении обработчика - \'ПриЗаписи\'" } } }'])->assertOk();
+        $this->assertFalse($first->payload['load']);
 
-            return OneCAgentTask::query()->where('type', 'onec_order')->latest('id')->first();
-        };
+        $lines = explode("\n", trim($this->agent()->get('/1c/agent/tasks/next')->assertOk()->getContent()));
+        $this->assertNotContains('mode|load', $lines);
+        $this->agent()->post('/1c/agent/tasks/'.$first->id.'/result', ['ok' => '0',
+            'error' => '1С ответила 500: { "odata.error": { "message": { "value": "Ошибка при выполнении обработчика - \'ПриЗаписи\'" } } }'])->assertOk();
 
-        $second = $refuse($first);
-        $this->assertNotSame($first->id, $second->id);
-        $this->assertStringStartsWith('1С не приняла заказ — пробую упрощённый вариант 1', $first->fresh()->summary);
-        $this->assertSame('', $second->payload['body']['АдресДоставки']);
-        $this->assertArrayHasKey('ЭтапыГрафикаОплаты', $second->payload['body']);
+        // The same full order again, as a draft: 1C saves it without its write handlers.
+        $draft = OneCAgentTask::query()->where('type', 'onec_order')->latest('id')->first();
+        $this->assertNotSame($first->id, $draft->id);
+        $this->assertStringStartsWith('1С не приняла заказ — отправляю черновиком', $first->fresh()->summary);
+        $this->assertTrue($draft->payload['load']);
+        $this->assertSame('Тестовск, Ул. Примерная, 1', $draft->payload['body']['АдресДоставки']);
+        $this->assertArrayHasKey('ЭтапыГрафикаОплаты', $draft->payload['body']);
+        $this->agent('7')->get('/1c/agent/tasks/next')->assertOk()->assertSee('none');
+        $lines = explode("\n", trim($this->agent()->get('/1c/agent/tasks/next')->assertOk()->getContent()));
+        $this->assertContains('mode|load', $lines);
 
-        $third = $refuse($second);
-        $this->assertSame(2, $third->payload['variant']);
-        $this->assertArrayNotHasKey('ЭтапыГрафикаОплаты', $third->payload['body']);
-
-        $this->agent()->get('/1c/agent/tasks/next')->assertOk();
-        $this->agent()->post('/1c/agent/tasks/'.$third->id.'/result', ['ok' => '1', 'document_number' => 'МПУТ-000801',
+        $this->agent()->post('/1c/agent/tasks/'.$draft->id.'/result', ['ok' => '1', 'document_number' => 'МПУТ-000801',
             'document_key' => 'dddddddd-0000-0000-0000-000000000801', 'existed' => '0'])->assertOk();
-        $this->assertStringEndsWith('упрощённый вариант 2', $third->fresh()->summary);
-        $this->assertSame(2, $profile->fresh()->meta['variant']);
-        $this->assertArrayNotHasKey('ЭтапыГрафикаОплаты', $export->body($this->order(['number' => 'K-1009']), $profile->fresh(), $export->defaults($order)));
+        $this->assertStringContainsString('черновиком: проведите в 1С', $draft->fresh()->summary);
+        $this->assertTrue($profile->fresh()->meta['load_mode']);
+        $this->assertTrue($export->enqueue($this->order(['number' => 'K-1009']), $export->defaults($order), $this->admin)->payload['load']);
 
-        // The simplest one still keeps what a manager needs.
+        // A draft refused again is not sent a third time.
+        $this->assertNull($export->retryAsDraft($draft->fresh()));
+
+        // The simplest variant still keeps what a manager needs.
         $minimal = OneCOrderExport::simplify(['Date' => 'd', 'Организация_Key' => 'o', 'СкидкиРассчитаны' => true, 'ДополнительнаяИнформацияПоДоставке' => 'адрес',
             'Товары' => [['Номенклатура_Key' => 'i', 'Количество' => 1, 'КлючСвязи' => 1]]], OneCOrderExport::MAX_VARIANT);
         $this->assertSame(['Date' => 'd', 'Организация_Key' => 'o', 'ДополнительнаяИнформацияПоДоставке' => 'адрес',

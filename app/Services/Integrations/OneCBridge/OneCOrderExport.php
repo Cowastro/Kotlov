@@ -382,10 +382,30 @@ class OneCOrderExport
             : null;
 
         return $this->tasks->enqueue(OrderTaskHandler::TYPE, $order, 'Заказ №'.$order->number.' → 1С ('.$profile->name.')', $user,
-            ['profile_id' => $profile->id, 'body' => $body, 'find' => $find, 'form' => $form, 'variant' => (int) ($profile->meta['variant'] ?? 0)]);
+            ['profile_id' => $profile->id, 'body' => $body, 'find' => $find, 'form' => $form, 'variant' => (int) ($profile->meta['variant'] ?? 0),
+                'load' => (bool) ($profile->meta['load_mode'] ?? false)]);
     }
 
-    /** The same order, one step simpler, right after 1C refused it «ПриЗаписи» (the agent takes it in the same run). */
+    /**
+     * The same order again as a draft, right after 1C refused it «ПриЗаписи» (the agent takes it in the same run):
+     * 1C saves it without its write handlers, its logic and checks run when a manager posts it in 1C.
+     */
+    public function retryAsDraft(OneCAgentTask $failed): ?OneCAgentTask
+    {
+        $order = $failed->subject;
+        $profile = OneCOrderProfile::query()->find(data_get($failed->payload, 'profile_id'));
+        $form = data_get($failed->payload, 'form');
+        if (! $order instanceof Order || ! $profile || ! is_array($form) || data_get($failed->payload, 'load')) {
+            return null;
+        }
+
+        return OneCAgentTask::query()->create(['type' => OrderTaskHandler::TYPE, 'subject_type' => $order->getMorphClass(), 'subject_id' => $order->id,
+            'title' => mb_substr('Заказ №'.$order->number.' → 1С ('.$profile->name.', черновиком)', 0, 250),
+            'payload' => array_merge((array) $failed->payload, ['body' => $this->body($order->fresh(), $profile, $form, 0), 'variant' => 0, 'load' => true]),
+            'status' => OneCAgentTask::QUEUED, 'created_by' => $failed->created_by]);
+    }
+
+    /** The same order, one step simpler (kept for a 1C that refuses even a draft). */
     public function retrySimpler(OneCAgentTask $failed): ?OneCAgentTask
     {
         $order = $failed->subject;
