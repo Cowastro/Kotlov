@@ -33,6 +33,7 @@ class OneCOrderLinkAction
                     ->visible(fn (): bool => app(OneCOrderMatcher::class)->candidates($record, 1) !== []),
                 Select::make('manual')->label('Или найдите заказ 1С по номеру')->searchable()
                     ->getSearchResultsUsing(fn (string $search): array => app(OneCOrderMatcher::class)->search($search))
+                    ->getOptionLabelUsing(fn ($value): ?string => app(OneCOrderMatcher::class)->labelFor((string) $value))
                     ->helperText('Например: МПУТ-000756 или 002330'),
             ])
             ->action(function (Order $record, array $data): void {
