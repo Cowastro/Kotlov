@@ -109,12 +109,19 @@ class ProductController extends Controller
         $productCardSpecs = [];
         $manufacturerPump = in_array($productCategory->slug, PumpCatalog::MANUFACTURER_CATEGORIES, true);
         $pumpDetailDocument = null;
+        $pumpSupplierSpecs = [];
         if ($manufacturerPump) {
             $catalog = app(PumpCatalog::class);
             $pumpFacts = $catalog->productFacts($product, $productCategory->slug, $catalog->dimensions($productCategory->slug));
             $productCardSpecs = $pumpFacts['card'];
             $fireplaceSpecs = $pumpFacts['details'];
             $pumpDetailDocument = HouseholdPumpFacts::document($product, $productCategory->slug);
+            if (! $pumpDetailDocument) {
+                $pumpSupplierSpecs = \App\Support\Catalog\TdPumpSpecifications::details($product);
+                if ($pumpSupplierSpecs !== []) {
+                    $fireplaceSpecs = $pumpSupplierSpecs;
+                }
+            }
         }
         $heaterEquipment = HeaterEquipment::details($product);
         $heaterEquipmentGroups = HeaterEquipment::relatedGroups($product, $heaterEquipment);
@@ -468,7 +475,7 @@ class ProductController extends Controller
         return view('pages.product', compact(
             'product',
             'attributeValues',
-            'fireplaceSpecs', 'productCardSpecs', 'pumpDetailDocument', 'manufacturerPump',
+            'fireplaceSpecs', 'productCardSpecs', 'pumpDetailDocument', 'pumpSupplierSpecs', 'manufacturerPump',
             'compatibleElectricProducts',
             'heaterEquipment', 'heaterEquipmentGroups',
             'showCompatibleInserts',
