@@ -61,4 +61,23 @@ class TdPumpSpecificationsTest extends TestCase
         $product->update(['supplier_id' => null]);
         $this->assertSame([], TdPumpSpecifications::details($product));
     }
+
+    public function test_eco_and_asilak_drainage_labels_are_visible_without_promoting_them_to_passport_data(): void
+    {
+        [$product, $offer] = $this->pump();
+        $category = Category::create(['name' => 'Дренажные насосы', 'slug' => 'drenajnyie', 'parent_id' => 0, 'is_active' => true]);
+        $product->update(['category_id' => $category->id, 'name' => 'Насос погружной ECO DP-601']);
+        $raw = $offer->raw;
+        $raw['name'] = $product->name;
+        $raw['description'] = "Параметры сети: 230 В, 50 Гц\nПотребляемая мощность: 600 Вт\nПроизводительность: 10000 л/ч\nМаксимальный напор: 7 м\nМаксимальная глубина погружения: 5 м\nМаксимальный размер твердыx частиц: 35 мм\nМаксимальная температура перекачиваемой воды: 35 °C\nДлина электрического кабеля: 10 м\nМасса нетто: 4,5 кг\nГарантийный срок: 12 месяцев\nНасадка для чистой воды: пример другого режима";
+        $offer->update(['raw' => $raw]);
+        $this->get('https://kotlov.by/drenajnyie/'.$product->slug)->assertOk()
+            ->assertViewHas('pumpSupplierSpecs', fn ($facts) => $facts['Максимальный напор'] === '7 м'
+                && $facts['Потребляемая мощность'] === '600 Вт' && $facts['Производительность'] === '10000 л/ч')
+            ->assertSee('Источник характеристик — выгрузка ТД Комплект')
+            ->assertSee('35 мм')->assertSee('10 м')->assertDontSee('пример другого режима');
+        $facts = (new PumpCatalog)->productFacts($product, 'drenajnyie', []);
+        $this->assertSame([], $facts['numbers']);
+        $this->assertSame(['no'], $facts['options']['verified']);
+    }
 }
