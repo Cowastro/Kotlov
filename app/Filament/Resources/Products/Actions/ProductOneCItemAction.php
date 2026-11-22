@@ -2,13 +2,16 @@
 
 namespace App\Filament\Resources\Products\Actions;
 
+use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Models\IntegrationProduct;
+use App\Models\OneCItem;
 use App\Models\Product;
 use App\Services\Integrations\IntegrationProductMatchDecision;
 use App\Services\Integrations\OneCBridge\ItemTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCBridge\OneCItemCreator;
+use App\Services\Integrations\OneCBridge\OneCNomenclature;
 use App\Services\Integrations\OneCBridge\OneCOrderExport;
 use DomainException;
 use Filament\Actions\Action;
@@ -16,6 +19,7 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Support\HtmlString;
 
 /**
@@ -37,7 +41,8 @@ class ProductOneCItemAction
             ->modalDescription(fn ($record): HtmlString => self::description($card($record)))
             ->modalSubmitActionLabel('Создать в 1С')
             ->modalSubmitAction(fn ($record, Action $action) => self::busy($card($record)) ? false : $action)
-            ->fillForm(fn ($record): array => ['template' => app(OneCItemCreator::class)->defaultTemplate($card($record)),
+            ->fillForm(fn ($record): array => ['template' => $template = app(OneCItemCreator::class)->defaultTemplate($card($record)),
+                'group' => app(OneCItemCreator::class)->templateGroup($template),
                 'name' => mb_substr((string) $card($record)->name, 0, 100)])
             ->schema(fn ($record): array => self::busy($card($record)) ? [] : self::schema($card($record)))
             ->action(function ($record, array $data) use ($card): void {
@@ -48,11 +53,12 @@ class ProductOneCItemAction
                         if (! $row || ! app(IntegrationProductMatchDecision::class)->linkSelectedProduct($row, $product->id)) {
                             throw new DomainException('Этот товар 1С уже привязан к другой карточке — выберите другой.');
                         }
+                        app(OneCNomenclature::class)->remember((string) OneCItemCreator::itemKey($row), (string) $row->external_code, (string) $row->name, $product->id, null, null, false);
                         Notification::make()->success()->title('Карточка привязана к товару 1С '.($row->external_code ?: $row->name))->send();
 
                         return;
                     }
-                    $task = app(OneCItemCreator::class)->request($product, (string) ($data['template'] ?? ''), $data['name'] ?? null, auth()->user());
+                    $task = app(OneCItemCreator::class)->request($product, (string) ($data['template'] ?? ''), $data['name'] ?? null, auth()->user(), $data['group'] ?? null);
                     Notification::make()->success()->title('Товар создаётся в 1С (задача №'.$task->id.')')
                         ->body('Агент проверит, нет ли его в 1С, и создаст по образцу в течение 5 минут. Карточка привяжется сама.')->send();
                 } catch (DomainException $e) {
@@ -89,7 +95,11 @@ class ProductOneCItemAction
     {
         $linked = app(OneCItemCreator::class)->linked($product);
         if ($linked) {
-            return new HtmlString('Карточка связана с товаром 1С <b>'.e($linked->external_code ?: '').'</b> «'.e((string) $linked->name).'». В 1С ничего создавать не нужно.');
+            $item = OneCItem::query()->where('ref_key', OneCItemCreator::itemKey($linked))->first();
+
+            return new HtmlString('Карточка связана с товаром 1С <b>'.e($linked->external_code ?: '').'</b> «'.e((string) $linked->name).'»'
+                .($item?->path ? '<br>Группа в 1С: <b>'.e($item->path).'</b>' : '')
+                .'<br><a href="'.e(OneCItemResource::getUrl('index', ['tableSearch' => $linked->external_code ?: $linked->name])).'" style="text-decoration:underline">Показать в номенклатуре 1С</a>');
         }
         if (self::waiting($product)) {
             return new HtmlString('Агент на сервере 1С проверяет и создаёт товар — в течение 5 минут карточка привяжется сама. Ход — в «Мост 1С».');
@@ -117,8 +127,12 @@ class ProductOneCItemAction
             Select::make('template')->label('Образец — похожий товар 1С')->searchable()
                 ->getSearchResultsUsing(fn (string $search): array => $creator->searchTemplates($search))
                 ->getOptionLabelUsing(fn ($value): ?string => $creator->templateLabel((string) $value))
-                ->requiredWithout('existing')
-                ->helperText('По умолчанию — товар 1С из той же категории сайта. Лучше выбрать тот же тип товара.'),
+                ->requiredWithout('existing')->live()
+                ->afterStateUpdated(fn (?string $state, Set $set) => $set('group', $creator->templateGroup($state)))
+                ->helperText('По умолчанию — самый похожий по названию товар 1С. Лучше выбрать тот же вид товара.'),
+            Select::make('group')->label('Группа в 1С')->searchable()
+                ->options(fn (?string $state): array => app(OneCNomenclature::class)->folderOptions() + ($state ? [$state => $state] : []))
+                ->helperText('По умолчанию — группа образца. Новый товар будет лежать в 1С в этой группе.'),
             TextInput::make('name')->label('Наименование в 1С')->maxLength(100)->requiredWithout('existing')
                 ->helperText('До 100 символов. Полное наименование — название карточки. Артикул в 1С: '.(OneCItemCreator::article($product) ?: 'нет артикула на сайте')),
         ];

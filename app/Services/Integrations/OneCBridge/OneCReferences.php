@@ -28,6 +28,8 @@ class OneCReferences
         'vat_rate' => ['vat_rates', 'Catalog_СтавкиНДС', ['$select' => 'Ref_Key,Description,DeletionMark'], 'Ставки НДС'],
         'delivery_zone' => ['delivery_zones', 'Catalog_ЗоныДоставки', ['$select' => 'Ref_Key,Description,DeletionMark'], 'Зоны доставки'],
         'priority' => ['priorities', 'Catalog_Приоритеты', ['$select' => 'Ref_Key,Description,DeletionMark'], 'Приоритеты'],
+        'item_kind' => ['item_kinds', 'Catalog_ВидыНоменклатуры', ['$select' => 'Ref_Key,Description,DeletionMark'], 'Виды номенклатуры'],
+        'unit' => ['units', 'Catalog_УпаковкиЕдиницыИзмерения', ['$select' => 'Ref_Key,Description,DeletionMark'], 'Единицы измерения'],
     ];
 
     /** Recent 1C orders: a scheme is made from one of them. */

@@ -44,7 +44,8 @@ class ItemTaskHandler implements OneCAgentTaskHandler
         }
         $code = (string) ($result['data']['document_code'] ?? $result['data']['document_number'] ?? '');
         $existed = ($result['data']['existed'] ?? '') === '1';
-        $summary = app(OneCItemCreator::class)->link($product, $key, $code, (string) data_get($task->payload, 'body.Description'), ! $existed);
+        $summary = app(OneCItemCreator::class)->link($product, $key, $code, (string) data_get($task->payload, 'body.Description'), ! $existed,
+            $existed ? null : data_get($task->payload, 'body.Parent_Key'), data_get($task->payload, 'body.Артикул'));
 
         return 'Товар 1С '.($code ?: $key).($existed ? ' уже был в 1С: ' : ' ').$summary;
     }

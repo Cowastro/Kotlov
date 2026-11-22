@@ -641,3 +641,8 @@ Schedule::command('onec:sync-references --orders-only --days=3')
 Schedule::command('onec:sync-purchases --days=10')
     ->dailyAt('06:50')
     ->withoutOverlapping(10);
+
+// «Мост 1С»: the whole 1C nomenclature (items, groups, links with cards) every morning.
+Schedule::command('onec:sync-items')
+    ->dailyAt('06:30')
+    ->withoutOverlapping(10);

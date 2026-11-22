@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Schemas;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
+use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Models\IntegrationIssue;
@@ -1481,7 +1482,8 @@ class OrderInfolist
         }
         $linked = $creator->linked($item->product);
         if ($linked) {
-            return new HtmlString('<span style="color:#16a34a">1С: '.e($linked->external_code ?: 'связан').'</span>');
+            return new HtmlString('<a href="'.e(OneCItemResource::getUrl('index', ['tableSearch' => $linked->external_code ?: $linked->name]))
+                .'" style="color:#16a34a;text-decoration:underline" title="Показать в номенклатуре 1С">1С: '.e($linked->external_code ?: 'связан').'</a>');
         }
         $tasks = app(OneCAgentTasks::class);
         $waiting = $tasks->activeFor($item->product, ItemTaskHandler::TYPE) || $tasks->activeFor($item->product, ODataReadTaskHandler::TYPE);

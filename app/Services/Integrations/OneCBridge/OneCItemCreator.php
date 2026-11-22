@@ -5,6 +5,7 @@ namespace App\Services\Integrations\OneCBridge;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\OneCAgentTask;
+use App\Models\OneCItem;
 use App\Models\Product;
 use App\Models\User;
 use DomainException;
@@ -77,6 +78,12 @@ class OneCItemCreator
 
         return $rows->mapWithKeys(fn (IntegrationProduct $p): array => [$p->id => trim(($p->external_code ? $p->external_code.' · ' : '').$p->name)
             .($p->product_id ? ' (уже у карточки #'.$p->product_id.')' : '')])->all();
+    }
+
+    /** The 1C group a new item goes to by default: the group of its sample. */
+    public function templateGroup(?string $templateKey): ?string
+    {
+        return $templateKey ? OneCItem::query()->where('ref_key', strtolower($templateKey))->value('parent_key') : null;
     }
 
     /** The 1C item to copy settings from: the latest linked item of the same site category, otherwise any linked one. */
@@ -165,7 +172,7 @@ class OneCItemCreator
     }
 
     /** Step 1: read the sample and look in 1C for the same article or name. */
-    public function request(Product $product, string $templateKey, ?string $name, ?User $user): OneCAgentTask
+    public function request(Product $product, string $templateKey, ?string $name, ?User $user, ?string $groupKey = null): OneCAgentTask
     {
         if (! $this->source()) {
             throw new DomainException('Нет подключения центральной 1С.');
@@ -199,7 +206,8 @@ class OneCItemCreator
         return $this->tasks->enqueue(ODataReadTaskHandler::TYPE, $product, 'Товар в 1С: '.Str::limit($short, 120), $user, [
             'queries' => $queries,
             'create_item' => ['product_id' => $product->id, 'name' => $short, 'full_name' => trim((string) $product->name) ?: $name, 'article' => $article,
-                'template' => $templateKey, 'user_id' => $user?->id],
+                'template' => $templateKey, 'user_id' => $user?->id,
+                'group' => preg_match('/^[0-9a-f-]{36}$/', strtolower((string) $groupKey)) ? strtolower((string) $groupKey) : null],
         ]);
     }
 
@@ -255,6 +263,9 @@ class OneCItemCreator
             }
             $body[$key] = $value;
         }
+        if (! empty($data['group'])) {
+            $body['Parent_Key'] = $data['group'];
+        }
         $body['Description'] = (string) $data['name'];
         $body['НаименованиеПолное'] = (string) $data['full_name'];
         $body['Артикул'] = (string) $data['article'];
@@ -263,7 +274,7 @@ class OneCItemCreator
     }
 
     /** The card gets the 1C item (the row the 1C exchange keeps for it later). A 1C item of another card is not taken. */
-    public function link(Product $product, string $key, string $code, string $name, bool $created): string
+    public function link(Product $product, string $key, string $code, string $name, bool $created, ?string $parentKey = null, ?string $article = null): string
     {
         $source = $this->source();
         $key = strtolower($key);
@@ -275,6 +286,8 @@ class OneCItemCreator
         $row ??= new IntegrationProduct(['integration_source_id' => $source->id, 'external_id' => $key, 'price' => 0]);
         $row->forceFill(['external_code' => $code ?: $row->external_code, 'name' => $name ?: $row->name, 'external_sku' => $row->external_sku ?: (self::article($product) ?: null),
             'product_id' => $product->id, 'match_status' => 'matched', 'match_method' => 'onec_bridge', 'match_confidence' => 1, 'matched_at' => now()])->save();
+
+        app(OneCNomenclature::class)->remember($key, $code, $name, $product->id, $parentKey, $article ?? self::article($product), $created);
 
         return ($created ? 'создан и привязан' : 'карточка привязана к нему').' (карточка #'.$product->id.')';
     }
