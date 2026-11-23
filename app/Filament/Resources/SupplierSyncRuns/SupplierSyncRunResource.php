@@ -64,6 +64,7 @@ class SupplierSyncRunResource extends Resource
                     ->fontFamily('mono'),
 
                 TextColumn::make('supplier_names')
+                    ->state(fn (SupplierSyncRun $record): string => $record->supplierLabel())
                     ->label('Поставщик')
                     ->placeholder('—')
                     ->icon('heroicon-o-truck')
@@ -77,10 +78,12 @@ class SupplierSyncRunResource extends Resource
                     }),
 
                 TextColumn::make('status')
+                    ->description(fn (SupplierSyncRun $record): ?string => data_get($record->context, 'skip_reason'))
                     ->label('Статус')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'success' => 'Успешно',
+                        'skipped' => 'Пропущено',
                         'failed' => 'Ошибка команды',
                         'journal_error' => 'Ошибка журнала',
                         'running' => 'Выполняется',
@@ -89,6 +92,7 @@ class SupplierSyncRunResource extends Resource
                     ->color(fn (string $state): string => match ($state) {
                         'success' => 'success',
                         'running' => 'info',
+                        'skipped' => 'gray',
                         default => 'danger',
                     }),
 
@@ -116,6 +120,7 @@ class SupplierSyncRunResource extends Resource
                     ->alignRight(),
 
                 TextColumn::make('source_file_name')
+                    ->state(fn (SupplierSyncRun $record): string => $record->sourceLabel())
                     ->label('Исходный файл')
                     ->placeholder('API / сайт')
                     ->description(fn (SupplierSyncRun $record): ?string => $record->sourceFileSizeLabel())
@@ -127,6 +132,7 @@ class SupplierSyncRunResource extends Resource
                     ->label('Статус')
                     ->options([
                         'success' => 'Успешно',
+                        'skipped' => 'Пропущено',
                         'failed' => 'Ошибка команды',
                         'journal_error' => 'Ошибка журнала',
                         'running' => 'Выполняется',
