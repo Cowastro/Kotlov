@@ -28,11 +28,11 @@ class ListOneCItems extends ListRecords
         $sync = app(OneCNomenclature::class)->lastSync();
         $items = OneCItem::query()->where('is_folder', false)->where('deletion_mark', false);
         $total = (clone $items)->count();
-        $linked = (clone $items)->whereNotNull('product_id')->count();
+        $linked = (clone $items)->where(fn ($q) => $q->whereNotNull('product_id')->orWhere('site_link_count', '>', 0))->count();
         $site = (clone $items)->where('created_from_site', true)->count();
         $dupes = (clone $items)->where('same_name_count', '>', 1)->count();
 
-        return new HtmlString('Копия справочника «Номенклатура» из 1С: товары, группы и связь с карточками сайта. Только просмотр — в 1С отсюда ничего не меняется; '
+        return new HtmlString('Копия справочника «Номенклатура» из 1С: товары, группы и связь с карточками сайта. Привязывайте существующие карточки кнопкой в строке; каждое исполнение — отдельно. Цены, остатки и данные в 1С не меняются; '
             .'новый товар создаётся кнопкой «Создать в 1С» в карточке или в заказе. Обновляется каждое утро. '
             .($sync ? 'Прочитано '.$sync->finished_at?->timezone('Europe/Minsk')->format('d.m.Y H:i').'. ' : '<span style="color:#dc2626">Ещё не прочитано — нажмите «Обновить из 1С».</span> ')
             .'<br>Товаров: <b>'.$total.'</b>, привязано к сайту: <b>'.$linked.'</b>, созданы с сайта: <b>'.$site.'</b>'

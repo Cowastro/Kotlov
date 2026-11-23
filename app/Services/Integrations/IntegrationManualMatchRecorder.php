@@ -4,12 +4,19 @@ namespace App\Services\Integrations;
 
 use App\Models\IntegrationProduct;
 use App\Models\SupplierProductMapping;
+use App\Services\Integrations\OneCBridge\OneCItemLinks;
 
 class IntegrationManualMatchRecorder
 {
     public function record(IntegrationProduct $item): ?SupplierProductMapping
     {
         $item->load(['source', 'product']);
+        // A shared article must not teach all colours/sizes to point at one card.
+        $identity = OneCItemLinks::identity((string) $item->external_id);
+        if ($item->source?->code === 'onec' && $identity && str_contains($identity, '#')) {
+            return null;
+        }
+
         $article = trim((string) ($item->external_sku ?: $item->external_code));
 
         if (! $item->source || ! $item->product || $article === '') {

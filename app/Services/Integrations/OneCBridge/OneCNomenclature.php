@@ -112,17 +112,13 @@ class OneCNomenclature
         $links = [];
         $fromSite = [];
         if ($source) {
-            IntegrationProduct::query()->where('integration_source_id', $source)->whereNotNull('product_id')
-                ->where(fn ($q) => $q->whereNull('match_status')->orWhere('match_status', '!=', 'ignored'))
-                ->select(['external_id', 'product_id', 'match_method'])->chunk(2000, function ($rows) use (&$links, &$fromSite): void {
-                    foreach ($rows as $row) {
-                        $key = strtolower(explode('#', (string) $row->external_id)[0]);
-                        $links[$key] = (int) $row->product_id;
-                        if ($row->match_method === 'onec_bridge') {
-                            $fromSite[$key] = true;
-                        }
-                    }
-                });
+            $rows = IntegrationProduct::query()->where('integration_source_id', $source)
+                ->get(['external_id', 'product_id', 'match_method', 'match_status']);
+            foreach ($rows->filter(fn ($row) => OneCItemLinks::identity($row->external_id))
+                ->groupBy(fn ($row) => explode('#', strtolower($row->external_id))[0]) as $key => $group) {
+                $links[$key] = OneCItemLinks::summary($group);
+                $fromSite[$key] = $group->contains(fn ($row) => $row->match_method === 'onec_bridge');
+            }
         }
 
         $same = [];
@@ -134,16 +130,17 @@ class OneCNomenclature
                 }
             });
 
-        OneCItem::query()->select(['id', 'ref_key', 'parent_key', 'description', 'is_folder', 'deletion_mark', 'path', 'product_id', 'created_from_site', 'same_name_count'])
+        OneCItem::query()->select(['id', 'ref_key', 'parent_key', 'description', 'is_folder', 'deletion_mark', 'path', 'product_id', 'created_from_site', 'same_name_count', 'site_link_count', 'characteristic_count', 'link_conflict'])
             ->chunkById(1000, function ($items) use ($path, $links, $fromSite, $same): void {
                 foreach ($items as $item) {
                     $values = [
                         'path' => $path($item->parent_key),
-                        'product_id' => $links[$item->ref_key] ?? null,
-                        'created_from_site' => $item->created_from_site || isset($fromSite[$item->ref_key]),
+                        ...($links[$item->ref_key] ?? ['product_id' => null, 'site_link_count' => 0, 'characteristic_count' => 0, 'link_conflict' => false]),
+                        'created_from_site' => $item->created_from_site || ($fromSite[$item->ref_key] ?? false),
                         'same_name_count' => $item->is_folder || $item->deletion_mark ? 0 : min(999, $same[$item->parent_key.'|'.self::norm($item->description)] ?? 0),
                     ];
-                    if ($values['path'] !== $item->path || $values['product_id'] !== $item->product_id
+                    if ($values['site_link_count'] !== $item->site_link_count || $values['characteristic_count'] !== $item->characteristic_count
+                        || $values['link_conflict'] !== $item->link_conflict || $values['path'] !== $item->path || $values['product_id'] !== $item->product_id
                         || $values['created_from_site'] !== $item->created_from_site || $values['same_name_count'] !== $item->same_name_count) {
                         DB::table('onec_items')->where('id', $item->id)->update($values);
                     }
