@@ -30,6 +30,12 @@
     <link rel="stylesheet" href="{{ asset('assets/css/catalog-layout.css') }}?v={{ filemtime(public_path('assets/css/catalog-layout.css')) }}">
 @endpush
 
+@if ($category->slug === \App\Support\Catalog\StabilizerCategoryPage::SLUG)
+    @push('styles')
+        <link rel="stylesheet" href="{{ asset('css/stabilizer-category.css') }}?v={{ filemtime(public_path('css/stabilizer-category.css')) }}">
+    @endpush
+@endif
+
 @section('content')
 <main id="wrapper" class="catalog-page">
 
@@ -162,6 +168,10 @@
 
     @if ($category->slug === 'teplovyie-nasosyi')
         @include('partials.heat-pump-category-intro')
+    @endif
+
+    @if ($category->slug === \App\Support\Catalog\StabilizerCategoryPage::SLUG)
+        @include('partials.stabilizer-category-picker')
     @endif
 
     @if ($saunaPickerSlug !== null)
@@ -680,6 +690,10 @@
 
     @if ($category->slug === 'teplonositeli' && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort']))
         @include('partials.heat-transfer-fluid-category-content', ['faq' => $heatFluidFaq ?? collect()])
+    @endif
+
+    @if ($category->slug === \App\Support\Catalog\StabilizerCategoryPage::SLUG && \App\Support\Catalog\StabilizerCategoryPage::showGuide())
+        @include('partials.stabilizer-category-content')
     @endif
 
     {{-- Local text for this city, written in the admin: Каталог → SEO городов. --}}

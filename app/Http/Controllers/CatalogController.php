@@ -541,6 +541,9 @@ class CatalogController extends Controller
             ]);
 
             foreach (request('attr') as $attrId => $optionIds) {
+                if ($category->slug === \App\Support\Catalog\StabilizerCategoryPage::SLUG) {
+                    $optionIds = array_values(array_filter((array) $optionIds, fn ($id) => (int) $id > 0));
+                }
                 if (in_array((int) $attrId, $legacyHeaterAttributeIds, true)) continue;
                 if (! empty($optionIds)) {
                     $attr = $attrMap->get((int) $attrId);
@@ -1436,6 +1439,27 @@ class CatalogController extends Controller
             ];
         }
 
+        if ($category->slug === \App\Support\Catalog\StabilizerCategoryPage::SLUG) {
+            $schemaNodes[] = [
+                '@context' => 'https://schema.org', '@type' => 'ItemList',
+                'numberOfItems' => $products->count(),
+                'itemListElement' => $products->values()->map(fn (Product $product, int $index) => [
+                    '@type' => 'ListItem', 'position' => $index + 1,
+                    'name' => $product->name,
+                    'url' => 'https://'.request()->getHost().'/'.$product->category->slug.'/'.$product->slug,
+                ])->all(),
+            ];
+            if (\App\Support\Catalog\StabilizerCategoryPage::showGuide()) {
+                $schemaNodes[] = [
+                    '@context' => 'https://schema.org', '@type' => 'FAQPage',
+                    'mainEntity' => array_map(fn (array $item) => [
+                        '@type' => 'Question', 'name' => $item['question'],
+                        'acceptedAnswer' => ['@type' => 'Answer', 'text' => $item['answer']],
+                    ], \App\Support\Catalog\StabilizerCategoryPage::faq()),
+                ];
+            }
+        }
+
         $schemaJson = json_encode(
             count($schemaNodes) === 1 ? $schemaNodes[0] : $schemaNodes,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
@@ -1443,6 +1467,7 @@ class CatalogController extends Controller
 
         $installerRecruitment = $this->installerRecruitmentContext($category);
         $catalogIntro = match ($category->slug) {
+            \App\Support\Catalog\StabilizerCategoryPage::SLUG => \App\Support\Catalog\StabilizerCategoryPage::INTRO,
             'kotly' => $selectedSubcategory === null ? 'Выберите котёл по виду топлива. Для быстрого подбора можно показать модели в наличии.' : null,
             'elektrokamini' => 'Электрические очаги и камины для дома. Сравните диагональ, эффект пламени, мощность и площадь обогрева.',
             'tverdotoplivnye' => 'Твердотопливные котлы для отопления дома на дровах, угле и пеллетах. Подберите модель по мощности, площади обогрева и типу топлива.',
