@@ -33,7 +33,7 @@ class ManageOneCLinksAction
                 Repeater::make('links')->hiddenLabel()->addable(false)->deletable(false)->reorderable(false)
                     ->schema([
                         Hidden::make('external_id'), Hidden::make('name'), Hidden::make('article'), Hidden::make('current'),
-                        Placeholder::make('onec_name')->label('Товар / характеристика 1С')
+                        Placeholder::make('onec_name')->label(fn (Get $get): string => str_contains((string) $get('external_id'), '#') ? 'Отдельная характеристика 1С' : 'Товар 1С — общая запись')
                             ->content(fn (Get $get): string => $get('name').' · Артикул: '.($get('article') ?: '—')),
                         Placeholder::make('previous')->label('Сейчас привязано')
                             ->content(fn (Get $get): string => $get('current') ?: 'Не привязано'),
