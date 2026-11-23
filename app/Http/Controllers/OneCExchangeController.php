@@ -287,6 +287,10 @@ class OneCExchangeController extends Controller
         if ($type === 'catalog' && (int) ($stats['offers'] ?? 0) > 0) {
             Cache::put($this->catalogOffersReceivedCacheKey($request, $source), true, now()->addHours(6));
         }
+        // A package of changes only: the stock of the goods not in it stays as it is.
+        if ($type === 'catalog' && ($stats['only_changes'] ?? false)) {
+            Cache::put($this->catalogOnlyChangesCacheKey($request, $source), true, now()->addHours(6));
+        }
 
         return $this->plain('success');
     }
@@ -295,8 +299,10 @@ class OneCExchangeController extends Controller
     {
         $snapshotStartedAt = Cache::pull($this->catalogSnapshotStartedCacheKey($request, $source));
         $offersReceived = (bool) Cache::pull($this->catalogOffersReceivedCacheKey($request, $source), false);
+        $onlyChanges = (bool) Cache::pull($this->catalogOnlyChangesCacheKey($request, $source), false);
 
-        if (! $source->zeroMissingStockOnComplete() || ! $snapshotStartedAt || ! $offersReceived) {
+        // «Изменения»: a good missing from the package did not change — never zeroed.
+        if (! $source->zeroMissingStockOnComplete() || ! $snapshotStartedAt || ! $offersReceived || $onlyChanges) {
             return $this->plain('success');
         }
 
@@ -801,6 +807,11 @@ class OneCExchangeController extends Controller
     private function catalogSnapshotStartedCacheKey(Request $request, IntegrationSource $source): string
     {
         return 'integration_catalog_snapshot_started:'.hash('sha256', $this->sessionPath($request, $source));
+    }
+
+    private function catalogOnlyChangesCacheKey(Request $request, IntegrationSource $source): string
+    {
+        return 'integration_catalog_only_changes:'.hash('sha256', $this->sessionPath($request, $source));
     }
 
     private function catalogOffersReceivedCacheKey(Request $request, IntegrationSource $source): string
