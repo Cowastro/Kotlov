@@ -64,11 +64,24 @@ class OrderWorkflow
     /** @return array{next:string,label:string,icon:string,color:string,heading:string,description:string,submit:string}|null */
     public function step(Order $order): ?array
     {
-        return self::STEPS[$order->status] ?? null;
+        return self::managedBy1c($order) ? null : (self::STEPS[$order->status] ?? null);
+    }
+
+    /**
+     * In 1C, delivery and handover are 1C's: «Передать в доставку» / «Отметить доставленным» move by the 1C state
+     * (and the customer hears of it from there). The manager's steps before — check, confirm, start — stay.
+     */
+    public static function managedBy1c(Order $order): bool
+    {
+        return filled($order->onec_order_guid) && ! $order->onec_deleted && in_array($order->status, ['processing', 'shipped'], true);
     }
 
     public function blocker(Order $order): ?string
     {
+        if (self::managedBy1c($order)) {
+            return 'Заказ в 1С ('.$order->onec_order_number.'): доставку и выдачу ведёт 1С — этап и уведомление клиенту сменятся сами по состоянию заказа в 1С.';
+        }
+
         if ($order->status === 'checking' && ! $order->hasConfirmedFulfillmentForAllItems()) {
             return 'Сначала подтвердите наличие и способ исполнения каждой позиции в карточке заказа.';
         }

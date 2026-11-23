@@ -30,6 +30,7 @@ use App\Services\Integrations\OneCBridge\OneCReferences;
 use App\Services\Integrations\OneCBridge\OneCStock;
 use App\Services\Orders\OrderItemFulfillmentPicker;
 use App\Services\Orders\OrderStatusCustomerNotifier;
+use App\Services\Orders\OrderWorkflow;
 use DomainException;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -452,6 +453,26 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame('оплачен частично', OneCOrderStates::paymentLabel((float) $order->fresh()->onec_paid_percent));
         $this->check1cState($guid, 'ВПроцессеОтгрузки', 40, 20);
         $this->assertSame('shipped', $order->fresh()->status);
+    }
+
+    public function test_delivery_of_an_order_in_1c_is_not_moved_by_hand(): void
+    {
+        $workflow = app(OrderWorkflow::class);
+        $inOneC = $this->order(['status' => 'processing', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000770', 'onec_order_number' => 'МПУТ-000770',
+            'onec_exported_at' => now(), 'onec_posted' => true]);
+        $this->assertNull($workflow->step($inOneC), 'no «Передать в доставку»');
+        $this->assertNull($workflow->step($inOneC->forceFill(['status' => 'shipped'])), 'no «Отметить доставленным»');
+        try {
+            $workflow->advance($inOneC->fresh(), $this->admin);
+            $this->fail('a 1C order is not moved to delivery by hand');
+        } catch (DomainException $e) {
+            $this->assertStringContainsString('ведёт 1С', $e->getMessage());
+        }
+        $this->assertSame('processing', $inOneC->fresh()->status);
+
+        // Not in 1C: the manager moves it as before; the steps before delivery stay the manager's in 1C too.
+        $this->assertSame('shipped', $workflow->step($this->order(['number' => 'K-1009', 'status' => 'processing']))['next']);
+        $this->assertNotNull($workflow->step($inOneC->forceFill(['status' => 'confirmed'])));
     }
 
     public function test_an_order_1c_refuses_on_write_goes_again_as_a_draft_and_the_scheme_keeps_drafts(): void
