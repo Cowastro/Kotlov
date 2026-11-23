@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCOrderExport;
 use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
+use App\Services\Integrations\OneCBridge\OneCOrderPayments;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCOrderStages;
 use App\Services\Integrations\OneCBridge\OneCReferences;
@@ -379,6 +380,41 @@ class OneCOrderExportTest extends TestCase
         // The order wants 2: the exchange says 2 in stock, but only 1 is free in 1C.
         $lines = app(OneCOrderExport::class)->lines($this->order());
         $this->assertSame(1.0, $lines[0]['stock']);
+    }
+
+    public function test_a_vamexpress_order_goes_by_its_own_scheme(): void
+    {
+        $retail = OneCOrderProfile::query()->create(['name' => 'Розница СБГ бай', 'document' => OneCOrderProfile::CUSTOMER_ORDER, 'customer_mode' => 'retail',
+            'is_active' => true, 'is_default' => true, 'header' => [], 'row_defaults' => []]);
+        $vam = OneCOrderProfile::query()->create(['name' => 'ВАМэкспресс', 'document' => OneCOrderProfile::CUSTOMER_ORDER, 'customer_mode' => 'retail',
+            'is_active' => true, 'is_default' => false, 'header' => [], 'row_defaults' => [], 'meta' => ['delivery_types' => ['transport']]]);
+        $profiles = app(OneCOrderProfiles::class);
+
+        $this->assertSame($vam->id, $profiles->forOrder(false, 'transport')->id);
+        $this->assertSame($retail->id, $profiles->forOrder(false, 'courier')->id);
+        $this->assertSame($retail->id, $profiles->forOrder(false, 'evropochta')->id, 'Европочта — not a client in 1C yet');
+    }
+
+    public function test_an_order_shipped_and_paid_in_1c_is_ready_to_close_and_delivered(): void
+    {
+        $object = 'ffffffff-0000-0000-0000-000000000901';
+        $order = $this->order(['status' => 'processing', 'payment_status' => 'pending', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000901',
+            'onec_order_number' => 'МПУТ-000733', 'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'КОбеспечению',
+            'onec_posted' => true, 'onec_settlement_key' => $object]);
+        $plan = ['ОбъектРасчетов_Key' => $object, 'Recorder_Type' => 'StandardODATA.Document_ЗаказКлиента', 'RecordType' => 'Receipt', 'КОплате' => 49.98, 'Сумма' => 0];
+        $sale = ['ОбъектРасчетов_Key' => $object, 'Recorder_Type' => 'StandardODATA.Document_РеализацияТоваровУслуг', 'RecordType' => 'Receipt', 'КОплате' => 0, 'Сумма' => 49.98];
+        $cash = ['ОбъектРасчетов_Key' => $object, 'Recorder_Type' => 'StandardODATA.Document_ПриходныйКассовыйОрдер', 'RecordType' => 'Expense', 'КОплате' => 49.98, 'Сумма' => 49.98];
+        $payments = app(OneCOrderPayments::class);
+
+        // Shipped, not paid yet: still in work.
+        $payments->apply([$plan, $sale]);
+        $this->assertSame('processing', $order->fresh()->status);
+
+        // Paid too: «Готов к закрытию» in 1C — delivered on the site.
+        $payments->apply([$plan, $sale, $cash]);
+        $order->refresh();
+        $this->assertSame(['delivered', 'paid'], [$order->status, $order->payment_status]);
+        $this->assertSame('По 1С: заказ МПУТ-000733 проведён, «Готов к закрытию».', $order->statusHistory()->latest('id')->value('comment'));
     }
 
     public function test_an_order_1c_refuses_on_write_goes_again_as_a_draft_and_the_scheme_keeps_drafts(): void
