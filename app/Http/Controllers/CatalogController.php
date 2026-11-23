@@ -534,6 +534,8 @@ class CatalogController extends Controller
         // Фильтр по атрибутам
         // request('attr') содержит id первичного атрибута → ищем по всем его дублям
         $legacyStoveAreaFilters = [];
+        $chimneyFacetBase = $isChimneySection ? clone $query : null;
+        $chimneyFacetFilters = [];
         if (request('attr')) {
             // Строим карту: первичный id → все id дублей (включая сам)
             $attrMap = $filterAttributes->mapWithKeys(fn ($attr) => [
@@ -558,6 +560,12 @@ class CatalogController extends Controller
                         $q->whereIn('attribute_id', $allAttrIds)
                             ->whereIn('option_id', $allOptionIds);
                     };
+                    if ($isChimneySection) {
+                        $name = mb_strtolower(trim($attr?->name ?? ''));
+                        $kind = in_array($name, ['диаметр', 'диаметр дымохода'], true) ? 'diameter'
+                            : (in_array($name, ['тип металла', 'марка стали'], true) ? 'steel' : 'other');
+                        $chimneyFacetFilters[] = [$kind, $attributeFilter];
+                    }
                     if (in_array((int) $attrId, $stoveAreaAttributeIds, true)) {
                         $legacyStoveAreaFilters[] = $attributeFilter;
                     } else {
@@ -571,15 +579,36 @@ class CatalogController extends Controller
         $monoChimneyDiameterGroups = collect();
         $chimneySteelGroups = collect();
         if ($isChimneySection) {
-            $chimneyDiameterGroups = app(ChimneyDiameterQuickFilter::class)->groups($query);
-            $monoChimneyDiameterGroups = app(ChimneyDiameterQuickFilter::class)->groups($query, mono: true);
+            $filter = app(ChimneyDiameterQuickFilter::class);
+            // A facet offers alternatives to its own selection, while respecting
+            // thickness, stock and the selections in every other facet.
+            $facetQuery = function (string $except) use ($chimneyFacetBase, $chimneyFacetFilters) {
+                $facet = clone $chimneyFacetBase;
+                foreach ($chimneyFacetFilters as [$kind, $condition]) {
+                    if ($kind !== $except) $facet->whereHas('allAttributeValues', $condition);
+                }
+                return $facet;
+            };
+            $diameterFacet = $facetQuery('diameter');
+            if (request()->filled('chimney_steel')) {
+                $diameterFacet->whereIn('products.id', $filter->steelGroups($diameterFacet)->get(strtoupper((string) request('chimney_steel')), collect()));
+            }
+            $chimneyDiameterGroups = $filter->groups($diameterFacet);
+            $monoChimneyDiameterGroups = $filter->groups($diameterFacet, mono: true);
+            $steelFacet = $facetQuery('steel');
+            if (request()->filled('chimney_diameter')) {
+                $steelFacet->whereIn('products.id', $filter->groups($steelFacet)->get((string) request('chimney_diameter'), collect()));
+            }
+            if (request()->filled('mono_diameter')) {
+                $steelFacet->whereIn('products.id', $filter->groups($steelFacet, mono: true)->get((string) request('mono_diameter'), collect()));
+            }
             if (request()->filled('chimney_diameter')) {
                 $query->whereIn('products.id', $chimneyDiameterGroups->get((string) request('chimney_diameter'), collect()));
             }
             if (request()->filled('mono_diameter')) {
                 $query->whereIn('products.id', $monoChimneyDiameterGroups->get((string) request('mono_diameter'), collect()));
             }
-            $chimneySteelGroups = app(ChimneyDiameterQuickFilter::class)->steelGroups($query);
+            $chimneySteelGroups = $filter->steelGroups($steelFacet);
             if (request()->filled('chimney_steel')) {
                 $query->whereIn('products.id', $chimneySteelGroups->get(strtoupper((string) request('chimney_steel')), collect()));
             }
