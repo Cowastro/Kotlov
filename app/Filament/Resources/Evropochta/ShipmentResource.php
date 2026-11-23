@@ -31,6 +31,14 @@ class ShipmentResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Отправления Европочты';
 
+    public static function getNavigationItems(): array
+    {
+        return array_map(fn ($item) => $item->isActiveWhen(fn (): bool => request()->routeIs(
+            static::getRouteBaseName().'.*',
+            PackagingResource::getRouteBaseName().'.*',
+        )), parent::getNavigationItems());
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return 'Доставки';
