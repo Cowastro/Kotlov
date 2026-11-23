@@ -32,6 +32,24 @@ class OrderResource extends Resource
 
     public static function getNavigationGroup(): ?string { return 'Продажи'; }
 
+    public static function getNavigationItems(): array
+    {
+        return array_map(fn ($item) => $item
+            ->isActiveWhen(fn (): bool => request()->routeIs(
+                static::getRouteBaseName().'.*',
+                \App\Filament\Resources\DealByOrders\DealByOrderResource::getRouteBaseName().'.*',
+            ))
+            ->badge(function (): ?string {
+                $count = (int) static::getNavigationBadge();
+                $deal = \App\Filament\Resources\DealByOrders\DealByOrderResource::class;
+                if ($deal::canViewAny()) {
+                    $count += (int) $deal::getNavigationBadge();
+                }
+
+                return $count > 0 ? (string) $count : null;
+            }, 'warning'), parent::getNavigationItems());
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $count = static::getEloquentQuery()->where('status', 'new')->count();

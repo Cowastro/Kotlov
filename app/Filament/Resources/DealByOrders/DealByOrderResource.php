@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class DealByOrderResource extends OrderResource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = Order::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;

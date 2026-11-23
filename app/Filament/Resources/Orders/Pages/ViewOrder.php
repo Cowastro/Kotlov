@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Pages;
 
+use App\Filament\Concerns\HasOrdersNavigation;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Orders\Actions\AssignOrderManagerAction;
 use App\Filament\Resources\Orders\Actions\ManageOrderDealAction;
@@ -49,6 +50,8 @@ use Throwable;
 
 class ViewOrder extends ViewRecord
 {
+    use HasOrdersNavigation;
+
     protected static string $resource = OrderResource::class;
 
     protected array $extraBodyAttributes = ['class' => 'order-view-page'];

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Pages;
 
+use App\Filament\Concerns\HasOrdersNavigation;
 use App\Filament\Resources\Orders\Actions\QuickOrderAction;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ListOrders extends ListRecords
 {
+    use HasOrdersNavigation;
+
     private const WORK_TABS = ['work_queue', 'control_today', 'control_overdue', 'control_missing', 'attention', 'my', 'unassigned', 'all', 'finished'];
 
     protected static string $resource = OrderResource::class;
