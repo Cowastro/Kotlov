@@ -138,7 +138,11 @@ class VamExpressShipmentResource extends Resource
                                     $previousOrder->forceFill(array_fill_keys(['carrier_provider', 'carrier_reference', 'carrier_display_reference', 'carrier_stage', 'carrier_status_text', 'carrier_checked_at'], null))->save();
                                 }
                             }
-                            $shipment->forceFill(['order_id' => $order?->id])->save();
+                            if ($order) {
+                                app(\App\Services\Shipping\VamExpressOrderDelivery::class)->select($order, auth()->user(), $shipment->id);
+                            } else {
+                                $shipment->forceFill(['order_id' => null])->save();
+                            }
                         });
                         Notification::make()->success()->title('Привязка сохранена')->send();
                     }),

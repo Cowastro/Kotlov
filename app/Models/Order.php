@@ -251,6 +251,7 @@ class Order extends Model
     ];
 
     public const DELIVERY_TYPES = [
+        'vam_express' => 'ВАМ Экспресс',
         'pickup' => 'Самовывоз',
         'evropochta' => 'Европочта',
         'courier' => 'Нашим транспортом в пределах МКАД-2',
@@ -275,7 +276,7 @@ class Order extends Model
         });
 
         static::updating(function (Order $order) {
-            if ($order->isDirty('delivery_type') || ($order->isDirty('evropochta_tracking_number') && $order->getOriginal('carrier_provider') === 'evropochta')) {
+            if (($order->isDirty('delivery_type') && ! ($order->delivery_type === 'vam_express' && $order->getOriginal('carrier_provider') === 'vam')) || ($order->isDirty('evropochta_tracking_number') && $order->getOriginal('carrier_provider') === 'evropochta')) {
                 $order->forceFill(array_fill_keys(['carrier_provider', 'carrier_reference', 'carrier_display_reference', 'carrier_stage', 'carrier_status_text', 'carrier_checked_at', 'carrier_polled_at'], null));
             }
             $userId = Auth::id();
