@@ -313,8 +313,11 @@ class OneCItemCreator
     {
         $source = $this->source();
         $key = strtolower($key);
-        $row = IntegrationProduct::query()->where('integration_source_id', $source->id)
-            ->where(fn ($q) => $q->where('external_id', $key)->orWhere('external_id', 'like', $key.'#%'))->first();
+        $family = app(OneCItemLinks::class)->query($key)->get();
+        if ($family->contains(fn ($row) => str_contains(OneCItemLinks::identity($row->external_id) ?? '', '#'))) {
+            return 'есть отдельные характеристики — привяжите нужное исполнение в «Номенклатуре 1С»';
+        }
+        $row = $family->first();
         if ($row && $row->product_id && (int) $row->product_id !== (int) $product->id) {
             return 'он привязан к другой карточке #'.$row->product_id.' — карточку не привязал, проверьте дубли';
         }

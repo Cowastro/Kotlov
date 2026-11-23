@@ -14,6 +14,9 @@ class OneCItem extends Model
         'path', 'product_id', 'created_from_site', 'same_name_count', 'synced_at', 'stock_on_hand', 'stock_reserved', 'stock_synced_at'];
 
     protected $casts = [
+        'site_link_count' => 'integer',
+        'characteristic_count' => 'integer',
+        'link_conflict' => 'boolean',
         'is_folder' => 'boolean',
         'deletion_mark' => 'boolean',
         'created_from_site' => 'boolean',

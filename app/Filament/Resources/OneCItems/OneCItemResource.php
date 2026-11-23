@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\OneCItems;
 
+use App\Filament\Resources\OneCItems\Actions\ManageOneCLinksAction;
 use App\Filament\Resources\OneCItems\Pages\ListOneCItems;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\OneCItem;
@@ -80,9 +81,13 @@ class OneCItemResource extends Resource
                 TextColumn::make('article')->label('Артикул')->searchable()->toggleable()->fontFamily('mono'),
                 TextColumn::make('kind')->label('Вид номенклатуры')->toggleable()
                     ->state(fn (OneCItem $r): ?string => $r->kind_key ? $refs->label('item_kind', $r->kind_key) : null),
-                TextColumn::make('product.name')->label('Карточка на сайте')->wrap()->placeholder('не привязан')
+                TextColumn::make('product.name')->label('Карточка на сайте')->wrap()
+                    ->placeholder(fn (OneCItem $r): string => $r->characteristic_count ? 'По характеристикам: '.$r->site_link_count.' / '.$r->characteristic_count : 'Не привязана')
                     ->url(fn (OneCItem $r): ?string => $r->product_id ? ProductResource::getUrl('edit', ['record' => $r->product_id]) : null)
                     ->color(fn (OneCItem $r): string => $r->product_id ? 'success' : 'gray'),
+                TextColumn::make('link_status')->label('Привязка')->badge()
+                    ->state(fn (OneCItem $r): string => $r->is_folder ? 'Группа' : ($r->link_conflict ? 'Конфликт' : ($r->characteristic_count ? 'Характеристики: '.$r->site_link_count.' / '.$r->characteristic_count : ($r->product_id ? 'Привязана' : 'Не привязана'))))
+                    ->color(fn (OneCItem $r): string => $r->link_conflict ? 'danger' : ($r->site_link_count ? 'success' : 'gray')),
                 IconColumn::make('created_from_site')->label('Создан с сайта')->boolean()->trueIcon('heroicon-o-sparkles')->falseIcon('')->toggleable(),
                 TextColumn::make('same_name_count')->label('Дубли')->badge()->color('danger')
                     ->state(fn (OneCItem $r): ?string => $r->same_name_count > 1 ? '×'.$r->same_name_count : null)->toggleable(),
@@ -96,10 +101,13 @@ class OneCItemResource extends Resource
                 SelectFilter::make('linked')->label('Связь с сайтом')
                     ->options(['yes' => 'Привязан к карточке', 'no' => 'Не привязан'])
                     ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
-                        'yes' => $query->whereNotNull('product_id'),
-                        'no' => $query->whereNull('product_id'),
+                        'yes' => $query->where(fn ($q) => $q->whereNotNull('product_id')->orWhere('site_link_count', '>', 0)),
+                        'no' => $query->whereNull('product_id')->where('site_link_count', 0),
                         default => $query,
                     }),
+                Filter::make('link_conflicts')->label('Конфликты привязок')->query(fn (Builder $query): Builder => $query->where('link_conflict', true)),
+                Filter::make('with_stock')->label('Есть свободный остаток')->query(fn (Builder $query): Builder => $query->where('stock_synced_at', '>=', now()->subHours(3))->whereRaw('stock_on_hand > stock_reserved')),
+                Filter::make('characteristics')->label('С характеристиками')->query(fn (Builder $query): Builder => $query->where('characteristic_count', '>', 0)),
                 Filter::make('from_site')->label('Созданы с сайта')->query(fn (Builder $query): Builder => $query->where('created_from_site', true)),
                 Filter::make('duplicates')->label('Одинаковые названия в группе')->query(fn (Builder $query): Builder => $query->where('same_name_count', '>', 1)),
                 TernaryFilter::make('is_folder')->label('Группы')->placeholder('Только товары')->trueLabel('Только группы')->falseLabel('Товары и группы')
@@ -110,6 +118,7 @@ class OneCItemResource extends Resource
                     ->queries(true: fn (Builder $query) => $query->where('deletion_mark', true), false: fn (Builder $query) => $query,
                         blank: fn (Builder $query) => $query->where('deletion_mark', false)),
             ])
+            ->recordActions([ManageOneCLinksAction::make()])
             ->defaultSort('description')
             ->paginated([25, 50, 100]);
     }

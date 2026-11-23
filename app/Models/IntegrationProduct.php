@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Integrations\OneCBridge\OneCItemLinks;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,6 +34,17 @@ class IntegrationProduct extends Model
         'last_offer_seen_at' => 'datetime',
         'stock_confirmed_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(fn (self $row) => app(OneCItemLinks::class)->changed($row, false, true));
+        static::updated(function (self $row): void {
+            if ($row->wasChanged(['product_id', 'match_status', 'external_id', 'integration_source_id'])) {
+                app(OneCItemLinks::class)->changed($row);
+            }
+        });
+        static::deleted(fn (self $row) => app(OneCItemLinks::class)->changed($row, true));
+    }
 
     public function scopeInStock(Builder $query): Builder
     {
