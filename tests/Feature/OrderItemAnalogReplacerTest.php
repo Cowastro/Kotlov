@@ -16,6 +16,28 @@ class OrderItemAnalogReplacerTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_replacement_can_preserve_agreed_price_and_reject_a_stale_dialog(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $category = Category::create(['name' => 'Шиберы', 'slug' => 'replacement-shibers', 'parent_id' => 0, 'is_active' => true]);
+        $old = $this->product($category, 'Шибер старый', 'SHIBER-OLD', 73.27);
+        $new = $this->product($category, 'Шибер актуальный', 'SHIBER-NEW', 90.64);
+        $order = $this->order('checking');
+        $item = OrderItem::create(['order_id' => $order->id, 'product_id' => $old->id, 'product_name' => $old->name, 'product_sku' => $old->sku, 'price' => 73.27, 'quantity' => 2, 'total' => 146.54]);
+        $service = app(OrderItemAnalogReplacer::class);
+        $this->actingAs($manager);
+        $this->assertTrue(\App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction::allowed($order));
+        \Livewire\Livewire::test(\App\Filament\Resources\Orders\Pages\ViewOrder::class,['record'=>$order->id])
+            ->assertActionVisible('findAnalog')->mountAction('findAnalog')->assertActionMounted('findAnalog')->setActionData(['order_item_id'=>$item->id,'expected_product_id'=>$old->id,
+                'replacement_product_id'=>$new->id,'price_policy'=>'catalog'])
+            ->setActionData(['price_policy'=>'keep','note'=>'Согласовано оставить цену'])->callMountedAction()->assertHasNoActionErrors();
+        $this->assertSame('73.27', $item->fresh()->price);
+        $this->assertSame('146.54', $order->fresh()->total);
+        $this->assertStringContainsString('Согласованная цена клиента сохранена', $order->statusHistory()->latest('id')->first()->comment);
+        $this->expectException(DomainException::class);
+        $service->replace($order, $item->id, $old->id, $manager, false, null, $old->id);
+    }
+
     public function test_manager_replaces_problem_item_with_analog_and_order_totals_are_recalculated(): void
     {
         $manager = User::factory()->create(['role' => 'manager']);

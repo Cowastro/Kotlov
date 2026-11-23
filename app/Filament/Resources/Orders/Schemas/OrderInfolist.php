@@ -173,7 +173,8 @@ class OrderInfolist
                                         ->columnSpan(['default' => 2, 'lg' => 3])
                                         ->url(fn (OrderItem $record): ?string => $record->publicProductUrl())
                                         ->openUrlInNewTab()
-                                        ->suffixAction(
+                                        ->suffixActions([
+                                            \App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction::forItem(),
                                             Action::make('openPublicProduct')
                                                 ->label('Открыть товар на сайте')
                                                 ->tooltip('Открыть товар на сайте')
@@ -183,7 +184,7 @@ class OrderInfolist
                                                 ->visible(fn (OrderItem $record): bool => $record->publicProductUrl() !== null)
                                                 ->url(fn (OrderItem $record): ?string => $record->publicProductUrl())
                                                 ->openUrlInNewTab()
-                                        ),
+                                        ]),
 
                                     TextEntry::make('product_sku')
                                         ->label('Артикул')

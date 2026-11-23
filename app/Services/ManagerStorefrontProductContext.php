@@ -80,6 +80,7 @@ class ManagerStorefrontProductContext
                 return [
                     'manual_match' => false,
                     'legacy_supplier_offer' => true,
+                    'assignment_only' => $offer->match_confidence === 'brand_assignment',
                     'supplier_key' => $this->supplierKey($offer->supplier?->name),
                     'matches_product_name' => $this->productNameKey($offer->supplier_name) === $productNameKey,
                     'supplier' => $offer->supplier?->name ?: ($offer->supplier?->code ?: 'Поставщик'),
@@ -108,6 +109,7 @@ class ManagerStorefrontProductContext
                     'delivery_days' => $offer->delivery_days,
                     'in_stock' => $inStock,
                     'is_fresh' => $offer->confirmsAvailability(),
+                    'updated_label' => $offer->last_stock_synced_at ? 'Остаток обновлён' : ($quantity !== null || $inStock ? 'Данные поставщика обновлены' : ((float) $offer->price_byn > 0 ? 'Прайс обновлён' : 'Привязка поставщика обновлена')),
                     'updated_at' => $offer->last_stock_synced_at ?? $offer->last_synced_at ?? $offer->updated_at,
                 ];
             });
@@ -131,6 +133,8 @@ class ManagerStorefrontProductContext
                         'manual_suggestion',
                     ], true),
                     'legacy_supplier_offer' => false,
+                    'assignment_only' => false,
+                    'updated_label' => $quantity !== null ? 'Остаток обновлён' : 'Данные 1С обновлены',
                     'supplier_key' => $this->supplierKey($source?->supplier?->name ?: $source?->name),
                     'matches_product_name' => $this->productNameKey($offer->name) === $productNameKey,
                     'supplier' => $source?->supplier?->name ?: ($source?->name ?: 'Интеграция'),
@@ -164,6 +168,8 @@ class ManagerStorefrontProductContext
             return [
                 'manual_match' => false,
                 'legacy_supplier_offer' => false,
+                'assignment_only' => false,
+                'updated_label' => 'Остаток обновлён',
                 'supplier_key' => $this->supplierKey($supplier?->name),
                 'matches_product_name' => true,
                 'supplier' => $supplier?->name ?: 'ООО «СанБизнесГруп»',
@@ -208,6 +214,11 @@ class ManagerStorefrontProductContext
     /** @param Collection<int, array<string, mixed>> $offers */
     private function mergeSupplierOffers(Collection $offers): array
     {
+        // A brand-to-supplier assignment is a contact fallback, not a second
+        // physical warehouse. Keep it only when there is no real source.
+        if ($offers->contains(fn (array $offer): bool => ! ($offer['assignment_only'] ?? false))) {
+            $offers = $offers->reject(fn (array $offer): bool => $offer['assignment_only'] ?? false)->values();
+        }
         if ($offers->contains(fn (array $offer): bool => $offer['manual_match'])) {
             // A confirmed integration row supersedes legacy rows for the same
             // supplier. Keep true warehouse records, which can represent an
@@ -217,8 +228,9 @@ class ManagerStorefrontProductContext
                 ->values();
         }
 
-        $best = $offers->first();
+        $best = $offers->sortBy([['manual_match', 'desc'], ['is_fresh', 'desc'], ['in_stock', 'desc'], ['matches_product_name', 'desc']])->first();
         $locations = $offers
+            ->filter(fn (array $offer): bool => ! ($offer['assignment_only'] ?? false) && ($offer['stock_quantity'] !== null || $offer['in_stock']))
             ->unique(fn (array $offer): string => mb_strtolower((string) ($offer['warehouse'] ?? '')))
             ->map(fn (array $offer): array => [
                 'warehouse' => $offer['warehouse'],
@@ -233,8 +245,12 @@ class ManagerStorefrontProductContext
         $best['phones'] = $offers->pluck('phones')->flatten()->filter()->unique()->values()->all();
         $best['emails'] = $offers->pluck('emails')->flatten()->filter()->unique()->values()->all();
         $best['locations'] = $locations->all();
+        if ($best['assignment_only'] ?? false) {
+            $best['warehouse'] = null;
+            $best['stock'] = 'Остаток не загружался · уточнить';
+        }
 
-        if ($locations->count() === 1) {
+        if ($locations->count() <= 1) {
             return $best;
         }
 

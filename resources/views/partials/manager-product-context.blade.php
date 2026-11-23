@@ -77,7 +77,7 @@
                         @endforeach
                     @endif
                     @if ($offer['updated_at'])
-                        <span title="{{ $offer['updated_at']->format('d.m.Y H:i') }}">Обновлено {{ $offer['updated_at']->diffForHumans() }}</span>
+                        <span title="{{ $offer['updated_at']->format('d.m.Y H:i') }}">{{ $offer['updated_label'] ?? 'Обновлено' }} {{ $offer['updated_at']->diffForHumans() }}</span>
                     @endif
                 </div>
             @if ($compact)
