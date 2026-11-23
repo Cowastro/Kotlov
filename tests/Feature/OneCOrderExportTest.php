@@ -458,26 +458,18 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame(0, app(OneCOwnStockRouting::class)->fillOpenOrders(), 'a routed line is never touched again');
     }
 
-    public function test_an_order_with_everything_to_ship_in_1c_is_ready_to_ship(): void
+    public function test_an_order_whose_lines_all_ship_from_stock_is_ready_to_ship(): void
     {
         $guid = 'dddddddd-0000-0000-0000-000000000800';
         $order = $this->order(['status' => 'processing', 'payment_status' => 'paid', 'delivery_type' => 'pickup', 'onec_order_guid' => $guid,
             'onec_order_number' => 'МПУТ-000800', 'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'КОбеспечению', 'onec_posted' => true]);
-        $check = function (float $toShip) use ($guid): void {
-            $task = app(DocumentStatusTaskHandler::class)->enqueueCheck(null);
-            $this->assertArrayHasKey('holds_1', $task->payload['queries']);
-            $this->agent()->get('/1c/agent/tasks/next')->assertOk();
-            $this->sendPart($task->id, 'orders_1', 200, ['value' => [['Ref_Key' => $guid, 'Number' => 'МПУТ-000800', 'Posted' => true, 'DeletionMark' => false,
-                'Статус' => 'КОбеспечению', 'Товары' => [['Номенклатура_Key' => self::ITEM, 'Количество' => 2, 'Отменено' => false]]]]])->assertOk();
-            $this->sendPart($task->id, 'holds_1', 200, ['value' => $toShip > 0 ? [['ДокументОтгрузки' => $guid, 'КОтгрузкеBalance' => $toShip]] : []])->assertOk();
-            $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1'])->assertOk();
-        };
+        $line = ['Номенклатура_Key' => self::ITEM, 'Количество' => 1, 'Отменено' => false, 'ВариантОбеспечения' => 'Отгрузить'];
 
-        // One of two waits for the supplier: «Ожидается обеспечение».
-        $check(1);
+        // One line waits for the supplier («Обеспечить»): «Ожидается обеспечение».
+        $this->check1cOrder('КОбеспечению', true, [$line, array_merge($line, ['ВариантОбеспечения' => 'Требуется'])]);
         $this->assertFalse($order->fresh()->onec_ready_to_ship);
-        // Both to ship: «Готов к отгрузке» — shown, the stage stays until it is checked against 1C.
-        $check(2);
+        // Every line left ships from stock (a cancelled one does not count): «Готов к отгрузке» — shown, the stage stays.
+        $this->check1cOrder('КОбеспечению', true, [$line, array_merge($line, ['ВариантОбеспечения' => 'Требуется', 'Отменено' => true])]);
         $this->assertTrue($order->fresh()->onec_ready_to_ship);
         $this->assertSame('processing', $order->fresh()->status);
     }

@@ -24,7 +24,8 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
     /** Documents older than this are not asked about any more. */
     private const DAYS = 60;
 
-    public const HOLDS = 'AccumulationRegister_ТоварыКОтгрузке/Balance';
+    /** «Действие» of a line that ships from stock; «Требуется» (Обеспечить) waits for a supplier. */
+    private const SHIP = 'Отгрузить';
 
     public function __construct(
         private readonly OneCAgentTasks $tasks,
@@ -71,13 +72,6 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
                 ['$filter' => $filter($chunk), '$select' => 'Ref_Key,Number,Posted,DeletionMark,Статус']);
         }
         $queries += $payments;
-        // «Готов к отгрузке»: what of each order in work 1C has to ship (register «Товары к отгрузке»).
-        $inWork = Order::query()->whereIn('onec_order_guid', $orders)->where('onec_posted', true)
-            ->whereIn('onec_doc_status', ['КОбеспечению', 'КВыполнению'])->pluck('onec_order_guid')->unique()->values();
-        // A filter by the order finds nothing on this balance: the whole balance is small (only what waits to ship).
-        if ($inWork->isNotEmpty()) {
-            $queries['holds_1'] = ODataReadTaskHandler::path(self::HOLDS, ['$select' => 'ДокументОтгрузки,ДокументОтгрузки_Type,КОтгрузкеBalance']);
-        }
         try {
             return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.($keys->count() + $orders->count() + $supplierOrders->count()).($payments ? ', оплаты: '.count($payments) : ''), $user, ['queries' => $queries]);
         } catch (DomainException) {
@@ -101,22 +95,11 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         $checked = 0;
         $posted = 0;
         $moved = 0;
-        $ordered = [];
-        $toShip = [];
-        $holdsRead = false;
+        $shipAll = [];
         $paid = 0;
         $payments = app(OneCOrderPayments::class);
         foreach (array_keys((array) data_get($task->payload, 'queries', [])) as $name) {
             $part = ODataReadTaskHandler::part($task, $name);
-            if (str_starts_with($name, 'holds_')) {
-                $holdsRead = $part['code'] === 200 || $holdsRead;
-                foreach ($part['code'] === 200 ? (array) data_get($part['json'], 'value', []) : [] as $row) {
-                    $doc = strtolower((string) ($row['ДокументОтгрузки'] ?? ''));
-                    $toShip[$doc] = ($toShip[$doc] ?? 0.0) + (float) ($row['КОтгрузкеBalance'] ?? 0);
-                }
-
-                continue;
-            }
             if (str_starts_with($name, 'pay_')) {
                 $rows = $part['code'] === 200 ? (array) data_get($part['json'], 'value', []) : [];
                 str_starts_with($name, 'pay_keys_') ? $payments->rememberObjects($rows) : $paid += $payments->apply($rows);
@@ -152,7 +135,9 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
                             ->where('subject_id', $order->id)->where('status', OneCAgentTask::DONE)
                             ->update(['summary' => OrderTaskHandler::summary($order)]);
                         $lines = collect((array) ($row['Товары'] ?? []));
-                        $ordered[$key] = (float) $lines->reject(fn ($l): bool => (bool) ($l['Отменено'] ?? false))->sum(fn ($l): float => (float) ($l['Количество'] ?? 0));
+                        // «Готов к отгрузке»: every line left ships from stock («Отгрузить»), none waits for a supplier.
+                        $left = $lines->reject(fn ($l): bool => (bool) ($l['Отменено'] ?? false));
+                        $shipAll[$key] = $left->isNotEmpty() && $left->every(fn ($l): bool => ($l['ВариантОбеспечения'] ?? '') === self::SHIP);
                         $moved += app(OneCOrderStages::class)->apply($order, $lines->isNotEmpty() && $lines->every(fn ($l): bool => (bool) ($l['Отменено'] ?? false))) ? 1 : 0;
                     }
 
@@ -172,15 +157,13 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             }
         }
 
-        // Ready to ship: 1C has every ordered unit to ship (nothing waits for a supplier). Shown; the stage stays.
+        // Shown under the 1C number; the stage and the SMS stay until it is checked against 1C.
         $ready = 0;
-        if ($holdsRead) {
-            foreach (Order::query()->whereIn('onec_order_guid', array_keys($ordered))->whereIn('onec_doc_status', ['КОбеспечению', 'КВыполнению'])->get() as $order) {
-                $key = strtolower((string) $order->onec_order_guid);
-                $isReady = $ordered[$key] > 0 && ($toShip[$key] ?? 0.0) >= $ordered[$key] - 0.001;
-                $order->forceFill(['onec_ready_to_ship' => $isReady])->save();
-                $ready += $isReady ? 1 : 0;
-            }
+        foreach (Order::query()->whereIn('onec_order_guid', array_keys($shipAll))->get() as $order) {
+            $isReady = $order->onec_posted && in_array($order->onec_doc_status, ['КОбеспечению', 'КВыполнению'], true)
+                && $shipAll[strtolower((string) $order->onec_order_guid)];
+            $order->forceFill(['onec_ready_to_ship' => $isReady])->save();
+            $ready += $isReady ? 1 : 0;
         }
 
         return 'Проверено '.$checked.', проведено '.$posted.($moved ? ', этапов заказов обновлено: '.$moved : '').($paid ? ', оплачено по 1С: '.$paid : '').($ready ? ', готовы к отгрузке: '.$ready : '');
