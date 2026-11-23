@@ -25,6 +25,7 @@ use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderPayments;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCOrderStages;
+use App\Services\Integrations\OneCBridge\OneCOwnStockRouting;
 use App\Services\Integrations\OneCBridge\OneCReferences;
 use App\Services\Integrations\OneCBridge\OneCStock;
 use App\Services\Orders\OrderItemFulfillmentPicker;
@@ -449,6 +450,12 @@ class OneCOrderExportTest extends TestCase
         $this->assertStringContainsString('себестоимость 1С', (string) $offers[$sbg->id]['source']);
         $defaults = $picker->defaults($item, $offers);
         $this->assertSame(['own_stock', 'available', 15.4], [$defaults['fulfillment_route'], $defaults['availability_status'], $defaults['purchase_price']]);
+
+        // Filled in by itself after the stock read: «Наш склад» at the 1C cost, not confirmed — the manager confirms.
+        $this->assertSame(1, app(OneCOwnStockRouting::class)->fillOpenOrders());
+        $item->refresh();
+        $this->assertSame(['own_stock', 15.4, 'available', null], [$item->fulfillment_route, (float) $item->fulfillment_purchase_price, $item->fulfillment_availability_status, $item->fulfillment_confirmed_at]);
+        $this->assertSame(0, app(OneCOwnStockRouting::class)->fillOpenOrders(), 'a routed line is never touched again');
     }
 
     public function test_an_order_with_everything_to_ship_in_1c_is_ready_to_ship(): void
