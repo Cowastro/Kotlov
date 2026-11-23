@@ -223,6 +223,10 @@ class ProductController extends Controller
         if ($verifiedGasMeter !== null) {
             $productCardSpecs = $verifiedGasMeter['card'];
         }
+        if ($productCategory->slug === 'schetchiki-gaza' && ($officialMeter = \App\Support\Catalog\BelomoOfficialMeterSpecs::forProduct($product)) !== null) {
+            $fireplaceSpecs = $officialMeter['specs'];
+            $productCardSpecs = $officialMeter['card'];
+        }
 
         // SEO
         $sharedCityIn = view()->shared('cityIn');
