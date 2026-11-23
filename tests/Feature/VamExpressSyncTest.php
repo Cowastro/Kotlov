@@ -97,6 +97,7 @@ class VamExpressSyncTest extends TestCase
         $before = $order->fresh()->getAttributes();
         $this->mock(VamExpressPortal::class, function ($mock) use ($row): void {
             $mock->shouldReceive('login')->twice();
+            $mock->shouldReceive('senderProfile')->once()->andReturn('Тестовый отправитель / Юридическое лицо');
             $mock->shouldReceive('recent')->twice()->andReturn([array_replace($row, ['carrier_status' => 'В пути', 'delivery_cost' => '37.00'])]);
         });
         app(VamExpressSync::class)->run();
@@ -107,6 +108,7 @@ class VamExpressSyncTest extends TestCase
         $this->assertSame($order->id, $shipment->fresh()->order_id);
         $this->assertSame('В пути', $shipment->fresh()->carrier_status);
         $this->assertSame('37.00', $shipment->fresh()->delivery_cost);
+        $this->assertSame('Тестовый отправитель / Юридическое лицо', $shipment->fresh()->sender_profile);
         $this->assertSame($before, $order->fresh()->getAttributes());
     }
 

@@ -31,6 +31,17 @@ class VamExpressHtml
         return $fields;
     }
 
+    public function senderProfile(string $html): string
+    {
+        $fields = $this->xpath($html)->query('//input[@name="ctl00$MainContent$tbUserProfile"][@readonly]');
+        $profile = $fields->length === 1 ? trim(preg_replace('/\s+/u', ' ', $fields->item(0)->getAttribute('value')) ?? '') : '';
+        if ($profile === '' || mb_strlen($profile) > 255) {
+            throw new VamExpressException('Не удалось прочитать профиль отправителя в карточке ВАМ Экспресс. Сохранённый профиль оставлен.');
+        }
+
+        return $profile;
+    }
+
     public function rows(string $html): array
     {
         $xpath = $this->xpath($html);

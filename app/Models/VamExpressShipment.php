@@ -12,7 +12,7 @@ class VamExpressShipment extends Model
     protected function casts(): array
     {
         return ['total_amount' => 'decimal:2', 'delivery_cost' => 'decimal:2', 'remote_created_at' => 'date',
-            'accepted_at' => 'date', 'dispatch_at' => 'date', 'synced_at' => 'datetime', 'checked_at' => 'datetime'];
+            'accepted_at' => 'date', 'dispatch_at' => 'date', 'synced_at' => 'datetime', 'checked_at' => 'datetime', 'profile_checked_at' => 'datetime'];
     }
 
     public function order(): BelongsTo
