@@ -117,7 +117,7 @@ class ManagerStorefrontProductContext
         $integrationOffers = $product->integrationProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->source?->supplier?->name))
             ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin, $product, $sbgPurchase, $isSbg): array {
-                $quantity = $offer->stock_quantity !== null ? (float) $offer->stock_quantity : null;
+                $quantity = $offer->hasFreshStock() ? (float) $offer->stock_quantity : null;
                 $source = $offer->source;
                 $purchasePrice = $sbgPurchase !== null && $isSbg($source?->supplier)
                     ? $sbgPurchase
@@ -148,7 +148,7 @@ class ManagerStorefrontProductContext
                     'retail_price' => $retailPrice,
                     'margin' => $this->margin($retailPrice, $purchasePrice),
                     'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
-                    'stock' => $quantity !== null ? $this->formatQuantity($quantity, $product->unit) : 'Остаток уточняется',
+                    'stock' => $quantity !== null ? $this->formatQuantity($quantity, $product->unit) : 'Остаток устарел · уточнить',
                     'stock_quantity' => $quantity,
                     'warehouse' => $this->warehouseLabel(
                         data_get($source?->settings, 'warehouse_label'),

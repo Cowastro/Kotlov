@@ -297,6 +297,10 @@ class OneCExchangeController extends Controller
 
     private function completeCatalogExchange(Request $request, IntegrationSource $source): Response
     {
+        if ($source->code === 'onec') {
+            // The freshly read selling warehouse wins over a catalogue offer's old/general total.
+            app(\App\Services\Integrations\OneCBridge\OneCStockProjection::class)->refresh();
+        }
         $snapshotStartedAt = Cache::pull($this->catalogSnapshotStartedCacheKey($request, $source));
         $offersReceived = (bool) Cache::pull($this->catalogOffersReceivedCacheKey($request, $source), false);
         $onlyChanges = (bool) Cache::pull($this->catalogOnlyChangesCacheKey($request, $source), false);

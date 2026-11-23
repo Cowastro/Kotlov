@@ -437,6 +437,10 @@ class OrderInfolist
 
                                             $snapshot = $record->supplyContext()['stock_label'];
                                             if (! $record->current_availability_checked_at) {
+                                                $imported = app(\App\Services\Orders\OrderItemSupplyContextResolver::class)->resolveCurrent($record);
+                                                if (data_get($imported, 'stock_updated_at')) {
+                                                    return $snapshot.' · по текущей загрузке: '.$imported['stock_label'];
+                                                }
                                                 return $snapshot;
                                             }
 

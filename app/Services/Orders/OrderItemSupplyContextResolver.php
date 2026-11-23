@@ -256,6 +256,7 @@ class OrderItemSupplyContextResolver
         $supplier = $source?->supplier;
         $wholesalePrice = $this->integrationWholesalePrice($offer);
         $isOwnStock = $source?->code === 'onec' || $supplier?->code === 'sanbusinessgroup';
+        $stockFresh = $offer->hasFreshStock();
 
         return $this->pricedContext($item, $wholesalePrice, [
             'status' => $isOwnStock ? 'own_stock' : 'supplier_purchase',
@@ -269,15 +270,15 @@ class OrderItemSupplyContextResolver
             'wholesale_price_label' => 'Оптовая цена с НДС',
             'price_tax_mode' => $offer->effectivePriceTaxMode(),
             'vat_rate' => $offer->effectiveVatRate(),
-            'stock_quantity' => (float) $offer->stock_quantity,
+            'stock_quantity' => $stockFresh ? (float) $offer->stock_quantity : null,
             'stock_updated_at' => $offer->stock_confirmed_at
                 ?? $offer->last_offer_seen_at
                 ?? $offer->last_seen_at
                 ?? $offer->updated_at,
-            'stock_label' => (float) $offer->stock_quantity > 0
+            'stock_label' => ! $stockFresh ? 'Остаток устарел · уточнить' : ((float) $offer->stock_quantity > 0
                 ? $offer->formattedStockQuantity()
-                : 'Сейчас нет в наличии',
-            'is_available' => (float) $offer->stock_quantity > 0,
+                : 'Сейчас нет в наличии'),
+            'is_available' => $stockFresh ? (float) $offer->stock_quantity > 0 : null,
             'candidate_count' => $candidateCount,
             'is_explicit' => $explicit,
             'is_current_recommendation' => ! $explicit,
