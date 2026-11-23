@@ -220,7 +220,7 @@
             card.innerHTML = (model.stock_priority ? '<span class="gm-result__badge">В наличии · показываем первым</span>' : (model.stock_program ? '<span class="gm-result__badge" style="background:#777">Складская программа · наличие уточняется</span>' : (isSgmnG4 ? '<span class="gm-result__badge" style="background:#777">Популярный G4 · под заказ</span>' : '<span class="gm-result__badge" style="background:#777">Под заказ</span>')))
                 + '<div class="gm-result__family">Тип: ' + escapeHtml(model.family_label) + '</div>'
                 + '<strong>' + escapeHtml(model.name) + '</strong>'
-                + '<p>Артикул ' + escapeHtml(model.article_label || model.article) + ' · ' + escapeHtml(model.technology_label) + ' · ' + escapeHtml(model.direction_label) + (model.length ? ' · L=' + model.length + ' мм' : '') + (model.thermal ? ' · с термокомпенсатором' : ' · без термокомпенсатора') + '</p>'
+                + '<p>Артикул ' + escapeHtml(model.article_label || model.article) + ' · ' + escapeHtml(model.technology_label) + ' · ' + escapeHtml(model.direction_label) + (model.length ? ' · межосевое расстояние ' + model.length + ' мм' : '') + (model.thermal ? ' · с термокомпенсатором' : ' · без термокомпенсатора') + '</p>'
                 + (approximate ? '<p><strong>Предварительный вариант.</strong> ' + (differences.length ? 'Нужно уточнить ' + escapeHtml(differences.join(' и ')) + '.' : 'Сверьте подключение перед заказом.') + '</p>' : '')
                 + '<div class="gm-result__commercial"><span>' + escapeHtml(model.availability_label) + '</span><b>' + escapeHtml(model.price_label) + '</b></div>'
                 + (model.request_only

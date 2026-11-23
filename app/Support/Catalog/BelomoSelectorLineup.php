@@ -123,7 +123,8 @@ final class BelomoSelectorLineup
         }
 
         $lower = mb_strtolower($name);
-        $technology = str_contains($lower, 'ультразвуков') ? 'ultrasonic' : 'diaphragm';
+        $article = trim((string) $row['article']);
+        $technology = preg_match('/^(8345|8348|8349)\./', $article) ? 'ultrasonic' : 'diaphragm';
         $thermal = str_contains($lower, 'сгд-3т') || str_contains($lower, 'g4ти') || str_contains($lower, 'термокомпенс');
         $direction = match (mb_strtolower((string) ($row['flow_direction'] ?? ''))) {
             'левый' => 'left',
@@ -131,7 +132,6 @@ final class BelomoSelectorLineup
             default => null,
         };
         [$familyKey, $familyLabel] = self::family($lower, $size, $thermal);
-        $article = trim((string) $row['article']);
 
         return [
             'article' => $priceList->shortArticle($article),
