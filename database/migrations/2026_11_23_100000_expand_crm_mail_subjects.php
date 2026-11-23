@@ -1,0 +1,22 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        foreach (['crm_mail_threads', 'crm_mail_messages'] as $name) {
+            Schema::table($name, function (Blueprint $table) {
+                $table->longText('subject')->nullable()->change();
+            });
+        }
+    }
+
+    public function down(): void
+    {
+        // Keep the wider columns: reverting to VARCHAR(255) could destroy mail subjects.
+    }
+};
