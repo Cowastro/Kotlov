@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\VamExpress;
 
+use App\Filament\Pages\VamExpressCalculator;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\VamExpress\Pages\ListVamExpressShipments;
+use App\Filament\Resources\VamExpressDrafts\VamExpressDraftResource;
 use App\Models\VamExpressShipment;
 use App\Support\Shipping\VamExpressStatus;
 use BackedEnum;
@@ -32,6 +34,15 @@ class VamExpressShipmentResource extends Resource
     protected static ?string $navigationLabel = 'ВАМ Экспресс';
 
     protected static ?string $pluralModelLabel = 'Заявки ВАМ Экспресс';
+
+    public static function getNavigationItems(): array
+    {
+        return array_map(fn ($item) => $item->isActiveWhen(fn (): bool => request()->routeIs(
+            static::getRouteBaseName().'.*',
+            VamExpressDraftResource::getRouteBaseName().'.*',
+            VamExpressCalculator::getRouteName(),
+        )), parent::getNavigationItems());
+    }
 
     public static function getNavigationGroup(): ?string
     {

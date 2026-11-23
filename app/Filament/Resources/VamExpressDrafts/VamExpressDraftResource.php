@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class VamExpressDraftResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = VamExpressDraft::class;
 
     protected static ?string $slug = 'vam-express-drafts';
