@@ -19,7 +19,7 @@
         ],
         'shipped' => [
             'title' => $order->customerStatusLabel(),
-            'description' => $order->delivery_type === 'pickup' ? 'Заказ подготовлен к самовывозу. Согласуйте получение с магазином.' : 'Заказ собран и передан в доставку.',
+            'description' => $order->isOneCOrderShipped() ? 'Заказ укомплектован и отгружен.' : ($order->delivery_type === 'pickup' ? 'Заказ подготовлен к самовывозу. Согласуйте получение с магазином.' : 'Заказ собран и передан в доставку.'),
             'icon' => '→',
             'class' => 'is-shipped',
         ],

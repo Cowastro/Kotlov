@@ -15,13 +15,17 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
+use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCOrderExport;
+use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Orders\OrderWorkflow;
 use App\Services\Orders\WholeOrderFulfillment;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\MailManager;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Testing\Fakes\MailFake;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -118,6 +122,44 @@ class WholeOrderFulfillmentTest extends TestCase
             ->mountAction('confirmFulfillment')->callMountedAction()->assertHasNoActionErrors();
         $this->assertSame(4, $order->items()->whereNotNull('fulfillment_confirmed_at')->count());
         $this->assertSame('confirmed', $order->fresh()->status);
+    }
+
+    public function test_entire_order_waits_for_supply_then_ships_from_one_c_without_extra_manager_steps(): void
+    {
+        [$actor, $client, $order] = $this->fixture();
+        $order->update(['delivery_type' => 'courier']);
+        Storage::fake('local');
+        $service = app(WholeOrderFulfillment::class);
+        $service->confirm($order, $actor, $service->fingerprint($order));
+        $export = OneCAgentTask::where('type', 'onec_order')->sole();
+        foreach ($export->payload['body']['Товары'] as $row) {
+            $this->assertSame(OneCOrderExport::RESERVE, $row['ВариантОбеспечения']);
+        }
+        $guid = 'bbbbbbbb-0000-0000-0000-000000000099';
+        app(OrderTaskHandler::class)->finished($export, ['ok' => true, 'data' => ['document_key' => $guid, 'document_number' => 'TEST-SUPPLY']]);
+        foreach ([['КОбеспечению', 'ОжидаетсяОбеспечение', 'Комплектация'], ['КВыполнению', 'ГотовКОтгрузке', 'Готов к отгрузке'], ['Закрыт', 'Закрыт', 'Отгружен']] as [$documentStatus, $state, $label]) {
+            $this->travel(1)->minutes();
+            $task = OneCAgentTask::create(['type' => 'doc_status', 'title' => 'Test', 'status' => 'sending', 'picked_at' => now(),
+                'payload' => ['queries' => ['orders_1' => 'orders', 'states_1' => 'states'], 'parts' => ['orders_1' => ['code' => 200], 'states_1' => ['code' => 200]]]]);
+            foreach (['orders_1' => [['Ref_Key' => $guid, 'Posted' => true, 'Статус' => $documentStatus, 'Товары' => [['Отменено' => false]]]],
+                'states_1' => [['Заказ' => $guid, 'Состояние' => $state]]] as $name => $rows) {
+                Storage::disk('local')->put(ODataReadTaskHandler::file($task, $name), json_encode(['value' => $rows]));
+            }
+            $handler = app(DocumentStatusTaskHandler::class);
+            $handler->finished($task, ['ok' => true]);
+            $handler->finished($task, ['ok' => true]);
+            $this->assertSame($label, $order->fresh()->customerStatusLabel());
+            $this->assertSame(4, $order->items()->count());
+            $this->assertSame(9, (int) $order->items()->sum('quantity'));
+        }
+        $this->assertSame('shipped', $order->fresh()->status);
+        $this->actingAs($client)->get(route('account.orders.show', $order))->assertOk()->assertSeeText('Отгружен')->assertDontSeeText('Заказ получен клиентом.');
+        $html = (new OrderStatusUpdatedMail($order->fresh()))->render();
+        $this->assertStringContainsString('Ваш заказ укомплектован и отгружен.', $html);
+        $this->assertStringNotContainsString('Ожидаем поступление', $html);
+        Mail::assertQueuedCount(3); // acceptance, processing, shipment; repeated answers never send duplicates
+        Mail::assertQueued(OrderStatusUpdatedMail::class, fn ($mail) => $mail->statusAtQueue === 'shipped' && $mail->statusDetails['title'] === 'Отгружен');
+        $this->assertDatabaseMissing('order_stage_email_claims', ['order_id' => $order->id, 'status' => 'delivered']);
     }
 
     public function test_one_stock_pool_is_not_promised_twice_for_repeated_product_lines(): void

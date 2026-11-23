@@ -273,11 +273,11 @@ class OneCOrderExportTest extends TestCase
         $notifier->shouldNotHaveReceived('notify');
         $this->assertSame(0, \DB::table('order_status_sms')->where('order_id', $order->id)->where('event_key', 'like', 'status:%')->count(), 'no SMS either');
 
-        // Once it is in work, every next move is the customer's news: closed in 1C → delivered, with the message.
+        // Closed in 1C means shipped, with one notification; receipt is not inferred.
         $this->check1cOrder('Закрыт', true, [['Номенклатура_Key' => self::ITEM, 'Отменено' => false]]);
-        $this->assertSame('delivered', $order->fresh()->status);
+        $this->assertSame('shipped', $order->fresh()->status);
         $notifier->shouldHaveReceived('notify')->once();
-        $this->assertSame(1, \DB::table('order_status_sms')->where('order_id', $order->id)->where('order_status', 'delivered')->count());
+        $this->assertSame(1, \DB::table('order_status_sms')->where('order_id', $order->id)->where('order_status', 'shipped')->count());
 
         // Self-pickup ready: the SMS names the 1C order for the warehouse.
         $pickup = $this->order(['number' => 'K-1003', 'status' => 'processing', 'delivery_type' => 'pickup', 'onec_order_number' => 'МПУТ-000758']);
@@ -303,12 +303,12 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame(1, $order->managerComments()->where('body', 'like', '%закрыт в 1С без отгрузки%')->count());
     }
 
-    public function test_a_closed_1c_order_is_delivered_on_the_site(): void
+    public function test_a_closed_1c_order_is_shipped_without_confirming_receipt(): void
     {
         $order = $this->order(['status' => 'processing', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
             'onec_profile_id' => 1, 'onec_exported_at' => now(), 'onec_doc_status' => 'КВыполнению', 'onec_posted' => true]);
         $this->check1cOrder('Закрыт', true, [['Номенклатура_Key' => self::ITEM, 'Отменено' => false]]);
-        $this->assertSame('delivered', $order->fresh()->status);
+        $this->assertSame('shipped', $order->fresh()->status);
         $this->assertSame('По 1С: заказ МПУТ-000800 проведён, «Закрыт».', $order->statusHistory()->latest('id')->value('comment'));
 
         // Never backwards, never a cancelled order.
@@ -321,13 +321,14 @@ class OneCOrderExportTest extends TestCase
     public function test_an_order_closed_in_1c_but_behind_on_the_site_is_checked_again_and_catches_up(): void
     {
         // Linked by hand before stages went all the way: closed in 1C, still «Передача клиенту» on the site.
-        $order = $this->order(['status' => 'shipped', 'payment_status' => 'paid', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
+        $order = $this->order(['status' => 'processing', 'payment_status' => 'paid', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
             'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'Закрыт', 'onec_posted' => true]);
         $this->check1cOrder('Закрыт', true, [['Номенклатура_Key' => self::ITEM, 'Отменено' => false]]);
-        $this->assertSame('delivered', $order->fresh()->status);
+        $this->assertSame('shipped', $order->fresh()->status);
 
-        // Once the site caught up, a closed 1C order is not read again.
-        $this->assertNull(app(DocumentStatusTaskHandler::class)->enqueueCheck(null));
+        // The document is no longer needed; payment may still be checked separately.
+        $next = app(DocumentStatusTaskHandler::class)->enqueueCheck(null);
+        $this->assertArrayNotHasKey('orders_1', $next?->payload['queries'] ?? []);
     }
 
     public function test_the_stock_of_the_main_warehouse_comes_from_1c_and_decides_ship_or_provide(): void
@@ -433,14 +434,14 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame('shipped', $order->fresh()->status);
         $this->assertSame('KOTLOV: заказ МПУТ-000758 готов к самовывозу.', \DB::table('order_status_sms')->where('order_id', $order->id)->where('order_status', 'shipped')->value('message'));
 
-        // Paid and shipped — «Готов к закрытию» even for a carrier paid «по договору»: delivered and paid.
+        // Paid and shipped does not prove receipt by the customer.
         $this->check1cState($guid, 'ГотовКЗакрытию', 100, 49.98);
         $order->refresh();
-        $this->assertSame(['delivered', 'paid'], [$order->status, $order->payment_status]);
-        $this->assertSame('По 1С: заказ МПУТ-000758 проведён, «Готов к закрытию».', $order->statusHistory()->latest('id')->value('comment'));
+        $this->assertSame(['shipped', 'paid'], [$order->status, $order->payment_status]);
+        $this->assertSame('Отгружен', $order->customerStatusLabel());
         $this->assertSame(1, $order->managerComments()->where('body', 'like', '%МПУТ-000758 оплачен полностью (49,98 BYN)%')->count());
-        // delivered and paid: its state is not read any more (the order is, until 1C closes it)
-        $this->assertArrayNotHasKey('states_1', app(DocumentStatusTaskHandler::class)->enqueueCheck(null)->payload['queries']);
+        // The order remains tracked until its document is closed in 1C.
+        $this->assertArrayHasKey('states_1', app(DocumentStatusTaskHandler::class)->enqueueCheck(null)->payload['queries']);
     }
 
     public function test_a_delivery_order_ready_in_1c_stays_in_work_until_it_ships(): void
@@ -585,7 +586,7 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame(1, OneCAgentTask::query()->where('type', 'doc_status')->count());
     }
 
-    public function test_linking_with_a_closed_1c_order_delivers_the_site_order_at_once(): void
+    public function test_linking_with_a_closed_1c_order_marks_it_shipped(): void
     {
         $order = $this->order();
         $this->syncReferences([
@@ -596,7 +597,7 @@ class OneCOrderExportTest extends TestCase
 
         app(OneCOrderMatcher::class)->link($order, 'aaaa0000-0000-0000-0000-000000000728', $this->admin);
         $order->refresh();
-        $this->assertSame('delivered', $order->status);
+        $this->assertSame('shipped', $order->status);
         $this->assertSame('По 1С: заказ МПУТ-000728 проведён, «Закрыт».', $order->statusHistory()->latest('id')->value('comment'));
     }
 

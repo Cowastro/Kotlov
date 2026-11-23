@@ -31,9 +31,9 @@ class OrderStatusUpdatedMail extends Mailable
                 'message' => 'Комплектуем ваш заказ. Состояние товаров и согласованные сроки указаны ниже.',
             ],
             'shipped' => [
-                'eyebrow' => $order->delivery_type === 'pickup' ? 'ГОТОВ К САМОВЫВОЗУ' : 'ПЕРЕДАН В ДОСТАВКУ',
+                'eyebrow' => $order->isOneCOrderShipped() ? 'ЗАКАЗ ОТГРУЖЕН' : ($order->delivery_type === 'pickup' ? 'ГОТОВ К САМОВЫВОЗУ' : 'ПЕРЕДАН В ДОСТАВКУ'),
                 'title' => $order->customerStatusLabel(),
-                'message' => $order->delivery_type === 'pickup' ? 'Ваш заказ подготовлен к самовывозу. Согласуйте получение с магазином.' : 'Ваш заказ собран и передан в доставку.',
+                'message' => $order->isOneCOrderShipped() ? 'Ваш заказ укомплектован и отгружен.' : ($order->delivery_type === 'pickup' ? 'Ваш заказ подготовлен к самовывозу. Согласуйте получение с магазином.' : 'Ваш заказ собран и передан в доставку.'),
             ],
             'delivered' => [
                 'eyebrow' => 'ЗАКАЗ ДОСТАВЛЕН',

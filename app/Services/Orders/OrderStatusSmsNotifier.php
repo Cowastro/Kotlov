@@ -26,7 +26,7 @@ final class OrderStatusSmsNotifier
             'processing' => 'комплектация.',
             'waiting_payment' => 'ожидает оплаты.',
             'paid' => 'оплачен.',
-            'shipped' => $order->delivery_type === 'pickup' ? 'готов к самовывозу.' : 'передан в доставку.',
+            'shipped' => $order->isOneCOrderShipped() ? 'отгружен.' : ($order->delivery_type === 'pickup' ? 'готов к самовывозу.' : 'передан в доставку.'),
             'delivered' => 'доставлен.',
             'completed' => 'завершён.',
             'cancelled' => 'отменён.',
