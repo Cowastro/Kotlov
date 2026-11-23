@@ -84,6 +84,10 @@ class ViewCrmMailThread extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('reservationDesk')->label('К резервам')->icon('heroicon-o-archive-box')->color('gray')
+                ->url(fn (): string => \App\Filament\Pages\SupplierReservations::getUrl())
+                ->visible(fn (): bool => \App\Filament\Pages\SupplierReservations::canAccess()
+                    && ($this->record->supplier_order_request_id || ($this->record->supplier_id && $this->record->product_id))),
             ManageMailThreadNotesAction::make(),
             AssignMailThreadAction::make(),
             Action::make('split_request')
