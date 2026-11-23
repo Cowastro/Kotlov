@@ -9,6 +9,17 @@ use Tests\TestCase;
 
 class BelomoSelectorLineupTest extends TestCase
 {
+    public function test_factory_articles_identify_ultrasonic_models_after_title_normalization(): void
+    {
+        $models = BelomoSelectorLineup::models();
+        $ultrasonic = array_filter($models, fn (array $model): bool => $model['technology'] === 'ultrasonic');
+        $this->assertCount(48, $ultrasonic);
+        foreach ($models as $model) {
+            $expected = preg_match('/^(8345|8348|8349)\./', $model['article_label']) ? 'ultrasonic' : 'diaphragm';
+            $this->assertSame($expected, $model['technology'], $model['article_label']);
+        }
+    }
+
     public function test_it_builds_the_complete_price_list_for_selection(): void
     {
         $models = BelomoSelectorLineup::models();
