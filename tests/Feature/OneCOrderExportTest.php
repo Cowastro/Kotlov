@@ -277,7 +277,7 @@ class OneCOrderExportTest extends TestCase
         // Self-pickup ready: the SMS names the 1C order for the warehouse.
         $pickup = $this->order(['number' => 'K-1003', 'status' => 'processing', 'delivery_type' => 'pickup', 'onec_order_number' => 'МПУТ-000758']);
         $pickup->transitionTo('shipped', 'Готов к отгрузке');
-        $this->assertSame('KOTLOV: K-1003 готов к самовывозу. Номер заказа МПУТ-000758.', \DB::table('order_status_sms')->where('order_id', $pickup->id)->where('order_status', 'shipped')->value('message'));
+        $this->assertSame('KOTLOV: заказ МПУТ-000758 готов к самовывозу.', \DB::table('order_status_sms')->where('order_id', $pickup->id)->where('order_status', 'shipped')->value('message'));
     }
 
     public function test_the_order_stages_follow_1c_once_the_customer_got_the_confirmation(): void

@@ -37,9 +37,9 @@ final class OrderStatusSmsNotifier
         }
 
         $message = 'KOTLOV: '.$order->number.' '.$text;
-        // Self-pickup: the customer names the 1C order at the warehouse.
+        // Self-pickup: one number for the customer — the 1C order the warehouse looks for.
         if ($status === 'shipped' && $order->delivery_type === 'pickup' && filled($order->onec_order_number) && ! $order->onec_deleted) {
-            $message .= ' Номер заказа '.$order->onec_order_number.'.';
+            $message = 'KOTLOV: заказ '.$order->onec_order_number.' '.$text;
         }
         if ($status === 'shipped' && $order->delivery_type === 'evropochta'
             && preg_match('/^BY\d{12}$/D', (string) $order->evropochta_tracking_number)) {
