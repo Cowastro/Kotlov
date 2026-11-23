@@ -18,11 +18,20 @@ final class BelomoSelectorLineup
     /** @return array<int, array<string, mixed>> */
     public static function models(?BelomoPriceList $priceList = null): array
     {
-        $priceList ??= new BelomoPriceList();
+        $priceList ??= new BelomoPriceList;
+
+        $rows = $priceList->rows();
+        $articles = array_column($rows, 'article');
+        foreach (EliconGasMeterCatalog::models() as $model) {
+            if (! in_array($model['full_article'], $articles, true)) {
+                $rows[] = ['article' => $model['full_article'], 'name' => $model['name'],
+                    'center_distance_mm' => $model['center_distance_mm'], 'flow_direction' => $model['flow_direction']];
+            }
+        }
 
         return array_values(array_filter(array_map(
             fn (array $row): ?array => self::fromPriceRow($row, $priceList),
-            $priceList->rows(),
+            $rows,
         )));
     }
 
@@ -30,9 +39,17 @@ final class BelomoSelectorLineup
     {
         $article = (string) ($model['article_compact'] ?? '');
         if ($article !== '' && $product->supplierProducts->contains(
-            fn ($offer): bool => self::compact((string) $offer->supplier_article) === $article
+            fn ($offer): bool => self::compact(EliconGasMeterCatalog::fullArticle((string) $offer->supplier_article)) === $article
         )) {
             return true;
+        }
+
+        foreach ((array) $product->specs as $key => $spec) {
+            $label = is_array($spec) ? ($spec['key'] ?? '') : $key;
+            $value = is_array($spec) ? ($spec['value'] ?? '') : $spec;
+            if ($label === 'Артикул производителя' && self::compact(EliconGasMeterCatalog::fullArticle((string) $value)) === $article) {
+                return true;
+            }
         }
 
         $sku = self::compact((string) $product->sku);
@@ -40,13 +57,14 @@ final class BelomoSelectorLineup
             return true;
         }
 
-        return self::searchable((string) $product->name) === self::searchable((string) $model['name']);
+        return false;
     }
 
     public static function attachProduct(array $model, Product $product): array
     {
-        $inStock = $product->hasAvailableSupplierChannel()
-            && $product->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK;
+        $inStock = $product->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK
+            && ($product->hasAvailableSupplierChannel()
+                || ($product->manual_stock_management && $product->in_stock));
         $buyable = $inStock && $product->canBeAddedToCart();
         $price = (float) $product->price;
         $slug = trim((string) $product->slug);
@@ -56,7 +74,7 @@ final class BelomoSelectorLineup
             'product_id' => $product->id,
             'name' => (string) $product->name,
             'stock_priority' => $inStock,
-            'stock_program' => $inStock,
+            'stock_program' => $model['stock_program'],
             'availability_status' => $inStock ? Product::AVAILABILITY_IN_STOCK : Product::AVAILABILITY_CHECK,
             'availability_label' => $inStock ? $product->publicAvailabilityLabel() : 'Под заказ · уточним цену и срок',
             'price' => $price > 0 ? $price : null,
@@ -137,7 +155,7 @@ final class BelomoSelectorLineup
             'family_key' => $familyKey,
             'family_label' => $familyLabel,
             'stock_priority' => false,
-            'stock_program' => false,
+            'stock_program' => EliconGasMeterCatalog::planned($article),
             'availability_status' => Product::AVAILABILITY_CHECK,
             'availability_label' => 'Под заказ · уточним цену и срок',
             'price' => null,
@@ -171,10 +189,5 @@ final class BelomoSelectorLineup
     private static function compact(string $value): string
     {
         return mb_strtoupper(preg_replace('/[^\pL\pN]+/u', '', str_replace('*', '', $value)) ?? '');
-    }
-
-    private static function searchable(string $value): string
-    {
-        return mb_strtolower(preg_replace('/[^\pL\pN]+/u', '', str_replace(',', '.', $value)) ?? '');
     }
 }

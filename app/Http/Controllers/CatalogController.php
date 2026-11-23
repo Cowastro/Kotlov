@@ -757,6 +757,12 @@ class CatalogController extends Controller
 
                 $catalogStockAlreadyOrdered = false;
 
+                if ($category->slug === 'schetchiki-gaza') {
+                    $query->prioritizeConfirmedStock();
+                    \App\Support\Catalog\EliconGasMeterCatalog::prioritizeCatalog($query);
+                    $catalogStockAlreadyOrdered = true;
+                }
+
                 if (in_array($category->slug, ['pechki', 'pechi-kaminy'], true)) {
                     $query->orderByDesc('in_stock')
                         ->prioritizeNamePatterns([

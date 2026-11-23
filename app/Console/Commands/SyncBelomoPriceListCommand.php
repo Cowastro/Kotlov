@@ -425,6 +425,8 @@ class SyncBelomoPriceListCommand extends Command
         return DB::table('products')
             ->where('brand_id', $this->brandId())
             ->where('is_archived', false)
+            // Confirmed additions from Elicon and a customer-supplied factory article are not old-price artifacts.
+            ->whereNotIn('sku', ['BELOMO-8336-58', 'BELOMO-8181-24'])
             ->when($canonicalIds !== [], fn ($query) => $query->whereNotIn('id', $canonicalIds))
             ->orderBy('id')
             ->get()
