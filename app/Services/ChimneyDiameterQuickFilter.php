@@ -9,6 +9,8 @@ class ChimneyDiameterQuickFilter
 {
     public function steelGrade(string $name, array $specs = []): ?string
     {
+        $specs = collect($specs)->mapWithKeys(fn ($value, $key) => is_array($value)
+            ? [(string) ($value['key'] ?? '') => $value['value'] ?? null] : [$key => $value])->all();
         $inner = collect($specs)->filter(fn ($value, $key) => is_scalar($value)
             && preg_match('/(?:сталь|стали|металл|материал).*внутр|внутр.*(?:сталь|стали|металл|материал)/ui', (string) $key));
         foreach ($inner as $value) {
@@ -73,7 +75,7 @@ class ChimneyDiameterQuickFilter
     public function monoDiameter(string $name): ?string
     {
         if (preg_match('/термо|сэндвич|сендвич/ui', $name)
-            || ! preg_match('/моно|(?<!\pL)(?:ТМ|ОМ|ЗМ|ШМ|ДМ|КМ|ТРМ|ЗРМ)(?=[\s(\-])/ui', $name)
+            || ! preg_match('/моно|шибер|заслонка|(?<!\pL)(?:ТМ|ОМ|ЗМ|ШМ|ДМ|КМ|ТРМ|ЗРМ)(?=[\s(\-])/ui', $name)
             || preg_match('/\d{2,3}\s*\/\s*\d{2,4}/u', $name)) {
             return null;
         }

@@ -588,6 +588,9 @@ class ProductSourceEnricher
             }
 
             $attributeSuffix = (string) DB::table('attributes')->where('id', $attributeId)->value('suffix');
+            if (DB::table('attributes')->where('id', $attributeId)->where('in_filter', true)->where('type', 'select')->exists()) {
+                continue; // Existing filter options are filled below, never replaced with a free-text row.
+            }
             if ($attributeSuffix !== '') {
                 $value = $this->stripTrailingUnit($value, $attributeSuffix);
             }
@@ -608,7 +611,7 @@ class ProductSourceEnricher
             $saved++;
         }
 
-        return $saved;
+        return $saved + app(CatalogSpecificationFilters::class)->sync($product, $specs);
     }
 
     /**
@@ -625,6 +628,7 @@ class ProductSourceEnricher
 
         $attributeIds = DB::table('attributes')
             ->where('category_id', $categoryId)
+            ->where(fn ($query) => $query->where('type', '!=', 'select')->orWhere('in_filter', false))
             ->get(['id', 'name'])
             ->filter(fn ($attribute): bool => in_array($this->normalizeAttributeName((string) $attribute->name), $normalizedNames, true))
             ->pluck('id')
