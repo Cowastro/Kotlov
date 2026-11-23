@@ -248,6 +248,9 @@ class OneCOrderExport
 
     public const PROVIDE = 'Требуется';
 
+    /** «Резервировать по мере поступления»: what is free is reserved now, the rest when it comes. 1C always posts it. */
+    public const RESERVE = 'ИзЗаказов';
+
     private const SERVICE_FIELDS = ['СкидкиРассчитаны', 'Согласован', 'СуммаАвансаДоОбеспечения', 'СуммаПредоплатыДоОтгрузки', 'ДатаСогласования',
         'МаксимальныйКодСтроки', 'АдресДоставкиЗначение', 'АдресДоставкиЗначенияПолей', 'ВремяДоставкиС', 'ВремяДоставкиПо'];
 
@@ -326,10 +329,10 @@ class OneCOrderExport
                 'СуммаСНДС' => $gross,
                 'Склад_Key' => $doc['Склад_Key'] ?? OneCReferences::ZERO,
             ]);
-            // «Отгрузить» only what 1C has in stock; the rest «Обеспечить» (it comes by the supplier order). 1C refuses
-            // to write an order that ships goods it does not have.
-            if (($row['ВариантОбеспечения'] ?? null) === self::SHIP && $line['stock'] < $line['qty']) {
-                $row['ВариантОбеспечения'] = self::PROVIDE;
+            // Every line «Резервировать по мере поступления»: «Отгрузить» stops the posting when the goods are held for
+            // another order (in stock, but reserved), and the order went to 1C as a draft.
+            if (array_key_exists('ВариантОбеспечения', $row) || in_array('ВариантОбеспечения', $rowKeys, true)) {
+                $row['ВариантОбеспечения'] = self::RESERVE;
             }
             foreach (['КодСтроки' => $n, 'КлючСвязи' => $n, 'ИдентификаторСтроки' => (string) Str::uuid(), 'ДатаОтгрузки' => $ship] as $key => $value) {
                 if (in_array($key, $rowKeys, true)) {
