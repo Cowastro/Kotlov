@@ -125,4 +125,37 @@ class OneCPricingTest extends TestCase
             ->filterTable('onec', 'yes')->assertCanSeeTableRecords([$linked])->assertCanNotSeeTableRecords([$bare])
             ->filterTable('onec', 'no')->assertCanSeeTableRecords([$bare])->assertCanNotSeeTableRecords([$linked]);
     }
+
+    public function test_fixed_prices_and_the_supplier_price_when_the_goods_have_not_come(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        $source = IntegrationSource::query()->updateOrCreate(['code' => 'onec'], ['name' => '1C']);
+        $category = Category::query()->firstOrCreate(['slug' => 'kotly'], ['name' => 'Котлы', 'is_active' => true]);
+        $card = Product::query()->create(['category_id' => $category->id, 'name' => 'Счётчик газа тестовый', 'slug' => 'schetchik-test',
+            'price' => 150, 'manual_purchase_price_byn' => 100]);
+        // ordered from the supplier, not come yet: no purchase in 1C
+        $meter = OneCItem::query()->create(['ref_key' => self::PIPE, 'code' => 'УТ-009', 'description' => 'Счётчик газа тестовый', 'product_id' => $card->id]);
+        $this->assertSame(['cost' => 100.0, 'label' => 'закупка поставщика (в 1С ещё не поступал)'], OneCItemCosts::basis($meter));
+
+        // by markup over the supplier price
+        $batch = app(OneCPriceBatches::class)->addFromItems([$meter], 35, 15, null);
+        $this->assertSame([135.0, 115.0, 'markup'], [(float) $batch->items()->value('retail'), (float) $batch->items()->value('wholesale'), $batch->items()->value('verdict')]);
+
+        // fixed from the row: «Цены» — the same draft, the prices as entered
+        Livewire::test(ListOneCItems::class)
+            ->callTableAction('setPrice', $meter, ['retail' => 149.90, 'wholesale' => 120]);
+        $row = $batch->items()->first();
+        $this->assertSame([149.9, 120.0, 'fixed'], [(float) $row->retail, (float) $row->wholesale, $row->verdict]);
+
+        // fixed for many at once
+        $boiler = OneCItem::query()->create(['ref_key' => self::BOILER, 'code' => 'УТ-001', 'description' => 'Котёл тестовый 24']);
+        Livewire::test(ListOneCItems::class)
+            ->callTableBulkAction('setPrices', [$boiler], ['mode' => 'fixed', 'retail' => 1500, 'wholesale' => 1300]);
+        $this->assertSame([1500.0, 1300.0], [(float) $batch->items()->where('item_key', self::BOILER)->value('retail'), (float) $batch->items()->where('item_key', self::BOILER)->value('wholesale')]);
+
+        // what was sent shows as «Опт» in the nomenclature
+        $batch->forceFill(['status' => OneCPriceBatch::CREATED])->save();
+        $this->assertSame(120.0, (float) OneCItemCosts::lastSent($meter)->wholesale);
+        $this->assertSame('+20 %', OneCItemCosts::markup(120, $meter));
+    }
 }

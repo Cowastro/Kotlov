@@ -4,6 +4,9 @@ namespace App\Services\Integrations\OneCBridge;
 
 use App\Models\IntegrationProduct;
 use App\Models\OneCItem;
+use App\Models\OneCPriceBatch;
+use App\Models\OneCPriceBatchItem;
+use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -70,10 +73,52 @@ class OneCItemCosts
         return (float) $price > 0 ? round((float) $price, 2) : null;
     }
 
+    /**
+     * What a price is counted from: the 1C cost; when the goods have not come yet (no purchase in 1C) — the purchase
+     * price of the linked card's suppliers (with VAT, the lowest).
+     *
+     * @return array{cost: float, label: string}|null
+     */
+    public static function basis(OneCItem $item): ?array
+    {
+        if ((float) $item->cost_gross > 0) {
+            return ['cost' => (float) $item->cost_gross, 'label' => 'себестоимость 1С ('.($item->cost_kind === self::AVERAGE
+                ? 'средняя за 3 мес.' : 'закупка '.$item->cost_date?->format('d.m.Y')).')'];
+        }
+        $price = self::supplierPrice($item);
+
+        return $price ? ['cost' => $price, 'label' => 'закупка поставщика (в 1С ещё не поступал)'] : null;
+    }
+
+    public static function supplierPrice(OneCItem $item): ?float
+    {
+        $productId = $item->product_id ?: IntegrationProduct::query()->whereHas('source', fn ($q) => $q->where('code', 'onec'))
+            ->where(fn ($q) => $q->where('external_id', $item->ref_key)->orWhere('external_id', 'like', $item->ref_key.'#%'))
+            ->whereNotNull('product_id')->value('product_id');
+        $card = $productId ? Product::query()->find($productId) : null;
+        if (! $card) {
+            return null;
+        }
+        $prices = collect([(float) $card->manual_purchase_price_byn])
+            ->concat($card->operationalSupplierProducts()->pluck('price_byn'))
+            ->concat($card->usablePurchasePriceSources()->pluck('price_byn'))
+            ->map(fn ($price): float => (float) $price)->filter(fn (float $price): bool => $price > 0);
+
+        return $prices->isEmpty() ? null : round($prices->min(), 2);
+    }
+
+    /** The prices we sent to 1C last for the item (a batch handed to the agent), or null. */
+    public static function lastSent(OneCItem $item): ?OneCPriceBatchItem
+    {
+        return OneCPriceBatchItem::query()->where('item_key', strtolower($item->ref_key))
+            ->whereHas('batch', fn ($q) => $q->whereIn('status', [OneCPriceBatch::APPROVED, OneCPriceBatch::SENDING, OneCPriceBatch::CREATED]))
+            ->latest('id')->first();
+    }
+
     /** «+35 %» of a price over the cost with VAT, or null. */
     public static function markup(?float $price, OneCItem $item): ?string
     {
-        $cost = (float) $item->cost_gross;
+        $cost = (float) (self::basis($item)['cost'] ?? 0);
 
         return $price && $cost > 0 ? ($price >= $cost ? '+' : '').round(($price / $cost - 1) * 100).' %' : null;
     }

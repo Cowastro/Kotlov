@@ -71,16 +71,18 @@ class OneCPriceBatches
      *
      * @param  iterable<OneCItem>  $items
      */
-    public function addFromItems(iterable $items, float $retailMarkup, float $wholesaleMarkup, ?User $user): OneCPriceBatch
+    public function addFromItems(iterable $items, ?float $retailMarkup, ?float $wholesaleMarkup, ?User $user, ?float $fixedRetail = null, ?float $fixedWholesale = null): OneCPriceBatch
     {
-        return DB::transaction(function () use ($items, $retailMarkup, $wholesaleMarkup, $user): OneCPriceBatch {
+        return DB::transaction(function () use ($items, $retailMarkup, $wholesaleMarkup, $user, $fixedRetail, $fixedWholesale): OneCPriceBatch {
             $batch = OneCPriceBatch::query()->where('status', OneCPriceBatch::DRAFT)->where('comment', self::BY_MARKUP)->latest('id')->first()
                 ?? OneCPriceBatch::query()->create(['status' => OneCPriceBatch::DRAFT, 'created_by' => $user?->id, 'comment' => self::BY_MARKUP]);
             foreach ($items as $item) {
                 if ($item->is_folder) {
                     continue;
                 }
-                $cost = (float) $item->cost_gross;
+                $basis = OneCItemCosts::basis($item);
+                $cost = (float) ($basis['cost'] ?? 0);
+                $fixed = $fixedRetail !== null && $fixedWholesale !== null;
                 $row = IntegrationProduct::query()->whereHas('source', fn ($q) => $q->where('code', 'onec'))
                     ->where(fn ($q) => $q->where('external_id', $item->ref_key)->orWhere('external_id', 'like', $item->ref_key.'#%'))->first();
                 $batch->items()->updateOrCreate(['item_key' => strtolower($item->ref_key), 'characteristic_key' => null], [
@@ -89,12 +91,15 @@ class OneCPriceBatches
                     'name' => mb_substr((string) $item->description, 0, 250),
                     'purchase' => $cost > 0 ? $cost : null,
                     'retail_site' => $item->product_id ? (Product::query()->whereKey($item->product_id)->value('price') ?: null) : null,
-                    'retail' => $cost > 0 ? OneCItemCosts::priceFrom($cost, $retailMarkup) : 0, // 0: «не задана», not sent until set
-                    'wholesale' => $cost > 0 ? OneCItemCosts::priceFrom($cost, $wholesaleMarkup) : 0, // 0: «не задана», not sent until set
-                    'verdict' => $cost > 0 ? 'markup' : 'no_cost',
-                    'note' => $cost > 0
-                        ? 'розница +'.$retailMarkup.' %, опт +'.$wholesaleMarkup.' % от себестоимости '.$cost.' ('.($item->cost_kind === OneCItemCosts::AVERAGE ? 'средняя за 3 мес.' : 'закупка '.$item->cost_date?->format('d.m.Y')).')'
-                        : 'нет закупок в 1С — задайте цены вручную',
+                    // fixed prices as entered; else the markups over the basis; 0 is «не задана» and is not sent until set
+                    'retail' => $fixed ? round($fixedRetail, 2) : ($cost > 0 ? OneCItemCosts::priceFrom($cost, (float) $retailMarkup) : 0),
+                    'wholesale' => $fixed ? round($fixedWholesale, 2) : ($cost > 0 ? OneCItemCosts::priceFrom($cost, (float) $wholesaleMarkup) : 0),
+                    'verdict' => $fixed ? 'fixed' : ($cost > 0 ? 'markup' : 'no_cost'),
+                    'note' => match (true) {
+                        $fixed => 'задано вручную'.($basis ? '; '.$basis['label'].' '.$cost : ''),
+                        $cost > 0 => 'розница +'.$retailMarkup.' %, опт +'.$wholesaleMarkup.' % от: '.$basis['label'].' '.$cost,
+                        default => 'нет себестоимости и закупки поставщика — задайте цены вручную',
+                    },
                 ]);
             }
 

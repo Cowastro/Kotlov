@@ -13,10 +13,13 @@ use App\Services\Integrations\OneCBridge\OneCReferences;
 use App\Services\Integrations\OneCBridge\OneCStock;
 use App\Services\Integrations\OneCPriceBatches;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -86,12 +89,22 @@ class OneCItemResource extends Resource
                 TextColumn::make('stock_on_hand')->label('Основной: своб.')->sortable()->toggleable()
                     ->state(fn (OneCItem $record): ?string => $record->is_folder || ! OneCStock::fresh($record) ? null : OneCStock::label($record))
                     ->placeholder('—'),
-                TextColumn::make('cost_gross')->label('Себестоимость 1С')->numeric(2)->alignRight()->sortable()->toggleable()->placeholder('—')
-                    ->description(fn (OneCItem $r): ?string => $r->cost_gross ? ($r->cost_kind === OneCItemCosts::AVERAGE ? 'средняя 3 мес.' : $r->cost_date?->format('d.m.Y')) : null),
+                TextColumn::make('cost_gross')->label('Себестоимость 1С')->alignRight()->sortable()->toggleable()->placeholder('—')
+                    // not come yet: the supplier price of the card, in grey
+                    ->state(fn (OneCItem $r): ?float => $r->is_folder ? null : ($r->cost_gross ?: OneCItemCosts::supplierPrice($r)))->numeric(2)
+                    ->color(fn (OneCItem $r): ?string => $r->cost_gross ? null : 'gray')
+                    ->description(fn (OneCItem $r): ?string => $r->is_folder ? null : ($r->cost_gross
+                        ? ($r->cost_kind === OneCItemCosts::AVERAGE ? 'средняя 3 мес.' : $r->cost_date?->format('d.m.Y'))
+                        : (OneCItemCosts::supplierPrice($r) ? 'закупка поставщика' : null))),
                 TextColumn::make('retail_1c')->label('Розница 1С')->alignRight()->toggleable()
                     ->state(fn (OneCItem $r): ?float => $r->is_folder ? null : OneCItemCosts::retail1c($r))->numeric(2)->placeholder('нет цены')
                     ->description(fn (OneCItem $r): ?string => $r->is_folder ? null : OneCItemCosts::markup(OneCItemCosts::retail1c($r), $r))
                     ->color(fn (OneCItem $r): ?string => ($p = OneCItemCosts::retail1c($r)) && $r->cost_gross && $p < $r->cost_gross ? 'danger' : null),
+                TextColumn::make('wholesale_sent')->label('Опт')->alignRight()->toggleable()
+                    ->state(fn (OneCItem $r): ?float => $r->is_folder ? null : (OneCItemCosts::lastSent($r)?->wholesale !== null ? (float) OneCItemCosts::lastSent($r)->wholesale : null))
+                    ->numeric(2)->placeholder('—')
+                    ->description(fn (OneCItem $r): ?string => ($sent = $r->is_folder ? null : OneCItemCosts::lastSent($r))
+                        ? OneCItemCosts::markup((float) $sent->wholesale, $r).' · пакет №'.$sent->onec_price_batch_id : null),
                 TextColumn::make('article')->label('Артикул')->searchable()->toggleable()->fontFamily('mono'),
                 TextColumn::make('kind')->label('Вид номенклатуры')->toggleable()
                     ->state(fn (OneCItem $r): ?string => $r->kind_key ? $refs->label('item_kind', $r->kind_key) : null),
@@ -140,17 +153,41 @@ class OneCItemResource extends Resource
                     ->queries(true: fn (Builder $query) => $query->where('deletion_mark', true), false: fn (Builder $query) => $query,
                         blank: fn (Builder $query) => $query->where('deletion_mark', false)),
             ])
-            ->recordActions([ManageOneCLinksAction::make()])
-            ->toolbarActions([
-                BulkAction::make('setPrices')->label('Задать цены по наценке')->icon('heroicon-o-calculator')
-                    ->modalHeading('Цены от себестоимости 1С')
-                    ->modalDescription('Розница и опт = себестоимость 1С с НДС + наценка, до рубля. Товары попадут в черновик «Цены для 1С»: там цены можно поправить вручную и отправить в 1С.')
+            ->recordActions([
+                ManageOneCLinksAction::make(),
+                Action::make('setPrice')->label('Цены')->icon('heroicon-o-banknotes')->color('warning')
+                    ->visible(fn (OneCItem $record): bool => ! $record->is_folder)
+                    ->modalHeading(fn (OneCItem $record): string => 'Цены: '.$record->description)
+                    ->modalDescription(fn (OneCItem $record): string => ($basis = OneCItemCosts::basis($record))
+                        ? 'Основа: '.$basis['label'].' — '.number_format($basis['cost'], 2, ',', ' ').' BYN с НДС.'
+                        : 'Нет себестоимости 1С и закупки поставщика: впишите цены.')
+                    ->fillForm(fn (OneCItem $record): array => [
+                        'retail' => OneCItemCosts::lastSent($record)?->retail ?? OneCItemCosts::retail1c($record),
+                        'wholesale' => OneCItemCosts::lastSent($record)?->wholesale,
+                    ])
                     ->schema([
-                        TextInput::make('retail')->label('Наценка розницы, %')->numeric()->required()->default(35),
-                        TextInput::make('wholesale')->label('Наценка опта, %')->numeric()->required()->default(15),
+                        TextInput::make('retail')->label('Розница с НДС, BYN')->numeric()->minValue(0.01)->required(),
+                        TextInput::make('wholesale')->label('Опт с НДС, BYN')->numeric()->minValue(0.01)->required()->lte('retail'),
+                    ])
+                    ->action(function (OneCItem $record, array $data) {
+                        $batch = app(OneCPriceBatches::class)->addFromItems([$record], null, null, auth()->user(), (float) $data['retail'], (float) $data['wholesale']);
+
+                        return redirect(OneCPriceBatchResource::getUrl('view', ['record' => $batch]));
+                    }),
+            ])
+            ->toolbarActions([
+                BulkAction::make('setPrices')->label('Задать цены')->icon('heroicon-o-calculator')
+                    ->modalHeading('Цены для 1С')
+                    ->modalDescription('По наценке: от себестоимости 1С с НДС (не поступал — от закупки поставщика), до рубля. Или одни и те же цены всем отмеченным. Товары попадут в черновик «Цены для 1С»: там любую цену можно поправить и отправить в 1С.')
+                    ->schema([
+                        Radio::make('mode')->label('Как задать')->options(['markup' => 'Наценкой, %', 'fixed' => 'Ценой, BYN'])->default('markup')->inline()->live(),
+                        TextInput::make('retail')->label(fn (Get $get): string => $get('mode') === 'fixed' ? 'Розница с НДС, BYN' : 'Наценка розницы, %')->numeric()->required()->default(35),
+                        TextInput::make('wholesale')->label(fn (Get $get): string => $get('mode') === 'fixed' ? 'Опт с НДС, BYN' : 'Наценка опта, %')->numeric()->required()->default(15),
                     ])
                     ->action(function (Collection $records, array $data) {
-                        $batch = app(OneCPriceBatches::class)->addFromItems($records, (float) $data['retail'], (float) $data['wholesale'], auth()->user());
+                        $fixed = ($data['mode'] ?? 'markup') === 'fixed';
+                        $batch = app(OneCPriceBatches::class)->addFromItems($records, $fixed ? null : (float) $data['retail'], $fixed ? null : (float) $data['wholesale'], auth()->user(),
+                            $fixed ? (float) $data['retail'] : null, $fixed ? (float) $data['wholesale'] : null);
                         Notification::make()->success()->title('В черновике цен: '.$batch->items_count.' товаров')->body('Проверьте цены и нажмите «Отправить в 1С».')->send();
 
                         return redirect(OneCPriceBatchResource::getUrl('view', ['record' => $batch]));
