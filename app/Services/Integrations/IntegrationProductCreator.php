@@ -98,6 +98,7 @@ class IntegrationProductCreator
             'sku' => $this->uniqueSku($product->id),
             'slug' => $this->uniqueSlug($name, $product->id),
         ]);
+        app(\App\Services\CatalogSpecificationFilters::class)->sync($product);
 
         return $product;
     }
