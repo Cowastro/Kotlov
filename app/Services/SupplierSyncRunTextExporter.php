@@ -24,9 +24,9 @@ class SupplierSyncRunTextExporter
             str_repeat('=', 42),
             'Дата запуска: '.($run->started_at?->timezone('Europe/Minsk')->format('d.m.Y H:i:s') ?? '—'),
             'Команда: '.($run->command ?: '—'),
-            'Поставщик: '.($run->supplier_names ?: '—'),
+            'Поставщик: '.$run->supplierLabel(),
             'Статус: '.$this->status($run->status),
-            'Исходный файл: '.($run->source_file_name ?: 'API / сайт'),
+            'Исходный файл: '.$run->sourceLabel(),
             'SHA-256 файла: '.($run->source_file_sha256 ?: '—'),
             'Всего изменений: '.$run->changes_count,
             'Изменений цен: '.$run->price_changes_count,
@@ -35,7 +35,7 @@ class SupplierSyncRunTextExporter
         ];
 
         if ($changes->isEmpty()) {
-            $lines[] = 'Цены и остатки не изменились.';
+            $lines[] = $run->status === 'skipped' ? 'Импорт не выполнялся: '.data_get($run->context, 'skip_reason', 'проверка пропущена').'.' : 'Цены и остатки не изменились.';
 
             return "\xEF\xBB\xBF".implode(PHP_EOL, $lines).PHP_EOL;
         }
@@ -104,6 +104,7 @@ class SupplierSyncRunTextExporter
     {
         return match ($status) {
             'success' => 'Успешно',
+            'skipped' => 'Пропущено',
             'failed' => 'Ошибка команды',
             'journal_error' => 'Ошибка журнала',
             'running' => 'Выполняется',

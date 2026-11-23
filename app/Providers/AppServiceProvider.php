@@ -29,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton(SupplierSyncJournalRecorder::class);
         $this->app->singleton('db.connector.mysql', fn (): RetryingMySqlConnector => new RetryingMySqlConnector);
         $this->app->scoped(B2bCatalogOfferResolver::class);
         $this->app->scoped(\App\Services\Integrations\OneCBridge\OneCOrderMatcher::class);

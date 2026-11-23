@@ -44,7 +44,7 @@ class ViewSupplier extends ViewRecord
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('primary')
                 ->visible(fn (): bool => $this->getRecord()->code === SyncChistyBeregCommand::SUPPLIER_CODE)
-                ->modalDescription('Утренний файл «Остатки и цены Чистого берега» (xls). Остатки, опт и РРЦ обновятся в течение 10 минут.')
+                ->modalDescription('Утренний файл «Остатки и цены Чистого берега» (xls). Автоматическая обработка нового прайса — ежедневно в 09:00 по Минску.')
                 ->schema([
                     FileUpload::make('file')
                         ->label('Файл xls')
@@ -69,7 +69,7 @@ class ViewSupplier extends ViewRecord
                     Storage::disk('local')->delete($stored);
                     Notification::make()->success()
                         ->title('Файл принят: '.$rows.' позиций')
-                        ->body('Остатки, опт и РРЦ обновятся в течение 10 минут.')
+                        ->body('Автоматическая обработка нового прайса — ежедневно в 09:00 по Минску.')
                         ->send();
                 }),
             Action::make('prometall_price')

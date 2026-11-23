@@ -178,23 +178,26 @@ Schedule::command('supplier:sync-maitek-group --apply --sync-retail-prices')
 
 // ООО «СаунаОпт»: двери для бани Cooper с cooper.by — розничная цена и наличие.
 // Новые карточки создаются только ручным запуском с --create-new.
-// Чистый берег: the morning xls is uploaded on the supplier page; the sync follows within 10 minutes.
+// Чистый берег: process a newly uploaded price list once daily, 09:00 Minsk time.
 Schedule::command('supplier:sync-chisty-bereg --apply --if-new')
-    ->cron('6,16,26,36,46,56 * * * *')
+    ->dailyAt('09:00')
+    ->timezone('Europe/Minsk')
     ->withoutOverlapping(30)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-sync.log'));
 
 // New heating offers of Чистый берег become cards (bereg.by photos and specs), a batch at a time.
 Schedule::command('supplier:chisty-bereg-create --limit=120 --apply')
-    ->cron('10,25,40,55 * * * *')
+    ->dailyAt('09:20')
+    ->timezone('Europe/Minsk')
     ->withoutOverlapping(60)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-create.log'));
 
 // Cards made before the specs fix get the bereg.by specs; each card is tried once, so the run soon has nothing to do.
 Schedule::command('supplier:chisty-bereg-create --refill-specs --limit=150 --apply')
-    ->cron('12,27,42,57 * * * *')
+    ->dailyAt('09:40')
+    ->timezone('Europe/Minsk')
     ->withoutOverlapping(60)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-refill-specs.log'));
@@ -202,7 +205,8 @@ Schedule::command('supplier:chisty-bereg-create --refill-specs --limit=150 --app
 // Hidden Чистый берег cards get photos from a shop page naming the item; each card is tried once.
 // One light AI search a card, within the daily limit of background searches (services.ai.market_research_daily_background_limit).
 Schedule::command('supplier:chisty-bereg-photos --limit=12 --apply')
-    ->cron('14 * * * *')
+    ->dailyAt('10:00')
+    ->timezone('Europe/Minsk')
     ->withoutOverlapping(60)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-photos.log'));
@@ -334,9 +338,10 @@ Schedule::command('deal:sync-catalog-prices --apply')
     ->appendOutputTo(storage_path('logs/deal-catalog-prices.log'));
 
 // Cards whose Чистый берег РРЦ equals опт get the market retail price (web research, a few cards at a time).
-// Each card is researched again after 90 days; every two hours keeps it at ~120 searches a day at most.
+// Each card is researched again after 90 days; one daily batch, at most 10 searches.
 Schedule::command('supplier:chisty-bereg-market-prices --limit=10 --recheck-days=90 --apply')
-    ->cron('17 */2 * * *')
+    ->dailyAt('10:20')
+    ->timezone('Europe/Minsk')
     ->withoutOverlapping(120)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-market.log'));

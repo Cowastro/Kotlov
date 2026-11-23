@@ -24,6 +24,20 @@ class SupplierSyncRun extends Model
         'source_file_size' => 'integer',
     ];
 
+    public function supplierLabel(): string
+    {
+        return $this->supplier_names ?: match ($this->command) {
+            'supplier:sync-chisty-bereg' => 'Чистый берег',
+            'supplier:sync-blk7' => 'БЛК7',
+            default => '—',
+        };
+    }
+
+    public function sourceLabel(): string
+    {
+        return $this->source_file_name ?: ($this->command === 'supplier:sync-chisty-bereg' ? 'Загруженный прайс (XLS)' : 'API / сайт');
+    }
+
     public function changes(): HasMany
     {
         return $this->hasMany(SupplierSyncChange::class);

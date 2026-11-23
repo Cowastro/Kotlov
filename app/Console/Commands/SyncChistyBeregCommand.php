@@ -8,6 +8,7 @@ use App\Models\SupplierProduct;
 use App\Models\SupplierSync;
 use App\Services\SupplierProductAvailabilityService;
 use App\Services\Suppliers\ChistyBeregPriceList;
+use App\Services\SupplierSyncJournalRecorder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,13 +23,13 @@ use Illuminate\Support\Str;
  *
  *   php artisan supplier:sync-chisty-bereg                 # dry run on the last uploaded file
  *   php artisan supplier:sync-chisty-bereg --apply
- *   php artisan supplier:sync-chisty-bereg --apply --if-new   # scheduler, every 10 minutes
+ *   php artisan supplier:sync-chisty-bereg --apply --if-new   # scheduler, once daily
  */
 class SyncChistyBeregCommand extends Command
 {
     protected $signature = 'supplier:sync-chisty-bereg
         {--file= : An xls instead of the last uploaded one}
-        {--if-new : Only when a file was uploaded after the last run (the scheduler checks every 10 minutes)}
+        {--if-new : Only when a file was uploaded after the last run (the scheduler checks daily at 09:00 Minsk time)}
         {--apply : Write offers, links, prices and stock}';
 
     protected $description = 'Sync stock and prices of Чистый берег from the daily xls';
@@ -43,6 +44,7 @@ class SyncChistyBeregCommand extends Command
         if ($this->option('if-new')) {
             $lastRun = SupplierSync::query()->where('key', 'chisty_bereg_price')->value('last_run_at');
             if ($path === '' || ! is_file($path) || ($lastRun && filemtime($path) <= strtotime((string) $lastRun))) {
+                app(SupplierSyncJournalRecorder::class)->skip('supplier:sync-chisty-bereg', $path === '' || ! is_file($path) ? 'Прайс ещё не загружен' : 'Нового прайса нет');
                 $this->line('metric.chisty_bereg.new_file=0');
 
                 return self::SUCCESS;

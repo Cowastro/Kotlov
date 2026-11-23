@@ -3,13 +3,18 @@
 namespace App\Services;
 
 use App\Models\SupplierSyncRun;
+use App\Services\Suppliers\ChistyBeregPriceList;
+use App\Services\Suppliers\TdKomplektFeed;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Console\Input\InputInterface;
 
 class SupplierSyncJournalRecorder
 {
     private const COMMAND_SUPPLIER_CODES = [
+        'supplier:sync-chisty-bereg' => 'chisty_bereg',
+        'supplier:sync-blk7' => 'blk7',
         'supplier:sync-euroterm' => 'euroterm',
         'supplier:sync-td-komplekt' => 'td_komplekt',
         'supplier:sync-rusklimat' => 'rusklimat',
@@ -42,16 +47,20 @@ class SupplierSyncJournalRecorder
             return;
         }
 
+        $supplierCode = self::COMMAND_SUPPLIER_CODES[$command] ?? null;
+        $supplierName = $supplierCode ? DB::table('suppliers')->where('code', $supplierCode)->value('name') : null;
         $run = SupplierSyncRun::query()->create([
             'command' => $command,
             'status' => 'running',
             'started_at' => now(),
             'context' => $this->safeContext($input),
+            'supplier_names' => $supplierName,
         ]);
 
         $this->runs[] = [
             'command' => $command,
             'run_id' => (int) $run->id,
+            'supplier_name' => $supplierName,
             'started_at' => microtime(true),
             'source_candidates' => $this->sourceCandidates((string) $command, $input),
         ];
@@ -79,6 +88,16 @@ class SupplierSyncJournalRecorder
         array_splice($this->runs, $position, 1);
 
         try {
+            if ($exitCode === 0 && isset($active['skip_reason'])) {
+                SupplierSyncRun::whereKey($active['run_id'])->update([
+                    'status' => 'skipped', 'finished_at' => now(), 'exit_code' => 0,
+                    'duration_ms' => (int) round((microtime(true) - $active['started_at']) * 1000),
+                    'changes_count' => 0, 'price_changes_count' => 0, 'stock_changes_count' => 0,
+                    'context' => [...(SupplierSyncRun::find($active['run_id'])?->context ?? []), 'skip_reason' => $active['skip_reason']],
+                ]);
+
+                return;
+            }
             $summary = $this->captureChanges((int) $active['run_id'], (string) $active['command']);
 
             SupplierSyncRun::query()->whereKey($active['run_id'])->update([
@@ -89,7 +108,7 @@ class SupplierSyncJournalRecorder
                 'changes_count' => $summary['changes'],
                 'price_changes_count' => $summary['prices'],
                 'stock_changes_count' => $summary['stock'],
-                'supplier_names' => $summary['suppliers'],
+                'supplier_names' => $summary['suppliers'] ?: ($active['supplier_name'] ?? null),
                 'updated_at' => now(),
             ]);
 
@@ -111,6 +130,15 @@ class SupplierSyncJournalRecorder
                 'exit_code' => $exitCode,
                 'updated_at' => now(),
             ]);
+        }
+    }
+
+    /** A scheduled check did not perform an import: do not scan or advance the journal baseline. */
+    public function skip(string $command, string $reason): void
+    {
+        $position = $this->findRunPosition($command);
+        if ($position !== null) {
+            $this->runs[$position]['skip_reason'] = $reason;
         }
     }
 
@@ -392,8 +420,11 @@ class SupplierSyncJournalRecorder
     private function sourceCandidates(string $command, InputInterface $input): array
     {
         $values = [];
+        if ($command === 'supplier:sync-chisty-bereg' && (! $input->hasOption('file') || ! $input->getOption('file'))) {
+            $values[] = ChistyBeregPriceList::storedPath();
+        }
         if ($command === 'supplier:sync-td-komplekt') {
-            $values[] = \Illuminate\Support\Facades\Storage::disk('local')->path(\App\Services\Suppliers\TdKomplektFeed::DIRECTORY.'/latest.csv');
+            $values[] = Storage::disk('local')->path(TdKomplektFeed::DIRECTORY.'/latest.csv');
         }
 
         foreach ([$input->getOptions(), $input->getArguments()] as $collection) {
