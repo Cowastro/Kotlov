@@ -53,8 +53,13 @@ class OneCOrderStages
         $silent = $current < self::RANK['confirmed'];
         $status = $order->onec_doc_status !== 'Закрыт' && OneCOrderPayments::readyToClose($order) ? 'Готов к закрытию'
             : (OneCOrderProfiles::STATUSES[$order->onec_doc_status] ?? $order->onec_doc_status);
-        $order->transitionTo($target, 'По 1С: заказ '.$order->onec_order_number.' проведён, «'.$status.'»'
-            .($silent ? ' (не подтверждался на сайте — клиенту не сообщали).' : '.'));
+        $order->quietStatus = $silent; // neither SMS nor email
+        try {
+            $order->transitionTo($target, 'По 1С: заказ '.$order->onec_order_number.' проведён, «'.$status.'»'
+                .($silent ? ' (не подтверждался на сайте — клиенту не сообщали).' : '.'));
+        } finally {
+            $order->quietStatus = false;
+        }
         if (! $silent) {
             app(OrderStatusCustomerNotifier::class)->notify($order->fresh(['user']));
         }
