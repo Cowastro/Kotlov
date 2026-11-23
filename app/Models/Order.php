@@ -146,6 +146,7 @@ class Order extends Model
     ];
 
     protected $fillable = [
+        'fulfillment_customer_note',
         'user_id', 'commercial_document_id', 'crm_counterparty_id', 'crm_contact_id', 'number', 'status',
         'customer_name', 'customer_phone', 'customer_email',
         'company_name', 'company_unp', 'company_address', 'company_email',
@@ -209,8 +210,8 @@ class Order extends Model
     public const STATUSES = [
         'new' => 'Получен',
         'checking' => 'Проверка наличия',
-        'confirmed' => 'Наличие подтверждено',
-        'processing' => 'В исполнении',
+        'confirmed' => 'Принят в обработку',
+        'processing' => 'Комплектация',
         'shipped' => 'Передан в доставку',
         'delivered' => 'Доставлен',
         'cancelled' => 'Отменён',
@@ -386,7 +387,7 @@ class Order extends Model
     public function workflowNextStep(): string
     {
         if ($this->usesGuidedFulfillment() && $this->needsFulfillmentConfirmation()) {
-            return 'Нажмите «Подтвердить исполнение» и проверьте склад и наличие для каждой позиции.';
+            return 'Нажмите «Принять весь заказ»: проверьте доступное и ожидаемое количество по всем позициям.';
         }
 
         if ($this->needsEvropochtaShipment()) {
@@ -403,7 +404,7 @@ class Order extends Model
             'new' => 'Принять заказ и начать проверку наличия.',
             'checking' => match (true) {
                 ! $this->usesGuidedFulfillment() => 'Проверить наличие и способ исполнения каждой позиции.',
-                $this->hasConfirmedFulfillmentForAllItems() => 'Наличие всех позиций подтверждено. Нажмите «Подтвердить заказ клиенту».',
+                $this->hasConfirmedFulfillmentForAllItems() => 'План исполнения сохранён. Нажмите «Подтвердить заказ клиенту».',
                 default => 'Добавьте позиции, чтобы подтвердить наличие.',
             },
             'confirmed' => 'Нажмите «Передать в исполнение».',
@@ -519,6 +520,47 @@ class Order extends Model
 
         return $this->items()->exists()
             && ! $this->items()->whereNull('fulfillment_confirmed_at')->exists();
+    }
+
+    public function hasPendingSupply(): bool
+    {
+        if ($this->hasFreshOneCReadiness()) return false;
+        return $this->items->contains(fn (OrderItem $item) => ! in_array($item->fulfillment_availability_status, ['available', 'reserved'], true));
+    }
+
+    private function hasFreshOneCReadiness(): bool
+    {
+        return filled($this->onec_order_guid) && ! $this->onec_deleted && $this->onec_posted
+            && $this->onec_state === 'ГотовКОтгрузке' && $this->onec_status_received_at?->gte(now()->subHours(3));
+    }
+
+    public function customerItemFulfillment(OrderItem $item): string
+    {
+        if ($this->status === 'shipped') {
+            return ($this->delivery_type === 'pickup' ? 'Готово к самовывозу: ' : 'Передано в доставку: ').$item->quantity.' шт.';
+        }
+        if ($this->hasFreshOneCReadiness() && ! in_array($this->status, ['shipped', 'delivered', 'cancelled'], true)) {
+            return 'Подготовлено к отгрузке: '.$item->quantity.' шт.';
+        }
+        if ($this->status === 'cancelled') return 'Заказ отменён. Резерв уточняйте у менеджера.';
+        return $item->customerFulfillmentLabel($this->status);
+    }
+
+    public function customerStatusLabel(): string
+    {
+        return match ($this->status) {
+            'new', 'checking', 'confirmed' => 'Принят в обработку',
+            'processing' => $this->hasFreshOneCReadiness() ? 'Готов к отгрузке' : 'Комплектация',
+            'shipped' => $this->delivery_type === 'pickup' ? 'Готов к самовывозу' : 'Передан в доставку',
+            'delivered' => 'Получен',
+            'cancelled' => 'Отменён',
+            default => self::STATUSES[$this->status] ?? 'Состояние уточняется',
+        };
+    }
+
+    public function customerCanViewDetails(): bool
+    {
+        return array_key_exists($this->status, self::STATUSES);
     }
 
     public function customerDetailsAreAvailable(): bool

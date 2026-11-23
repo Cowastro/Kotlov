@@ -92,6 +92,7 @@ class AccountOrderAvailabilityTest extends TestCase
         $customer = User::factory()->create();
         $order = $this->createOrder($customer, [
             'status' => 'shipped',
+            'delivery_type' => 'courier',
             'availability_confirmed_at' => now(),
         ]);
         $this->createConfirmedItem($order);
@@ -100,23 +101,23 @@ class AccountOrderAvailabilityTest extends TestCase
             ->get(route('account.orders.show', $order))
             ->assertOk()
             ->assertSeeText('Передан в доставку')
-            ->assertSeeText('Заказ собран и передан в доставку или подготовлен к выдаче клиенту.');
+            ->assertSeeText('Заказ собран и передан в доставку.');
     }
 
-    public function test_order_link_is_hidden_until_availability_is_confirmed(): void
+    public function test_customer_can_track_an_unconfirmed_order_without_access_to_payment(): void
     {
         $customer = User::factory()->create();
         $order = $this->createOrder($customer, ['status' => 'checking']);
 
         $this->actingAs($customer)
             ->get(route('account.orders.show', $order))
-            ->assertNotFound();
+            ->assertOk()->assertSeeText('Принят в обработку');
 
         $this->actingAs($customer)
             ->get(route('account'))
             ->assertOk()
-            ->assertSeeText('После проверки наличия здесь появится кнопка заказа')
-            ->assertDontSee(route('account.orders.show', $order), false);
+            ->assertSee(route('account.orders.show', $order), false)
+            ->assertDontSeeText('Открыть и оплатить');
     }
 
     public function test_confirmed_sandbox_order_has_a_clear_payment_action_in_account(): void

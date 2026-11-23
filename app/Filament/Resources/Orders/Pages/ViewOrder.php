@@ -637,6 +637,7 @@ class ViewOrder extends ViewRecord
                 ->button(),
             ActionGroup::make([
                 ManageOrderDealAction::make(),
+                $this->confirmSingleFulfillmentAction(),
                 \App\Filament\Resources\Orders\Actions\InternalOrderActions::confirm(),
                 \App\Filament\Resources\Orders\Actions\InternalOrderActions::complete(),
                 AssignOrderToPartnerAction::make(),
@@ -856,8 +857,41 @@ class ViewOrder extends ViewRecord
 
     private function confirmFulfillmentAction(): Action
     {
-        return Action::make('confirmFulfillment')
-            ->label('Подтвердить исполнение')
+        return Action::make('confirmFulfillment')->label('Принять весь заказ')
+            ->icon('heroicon-o-check-badge')->color('primary')
+            ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
+            ->authorize(fn (): bool => OrderResource::canEdit($this->record))
+            ->disabled(fn (): bool => ! $this->record->needsFulfillmentConfirmation())
+            ->visible(fn (): bool => $this->record->needsFulfillmentConfirmation() && in_array($this->record->status, ['new', 'checking', 'confirmed'], true))
+            ->modalHeading('План исполнения всего заказа')->modalWidth(Width::FiveExtraLarge)
+            ->modalDescription('Все позиции останутся в заказе. Доступное резервируется в 1С, недостающее — по мере поступления. Подтверждение резерва не заменяется данными об остатке.')
+            ->modalSubmitActionLabel('Принять заказ')
+            ->fillForm(fn (): array => ['fingerprint' => app(\App\Services\Orders\WholeOrderFulfillment::class)->fingerprint($this->record)])
+            ->schema([
+                \Filament\Forms\Components\Hidden::make('fingerprint')->required(),
+                Placeholder::make('whole_order_plan')->label('Все позиции заказа')
+                    ->content(fn () => view('filament.resources.orders.whole-fulfillment-preview', [
+                        'plan' => app(\App\Services\Orders\WholeOrderFulfillment::class)->preview($this->record),
+                    ])),
+                DatePicker::make('expected_date')->label('Ориентировочное поступление недостающих товаров')->minDate(today())
+                    ->helperText('Укажите только согласованную дату. Если даты нет, клиент увидит «Срок уточняется».'),
+                Textarea::make('customer_note')->label('Комментарий клиенту')->rows(2)->maxLength(1000)
+                    ->helperText('Этот текст попадёт в письмо и личный кабинет. Входные цены и служебные комментарии не отправляются.'),
+            ])->action(function (array $data): void {
+                $result = app(\App\Services\Orders\WholeOrderFulfillment::class)->confirm($this->record, auth()->user(), $data['fingerprint'], $data['expected_date'] ?? null, $data['customer_note'] ?? null);
+                $this->reloadRecord();
+                $notification = Notification::make()->title('Весь заказ принят в обработку')
+                    ->body(($result['notified'] ? 'Клиенту подготовлено письмо по всем позициям. ' : 'Позиции сохранены. ').($result['reservation_warning'] ?? 'Заявка на резерв подготовлена.'));
+                if ($result['reservation_warning']) $notification->warning()->persistent();
+                else $notification->success();
+                $notification->send();
+            });
+    }
+
+    private function confirmSingleFulfillmentAction(): Action
+    {
+        return Action::make('confirmItemFulfillment')
+            ->label('Подтвердить отдельную позицию')
             ->icon('heroicon-o-check-badge')
             ->color('primary')
             ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
@@ -1049,6 +1083,14 @@ class ViewOrder extends ViewRecord
 
     private function confirmAvailabilityBeforeShare(string $availabilityStatus, ?string $note = null): void
     {
+        // Publishing an already reviewed mixed order must never turn waiting lines into "all reserved".
+        if ($this->record->hasConfirmedFulfillmentForAllItems()) {
+            if (in_array($this->record->status, ['new', 'checking', 'confirmed'], true)) {
+                app(OrderAvailabilityConfirmation::class)->confirmAndNotify($this->record, auth()->user());
+            }
+            $this->reloadRecord();
+            return;
+        }
         $this->record->load('items.fulfillmentSupplier');
 
         $missing = $this->record->items->filter(function (OrderItem $item): bool {

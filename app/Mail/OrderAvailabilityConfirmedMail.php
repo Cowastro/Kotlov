@@ -2,7 +2,9 @@
 
 namespace App\Mail;
 
+use App\Jobs\Middleware\SkipOutdatedOrderMail;
 use App\Models\Order;
+use App\Services\CommercialDocuments\CommercialDocumentPdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
@@ -18,6 +20,11 @@ class OrderAvailabilityConfirmedMail extends Mailable
 
     public function __construct(public readonly Order $order) {}
 
+    public function middleware(): array
+    {
+        return [new SkipOutdatedOrderMail($this->order->id, ['confirmed', 'processing'])];
+    }
+
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -25,7 +32,7 @@ class OrderAvailabilityConfirmedMail extends Mailable
                 (string) config('mail.transactional_from.address'),
                 (string) config('mail.transactional_from.name'),
             ),
-            subject: 'Наличие по заказу '.$this->order->number.' подтверждено — KOTLOV.BY',
+            subject: 'Заказ '.$this->order->number.': состав и состояние — KOTLOV.BY',
             using: [function (Email $message): void {
                 $logo = public_path('img/logo-black.png');
                 if (is_file($logo)) {
@@ -50,7 +57,7 @@ class OrderAvailabilityConfirmedMail extends Mailable
 
         return [
             Attachment::fromData(
-                fn (): string => app(\App\Services\CommercialDocuments\CommercialDocumentPdf::class)->render($document),
+                fn (): string => app(CommercialDocumentPdf::class)->render($document),
                 'Счет-'.$document->number.'.pdf',
             )->withMime('application/pdf'),
         ];

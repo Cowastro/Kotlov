@@ -17,7 +17,7 @@ class AccountOrderController extends Controller
             && $access->allows($request->user(), 'orders.view', $client)
             && $access->allUserIds($client)->contains((int) $order->user_id);
         abort_unless($ownsOrder || $companyCanView, 404);
-        abort_unless($order->customerDetailsAreAvailable(), 404);
+        abort_unless($order->customerCanViewDetails(), 404);
 
         $order->loadMissing('items');
 

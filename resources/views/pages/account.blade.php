@@ -158,7 +158,8 @@
                                     @foreach ($orders as $order)
                                         @php
                                             $st = $orderStatusMap[$order->status] ?? ['label' => $order->status, 'class' => ''];
-                                            $canOpen = $order->customerDetailsAreAvailable();
+                                            $st['label'] = $order->customerStatusLabel();
+                                            $canOpen = $order->customerCanViewDetails();
                                             $canPayOnline = in_array($order->id, $webpayPayableOrderIds, true);
                                         @endphp
                                         <article class="account-order-card">
@@ -176,6 +177,7 @@
                                                         <p class="account-order-card__product mb-0">
                                                             {{ Str::limit($item->product_name ?? 'Товар удалён', 62) }}
                                                             <span>{{ $item->quantity }} шт. × {{ number_format($item->price, 2, '.', ' ') }} BYN</span>
+                                                            <small>{{ $order->customerItemFulfillment($item) }}</small>
                                                         </p>
                                                     @empty
                                                         <span class="cl-text-3">Товары не указаны</span>

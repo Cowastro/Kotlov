@@ -2,7 +2,7 @@
 
 @section('content')
 @php
-    $statusLabel = \App\Models\Order::STATUSES[$order->status] ?? $order->status;
+    $statusLabel = $order->customerStatusLabel();
     $paymentTypeLabel = \App\Models\Order::PAYMENT_TYPES[$order->payment_type] ?? $order->payment_type;
     $deliveryTypeLabel = \App\Models\Order::DELIVERY_TYPES[$order->delivery_type] ?? $order->delivery_type;
     $deliveryAddress = collect([$order->delivery_region, $order->delivery_city, $order->delivery_address])
@@ -12,19 +12,19 @@
     $onlinePayment = in_array($order->payment_type, ['online_card', 'webpay'], true);
     $statusBanner = match ($order->status) {
         'processing' => [
-            'title' => 'Заказ в исполнении',
-            'description' => 'Менеджер передал заказ в работу. Сейчас мы готовим товары к доставке или выдаче.',
+            'title' => $order->customerStatusLabel(),
+            'description' => 'Комплектуем заказ. Ниже отображается состояние каждой позиции и согласованные сроки.',
             'icon' => '↻',
             'class' => 'is-processing',
         ],
         'shipped' => [
-            'title' => 'Передан в доставку',
-            'description' => 'Заказ собран и передан в доставку или подготовлен к выдаче клиенту.',
+            'title' => $order->customerStatusLabel(),
+            'description' => $order->delivery_type === 'pickup' ? 'Заказ подготовлен к самовывозу. Согласуйте получение с магазином.' : 'Заказ собран и передан в доставку.',
             'icon' => '→',
             'class' => 'is-shipped',
         ],
         'delivered', 'completed' => [
-            'title' => 'Заказ доставлен',
+            'title' => 'Получен',
             'description' => 'Заказ получен клиентом. Благодарим за покупку в KOTLOV.BY.',
             'icon' => '✓',
             'class' => 'is-delivered',
@@ -36,8 +36,8 @@
             'class' => 'is-cancelled',
         ],
         default => [
-            'title' => 'Наличие подтверждено',
-            'description' => 'Менеджер проверил возможность исполнения всех позиций. Здесь отображаются актуальный состав и сумма заказа.',
+            'title' => 'Принят в обработку',
+            'description' => 'Все позиции сохранены. Ниже указано, что доступно, что ожидается и какие сроки ещё уточняются.',
             'icon' => '✓',
             'class' => 'is-confirmed',
         ],
@@ -86,6 +86,7 @@
                                 <div class="order-line">
                                     <div class="order-line__main">
                                         <p class="fw-medium mb-4">{{ $item->product_name ?: 'Товар' }}</p>
+                                        <p class="text-caption-01 mb-4">{{ $order->customerItemFulfillment($item) }}</p>
                                         @if ($item->product_sku)
                                             <p class="text-caption-01 cl-text-3 mb-0">Артикул: {{ $item->product_sku }}</p>
                                         @endif
@@ -101,6 +102,7 @@
                         </div>
 
                         <div class="order-totals mt-24">
+                            @if($order->fulfillment_customer_note)<p>{{ $order->fulfillment_customer_note }}</p>@endif
                             <div><span>Товары</span><strong>{{ number_format((float) $order->subtotal, 2, ',', ' ') }} BYN</strong></div>
                             @if ((float) $order->discount > 0)
                                 <div><span>Скидка</span><strong>−{{ number_format((float) $order->discount, 2, ',', ' ') }} BYN</strong></div>

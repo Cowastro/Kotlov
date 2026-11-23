@@ -22,8 +22,8 @@ final class OrderStatusSmsNotifier
         $text = match ($status) {
             'new' => 'принят.',
             'checking' => 'проверяем наличие.',
-            'confirmed' => 'наличие подтверждено.',
-            'processing' => 'в исполнении.',
+            'confirmed' => 'принят в обработку. Состав и сроки — в письме или у менеджера.',
+            'processing' => 'комплектация.',
             'waiting_payment' => 'ожидает оплаты.',
             'paid' => 'оплачен.',
             'shipped' => $order->delivery_type === 'pickup' ? 'готов к самовывозу.' : 'передан в доставку.',

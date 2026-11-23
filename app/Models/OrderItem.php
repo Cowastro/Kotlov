@@ -16,12 +16,16 @@ class OrderItem extends Model
     private ?Product $publicProductCache = null;
 
     public const FULFILLMENT_ROUTES = [
+        'clarifying' => 'Источник уточняется',
         'own_stock' => 'Наш склад',
         'supplier_purchase' => 'Закупить у поставщика',
         'direct_supplier' => 'Передать поставщику напрямую',
     ];
 
     public const FULFILLMENT_AVAILABILITY_STATUSES = [
+        'awaiting_supply' => 'Ожидаем поступление',
+        'partial' => 'Доступно частично',
+        'clarifying' => 'Уточняем наличие и срок',
         'available' => 'Наличие подтверждено',
         'reserved' => 'Зарезервировано',
         'ordered' => 'Заказано у поставщика',
@@ -32,6 +36,7 @@ class OrderItem extends Model
     private ?array $supplyContextCache = null;
 
     protected $fillable = [
+        'fulfillment_available_quantity', 'fulfillment_reservation_requested_at', 'fulfillment_expected_date',
         'order_id', 'product_id',
         'product_name', 'product_sku',
         'price', 'quantity', 'total',
@@ -51,6 +56,9 @@ class OrderItem extends Model
     ];
 
     protected $casts = [
+        'fulfillment_available_quantity' => 'decimal:3',
+        'fulfillment_reservation_requested_at' => 'datetime',
+        'fulfillment_expected_date' => 'date',
         'price' => 'decimal:2',
         'total' => 'decimal:2',
         'b2b_base_price' => 'decimal:2',
@@ -115,6 +123,9 @@ class OrderItem extends Model
                 'fulfillment_confirmed_by' => null,
                 'fulfillment_confirmed_at' => null,
                 'fulfillment_note' => null,
+                'fulfillment_available_quantity' => null,
+                'fulfillment_reservation_requested_at' => null,
+                'fulfillment_expected_date' => null,
             ]);
             $item->unsetRelation('product');
             $item->unsetRelation('integrationProduct');
@@ -232,6 +243,30 @@ class OrderItem extends Model
         return $this->fulfillment_availability_status
             ? (self::FULFILLMENT_AVAILABILITY_STATUSES[$this->fulfillment_availability_status] ?? $this->fulfillment_availability_status)
             : null;
+    }
+
+    /** Customer-safe summary: imported free stock is not a physical reservation. */
+    public function customerFulfillmentLabel(?string $orderStatus = null): string
+    {
+        $quantity = (int) $this->quantity;
+        if (in_array($orderStatus, ['shipped', 'delivered'], true)) {
+            return $orderStatus === 'delivered' ? 'Получено: '.$quantity.' шт.' : 'Передано в доставку / на выдачу: '.$quantity.' шт.';
+        }
+        $available = min($quantity, max(0, (float) ($this->fulfillment_available_quantity ?? 0)));
+        $status = $this->fulfillment_availability_status;
+        $label = match ($status) {
+            'reserved' => 'Зарезервировано: '.$quantity.' шт.',
+            'available' => $this->fulfillment_reservation_requested_at ? 'При проверке доступно: '.$quantity.' шт. Резерв оформляется.' : 'Наличие подтверждено',
+            'partial' => 'При проверке доступно: '.$available.' из '.$quantity.' шт. Ожидаем: '.($quantity - $available).' шт.',
+            'awaiting_supply', 'ordered' => 'Ожидаем поступление: '.$quantity.' шт.',
+            'unavailable' => 'Пока недоступно. Менеджер согласует дальнейшие действия.',
+            default => 'Уточняем наличие и срок: '.$quantity.' шт.',
+        };
+        if (in_array($status, ['partial', 'awaiting_supply', 'ordered', 'clarifying'], true)) {
+            $label .= $this->fulfillment_expected_date && ! $this->fulfillment_expected_date->lt(today()) ? ' Ориентировочно '.$this->fulfillment_expected_date->format('d.m.Y').'.' : ' Срок уточняется.';
+        }
+
+        return $label;
     }
 
     /** @return array<string, mixed> */

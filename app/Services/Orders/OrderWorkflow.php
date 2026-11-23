@@ -29,7 +29,7 @@ class OrderWorkflow
             'icon' => 'heroicon-o-check-badge',
             'color' => 'success',
             'heading' => 'Подтвердить заказ клиенту?',
-            'description' => 'Наличие всех позиций подтверждено. Заказ станет доступен клиенту в личном кабинете, клиенту уйдёт уведомление со ссылкой на заказ.',
+            'description' => 'План исполнения проверен. Заказ станет доступен в кабинете, клиент получит письмо с состоянием каждой позиции, включая ожидаемые товары.',
             'submit' => 'Подтвердить заказ',
         ],
         'confirmed' => [
@@ -80,6 +80,10 @@ class OrderWorkflow
     {
         if (self::managedBy1c($order)) {
             return 'Заказ в 1С ('.$order->onec_order_number.'): доставку и выдачу ведёт 1С — этап и уведомление клиенту сменятся сами по состоянию заказа в 1С.';
+        }
+
+        if ($order->status === 'processing' && $order->hasPendingSupply()) {
+            return 'В заказе есть ожидаемые или неуточнённые позиции. Сначала подтвердите готовность всего заказа к отгрузке.';
         }
 
         if ($order->status === 'checking' && ! $order->hasConfirmedFulfillmentForAllItems()) {
@@ -151,7 +155,7 @@ class OrderWorkflow
         $result = app(OrderAvailabilityConfirmation::class)->confirmAndNotify($order, $manager);
 
         return [
-            'title' => 'Наличие подтверждено',
+            'title' => 'Заказ принят в обработку',
             'body' => $result['notified']
                 ? 'Клиенту отправлено уведомление со ссылкой на заказ. Следующий этап — передача в исполнение.'
                 : 'Заказ доступен в личном кабинете. Следующий этап — передача в исполнение.',
