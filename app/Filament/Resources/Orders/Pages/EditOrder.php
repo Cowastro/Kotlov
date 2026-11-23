@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Pages;
 
+use App\Filament\Concerns\HasOrdersNavigation;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use Filament\Actions\Action;
@@ -14,6 +15,8 @@ use Filament\Support\Enums\Width;
 
 class EditOrder extends EditRecord
 {
+    use HasOrdersNavigation;
+
     protected static string $resource = OrderResource::class;
 
     public function getMaxContentWidth(): Width|string|null
