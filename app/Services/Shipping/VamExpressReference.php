@@ -113,4 +113,23 @@ class VamExpressReference
     {
         return $id && ctype_digit($id) ? Cache::get('vam-city:'.$this->accountKey().':'.$id) : null;
     }
+
+    public function resolveCity(string $id, string $savedLabel): ?array
+    {
+        if ($city = $this->city($id)) {
+            return $city;
+        }
+        if (! ctype_digit($id)) {
+            return null;
+        }
+        // A deployment may clear the cache. Recheck the saved ID against the
+        // carrier's search results; never trust an editable label as proof.
+        $query = trim(explode('(', $savedLabel, 2)[0]);
+        if (mb_strlen($query) < 2 || mb_strlen($query) > 80) {
+            return null;
+        }
+        $matches = $this->cities($query);
+
+        return isset($matches[$id]) ? $this->city($id) : null;
+    }
 }
