@@ -6,11 +6,13 @@ use App\Filament\Resources\OneCOrderProfiles\Pages\EditOneCOrderProfile;
 use App\Filament\Resources\OneCOrderProfiles\Pages\ListOneCOrderProfiles;
 use App\Filament\Resources\Orders\Actions\OneCOrderExportAction;
 use App\Models\OneCOrderProfile;
+use App\Models\Order;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCReferences;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -77,6 +79,8 @@ class OneCOrderProfileResource extends Resource
                 TextInput::make('name')->label('Название')->required()->maxLength(120),
                 Select::make('customer_mode')->label('Покупатель')->options(OneCOrderProfile::CUSTOMER_MODES)->required(),
                 Toggle::make('is_default')->label('По умолчанию для заказов сайта'),
+                CheckboxList::make('meta.delivery_types')->label('Сама для доставки')->options(Order::DELIVERY_TYPES)->columns(2)->columnSpanFull()
+                    ->helperText('Заказ с этой доставкой идёт по этой схеме: например, «Транспортная компания по Беларуси» — клиент в 1С «ВАМэкспрессБай ООО».'),
                 Toggle::make('is_active')->label('Используется'),
                 TextInput::make('sort')->label('Порядок')->numeric(),
                 Placeholder::make('template')->label('Сделана по заказу 1С')->content(fn (?OneCOrderProfile $record): string => $record?->template_number ?: '—'),

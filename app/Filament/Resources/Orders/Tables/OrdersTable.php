@@ -174,7 +174,7 @@ class OrdersTable
                         default => 'Заказа в 1С нет',
                     })
                     ->description(fn (Order $record): ?string => filled($record->onec_order_guid) && ! $record->onec_deleted
-                        ? ($record->onec_posted ? '' : 'не проведён').($record->onec_doc_status ? ($record->onec_posted ? '' : ' · ').(OneCOrderProfiles::STATUSES[$record->onec_doc_status] ?? $record->onec_doc_status) : '')
+                        ? ($record->onec_posted ? '' : 'не проведён').($record->onec_doc_status ? ($record->onec_posted ? '' : ' · ').($record->onec_doc_status !== 'Закрыт' && OneCOrderPayments::readyToClose($record) ? 'Готов к закрытию' : (OneCOrderProfiles::STATUSES[$record->onec_doc_status] ?? $record->onec_doc_status)) : '')
                             .($record->onec_to_pay !== null ? ' · '.OneCOrderPayments::label((float) $record->onec_paid, (float) $record->onec_to_pay) : '')
                         : null)
                     ->width('120px')

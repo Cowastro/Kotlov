@@ -27,6 +27,7 @@ class OneCOrderStages
 
         return match (true) {
             $order->onec_doc_status === 'Закрыт' && ! $allLinesCancelled => 'delivered',
+            OneCOrderPayments::readyToClose($order) => 'delivered', // «Готов к закрытию»: shipped and paid
             in_array($order->onec_doc_status, self::IN_WORK, true) => 'processing',
             default => null,
         };
@@ -50,7 +51,8 @@ class OneCOrderStages
             return null;
         }
         $silent = $current < self::RANK['confirmed'];
-        $status = OneCOrderProfiles::STATUSES[$order->onec_doc_status] ?? $order->onec_doc_status;
+        $status = $order->onec_doc_status !== 'Закрыт' && OneCOrderPayments::readyToClose($order) ? 'Готов к закрытию'
+            : (OneCOrderProfiles::STATUSES[$order->onec_doc_status] ?? $order->onec_doc_status);
         $order->transitionTo($target, 'По 1С: заказ '.$order->onec_order_number.' проведён, «'.$status.'»'
             .($silent ? ' (не подтверждался на сайте — клиенту не сообщали).' : '.'));
         if (! $silent) {

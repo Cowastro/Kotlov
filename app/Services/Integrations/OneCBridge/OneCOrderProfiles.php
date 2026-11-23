@@ -103,11 +103,13 @@ class OneCOrderProfiles
     }
 
     /** The scheme for an order: a company order takes the first company scheme, the rest the default one. */
-    public function forOrder(bool $company): ?OneCOrderProfile
+    /** A company buys by its own scheme; a delivery may have its own customer in 1C (ВАМэкспресс); else the default. */
+    public function forOrder(bool $company, ?string $delivery = null): ?OneCOrderProfile
     {
         $active = OneCOrderProfile::query()->where('document', OneCOrderProfile::CUSTOMER_ORDER)->where('is_active', true)->orderByDesc('is_default')->orderBy('sort')->orderBy('id')->get();
 
         return ($company ? $active->firstWhere('customer_mode', OneCOrderProfile::COMPANY) : null)
+            ?? ($delivery ? $active->first(fn (OneCOrderProfile $p): bool => in_array($delivery, (array) ($p->meta['delivery_types'] ?? []), true)) : null)
             ?? $active->firstWhere('is_default', true) ?? $active->first();
     }
 }

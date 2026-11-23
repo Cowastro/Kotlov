@@ -30,7 +30,9 @@ class OneCOrderPayments
     private function waiting(): Builder
     {
         return Order::query()->whereNotNull('onec_order_guid')->where('onec_deleted', false)->where('onec_posted', true)
-            ->where('status', '!=', 'cancelled')->where(fn ($q) => $q->whereNull('payment_status')->orWhere('payment_status', '!=', 'paid'))
+            ->where('status', '!=', 'cancelled')
+            // until it is paid and delivered: «готов к закрытию» needs the shipment too
+            ->where(fn ($q) => $q->whereNull('payment_status')->orWhere('payment_status', '!=', 'paid')->orWhereNotIn('status', ['delivered', 'completed']))
             ->where('onec_exported_at', '>', now()->subDays(self::DAYS));
     }
 
@@ -76,16 +78,18 @@ class OneCOrderPayments
             if ($object === '') {
                 continue;
             }
-            [$toPay, $paid] = self::sums($records);
+            [$toPay, $paid, $shipped] = self::sums($records);
             foreach (Order::query()->where('onec_settlement_key', $object)->get() as $order) {
                 $due = $toPay > 0 ? $toPay : (float) $order->total;
-                $order->forceFill(['onec_to_pay' => $due, 'onec_paid' => $paid, 'onec_paid_checked_at' => now()])->save();
+                $order->forceFill(['onec_to_pay' => $due, 'onec_paid' => $paid, 'onec_shipped' => $shipped, 'onec_paid_checked_at' => now()])->save();
                 if ($due > 0 && $paid >= $due - 0.01 && $order->payment_status !== 'paid' && $order->status !== 'cancelled') {
                     $order->forceFill(['payment_status' => 'paid'])->save();
                     $order->managerComments()->create(['author_name' => 'Мост 1С',
                         'body' => 'Оплата по 1С: заказ '.$order->onec_order_number.' оплачен полностью ('.self::money($paid).' BYN).']);
                     $paidNow++;
                 }
+                // «Готов к закрытию» in 1C: shipped and paid — the site order is delivered.
+                app(OneCOrderStages::class)->apply($order);
             }
         }
 
@@ -96,7 +100,9 @@ class OneCOrderPayments
      * To pay: what the order planned («КОплате» it recorded itself). Paid: what payments took off the debt — «Сумма»
      * expense of every document other than the order (bank, cash, card, offset), less what was returned.
      *
-     * @return array{0: float, 1: float}
+     * Shipped: what sales put on the debt — «Сумма» receipt of every document other than the order.
+     *
+     * @return array{0: float, 1: float, 2: float}
      */
     public static function sums(Collection $records): array
     {
@@ -106,12 +112,23 @@ class OneCOrderPayments
         $paid = $records->reject($byOrder)->filter(fn (array $r): bool => ($r['RecordType'] ?? '') === 'Expense')
             ->sum(fn (array $r): float => (float) ($r['Сумма'] ?? 0));
 
-        return [round(max(0, $toPay), 2), round(max(0, $paid), 2)];
+        $shipped = $records->reject($byOrder)->filter(fn (array $r): bool => ($r['RecordType'] ?? '') === 'Receipt')
+            ->sum(fn (array $r): float => (float) ($r['Сумма'] ?? 0));
+
+        return [round(max(0, $toPay), 2), round(max(0, $paid), 2), round(max(0, $shipped), 2)];
     }
 
     private static function guid(mixed $key): bool
     {
         return is_string($key) && preg_match('/^[0-9a-f-]{36}$/i', $key) && $key !== '00000000-0000-0000-0000-000000000000';
+    }
+
+    /** «Готов к закрытию» as 1C shows it: all shipped and all paid. */
+    public static function readyToClose(Order $order): bool
+    {
+        $due = (float) $order->onec_to_pay;
+
+        return $due > 0 && (float) $order->onec_paid >= $due - 0.01 && (float) $order->onec_shipped >= $due - 0.01;
     }
 
     /** As 1C puts it, short: the sum is the order's own. */

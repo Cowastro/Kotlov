@@ -139,7 +139,7 @@ class OneCOrderExport
     public function defaults(Order $order, ?OneCOrderProfile $profile = null): array
     {
         $taxId = $this->companyTaxId($order);
-        $profile ??= $this->profiles->forOrder($taxId !== '');
+        $profile ??= $this->profiles->forOrder($taxId !== '', $order->delivery_type);
         if (! $profile) {
             return ['profile_id' => null, 'h' => []];
         }
