@@ -30,7 +30,7 @@ class VamExpressDraftForm
                     self::city('city_id', 'Куда доставляем', 'city_label'),
                     Hidden::make('city_label'),
                     Toggle::make('express')->label('Экспресс-доставка')->default(false)->live(),
-                    Repeater::make('goods')->label('Грузы')->defaultItems(1)->minItems(1)->maxItems(20)->addActionLabel('Добавить груз')->columnSpanFull()
+                    Repeater::make('goods')->label('Грузы')->reorderable(false)->defaultItems(1)->minItems(1)->maxItems(20)->addActionLabel('Добавить груз')->columnSpanFull()
                         ->columns(['default' => 1, 'md' => 6])->schema([
                             Select::make('description')->label('Категория по тарифу ВАМ')->searchable()->options(fn (): array => self::safe(fn () => app(VamExpressReference::class)->goods()))->columnSpan(['default' => 1, 'md' => 2])->live(),
                             TextInput::make('model')->label('Марка / модель')->maxLength(50)->columnSpan(['default' => 1, 'md' => 2]),
@@ -75,7 +75,7 @@ class VamExpressDraftForm
             Section::make('Проверка сохранённого черновика')->schema([
                 Placeholder::make('sourceGoods')->label('Товары заказа')->visible(fn (?VamExpressDraft $record): bool => $record?->order !== null)
                     ->content(fn (?VamExpressDraft $record): string => $record?->order?->items->map(fn ($item) => $item->product_name.' × '.$item->quantity)->implode('; ') ?? ''),
-                Placeholder::make('readiness')->hiddenLabel()->content(function (?VamExpressDraft $record): string {
+                Placeholder::make('readiness')->label('Готовность к отправке')->content(function (?VamExpressDraft $record): string {
                     if (! $record) {
                         return 'Черновик можно сохранить с незаполненными полями. Расчёт требует профиль, город и категорию каждого груза.';
                     }
