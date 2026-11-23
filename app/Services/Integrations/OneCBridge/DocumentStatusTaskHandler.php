@@ -24,9 +24,6 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
     /** Documents older than this are not asked about any more. */
     private const DAYS = 60;
 
-    /** «Действие» of a line that ships from stock; «Требуется» (Обеспечить) waits for a supplier. */
-    private const SHIP = 'Отгрузить';
-
     public function __construct(
         private readonly OneCAgentTasks $tasks,
         private readonly ODataReadTaskHandler $reads,
@@ -52,9 +49,9 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         $supplierOrders = OneCSupplierOrder::query()->whereNotNull('onec_order_guid')->where('onec_deleted', false)
             ->where(fn ($q) => $q->whereNull('onec_posted')->orWhere('onec_posted', false))->where('created_at', '>', now()->subDays(self::DAYS))
             ->orderBy('id')->pluck('onec_order_guid')->unique()->values();
-        // Payments of linked orders: «Оплачен» follows 1C.
-        $payments = app(OneCOrderPayments::class)->queries();
-        if ($keys->isEmpty() && $orders->isEmpty() && $supplierOrders->isEmpty() && $payments === []) {
+        // The state of linked orders as 1C lists it (with payment): the stage and «Оплачен» follow it.
+        $states = app(OneCOrderStates::class)->queries();
+        if ($keys->isEmpty() && $orders->isEmpty() && $supplierOrders->isEmpty() && $states === []) {
             return null;
         }
         $queries = [];
@@ -71,9 +68,9 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             $queries['supplier_orders_'.($i + 1)] = ODataReadTaskHandler::path(OneCSupplierOrderExport::ENTITY,
                 ['$filter' => $filter($chunk), '$select' => 'Ref_Key,Number,Posted,DeletionMark,Статус']);
         }
-        $queries += $payments;
+        $queries += $states;
         try {
-            return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.($keys->count() + $orders->count() + $supplierOrders->count()).($payments ? ', оплаты: '.count($payments) : ''), $user, ['queries' => $queries]);
+            return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.($keys->count() + $orders->count() + $supplierOrders->count()).($states ? ', состояния: '.count($states) : ''), $user, ['queries' => $queries]);
         } catch (DomainException) {
             return null;
         }
@@ -95,14 +92,13 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         $checked = 0;
         $posted = 0;
         $moved = 0;
-        $shipAll = [];
         $paid = 0;
-        $payments = app(OneCOrderPayments::class);
+        $stateRows = [];
         foreach (array_keys((array) data_get($task->payload, 'queries', [])) as $name) {
             $part = ODataReadTaskHandler::part($task, $name);
-            if (str_starts_with($name, 'pay_')) {
-                $rows = $part['code'] === 200 ? (array) data_get($part['json'], 'value', []) : [];
-                str_starts_with($name, 'pay_keys_') ? $payments->rememberObjects($rows) : $paid += $payments->apply($rows);
+            if (str_starts_with($name, 'states_')) {
+                // applied after the orders: their posting and status come first
+                $stateRows = array_merge($stateRows, $part['code'] === 200 ? (array) data_get($part['json'], 'value', []) : []);
 
                 continue;
             }
@@ -135,9 +131,6 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
                             ->where('subject_id', $order->id)->where('status', OneCAgentTask::DONE)
                             ->update(['summary' => OrderTaskHandler::summary($order)]);
                         $lines = collect((array) ($row['Товары'] ?? []));
-                        // «Готов к отгрузке»: every line left ships from stock («Отгрузить»), none waits for a supplier.
-                        $left = $lines->reject(fn ($l): bool => (bool) ($l['Отменено'] ?? false));
-                        $shipAll[$key] = $left->isNotEmpty() && $left->every(fn ($l): bool => ($l['ВариантОбеспечения'] ?? '') === self::SHIP);
                         $moved += app(OneCOrderStages::class)->apply($order, $lines->isNotEmpty() && $lines->every(fn ($l): bool => (bool) ($l['Отменено'] ?? false))) ? 1 : 0;
                     }
 
@@ -157,16 +150,10 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             }
         }
 
-        // Shown under the 1C number; the stage and the SMS stay until it is checked against 1C.
-        $ready = 0;
-        foreach (Order::query()->whereIn('onec_order_guid', array_keys($shipAll))->get() as $order) {
-            $isReady = $order->onec_posted && in_array($order->onec_doc_status, ['КОбеспечению', 'КВыполнению'], true)
-                && $shipAll[strtolower((string) $order->onec_order_guid)];
-            $order->forceFill(['onec_ready_to_ship' => $isReady])->save();
-            $ready += $isReady ? 1 : 0;
-        }
+        [$paid, $byState] = app(OneCOrderStates::class)->apply($stateRows);
+        $moved += $byState;
 
-        return 'Проверено '.$checked.', проведено '.$posted.($moved ? ', этапов заказов обновлено: '.$moved : '').($paid ? ', оплачено по 1С: '.$paid : '').($ready ? ', готовы к отгрузке: '.$ready : '');
+        return 'Проверено '.$checked.', проведено '.$posted.($moved ? ', этапов заказов обновлено: '.$moved : '').($paid ? ', оплачено по 1С: '.$paid : '');
     }
 
     public function requeued(OneCAgentTask $task): void

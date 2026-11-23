@@ -22,9 +22,9 @@ use App\Models\User;
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCOrderExport;
 use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
-use App\Services\Integrations\OneCBridge\OneCOrderPayments;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCOrderStages;
+use App\Services\Integrations\OneCBridge\OneCOrderStates;
 use App\Services\Integrations\OneCBridge\OneCOwnStockRouting;
 use App\Services\Integrations\OneCBridge\OneCReferences;
 use App\Services\Integrations\OneCBridge\OneCStock;
@@ -328,39 +328,6 @@ class OneCOrderExportTest extends TestCase
         $this->assertNull(app(DocumentStatusTaskHandler::class)->enqueueCheck(null));
     }
 
-    public function test_an_order_paid_in_1c_becomes_paid_on_the_site(): void
-    {
-        $guid = 'dddddddd-0000-0000-0000-000000000900';
-        $object = 'ffffffff-0000-0000-0000-000000000900';
-        $order = $this->order(['status' => 'delivered', 'payment_status' => 'pending', 'onec_order_guid' => $guid, 'onec_order_number' => 'МПУТ-000900',
-            'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'Закрыт', 'onec_posted' => true]);
-        $read = function (string $name, array $rows): void {
-            $task = app(DocumentStatusTaskHandler::class)->enqueueCheck(null);
-            $this->assertArrayHasKey($name, $task->payload['queries']);
-            $this->agent()->get('/1c/agent/tasks/next')->assertOk();
-            $this->sendPart($task->id, $name, 200, ['value' => $rows])->assertOk();
-            $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1'])->assertOk();
-        };
-
-        // First the settlement object of the order itself; one «по договору» (no order in it) is never taken.
-        $read('pay_keys_1', [['Ref_Key' => $object, 'Объект' => $guid, 'Объект_Type' => 'StandardODATA.Document_ЗаказКлиента'],
-            ['Ref_Key' => 'ffffffff-0000-0000-0000-0000000000aa', 'Объект' => $guid, 'Объект_Type' => 'StandardODATA.Catalog_ДоговорыКонтрагентов']]);
-        $this->assertSame($object, $order->fresh()->onec_settlement_key);
-
-        // Then its records: 49.98 planned by the order, 30 paid by bank — not yet paid.
-        $plan = ['ОбъектРасчетов_Key' => $object, 'Recorder_Type' => 'StandardODATA.Document_ЗаказКлиента', 'RecordType' => 'Receipt', 'Active' => true, 'КОплате' => 49.98, 'Сумма' => 0];
-        $bank = ['ОбъектРасчетов_Key' => $object, 'Recorder_Type' => 'StandardODATA.Document_ПоступлениеБезналичныхДенежныхСредств', 'RecordType' => 'Expense', 'Active' => true, 'КОплате' => 30, 'Сумма' => 30];
-        $read('pay_1', [$plan, $bank]);
-        $this->assertSame('pending', $order->fresh()->payment_status);
-        $this->assertSame('30.00', $order->fresh()->onec_paid);
-
-        // The rest comes by cash: paid on the site, the manager sees it.
-        $read('pay_1', [$plan, $bank, array_merge($bank, ['Recorder_Type' => 'StandardODATA.Document_ПриходныйКассовыйОрдер', 'КОплате' => 19.98, 'Сумма' => 19.98])]);
-        $this->assertSame('paid', $order->fresh()->payment_status);
-        $this->assertSame(1, $order->managerComments()->where('body', 'like', '%МПУТ-000900 оплачен полностью (49,98 BYN)%')->count());
-        $this->assertNull(app(DocumentStatusTaskHandler::class)->enqueueCheck(null));
-    }
-
     public function test_the_stock_of_the_main_warehouse_comes_from_1c_and_decides_ship_or_provide(): void
     {
         OneCReference::query()->create(['kind' => 'warehouse', 'ref_key' => 'aaaaaaaa-0000-0000-0000-00000000000a', 'description' => 'Основной', 'is_folder' => false, 'deletion_mark' => false]);
@@ -412,28 +379,6 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame($retail->id, $export->defaults($this->order(['number' => 'K-1002', 'delivery_type' => 'transport', 'payment_type' => 'online_card']))['profile_id']);
     }
 
-    public function test_an_order_shipped_and_paid_in_1c_is_ready_to_close_and_delivered(): void
-    {
-        $object = 'ffffffff-0000-0000-0000-000000000901';
-        $order = $this->order(['status' => 'processing', 'payment_status' => 'pending', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000901',
-            'onec_order_number' => 'МПУТ-000733', 'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'КОбеспечению',
-            'onec_posted' => true, 'onec_settlement_key' => $object]);
-        $plan = ['ОбъектРасчетов_Key' => $object, 'Recorder_Type' => 'StandardODATA.Document_ЗаказКлиента', 'RecordType' => 'Receipt', 'КОплате' => 49.98, 'Сумма' => 0];
-        $sale = ['ОбъектРасчетов_Key' => $object, 'Recorder_Type' => 'StandardODATA.Document_РеализацияТоваровУслуг', 'RecordType' => 'Receipt', 'КОплате' => 0, 'Сумма' => 49.98];
-        $cash = ['ОбъектРасчетов_Key' => $object, 'Recorder_Type' => 'StandardODATA.Document_ПриходныйКассовыйОрдер', 'RecordType' => 'Expense', 'КОплате' => 49.98, 'Сумма' => 49.98];
-        $payments = app(OneCOrderPayments::class);
-
-        // Shipped, not paid yet: still in work.
-        $payments->apply([$plan, $sale]);
-        $this->assertSame('processing', $order->fresh()->status);
-
-        // Paid too: «Готов к закрытию» in 1C — delivered on the site.
-        $payments->apply([$plan, $sale, $cash]);
-        $order->refresh();
-        $this->assertSame(['delivered', 'paid'], [$order->status, $order->payment_status]);
-        $this->assertSame('По 1С: заказ МПУТ-000733 проведён, «Готов к закрытию».', $order->statusHistory()->latest('id')->value('comment'));
-    }
-
     public function test_our_warehouse_line_takes_the_1c_cost_and_the_free_1c_stock(): void
     {
         $sbg = Supplier::query()->updateOrCreate(['code' => 'sanbusinessgroup'], ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true]);
@@ -458,20 +403,54 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame(0, app(OneCOwnStockRouting::class)->fillOpenOrders(), 'a routed line is never touched again');
     }
 
-    public function test_an_order_whose_lines_all_ship_from_stock_is_ready_to_ship(): void
+    /** One document check: the 1C order and its state row from «Состояния заказов клиентов». */
+    private function check1cState(string $guid, string $state, float $paidPercent, float $paidSum = 0): void
     {
-        $guid = 'dddddddd-0000-0000-0000-000000000800';
-        $order = $this->order(['status' => 'processing', 'payment_status' => 'paid', 'delivery_type' => 'pickup', 'onec_order_guid' => $guid,
-            'onec_order_number' => 'МПУТ-000800', 'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'КОбеспечению', 'onec_posted' => true]);
-        $line = ['Номенклатура_Key' => self::ITEM, 'Количество' => 1, 'Отменено' => false, 'ВариантОбеспечения' => 'Отгрузить'];
+        $task = app(DocumentStatusTaskHandler::class)->enqueueCheck(null);
+        $this->assertArrayHasKey('states_1', $task->payload['queries']);
+        $this->agent()->get('/1c/agent/tasks/next')->assertOk();
+        $this->sendPart($task->id, 'states_1', 200, ['value' => [['Заказ' => $guid, 'Заказ_Type' => 'StandardODATA.Document_ЗаказКлиента',
+            'Состояние' => $state, 'СуммаОплаты' => $paidSum, 'ПроцентОплаты' => $paidPercent, 'ПроцентОтгрузки' => 0, 'СуммаДолга' => 0]]])->assertOk();
+        $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1'])->assertOk();
+    }
 
-        // One line waits for the supplier («Обеспечить»): «Ожидается обеспечение».
-        $this->check1cOrder('КОбеспечению', true, [$line, array_merge($line, ['ВариантОбеспечения' => 'Требуется'])]);
-        $this->assertFalse($order->fresh()->onec_ready_to_ship);
-        // Every line left ships from stock (a cancelled one does not count): «Готов к отгрузке» — shown, the stage stays.
-        $this->check1cOrder('КОбеспечению', true, [$line, array_merge($line, ['ВариантОбеспечения' => 'Требуется', 'Отменено' => true])]);
-        $this->assertTrue($order->fresh()->onec_ready_to_ship);
-        $this->assertSame('processing', $order->fresh()->status);
+    public function test_the_state_and_the_payment_come_from_1c_as_its_list_shows_them(): void
+    {
+        config(['services.sms_by.enabled' => true, 'services.sms_by.base_url' => 'https://app.sms.by', 'services.sms_by.token' => 'test-token', 'services.sms_by.alphaname_id' => '42']);
+        $guid = 'dddddddd-0000-0000-0000-000000000758';
+        $order = $this->order(['status' => 'processing', 'payment_status' => 'pending', 'payment_type' => 'cash', 'delivery_type' => 'pickup',
+            'onec_order_guid' => $guid, 'onec_order_number' => 'МПУТ-000758', 'onec_exported_at' => now(), 'onec_checked_at' => now(),
+            'onec_doc_status' => 'КОбеспечению', 'onec_posted' => true]);
+
+        $this->check1cState($guid, 'ОжидаетсяОбеспечение', 0);
+        $this->assertSame(['processing', 'ОжидаетсяОбеспечение'], [$order->fresh()->status, $order->fresh()->onec_state]);
+        $this->assertSame('Ожидается обеспечение', OneCOrderStates::label('ОжидаетсяОбеспечение'));
+
+        // Self-pickup ready in 1C: «Готов к самовывозу», the SMS gives the 1C number only.
+        $this->check1cState($guid, 'ГотовКОтгрузке', 0);
+        $this->assertSame('shipped', $order->fresh()->status);
+        $this->assertSame('KOTLOV: заказ МПУТ-000758 готов к самовывозу.', \DB::table('order_status_sms')->where('order_id', $order->id)->where('order_status', 'shipped')->value('message'));
+
+        // Paid and shipped — «Готов к закрытию» even for a carrier paid «по договору»: delivered and paid.
+        $this->check1cState($guid, 'ГотовКЗакрытию', 100, 49.98);
+        $order->refresh();
+        $this->assertSame(['delivered', 'paid'], [$order->status, $order->payment_status]);
+        $this->assertSame('По 1С: заказ МПУТ-000758 проведён, «Готов к закрытию».', $order->statusHistory()->latest('id')->value('comment'));
+        $this->assertSame(1, $order->managerComments()->where('body', 'like', '%МПУТ-000758 оплачен полностью (49,98 BYN)%')->count());
+        // delivered and paid: its state is not read any more (the order is, until 1C closes it)
+        $this->assertArrayNotHasKey('states_1', app(DocumentStatusTaskHandler::class)->enqueueCheck(null)->payload['queries']);
+    }
+
+    public function test_a_delivery_order_ready_in_1c_stays_in_work_until_it_ships(): void
+    {
+        $guid = 'dddddddd-0000-0000-0000-000000000759';
+        $order = $this->order(['status' => 'processing', 'payment_status' => 'pending', 'delivery_type' => 'courier', 'onec_order_guid' => $guid,
+            'onec_order_number' => 'МПУТ-000759', 'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'КОбеспечению', 'onec_posted' => true]);
+        $this->check1cState($guid, 'ГотовКОтгрузке', 40, 20);
+        $this->assertSame(['processing', 'pending'], [$order->fresh()->status, $order->fresh()->payment_status]);
+        $this->assertSame('оплачен частично', OneCOrderStates::paymentLabel((float) $order->fresh()->onec_paid_percent));
+        $this->check1cState($guid, 'ВПроцессеОтгрузки', 40, 20);
+        $this->assertSame('shipped', $order->fresh()->status);
     }
 
     public function test_an_order_1c_refuses_on_write_goes_again_as_a_draft_and_the_scheme_keeps_drafts(): void
