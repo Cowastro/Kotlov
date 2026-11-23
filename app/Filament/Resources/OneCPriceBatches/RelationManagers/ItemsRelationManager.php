@@ -23,6 +23,7 @@ class ItemsRelationManager extends RelationManager
         'computed' => 'Рассчитана от закупки',
         'raised' => 'Поднята (низкая наценка)',
         'markup' => 'По наценке от себестоимости',
+        'fixed' => 'Задано вручную',
         'no_cost' => 'Нет себестоимости — вручную',
     ];
 
@@ -54,7 +55,7 @@ class ItemsRelationManager extends RelationManager
                     ->placeholder('—'),
                 TextColumn::make('verdict')->label('Проверка')->badge()
                     ->formatStateUsing(fn (?string $state): string => self::VERDICTS[$state] ?? (string) $state)
-                    ->color(fn (?string $state): string => in_array($state, ['ok', 'markup'], true) ? 'success' : 'warning')
+                    ->color(fn (?string $state): string => in_array($state, ['ok', 'markup', 'fixed'], true) ? 'success' : 'warning')
                     ->description(fn (OneCPriceBatchItem $record): ?string => $record->note),
             ])
             ->filters([
