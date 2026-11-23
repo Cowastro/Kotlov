@@ -103,7 +103,16 @@ class CommerceMlCatalogImporter
             'warehouse_stock_feed_total' => 0,
             'warehouse_stock_unresolved' => 0,
             'warehouse_stock_omitted' => 0,
+            // «Выгружать: Изменения» in 1C: the package has only what changed — what is not in it is not gone
+            'only_changes' => false,
         ];
+        foreach ($documents as $document) {
+            foreach ($document->xpath('//*[local-name()="Каталог" or local-name()="ПакетПредложений"][@СодержитТолькоИзменения]') ?: [] as $node) {
+                if (in_array(mb_strtolower(trim((string) $node['СодержитТолькоИзменения'])), ['true', '1', 'истина'], true)) {
+                    $stats['only_changes'] = true;
+                }
+            }
+        }
 
         DB::transaction(function () use ($documents, $source, &$stats): void {
             $this->discoverWarehouses($source, $documents, $stats);

@@ -1034,6 +1034,46 @@ XML;
         $this->assertSame(1, data_get($run->summary, 'stock_snapshot.zeroed'));
     }
 
+    public function test_a_package_of_changes_only_never_zeros_the_stock_of_goods_not_in_it(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+            'settings' => ['zero_missing_stock_on_complete' => true],
+        ]);
+        // unchanged for days: in «Изменения» mode 1C does not send it again
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'unchanged-offer',
+            'name' => 'Не менялся',
+            'stock_quantity' => 8,
+            'last_offer_seen_at' => now()->subDays(3),
+            'stock_confirmed_at' => now()->subDays(3),
+        ]);
+
+        $this->withBasicAuth('onec-test', 'secret-test')->get('/1c/exchange?type=catalog&mode=init')->assertOk();
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <ПакетПредложений СодержитТолькоИзменения="true"><Предложения><Предложение>
+    <Ид>changed-offer</Ид>
+    <Наименование>Изменился</Наименование>
+    <Цены><Цена><ЦенаЗаЕдиницу>10</ЦенаЗаЕдиницу></Цена></Цены>
+    <Количество>5</Количество>
+  </Предложение></Предложения></ПакетПредложений>
+</КоммерческаяИнформация>
+XML;
+        $this->call('POST', '/1c/exchange?type=catalog&mode=file&filename=offers.xml', [], [], [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'], $xml)->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')->get('/1c/exchange?type=catalog&mode=import&filename=offers.xml')->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')->get('/1c/exchange?type=catalog&mode=complete')->assertOk()
+            ->assertDontSeeText('stock_zeroed');
+
+        $this->assertDatabaseHas('integration_products', ['external_id' => 'unchanged-offer', 'stock_quantity' => 8]);
+        $this->assertDatabaseHas('integration_products', ['external_id' => 'changed-offer', 'stock_quantity' => 5]);
+        $this->assertTrue((bool) data_get(IntegrationExchangeRun::query()->latest('id')->firstOrFail()->summary, 'only_changes'));
+    }
+
     public function test_completed_catalog_subset_keeps_recent_positive_one_c_stock_for_a_day(): void
     {
         $source = IntegrationSource::query()->create([
