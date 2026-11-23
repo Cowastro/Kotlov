@@ -141,8 +141,13 @@ class VamExpressDraftsTest extends TestCase
         $draft = VamExpressDraft::firstOrFail();
         $this->assertSame('45.00', $draft->quoted_amount);
         $this->get('/admin/vam-express-drafts/'.$draft->id.'/edit')->assertOk();
-        Livewire::test(EditVamExpressDraft::class, ['record' => $draft->id])->callAction('estimate')->assertHasNoActionErrors();
+        $edit = Livewire::test(EditVamExpressDraft::class, ['record' => $draft->id])->callAction('estimate')->assertHasNoActionErrors();
         $this->assertSame('45.00', $draft->fresh()->quoted_amount);
+        $changed = $this->payload();
+        $changed['goods'][0]['number'] = 2;
+        $edit->fillForm(['payload' => $changed])->call('save')->assertHasNoFormErrors()
+            ->assertSee('Расчёт не сохранён. Нажмите «Сохранить и рассчитать».');
+        $this->assertNull($draft->fresh()->quoted_amount);
         Http::assertSentCount(1);
     }
 
