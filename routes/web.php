@@ -155,6 +155,12 @@ Route::get('/admin/orders/{order}/procurement', OrderProcurementController::clas
     ->middleware('auth')
     ->name('admin.orders.procurement');
 
+Route::get('/admin/vam-express-shipments/{shipment}/label/{format}', \App\Http\Controllers\VamExpressLabelController::class)
+    ->whereNumber('shipment')->whereIn('format', ['a4', '78'])->middleware('auth')->name('admin.vam-express.label');
+
+Route::get('/admin/orders/{order}/vam-express-labels', \App\Http\Controllers\VamExpressOrderLabelsController::class)
+    ->whereNumber('order')->middleware('auth')->name('admin.orders.vam-express-labels');
+
 Route::get('/admin/orders/{order}/evropochta-label/{format}', \App\Http\Controllers\EvropochtaOrderLabelController::class)
     ->whereNumber('order')
     ->whereIn('format', array_keys(\App\Services\Shipping\Evropochta::LABEL_FORMATS))
