@@ -4,16 +4,30 @@ namespace App\Filament\Resources\VamExpress\Pages;
 
 use App\Filament\Resources\VamExpress\VamExpressShipmentResource;
 use App\Services\Shipping\VamExpressSettings;
+use App\Support\Shipping\VamExpressStatus;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 class ListVamExpressShipments extends ListRecords
 {
     protected static string $resource = VamExpressShipmentResource::class;
+
+    public function getTabs(): array
+    {
+        $tabs = ['all' => 'Все', 'work' => 'В работе', 'transit' => 'В пути', 'delivered' => 'Доставлены', 'attention' => 'Переносы / отказы'];
+        $result = [];
+        foreach ($tabs as $key => $label) {
+            $result[$key] = Tab::make($label)->modifyQueryUsing(fn (Builder $query): Builder => VamExpressStatus::scope($query, $key));
+        }
+
+        return $result;
+    }
 
     public function getSubheading(): ?string
     {
@@ -30,6 +44,15 @@ class ListVamExpressShipments extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('resetSelection')->label('Сбросить всё')->icon('heroicon-o-x-mark')->color('gray')
+                ->authorize(fn (): bool => VamExpressShipmentResource::canViewAny())
+                ->visible(fn (): bool => $this->activeTab !== 'all' || filled($this->tableSearch)
+                    || collect($this->tableFilters ?? [])->flatten()->contains(fn ($value): bool => filled($value)))
+                ->action(function (): void {
+                    $this->activeTab = 'all';
+                    $this->removeTableFilters();
+                    $this->resetPage();
+                }),
             Action::make('connection')->label('Настройки входа')->icon('heroicon-o-key')
                 ->modalSubmitActionLabel('Сохранить')
                 ->visible(fn (): bool => auth()->user()?->isAdmin() === true)

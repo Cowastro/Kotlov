@@ -15,6 +15,8 @@ class VamExpressPortal
 
     private float $lastRequest = 0;
 
+    private float $requestInterval = 1.25;
+
     public function __construct(private VamExpressHtml $parser) {}
 
     public function login(string $username, string $password): void
@@ -105,9 +107,19 @@ class VamExpressPortal
         return (new VamExpressLabelHtml)->extract($label, substr($remoteId, 0, 7));
     }
 
+    public function senderProfile(string $remoteId): string
+    {
+        if (! preg_match('/^[a-f0-9]{32}$/', $remoteId)) {
+            throw new VamExpressException('Некорректный ID заявки ВАМ Экспресс.');
+        }
+        $this->requestInterval = 2.5;
+
+        return $this->parser->senderProfile($this->request('GET', '/UserUI/TicketEdit.aspx?id='.$remoteId));
+    }
+
     private function request(string $method, string $path, array $data = []): string
     {
-        $pause = 1.25 - (microtime(true) - $this->lastRequest);
+        $pause = $this->requestInterval - (microtime(true) - $this->lastRequest);
         if ($pause > 0 && ! app()->runningUnitTests()) {
             usleep((int) ($pause * 1000000));
         }

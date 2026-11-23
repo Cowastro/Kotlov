@@ -46,6 +46,11 @@ class VamExpressSync
             });
             $count = count(array_unique(array_column($rows, 'remote_id')));
             $message = "Обновлено заявок: {$count}.".($missing ? " Не найдены по ID: {$missing}; сохранённые данные оставлены." : '');
+            try {
+                app(VamExpressProfiles::class)->fill($portal);
+            } catch (VamExpressException) {
+                $message .= ' Некоторые профили отправителей ещё не загружены.';
+            }
             $settings->finish(true, $message, $ids);
 
             return $message;
