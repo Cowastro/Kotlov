@@ -616,6 +616,10 @@ class OrderInfolist
                             TextEntry::make('delivery_type')
                                 ->label('Способ')
                                 ->formatStateUsing(fn (string $state) => Order::DELIVERY_TYPES[$state] ?? $deliveryNames[$state] ?? $state),
+                            TextEntry::make('vam_order_shipment')->label('Заявка ВАМ')
+                                ->getStateUsing(fn (Order $record) => \App\Models\VamExpressShipment::where('order_id', $record->id)->get()->map(fn ($s) => $s->display_id.' · '.$s->carrier_status)->implode('; '))
+                                ->visible(fn (Order $record): bool => \App\Models\VamExpressShipment::where('order_id', $record->id)->exists())
+                                ->url(fn (Order $record): string => \App\Filament\Resources\VamExpress\VamExpressShipmentResource::getUrl('index', ['tableSearch' => $record->number])),
 
                             TextEntry::make('delivery_price')
                                 ->label('Стоимость')

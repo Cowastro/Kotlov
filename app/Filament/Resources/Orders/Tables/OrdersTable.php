@@ -73,6 +73,7 @@ class OrdersTable
             'courier' => 'Наш транспорт в пределах МКАД-2',
             'courier_minsk' => 'Наш транспорт в пределах МКАД-2',
             'transport' => 'ТК по Беларуси',
+            'vam_express' => 'ВАМ Экспресс',
             'transport_company' => 'ТК по Беларуси',
             'kit' => 'ТК КИТ / международная доставка',
             'evropochta' => Order::DELIVERY_TYPES['evropochta'],
