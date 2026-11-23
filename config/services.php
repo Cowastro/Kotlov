@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'euroterm' => [
+        'username' => env('EUROTERM_USERNAME', ''),
+        'password' => env('EUROTERM_PASSWORD', ''),
+        'pause_ms' => 1000,
+    ],
 
     'evropochta' => [
         'token' => env('EVROPOCHTA_API_TOKEN'),

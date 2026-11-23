@@ -10,6 +10,7 @@ use Symfony\Component\Console\Input\InputInterface;
 class SupplierSyncJournalRecorder
 {
     private const COMMAND_SUPPLIER_CODES = [
+        'supplier:sync-euroterm' => 'euroterm',
         'supplier:sync-td-komplekt' => 'td_komplekt',
         'supplier:sync-rusklimat' => 'rusklimat',
         'supplier:sync-rusklimat-pricelist' => 'rusklimat',
