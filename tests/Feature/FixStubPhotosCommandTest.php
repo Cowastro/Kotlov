@@ -24,7 +24,7 @@ class FixStubPhotosCommandTest extends TestCase
 
     public function test_a_copied_bare_file_name_is_relinked_and_a_card_without_file_takes_the_next_diameter(): void
     {
-        $category = Category::query()->create(['name' => 'Переходы', 'slug' => 'perehody-adaptery-dymohod', 'is_active' => true]);
+        $category = Category::query()->updateOrCreate(['slug' => 'perehody-adaptery-dymohod'], ['name' => 'Переходы', 'is_active' => true]);
         $card = fn (int $id, string $name, array $images) => Product::query()->forceCreate([
             'id' => $id, 'category_id' => $category->id, 'name' => $name, 'slug' => 'stub-test-'.$id, 'sku' => 'KOTLOV-'.$id,
             'price' => 30, 'is_active' => true, 'is_archived' => false, 'images' => $images, 'availability_status' => Product::AVAILABILITY_CHECK,

@@ -170,7 +170,7 @@ class SupplierProductAvailabilityServiceTest extends TestCase
         $this->assertSame('0.410', $item->fresh()->stock_quantity);
     }
 
-    public function test_recent_one_c_exchange_keeps_unchanged_stock_live_and_does_not_add_duplicate_rows(): void
+    public function test_fresh_one_c_stock_lines_stay_live_without_adding_duplicate_rows(): void
     {
         $category = Category::query()->create([
             'name' => 'Категория системной сверки остатков',
@@ -216,7 +216,7 @@ class SupplierProductAvailabilityServiceTest extends TestCase
             'product_id' => $single->id,
             'external_id' => 'onec-unchanged-row',
             'stock_quantity' => 1,
-            'stock_confirmed_at' => now()->subDays(2),
+            'stock_confirmed_at' => now()->subHours(2),
             'match_status' => 'matched',
         ]);
         foreach ([6, 4] as $index => $quantity) {
@@ -225,7 +225,7 @@ class SupplierProductAvailabilityServiceTest extends TestCase
                 'product_id' => $duplicate->id,
                 'external_id' => 'onec-duplicate-row-'.$index,
                 'stock_quantity' => $quantity,
-                'stock_confirmed_at' => now()->subDays(2),
+                'stock_confirmed_at' => now()->subHours(2),
                 'match_status' => 'matched',
             ]);
         }

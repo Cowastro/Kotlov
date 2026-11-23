@@ -19,7 +19,7 @@ class AuditSupplierOverlapCommandTest extends TestCase
         $card = Product::query()->create(['category_id' => $category->id, 'is_active' => true, 'price' => 4000, 'name' => 'Котел Vaillant turboTEC pro VUW 242/5-3', 'slug' => 'turbotec-242']);
         $alone = Product::query()->create(['category_id' => $category->id, 'is_active' => true, 'price' => 3000, 'name' => 'Котел BIOTEP 18', 'slug' => 'biotep-18']);
         $mine = Supplier::query()->create(['code' => 'teploshop', 'name' => 'Теплошоп', 'is_active' => true]);
-        $other = Supplier::query()->create(['code' => 'thermostudio', 'name' => 'Термостудио', 'is_active' => true]);
+        $other = Supplier::query()->updateOrCreate(['code' => 'thermostudio'], ['name' => 'Термостудио', 'is_active' => true]);
         $link = fn (Supplier $s, Product $p, ?float $cost, string $article) => SupplierProduct::query()->create([
             'supplier_id' => $s->id, 'product_id' => $p->id, 'supplier_article' => $article, 'supplier_article_normalized' => $article,
             'price_byn' => $cost, 'match_status' => 'matched', 'raw' => ['retail' => 3990],

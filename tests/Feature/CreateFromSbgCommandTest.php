@@ -17,7 +17,7 @@ class CreateFromSbgCommandTest extends TestCase
 
     public function test_a_row_linked_to_a_wrong_card_moves_to_a_card_made_from_sbg(): void
     {
-        $category = Category::query()->create(['name' => 'Аксессуары для бани', 'slug' => 'aksessuary-dlya-bani', 'is_active' => true]);
+        $category = Category::query()->updateOrCreate(['slug' => 'aksessuary-dlya-bani'], ['name' => 'Аксессуары для бани', 'is_active' => true]);
         $stove = Product::query()->create(['category_id' => $category->id, 'name' => 'Печь-каменка Царь-печи Емеля', 'slug' => 'pech-emelya', 'price' => 934, 'is_active' => true]);
         $source = IntegrationSource::query()->firstOrCreate(['code' => 'onec'], ['name' => '1С']);
         $item = IntegrationProduct::query()->create(['integration_source_id' => $source->id, 'external_id' => 'x-9074', 'external_code' => 'УТ-00009074',

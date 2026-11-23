@@ -143,7 +143,11 @@ class VamExpressSyncTest extends TestCase
         Livewire::test(ListVamExpressShipments::class)->callTableAction('linkOrder', $shipment, ['order_id' => null])->assertHasNoActionErrors();
         $this->assertNull($shipment->fresh()->order_id);
         $before['delivery_type'] = 'vam_express';
-        $this->assertSame($before, $order->fresh()->getAttributes());
+        // Selecting a carrier saves the order and may advance updated_at.
+        unset($before['updated_at']);
+        $after = $order->fresh()->getAttributes();
+        unset($after['updated_at']);
+        $this->assertSame($before, $after);
         $lock = Cache::lock('vam-express-sync', 600);
         $lock->get();
         try {

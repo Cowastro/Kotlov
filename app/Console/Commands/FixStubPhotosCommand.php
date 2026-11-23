@@ -27,7 +27,7 @@ class FixStubPhotosCommand extends Command
     public function handle(ProductVariantSelector $selector): int
     {
         $stats = ['cards' => 0, 'stub' => 0, 'relinked' => 0, 'sibling' => 0, 'unresolved' => 0];
-        $query = Product::query()->where('is_archived', false)->whereRaw('JSON_LENGTH(images) > 0')
+        $query = Product::query()->where('is_archived', false)->whereJsonLength('images', '>', 0)
             ->when($this->option('ids'), fn ($q) => $q->whereIn('id', array_map('intval', (array) $this->option('ids'))));
 
         $query->chunkById(500, function ($products) use (&$stats, $selector): void {

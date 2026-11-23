@@ -54,6 +54,13 @@ class OneCExchangeTest extends TestCase
         Cache::flush();
         Storage::fake('local');
 
+        // The importer also reconciles nomenclature links in a fresh SQLite database.
+        if (! Schema::hasTable('onec_items')) {
+            (require database_path('migrations/2026_11_22_140000_create_onec_items.php'))->up();
+            (require database_path('migrations/2026_11_23_030000_add_stock_to_onec_items.php'))->up();
+            (require database_path('migrations/2026_11_23_190000_add_cost_to_onec_items.php'))->up();
+        }
+
         if (! Schema::hasTable('users')) {
             Schema::create('users', function (Blueprint $table) {
                 $table->id();

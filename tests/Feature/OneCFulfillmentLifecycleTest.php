@@ -72,7 +72,7 @@ class OneCFulfillmentLifecycleTest extends TestCase
         $this->state($order, 'ГотовКОтгрузке');
         $this->assertSame('shipped', $order->status);
         $this->assertSame('Готов к самовывозу', $order->customerStatusLabel());
-        $this->assertSame(2, $order->items()->sum('quantity'));
+        $this->assertSame(2, (int) $order->items()->sum('quantity'));
         $html = (new OrderStatusUpdatedMail($order))->render();
         $this->assertStringContainsString('Готов к самовывозу', $html);
         $this->assertStringNotContainsString('передан в доставку', $html);

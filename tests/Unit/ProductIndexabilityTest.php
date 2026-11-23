@@ -147,9 +147,12 @@ class ProductIndexabilityTest extends TestCase
             'stock_status' => SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE,
             'last_stock_synced_at' => CarbonImmutable::now()->subMonth(),
         ]);
-        $offer->setRelation('supplier', new Supplier(['is_active' => true]));
+        $supplier = new Supplier(['is_active' => true]);
+        $supplier->setRelation('latestChannelTransition', null);
+        $offer->setRelation('supplier', $supplier);
         $product->setRelation('supplierProducts', new Collection([$offer]));
         $product->setRelation('integrationProducts', new Collection);
+        $product->setRelation('purchasePriceSources', new Collection);
 
         $this->assertTrue($product->canBePurchased());
         $this->assertSame('В наличии', $product->publicAvailabilityLabel());
