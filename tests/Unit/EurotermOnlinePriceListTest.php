@@ -37,6 +37,14 @@ class EurotermOnlinePriceListTest extends TestCase
         app(EurotermOnlinePriceList::class)->parsePage(str_replace('user.logout', 'user.login', self::page()));
     }
 
+    public function test_missing_prices_are_reported_without_inventing_a_replacement(): void
+    {
+        $page = app(EurotermOnlinePriceList::class)->parsePage(str_replace('<span class="Priceroz">1500,00</span>', '', self::page()));
+        $this->assertSame([], $page['rows']);
+        $this->assertSame('SKU-01', $page['unpriced'][0]['article']);
+        $this->assertSame('missing_price', $page['unpriced'][0]['reason']);
+    }
+
     public function test_full_login_and_pagination_are_checked_before_returning_a_snapshot(): void
     {
         Storage::fake('local');
@@ -53,6 +61,9 @@ class EurotermOnlinePriceListTest extends TestCase
         $this->assertSame(2, $payload['source_pages']);
         $this->assertSame('online', $payload['source_kind']);
         Http::assertSent(fn ($request): bool => $request->method() === 'POST' && $request['username'] === 'login' && $request['token'] === '1');
+        Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/results25-48.html')
+            && $request->hasHeader('Referer', EurotermOnlinePriceList::URL)
+            && $request->hasHeader('Accept-Language', 'ru-RU,ru;q=0.9'));
         $this->assertFalse(app(EurotermPortalCredentials::class)->due());
     }
 
