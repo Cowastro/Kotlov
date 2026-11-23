@@ -116,8 +116,13 @@ class IntegrationProduct extends Model
 
     public function hasFreshPositiveStock(): bool
     {
+        return (float) $this->stock_quantity > 0 && $this->hasFreshStock();
+    }
+
+    public function hasFreshStock(): bool
+    {
         $source = $this->source;
-        if ($source?->is_active !== true || (float) $this->stock_quantity <= 0) {
+        if ($source?->is_active !== true || $this->stock_quantity === null) {
             return false;
         }
 
@@ -125,17 +130,8 @@ class IntegrationProduct extends Model
             return true;
         }
 
-        if ($source->code !== 'onec' && $source->driver !== 'commerceml') {
-            return false;
-        }
-
-        $latestCatalogExchange = $source->relationLoaded('latestSuccessfulCatalogExchangeRun')
-            ? $source->latestSuccessfulCatalogExchangeRun
-            : $source->latestSuccessfulCatalogExchangeRun()->first();
-
-        return $latestCatalogExchange?->finished_at?->gte(
-            now()->subMinutes($source->stockValidityMinutes())
-        ) ?? false;
+        // Refreshing the catalogue does not refresh a missing stock line.
+        return false;
     }
 
     /** SQL equivalent of hasFreshPositiveStock(), including each source's validity window. */
@@ -150,12 +146,7 @@ class IntegrationProduct extends Model
                 $cutoff = now()->subMinutes($source->stockValidityMinutes());
                 $stock->orWhere(function (Builder $channel) use ($source, $cutoff): void {
                     $channel->where('integration_source_id', $source->id)
-                        ->where(function (Builder $confirmed) use ($source, $cutoff): void {
-                            $confirmed->where('stock_confirmed_at', '>=', $cutoff);
-                            if ($source->code === 'onec' || $source->driver === 'commerceml') {
-                                $confirmed->orWhereHas('source.latestSuccessfulCatalogExchangeRun', fn (Builder $run) => $run->where('finished_at', '>=', $cutoff));
-                            }
-                        });
+                        ->where('stock_confirmed_at', '>=', $cutoff);
                 });
             }
         });

@@ -82,6 +82,21 @@ class OneCBridgeTest extends TestCase
         $this->assertSame('2.000', $row->fresh()->stock_quantity);
     }
 
+    public function test_catalog_refresh_cannot_make_four_week_old_stock_current(): void
+    {
+        $row = IntegrationProduct::where('external_code', 'УТ-00000001')->firstOrFail();
+        $row->source->update(['is_active' => true]);
+        $row->update(['stock_quantity' => 4, 'stock_confirmed_at' => now()->subWeeks(4)]);
+        \App\Models\IntegrationExchangeRun::create(['integration_source_id' => $row->integration_source_id,
+            'direction' => 'inbound', 'operation' => 'catalog', 'status' => 'success', 'started_at' => now(), 'finished_at' => now()]);
+        $this->assertFalse($row->fresh()->hasFreshPositiveStock());
+        $this->assertFalse(IntegrationProduct::whereKey($row->id)->freshPositiveStock()->exists());
+        $context = app(\App\Services\ManagerStorefrontProductContext::class)->offers($row->product, $this->admin)->first();
+        $this->assertNull($context['stock_quantity']);
+        $this->assertFalse($context['in_stock']);
+        $this->assertSame('Остаток устарел · уточнить', $context['stock']);
+    }
+
     private function approvedBatch(): OneCPriceBatch
     {
         $batches = app(OneCPriceBatches::class);
