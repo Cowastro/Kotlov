@@ -394,6 +394,11 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame($vam->id, $profiles->forOrder(false, 'transport')->id);
         $this->assertSame($retail->id, $profiles->forOrder(false, 'courier')->id);
         $this->assertSame($retail->id, $profiles->forOrder(false, 'evropochta')->id, 'Европочта — not a client in 1C yet');
+
+        // The carrier is the customer when it collects the money; paid ahead online — retail.
+        $export = app(OneCOrderExport::class);
+        $this->assertSame($vam->id, $export->defaults($this->order(['delivery_type' => 'transport', 'payment_type' => 'cash']))['profile_id']);
+        $this->assertSame($retail->id, $export->defaults($this->order(['number' => 'K-1002', 'delivery_type' => 'transport', 'payment_type' => 'online_card']))['profile_id']);
     }
 
     public function test_an_order_shipped_and_paid_in_1c_is_ready_to_close_and_delivered(): void

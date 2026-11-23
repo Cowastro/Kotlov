@@ -80,7 +80,7 @@ class OneCOrderProfileResource extends Resource
                 Select::make('customer_mode')->label('Покупатель')->options(OneCOrderProfile::CUSTOMER_MODES)->required(),
                 Toggle::make('is_default')->label('По умолчанию для заказов сайта'),
                 CheckboxList::make('meta.delivery_types')->label('Сама для доставки')->options(Order::DELIVERY_TYPES)->columns(2)->columnSpanFull()
-                    ->helperText('Заказ с этой доставкой идёт по этой схеме: например, «Транспортная компания по Беларуси» — клиент в 1С «ВАМэкспрессБай ООО».'),
+                    ->helperText('Заказ с этой доставкой и оплатой при получении идёт по этой схеме: «Транспортная компания по Беларуси» — клиент в 1С «ВАМэкспрессБай ООО», «Европочта» — Европочта. Оплачен заранее — обычная розница.'),
                 Toggle::make('is_active')->label('Используется'),
                 TextInput::make('sort')->label('Порядок')->numeric(),
                 Placeholder::make('template')->label('Сделана по заказу 1С')->content(fn (?OneCOrderProfile $record): string => $record?->template_number ?: '—'),
