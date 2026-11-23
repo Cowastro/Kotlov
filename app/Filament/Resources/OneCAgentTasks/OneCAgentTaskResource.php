@@ -27,7 +27,7 @@ class OneCAgentTaskResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
 
-    protected static ?string $navigationLabel = 'Мост 1С';
+    protected static ?string $navigationLabel = 'Задачи моста 1С';
 
     protected static ?string $modelLabel = 'задача 1С';
 

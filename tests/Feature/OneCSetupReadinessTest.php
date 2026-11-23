@@ -196,7 +196,7 @@ class OneCSetupReadinessTest extends TestCase
         $this->actingAs($admin)
             ->get('/admin/one-c-setup')
             ->assertOk()
-            ->assertSee('Настройка автоматического обмена 1С')
+            ->assertSee('Файловый обмен 1С')
             ->assertSee(url('/1c/exchange/onec'))
             ->assertSee('Каталог, цены и остатки поступают')
             ->assertSeeText('Обмен по направлениям')
