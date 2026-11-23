@@ -44,7 +44,7 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         // Orders until 1C closes them: the manager moves them through «К обеспечению», «К выполнению»…
         $orders = Order::query()->whereNotNull('onec_order_guid')->where(fn ($q) => $q->whereNotNull('onec_profile_id')->orWhereNotNull('onec_checked_at'))->where('onec_deleted', false)
             ->where(fn ($q) => $q->whereNull('onec_doc_status')->orWhere('onec_doc_status', '!=', 'Закрыт')
-                ->orWhereNotIn('status', ['delivered', 'completed', 'cancelled']))
+                ->orWhereNotIn('status', ['shipped', 'delivered', 'completed', 'cancelled']))
             ->where('onec_exported_at', '>', now()->subDays(self::DAYS))->orderBy('id')->pluck('onec_order_guid')->unique()->values();
         $supplierOrders = OneCSupplierOrder::query()->whereNotNull('onec_order_guid')->where('onec_deleted', false)
             ->where(fn ($q) => $q->whereNull('onec_posted')->orWhere('onec_posted', false))->where('created_at', '>', now()->subDays(self::DAYS))

@@ -538,6 +538,7 @@ class Order extends Model
     public function customerItemFulfillment(OrderItem $item): string
     {
         if ($this->status === 'shipped') {
+            if ($this->isOneCOrderShipped()) return 'Отгружено: '.$item->quantity.' шт.';
             return ($this->delivery_type === 'pickup' ? 'Готово к самовывозу: ' : 'Передано в доставку: ').$item->quantity.' шт.';
         }
         if ($this->hasFreshOneCReadiness() && ! in_array($this->status, ['shipped', 'delivered', 'cancelled'], true)) {
@@ -552,7 +553,7 @@ class Order extends Model
         return match ($this->status) {
             'new', 'checking', 'confirmed' => 'Принят в обработку',
             'processing' => $this->hasFreshOneCReadiness() ? 'Готов к отгрузке' : 'Комплектация',
-            'shipped' => $this->delivery_type === 'pickup' ? 'Готов к самовывозу' : 'Передан в доставку',
+            'shipped' => $this->isOneCOrderShipped() ? 'Отгружен' : ($this->delivery_type === 'pickup' ? 'Готов к самовывозу' : 'Передан в доставку'),
             'delivered' => 'Получен',
             'cancelled' => 'Отменён',
             default => self::STATUSES[$this->status] ?? 'Состояние уточняется',
@@ -562,6 +563,12 @@ class Order extends Model
     public function customerCanViewDetails(): bool
     {
         return array_key_exists($this->status, self::STATUSES);
+    }
+
+    public function isOneCOrderShipped(): bool
+    {
+        return filled($this->onec_order_guid) && $this->onec_posted && ! $this->onec_deleted
+            && ($this->onec_doc_status === 'Закрыт' || in_array($this->onec_state, ['Закрыт', 'ГотовКЗакрытию'], true));
     }
 
     public function customerDetailsAreAvailable(): bool

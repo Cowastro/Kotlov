@@ -44,7 +44,7 @@ class OneCFulfillmentLifecycleTest extends TestCase
         $order->refresh();
     }
 
-    public function test_waiting_ready_shipping_and_receipt_update_the_account_without_duplicate_mail(): void
+    public function test_waiting_ready_and_closed_order_update_the_account_without_false_receipt(): void
     {
         $order = $this->order();
         $this->state($order, 'ОжидаетсяОбеспечение');
@@ -59,10 +59,11 @@ class OneCFulfillmentLifecycleTest extends TestCase
         $this->assertSame('Передан в доставку', $order->customerStatusLabel());
         $this->state($order, 'Закрыт');
         $this->state($order, 'Закрыт');
-        $this->assertSame('Получен', $order->customerStatusLabel());
-        Mail::assertQueuedCount(3);
-        $this->assertDatabaseCount('order_stage_email_claims', 3);
-        $this->assertSame(3, $order->statusHistory()->count());
+        $this->assertSame('Отгружен', $order->customerStatusLabel());
+        $this->assertSame('shipped', $order->status);
+        Mail::assertQueuedCount(2);
+        $this->assertDatabaseCount('order_stage_email_claims', 2);
+        $this->assertSame(2, $order->statusHistory()->count());
     }
 
     public function test_ready_pickup_does_not_require_site_line_confirmation_again(): void
