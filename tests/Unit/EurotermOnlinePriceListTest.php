@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\Suppliers\EurotermOnlinePriceList;
+use App\Services\Suppliers\EurotermPriceList;
 use App\Services\Suppliers\EurotermPortalCredentials;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -97,5 +98,25 @@ class EurotermOnlinePriceListTest extends TestCase
         $this->assertSame(['SKU-01', 'SKU-03'], array_column($payload['rows'], 'article'));
         $this->assertSame(1, $payload['duplicate_rows']);
         $this->assertCount(2, $payload['ambiguous_rows']['sku02']);
+    }
+
+    public function test_repeated_page_is_audited_and_its_links_are_still_followed_without_duplicating_products(): void
+    {
+        Storage::fake('local');
+        app(EurotermPortalCredentials::class)->save('login', 'private-password');
+        Http::fake([
+            'euroterm.by/log-in.html' => Http::response('<form action="/index.php?task=user.login"><input type="password"></form>'),
+            'euroterm.by/index.php*' => Http::response('', 303),
+            'euroterm.by/prajs-list.html' => Http::response(self::page('SKU-01', pages: '<a href="/results25-48.html">2</a>')),
+            'euroterm.by/results25-48.html' => Http::response(self::page('SKU-01', pages: '<a href="/results49-72.html">3</a>')),
+            'euroterm.by/results49-72.html' => Http::response(self::page('SKU-02')),
+        ]);
+        $payload = app(EurotermOnlinePriceList::class)->load();
+        $this->assertSame(['SKU-01', 'SKU-02'], array_column($payload['rows'], 'article'));
+        $this->assertSame(3, $payload['source_pages']);
+        $this->assertSame([EurotermPriceList::WEBSITE.'results25-48.html'], $payload['repeated_pages']);
+        $this->assertSame(1, $payload['duplicate_rows']);
+        $stored = json_decode(Storage::disk('local')->get('suppliers/euroterm/latest-online.json'), true);
+        $this->assertSame($payload['repeated_pages'], $stored['repeated_pages']);
     }
 }
