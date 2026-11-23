@@ -45,7 +45,7 @@ class OneCItemLinks
             || ($variants > 0 && $linked->contains(fn ($ids, $key) => ! str_contains($key, '#') && $ids->isNotEmpty()));
         $card = $variants === 0 && ! $conflict ? ($linked->flatten()->unique()->count() === 1 ? $linked->flatten()->unique()->first() : null) : null;
 
-        return ['product_id' => $card, 'site_link_count' => $linked->filter(fn ($ids) => $ids->count() === 1)->count(),
+        return ['product_id' => $card, 'site_link_count' => $linked->filter(fn ($ids, $key) => $ids->count() === 1 && ($variants === 0 || str_contains($key, '#')))->count(),
             'characteristic_count' => $variants, 'link_conflict' => $conflict];
     }
 
