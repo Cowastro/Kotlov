@@ -1,5 +1,12 @@
 <?php
 
+\Illuminate\Support\Facades\Schedule::command('shipping:sync-vamexpress')
+    ->everyMinute()
+    ->when(fn () => app(\App\Services\Shipping\VamExpressSettings::class)->due())
+    ->withoutOverlapping(10)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/vamexpress-sync.log'));
+
 \Illuminate\Support\Facades\Schedule::command('supplier:sync-euroterm --apply --scheduled')
     ->everyFiveMinutes()
     ->when(fn () => app(\App\Services\Suppliers\EurotermPortalCredentials::class)->due())
