@@ -4,6 +4,7 @@ namespace App\Services\Orders;
 
 use App\Mail\OrderStatusUpdatedMail;
 use App\Models\Order;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -11,7 +12,7 @@ class OrderStatusCustomerNotifier
 {
     public function notify(Order $order): bool
     {
-        if (! in_array($order->status, ['processing', 'shipped', 'delivered'], true)) {
+        if ($order->is_internal || ! in_array($order->status, ['processing', 'shipped', 'delivered'], true)) {
             return false;
         }
 
@@ -21,6 +22,12 @@ class OrderStatusCustomerNotifier
             return false;
         }
 
+        $claimed = DB::table('order_stage_email_claims')->insertOrIgnore([
+            'order_id' => $order->id, 'status' => $order->status, 'created_at' => now(),
+        ]);
+        if (! $claimed) {
+            return false;
+        }
         try {
             Mail::mailer('transactional')
                 ->to($recipient)
@@ -28,6 +35,7 @@ class OrderStatusCustomerNotifier
 
             return true;
         } catch (\Throwable $exception) {
+            DB::table('order_stage_email_claims')->where('order_id', $order->id)->where('status', $order->status)->delete();
             Log::error('Order status customer email could not be queued.', [
                 'order_id' => $order->id,
                 'status' => $order->status,

@@ -94,6 +94,9 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         $moved = 0;
         $paid = 0;
         $stateRows = [];
+        $checkedOrders = [];
+        $cancelledKeys = [];
+        $observedAt = $task->picked_at ?? $task->created_at;
         foreach (array_keys((array) data_get($task->payload, 'queries', [])) as $name) {
             $part = ODataReadTaskHandler::part($task, $name);
             if (str_starts_with($name, 'states_')) {
@@ -121,17 +124,20 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
                 }
                 if (str_starts_with($name, 'orders_')) {
                     $order = $key !== '' ? Order::query()->where('onec_order_guid', $key)->first() : null;
-                    if ($order) {
+                    if ($order && ! $order->onec_checked_at?->gt($observedAt)) {
                         $checked++;
                         $posted += ($row['Posted'] ?? false) ? 1 : 0;
                         $order->forceFill(['onec_posted' => (bool) ($row['Posted'] ?? false), 'onec_deleted' => (bool) ($row['DeletionMark'] ?? false),
-                            'onec_doc_status' => ($row['Статус'] ?? '') ?: $order->onec_doc_status, 'onec_checked_at' => now(),
+                            'onec_doc_status' => ($row['Статус'] ?? '') ?: $order->onec_doc_status, 'onec_checked_at' => $observedAt,
                             'onec_order_number' => ($row['Number'] ?? '') ?: $order->onec_order_number])->save();
                         OneCAgentTask::query()->where('type', OrderTaskHandler::TYPE)->where('subject_type', $order->getMorphClass())
                             ->where('subject_id', $order->id)->where('status', OneCAgentTask::DONE)
                             ->update(['summary' => OrderTaskHandler::summary($order)]);
                         $lines = collect((array) ($row['Товары'] ?? []));
-                        $moved += app(OneCOrderStages::class)->apply($order, $lines->isNotEmpty() && $lines->every(fn ($l): bool => (bool) ($l['Отменено'] ?? false))) ? 1 : 0;
+                        $checkedOrders[$key] = $order;
+                        if ($lines->isNotEmpty() && $lines->every(fn ($l): bool => (bool) ($l['Отменено'] ?? false))) {
+                            $cancelledKeys[] = $key;
+                        }
                     }
 
                     continue;
@@ -150,8 +156,13 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
             }
         }
 
-        [$paid, $byState] = app(OneCOrderStates::class)->apply($stateRows);
+        // Apply the current register first: the previous ready state must not ship an order
+        // before this same response says it is still waiting for supply.
+        [$paid, $byState] = app(OneCOrderStates::class)->apply($stateRows, $observedAt, $cancelledKeys);
         $moved += $byState;
+        foreach ($checkedOrders as $key => $order) {
+            $moved += app(OneCOrderStages::class)->apply($order, in_array($key, $cancelledKeys, true)) ? 1 : 0;
+        }
 
         return 'Проверено '.$checked.', проведено '.$posted.($moved ? ', этапов заказов обновлено: '.$moved : '').($paid ? ', оплачено по 1С: '.$paid : '');
     }

@@ -3,7 +3,9 @@
 namespace App\Services\Integrations\OneCBridge;
 
 use App\Models\Order;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The state of a customer order as 1C shows it in its list (register «Состояния заказов клиентов»): «Ожидается
@@ -45,30 +47,37 @@ class OneCOrderStates
     }
 
     /** @return array{0: int, 1: int} orders paid now, stages moved */
-    public function apply(array $rows): array
+    public function apply(array $rows, ?CarbonInterface $observedAt = null, array $cancelledKeys = []): array
     {
+        $observedAt ??= now();
         $paid = 0;
         $moved = 0;
         foreach ($rows as $row) {
-            $key = strtolower((string) ($row['Заказ'] ?? ''));
-            $order = $key !== '' ? Order::query()->where('onec_order_guid', $key)->first() : null;
-            if (! $order) {
-                continue;
-            }
-            $order->forceFill([
-                'onec_state' => (string) ($row['Состояние'] ?? '') ?: null,
-                'onec_paid' => (float) ($row['СуммаОплаты'] ?? 0),
-                'onec_paid_percent' => (float) ($row['ПроцентОплаты'] ?? 0),
-                'onec_shipped_percent' => (float) ($row['ПроцентОтгрузки'] ?? 0),
-                'onec_paid_checked_at' => now(),
-            ])->save();
-            if ((float) ($row['ПроцентОплаты'] ?? 0) >= 100 && $order->payment_status !== 'paid' && $order->status !== 'cancelled') {
-                $order->forceFill(['payment_status' => 'paid'])->save();
-                $order->managerComments()->create(['author_name' => 'Мост 1С',
-                    'body' => 'Оплата по 1С: заказ '.$order->onec_order_number.' оплачен полностью ('.OneCOrderPayments::money((float) ($row['СуммаОплаты'] ?? 0)).' BYN).']);
-                $paid++;
-            }
-            $moved += app(OneCOrderStages::class)->apply($order) ? 1 : 0;
+            [$rowPaid, $rowMoved] = DB::transaction(function () use ($row, $observedAt, $cancelledKeys): array {
+                $key = strtolower((string) ($row['Заказ'] ?? ''));
+                $order = $key !== '' ? Order::query()->where('onec_order_guid', $key)->lockForUpdate()->first() : null;
+                if (! $order || $order->onec_paid_checked_at?->gt($observedAt)) {
+                    return [0, 0];
+                }
+                $paid = 0;
+                $order->forceFill([
+                    'onec_state' => (string) ($row['Состояние'] ?? '') ?: null,
+                    'onec_paid' => (float) ($row['СуммаОплаты'] ?? 0),
+                    'onec_paid_percent' => (float) ($row['ПроцентОплаты'] ?? 0),
+                    'onec_shipped_percent' => (float) ($row['ПроцентОтгрузки'] ?? 0),
+                    'onec_paid_checked_at' => $observedAt,
+                ])->save();
+                if ((float) ($row['ПроцентОплаты'] ?? 0) >= 100 && $order->payment_status !== 'paid' && $order->status !== 'cancelled') {
+                    $order->forceFill(['payment_status' => 'paid'])->save();
+                    $order->managerComments()->create(['author_name' => 'Мост 1С',
+                        'body' => 'Оплата по 1С: заказ '.$order->onec_order_number.' оплачен полностью ('.OneCOrderPayments::money((float) ($row['СуммаОплаты'] ?? 0)).' BYN).']);
+                    $paid++;
+                }
+
+                return [$paid, app(OneCOrderStages::class)->apply($order, in_array($key, $cancelledKeys, true)) ? 1 : 0];
+            });
+            $paid += $rowPaid;
+            $moved += $rowMoved;
         }
 
         return [$paid, $moved];

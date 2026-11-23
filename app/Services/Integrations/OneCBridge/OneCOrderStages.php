@@ -4,6 +4,7 @@ namespace App\Services\Integrations\OneCBridge;
 
 use App\Models\Order;
 use App\Services\Orders\OrderStatusCustomerNotifier;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Once an order is in 1C its logistics are done there, so the site moves its stages after 1C: a posted order «К
@@ -21,7 +22,7 @@ class OneCOrderStages
     /** What the stage of the order should be after 1C, or null. */
     public function target(Order $order, bool $allLinesCancelled = false): ?string
     {
-        if (blank($order->onec_order_guid) || $order->onec_deleted || ! $order->onec_posted) {
+        if (blank($order->onec_order_guid) || $order->onec_deleted || ! $order->onec_posted || $allLinesCancelled) {
             return null;
         }
 
@@ -38,6 +39,11 @@ class OneCOrderStages
 
     /** Moves the order forward after 1C; @return string|null the new stage */
     public function apply(Order $order, bool $allLinesCancelled = false, ?string $upTo = null): ?string
+    {
+        return DB::transaction(fn () => $this->applyLocked(Order::query()->lockForUpdate()->findOrFail($order->id), $allLinesCancelled, $upTo));
+    }
+
+    private function applyLocked(Order $order, bool $allLinesCancelled, ?string $upTo): ?string
     {
         $order->refresh();
         if ($allLinesCancelled && $order->onec_doc_status === 'Закрыт' && $order->status !== 'cancelled'
