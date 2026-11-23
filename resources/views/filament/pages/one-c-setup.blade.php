@@ -45,9 +45,10 @@
     </style>
 
     <div class="onec-setup">
+        <a href="{{ \App\Filament\Pages\OneCIntegration::getUrl() }}" style="display:inline-flex;align-items:center;min-height:44px;text-decoration:underline">← Интеграция с 1С: все каналы</a>
         <x-filament::section>
-            <x-slot name="heading">Как должен работать постоянный обмен</x-slot>
-            <x-slot name="description">Обмен запускает регламентное задание в 1С. Сайт принимает каталог, цены, остатки и статусы, а 1С забирает новые заказы.</x-slot>
+            <x-slot name="heading">Как работает файловый обмен</x-slot>
+            <x-slot name="description">Эта страница проверяет только файловый обмен. Подключение агента, привязки и задачи моста показаны в общем разделе «Интеграция с 1С».</x-slot>
             <div class="onec-setup-muted">
                 Безопасный режим уже действует: исторические заказы до даты включения интеграции не выдаются. Рекомендуемый цикл — заказы каждые 5 минут, цены и остатки каждые 10 минут, полный каталог ночью.
             </div>

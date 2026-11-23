@@ -15,9 +15,11 @@ class OneCSetup extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;
 
-    protected static ?string $navigationLabel = 'Настройка 1С';
+    protected static ?string $navigationLabel = 'Файловый обмен 1С';
 
-    protected static ?string $title = 'Настройка автоматического обмена 1С';
+    protected static ?string $title = 'Файловый обмен 1С';
+
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?int $navigationSort = 8;
 
