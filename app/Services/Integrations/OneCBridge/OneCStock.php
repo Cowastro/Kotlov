@@ -92,9 +92,12 @@ class OneCStock
             OneCItem::query()->update(['stock_synced_at' => $now]);
         });
         $free = collect($stock)->filter(fn (array $s): bool => $s[0] - $s[1] > 0)->count();
+        // Lines of open orders our warehouse covers get «Наш склад» and the 1C cost.
+        $routed = app(OneCOwnStockRouting::class)->fillOpenOrders();
 
         return 'Остатки 1С ('.implode(', ', self::WAREHOUSES).'): товаров в наличии '.collect($stock)->filter(fn (array $s): bool => $s[0] > 0)->count()
-            .', свободно '.$free.', в резерве '.collect($stock)->filter(fn (array $s): bool => $s[1] > 0)->count();
+            .', свободно '.$free.', в резерве '.collect($stock)->filter(fn (array $s): bool => $s[1] > 0)->count()
+            .($routed ? ', строк заказов «Наш склад»: '.$routed : '');
     }
 
     public static function fresh(?OneCItem $item): bool
