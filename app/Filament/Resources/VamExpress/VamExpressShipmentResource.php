@@ -58,9 +58,12 @@ class VamExpressShipmentResource extends Resource
             TextColumn::make('order.number')->label('Наш заказ')->searchable()->placeholder('Не привязан')
                 ->url(fn (VamExpressShipment $record): ?string => $record->order && OrderResource::canView($record->order)
                     ? OrderResource::getUrl('view', ['record' => $record->order]) : null),
-            TextColumn::make('city')->label('Город')->searchable()->wrap()->limit(55),
-            TextColumn::make('cargo')->label('Груз')->searchable()->wrap()->limit(100)->toggleable(),
+            TextColumn::make('city')->label('Город')->searchable()->wrap()->limit(55)
+                ->extraAttributes(['style' => 'min-width:140px;max-width:200px']),
+            TextColumn::make('cargo')->label('Груз')->searchable()->wrap()->limit(100)->toggleable()
+                ->extraAttributes(['style' => 'min-width:220px;max-width:300px']),
             TextColumn::make('carrier_status')->label('Статус перевозчика')->badge()
+                ->extraAttributes(['style' => 'min-width:130px'])
                 ->color(fn (?string $state): string => match ($state) {
                     'Доставлена', 'Завершено', 'Оплачено' => 'success',
                     'Не обработана' => 'warning',
@@ -79,6 +82,7 @@ class VamExpressShipmentResource extends Resource
                 ->options(fn (): array => static::getEloquentQuery()->whereNotNull('carrier_status')->distinct()->pluck('carrier_status', 'carrier_status')->all()),
         ])->recordActions([
             Action::make('linkOrder')->label('Привязать заказ')->icon('heroicon-o-link')
+                ->modalSubmitActionLabel('Сохранить привязку')
                 ->authorize(fn (): bool => static::canViewAny())
                 ->fillForm(fn (VamExpressShipment $record): array => ['order_id' => $record->order_id])
                 ->modalDescription('Выберите заказ KOTLOV. Статус и сумма заказа не изменятся. Пустое поле снимает привязку.')

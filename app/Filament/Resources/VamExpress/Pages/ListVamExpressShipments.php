@@ -24,13 +24,14 @@ class ListVamExpressShipments extends ListRecords
         }
         $last = filled($data['last_success_at'] ?? null) ? Carbon::parse($data['last_success_at'])->format('d.m.Y H:i') : 'ещё не было';
 
-        return 'Последнее успешное обновление: '.$last.'. '.($data['message'] ?? 'Ожидаем первую загрузку.').' Свежие 100 заявок и до 10 ранее привязанных — каждые 30 минут. Статус перевозчика не меняет статус заказа.';
+        return 'Обновление: '.$last.'. '.($data['message'] ?? 'Ожидаем первую загрузку.').' Свежие заявки — каждые 30 минут. Для старых используйте «Загрузить по ID».';
     }
 
     protected function getHeaderActions(): array
     {
         return [
             Action::make('connection')->label('Настройки входа')->icon('heroicon-o-key')
+                ->modalSubmitActionLabel('Сохранить')
                 ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
                 ->authorize(fn (): bool => auth()->user()?->isAdmin() === true)
                 ->modalDescription('Данные от vamexpress.by хранятся зашифрованными. Загружаются только существующие заявки. После сохранения первая проверка начнётся в течение минуты.')
@@ -59,6 +60,7 @@ class ListVamExpressShipments extends ListRecords
                 ->authorize(fn (): bool => VamExpressShipmentResource::canViewAny())
                 ->action(fn (Action $action) => $this->requestSync($action)),
             Action::make('find')->label('Загрузить по ID')->icon('heroicon-o-magnifying-glass')
+                ->modalSubmitActionLabel('Загрузить')
                 ->authorize(fn (): bool => VamExpressShipmentResource::canViewAny())
                 ->modalDescription('Для старой заявки укажите короткий ID из списка ВАМ или полный ID из адреса заявки. После загрузки её можно привязать к заказу.')
                 ->schema([TextInput::make('id')->label('ID ВАМ Экспресс')->required()->trim()->maxLength(32)->regex('/^(?:[a-f0-9]{7}|[a-f0-9]{32})$/i')])
