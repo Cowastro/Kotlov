@@ -15,7 +15,8 @@
             @include('partials.catalog-quick-filter-swipe-hint')
             <nav class="catalog-quick-filter__items" aria-label="{{ $mono ? 'Диаметры моно-дымоходов' : 'Диаметры сэндвич-дымоходов' }}">
                 @php
-                    $resetParams = request()->except(['page', 'chimney_diameter', 'mono_diameter']);
+                    $resetParams = app(\App\Services\ChimneyDiameterQuickFilter::class)->withoutEquivalentAttributes(
+                        request()->except(['page', 'chimney_diameter', 'mono_diameter']), $filterAttributes ?? collect(), 'diameter');
                     $resetUrl = url()->current().($resetParams ? '?'.http_build_query($resetParams) : '');
                 @endphp
                 <a href="{{ $resetUrl }}#catalog-products" class="catalog-quick-filter__item {{ ! request('chimney_diameter') && ! request('mono_diameter') ? 'is-active' : '' }}"
@@ -23,7 +24,7 @@
                 @foreach ($chimneyDiameterGroups as $diameter => $productIds)
                     @php
                         $active = (string) request($diameterParam) === (string) $diameter;
-                        $params = array_merge(request()->except(['page', 'chimney_diameter', 'mono_diameter']), [$diameterParam => $diameter]);
+                        $params = array_merge($resetParams, [$diameterParam => $diameter]);
                     @endphp
                     <a href="{{ url()->current().'?'.http_build_query($params) }}#catalog-products"
                        class="catalog-quick-filter__item {{ $active ? 'is-active' : '' }}"

@@ -7,6 +7,33 @@ use Illuminate\Support\Collection;
 
 class ChimneyDiameterQuickFilter
 {
+    public function wallThickness(string $name): ?string
+    {
+        if (! preg_match('/(?<![\pL\pN])(201|304L?|316L?|321|409|430|439|444)\s*[-,\/]\s*((?:0|1|2)[.,]\d+|[12])(?!\d|[.,]\d)/ui', $name, $match)) {
+            return null;
+        }
+        $value = (float) str_replace(',', '.', $match[2]);
+
+        return $value > 0 && $value <= 3 ? (string) $value : null;
+    }
+
+    public function withoutEquivalentAttributes(array $parameters, Collection $attributes, string $kind): array
+    {
+        $names = $kind === 'diameter' ? ['диаметр', 'диаметр дымохода'] : ['тип металла', 'марка стали'];
+        foreach ($attributes as $attribute) {
+            if (in_array(mb_strtolower(trim($attribute->name)), $names, true)) {
+                foreach ($attribute->all_ids ?? [$attribute->id] as $id) {
+                    unset($parameters['attr'][$id]);
+                }
+            }
+        }
+        if (isset($parameters['attr']) && $parameters['attr'] === []) {
+            unset($parameters['attr']);
+        }
+
+        return $parameters;
+    }
+
     public function steelGrade(string $name, array $specs = []): ?string
     {
         $specs = collect($specs)->mapWithKeys(fn ($value, $key) => is_array($value)
@@ -20,7 +47,7 @@ class ChimneyDiameterQuickFilter
         }
         // First steel in a sandwich name belongs to the inner tube. Do not
         // mistake a diameter such as Ø304 for a material designation.
-        if (preg_match('/AISI\s*[-:]?\s*(201|304L?|316L?|321|409|430|439|444)(?![\d\pL])|(?<![\pL\pN.,])(201|304L?|316L?|321|409|430|439|444)\s*[-,\/]\s*(?:0[.,]\d+|1[.,]0)/ui', $name, $match)) {
+        if (preg_match('/AISI\s*[-:]?\s*(201|304L?|316L?|321|409|430|439|444)(?![\d\pL])|(?<![\pL\pN.,])(201|304L?|316L?|321|409|430|439|444)\s*[-,\/]\s*(?:0[.,]\d+|1(?:[.,]0)?)(?!\d)/ui', $name, $match)) {
             return strtoupper($match[1] ?: $match[2]);
         }
         foreach ($specs as $key => $value) {
