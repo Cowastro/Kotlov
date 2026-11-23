@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SupplierSyncRuns\Pages;
 
+use App\Filament\Actions\EurotermPortalSettingsAction;
 use App\Filament\Resources\SupplierSyncRuns\SupplierSyncRunResource;
 use App\Filament\Widgets\IntegrationHealthOverview;
 use App\Filament\Widgets\RecentIntegrationRuns;
@@ -11,6 +12,11 @@ use Filament\Support\Enums\Width;
 class ListSupplierSyncRuns extends ListRecords
 {
     protected static string $resource = SupplierSyncRunResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [EurotermPortalSettingsAction::make()];
+    }
 
     public function getTitle(): string
     {

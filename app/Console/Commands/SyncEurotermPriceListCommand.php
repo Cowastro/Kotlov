@@ -11,6 +11,8 @@ use App\Models\SupplierProduct;
 use App\Models\SupplierSource;
 use App\Models\SupplierSync;
 use App\Services\SupplierProductAvailabilityService;
+use App\Services\Suppliers\EurotermOnlinePriceList;
+use App\Services\Suppliers\EurotermPortalCredentials;
 use App\Services\Suppliers\EurotermPriceList;
 use App\Services\Telephony\PhoneNumber;
 use Illuminate\Console\Command;
@@ -22,7 +24,8 @@ use RuntimeException;
 class SyncEurotermPriceListCommand extends Command
 {
     protected $signature = 'supplier:sync-euroterm
-        {file=resources/data/suppliers/euroterm-2026-10-20.json : XLSX or normalized JSON snapshot}
+        {file? : Optional XLSX or normalized JSON snapshot; otherwise authenticated online price list}
+        {--scheduled : Skip until credentials are configured and an update is due}
         {--apply : Save wholesale prices, RRP and warehouse balances}
         {--dry-run : Preview only}
         {--export-snapshot= : Normalize an XLSX into a deployable JSON snapshot}';
@@ -31,6 +34,9 @@ class SyncEurotermPriceListCommand extends Command
 
     public function handle(EurotermPriceList $parser): int
     {
+        if ($this->option('scheduled') && ! app(EurotermPortalCredentials::class)->due()) {
+            return self::SUCCESS;
+        }
         $lock = Cache::lock('supplier:sync-euroterm', 900);
         if (! $lock->get()) {
             $this->error('Синхронизация Евротерм уже выполняется.');
@@ -39,8 +45,15 @@ class SyncEurotermPriceListCommand extends Command
         }
 
         try {
-            $path = $this->absolutePath((string) $this->argument('file'));
-            $payload = $parser->load($path);
+            $online = blank($this->argument('file'));
+            if ($online) {
+                if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+                    DB::disconnect();
+                }
+                $payload = app(EurotermOnlinePriceList::class)->load();
+            } else {
+                $payload = $parser->load($this->absolutePath((string) $this->argument('file')));
+            }
             if ($target = $this->option('export-snapshot')) {
                 $target = $this->absolutePath((string) $target);
                 File::ensureDirectoryExists(dirname($target));
@@ -54,7 +67,27 @@ class SyncEurotermPriceListCommand extends Command
                 ->where('code', 'euroterm')
                 ->orWhereRaw('LOWER(name) LIKE ?', ['%евротерм%'])
                 ->first();
-            $classified = $this->classify($payload['rows'], $parser, $supplier);
+            if ($online) {
+                if (! $supplier) {
+                    throw new RuntimeException('Поставщик Евротерм не настроен.');
+                }
+                $existing = $supplier->supplierProducts()->get()->keyBy('supplier_article_normalized');
+                $classified = [];
+                foreach ($payload['rows'] as $row) {
+                    if ($offer = $existing->get($row['article_key'])) {
+                        $row['product_id'] = $offer->product_id;
+                        $row['match_reason'] = $offer->product_id ? 'existing_supplier_link' : 'unmatched';
+                        $classified[] = $row;
+                    }
+                }
+                if ($classified === []) {
+                    throw new RuntimeException('В онлайн-прайсе не найдены существующие артикулы Евротерма. Обновление остановлено.');
+                }
+                $this->line('metric.euroterm.online_rows='.count($payload['rows']));
+                $this->line('metric.euroterm.online_pages='.$payload['source_pages']);
+            } else {
+                $classified = $this->classify($payload['rows'], $parser, $supplier);
+            }
             $this->metrics($payload, $classified);
 
             if (! $this->option('apply') || $this->option('dry-run')) {
@@ -63,7 +96,7 @@ class SyncEurotermPriceListCommand extends Command
                 return self::SUCCESS;
             }
 
-            $stats = DB::transaction(function () use ($payload, $classified, &$supplier): array {
+            $stats = DB::transaction(function () use ($payload, $classified, &$supplier, $online): array {
                 [$supplier, $source, $sync] = $this->ensureSupplier($supplier, $payload);
                 $stats = [
                     'offers' => 0,
@@ -86,6 +119,13 @@ class SyncEurotermPriceListCommand extends Command
                         ->first();
                     if ($existing?->product_id && $product && (int) $existing->product_id !== (int) $product->id) {
                         throw new RuntimeException("Артикул {$row['article']} уже связан с другой карточкой Евротерм.");
+                    }
+                    if ($online) {
+                        foreach (['category_path', 'section', 'category', 'brand', 'unit'] as $field) {
+                            if (empty($row[$field])) {
+                                $row[$field] = $existing?->raw[$field] ?? $row[$field];
+                            }
+                        }
                     }
 
                     SupplierProduct::query()->updateOrCreate([
@@ -112,11 +152,12 @@ class SyncEurotermPriceListCommand extends Command
                         'last_stock_synced_at' => now(),
                         'match_status' => $product ? 'matched' : ($row['match_reason'] === 'ambiguous' ? 'ambiguous' : 'unmatched'),
                         'match_confidence' => $product ? $row['match_reason'] : null,
-                        'raw' => array_merge($row, [
+                        'raw' => array_merge($online ? ($existing?->raw ?? []) : [], $row, [
                             'source_date' => $payload['source_date'],
                             'source_sha256' => $payload['source_sha256'],
-                            'wholesale_column' => 'Прайс-лист в BYN',
-                            'retail_column' => 'РРЦ, руб с НДС',
+                            'source_kind' => $online ? 'online' : 'file',
+                            'wholesale_column' => $online ? 'Цена после входа' : 'Прайс-лист в BYN',
+                            'retail_column' => $online ? 'Розничная цена' : 'РРЦ, руб с НДС',
                         ]),
                         'last_synced_at' => now(),
                     ]);
@@ -127,11 +168,12 @@ class SyncEurotermPriceListCommand extends Command
                         continue;
                     }
 
-                    if (abs((float) $product->price - (float) $row['retail']) > 0.005) {
+                    $ownsRetail = ! $online || (int) $product->supplier_id === (int) $supplier->id;
+                    if ($ownsRetail && abs((float) $product->price - (float) $row['retail']) > 0.005) {
                         $product->price = $row['retail'];
                         $stats['retail_updated']++;
                     }
-                    if ($product->requires_price_confirmation) {
+                    if ($ownsRetail && $product->requires_price_confirmation) {
                         $product->requires_price_confirmation = false;
                         $stats['price_confirmation_cleared']++;
                     }
@@ -144,6 +186,7 @@ class SyncEurotermPriceListCommand extends Command
 
                 $missing = SupplierProduct::query()
                     ->where('supplier_id', $supplier->id)
+                    ->when($online, fn ($query) => $query->whereRaw('1 = 0'))
                     ->whereNotIn('supplier_article_normalized', $articleKeys)
                     ->get();
                 foreach ($missing as $offer) {
@@ -379,16 +422,18 @@ class SyncEurotermPriceListCommand extends Command
             'supplier_id' => $supplier->id,
             'name' => 'Прайс и остатки Евротерм',
         ], [
-            'type' => 'excel',
+            'type' => ($payload['source_kind'] ?? '') === 'online' ? 'api' : 'excel',
             'config' => [
                 'url' => EurotermPriceList::WEBSITE,
                 'price_page' => EurotermPriceList::WEBSITE.'prajs-list.html',
                 'source_date' => $payload['source_date'],
                 'source_sha256' => $payload['source_sha256'],
                 'warehouse' => $payload['warehouse'],
-                'columns' => ['wholesale' => 'N', 'retail' => 'O', 'stock' => 'P'],
+                'columns' => ($payload['source_kind'] ?? '') === 'online'
+                    ? ['wholesale' => 'Цена после входа', 'retail' => 'Розничная цена', 'stock' => 'Статус наличия; количество не передаётся']
+                    : ['wholesale' => 'N', 'retail' => 'O', 'stock' => 'P'],
             ],
-            'schedule_cron' => 'После получения нового прайса',
+            'schedule_cron' => ($payload['source_kind'] ?? '') === 'online' ? 'Каждые 8 часов и после сохранения доступа' : 'После получения нового прайса',
             'is_active' => true,
         ]);
         $sync = SupplierSync::query()->updateOrCreate(['key' => 'euroterm_price'], [
@@ -396,7 +441,9 @@ class SyncEurotermPriceListCommand extends Command
             'name' => 'Евротерм',
             'code' => 'euroterm',
             'title' => 'Евротерм: опт, РРЦ и остатки',
-            'description' => 'Обновляет закупочные цены, розницу и склад Евротерм из полного Excel-прайса.',
+            'description' => ($payload['source_kind'] ?? '') === 'online'
+                ? 'Обновляет существующие артикулы из онлайн-прайса после входа: закупка, розница и статус наличия без выдуманного количества.'
+                : 'Обновляет закупочные цены, розницу и склад Евротерм из полного Excel-прайса.',
             'command' => 'supplier:sync-euroterm',
             'source_url' => EurotermPriceList::WEBSITE,
             'is_active' => true,
@@ -408,7 +455,7 @@ class SyncEurotermPriceListCommand extends Command
     private function metrics(array $payload, array $classified): void
     {
         $this->table(['Показатель', 'Значение'], [
-            ['Дата прайса', $payload['source_date']],
+            [($payload['source_kind'] ?? '') === 'online' ? 'Дата загрузки' : 'Дата прайса', $payload['source_date']],
             ['Товарных строк', count($classified)],
             ['Однозначно сопоставлено', collect($classified)->whereNotNull('product_id')->count()],
             ['Не сопоставлено', collect($classified)->whereNull('product_id')->where('match_reason', '!=', 'ambiguous')->count()],

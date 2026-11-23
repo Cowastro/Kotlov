@@ -1,5 +1,12 @@
 <?php
 
+\Illuminate\Support\Facades\Schedule::command('supplier:sync-euroterm --apply --scheduled')
+    ->everyFiveMinutes()
+    ->when(fn () => app(\App\Services\Suppliers\EurotermPortalCredentials::class)->due())
+    ->withoutOverlapping(15)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/euroterm-sync.log'));
+
 // tools.by allows at most 10 exports/hour. One full CSV per hour, with a private cache and request spacing.
 \Illuminate\Support\Facades\Schedule::command('supplier:sync-td-komplekt --apply --create-new')
     ->hourlyAt(30)

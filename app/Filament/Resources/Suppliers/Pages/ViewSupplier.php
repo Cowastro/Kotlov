@@ -37,6 +37,8 @@ class ViewSupplier extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            \App\Filament\Actions\EurotermPortalSettingsAction::make()
+                ->visible(fn (): bool => $this->getRecord()->code === 'euroterm' && auth()->user()?->isAdmin() === true),
             Action::make('chisty_bereg_stock')
                 ->label('Загрузить остатки и цены')
                 ->icon('heroicon-o-arrow-up-tray')
