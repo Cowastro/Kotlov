@@ -13,7 +13,7 @@
     @php $stockIndicator = \App\Services\Suppliers\SupplierStockIndicator::fromOffer($displayOffer); @endphp
     <span class="b2b-stock-meter is-{{ $stockIndicator['state'] }}" data-workspace-stock-meter data-level="{{ $stockIndicator['level'] }}" title="{{ $stockIndicator['title'] }}"><span class="b2b-stock-bars" aria-hidden="true"><i></i><i></i><i></i></span><span data-workspace-stock>{{ $stockIndicator['label'] }}</span></span>
     <details class="b2b-workspace-offers">
-        <summary><span class="b2b-offers-full-label">Поставщики и склады</span><span class="b2b-offers-short-label">Склады</span> · {{ $offers->count() }}</summary>
+        <summary><span class="b2b-offers-full-label">Поставщики и наличие</span><span class="b2b-offers-short-label">Поставщики</span> · {{ $offers->count() }}</summary>
         @foreach($offers as $offer)
             <article><strong>{{ $offer['supplier'] }}</strong><span>Входная: {{ $offer['purchase_price'] !== null ? number_format($offer['purchase_price'], 2, ',', ' ').' BYN' : 'уточняется' }}@if($offer['margin'] !== null) · Маржа {{ number_format($offer['margin'], 2, ',', ' ') }} BYN / {{ number_format($offer['margin_percent'], 1, ',', ' ') }}%@endif</span>
                 <span>{{ $offer['stock'] }}{{ ! $offer['is_fresh'] ? ' · остаток требует проверки' : '' }}</span>
@@ -23,7 +23,7 @@
                 @if($offer['warehouse'])<span>Склад: {{ $offer['warehouse'] }}</span>@endif
                 @foreach(($offer['warehouse_breakdown'] ?? []) as $warehouse)<span>{{ $warehouse }}</span>@endforeach
                 @if(count($offer['locations'] ?? []) > 1)@foreach($offer['locations'] as $location)<span>{{ $location['warehouse'] ?: 'Склад не указан' }}: {{ $location['stock'] }}{{ ! $location['is_fresh'] ? ' · проверить' : '' }}</span>@endforeach @endif
-                @if($offer['updated_at'])<small>Обновлено {{ $offer['updated_at'] }}</small>@endif
+                @if($offer['updated_at'])<small>{{ $offer['updated_label'] ?? 'Обновлено' }} {{ $offer['updated_at'] }}</small>@endif
             </article>
         @endforeach
     </details>

@@ -18,6 +18,26 @@ class ManagerStorefrontExperienceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_brand_assignment_is_not_a_second_warehouse_or_a_stock_refresh(): void
+    {
+        [$product, $offer] = $this->makeProductWithSupplierOffer();
+        $offer->update(['match_confidence'=>'brand_assignment','price_byn'=>null,'price'=>null,'stock_quantity'=>null,'in_stock'=>false,
+            'warehouse_name'=>$offer->supplier->name,'last_stock_synced_at'=>null,'last_synced_at'=>now()->subWeeks(3)]);
+        $manager = User::factory()->create(['role'=>'manager','is_active'=>true]);
+        $context = app(ManagerStorefrontProductContext::class);
+        $fallback = $context->offers($product->fresh(),$manager)->first();
+        $this->assertSame([], $fallback['locations']);
+        $this->assertNull($fallback['warehouse']);
+        $this->assertSame('Привязка поставщика обновлена',$fallback['updated_label']);
+        ProductWarehouseStock::create(['product_id'=>$product->id,'supplier_id'=>$offer->supplier_id,'warehouse_code'=>'actual',
+            'warehouse_name'=>'Основной','external_article'=>'REAL','source_product_name'=>$product->name,'total_quantity'=>16,
+            'available_quantity'=>16,'as_of_date'=>now()->toDateString(),'last_synced_at'=>now()]);
+        $actual = $context->offers($product->fresh(),$manager)->first();
+        $this->assertCount(1,$actual['locations']);
+        $this->assertSame('16 шт.',$actual['stock']);
+        $this->assertSame('Остаток обновлён',$actual['updated_label']);
+    }
+
     public function test_teplov_manufacturer_is_not_shown_as_an_extra_sales_supplier(): void
     {
         [$product, $offer] = $this->makeProductWithSupplierOffer();
