@@ -624,31 +624,37 @@ Schedule::command('integration:rematch-source onec')
 
 // «Мост 1С»: the site learns which of the documents the agent created the accountant has posted.
 Schedule::command('onec:check-documents')
+    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
     ->everyThirtyMinutes()
     ->between('07:00', '22:00')
     ->withoutOverlapping(10);
 
 // «Мост 1С»: the 1C lists for the order form every morning, the orders managers enter in 1C by hand every hour.
 Schedule::command('onec:sync-references')
+    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
     ->dailyAt('06:40')
     ->withoutOverlapping(10);
 Schedule::command('onec:sync-references --orders-only --days=3')
+    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
     ->hourlyAt(20)
     ->between('08:00', '21:30')
     ->withoutOverlapping(10);
 
 // «Мост 1С»: stock and reserve of the selling warehouse, read-only.
 Schedule::command('onec:sync-stock')
+    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
     ->everyThirtyMinutes()
     ->between('07:00', '22:00')
     ->withoutOverlapping(10);
 
 // «Мост 1С»: the cost of cards after the purchases posted in 1C (the last 10 days, every morning).
 Schedule::command('onec:sync-purchases --days=10')
+    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
     ->dailyAt('06:50')
     ->withoutOverlapping(10);
 
 // «Мост 1С»: the whole 1C nomenclature (items, groups, links with cards) every morning.
 Schedule::command('onec:sync-items')
+    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
     ->dailyAt('06:30')
     ->withoutOverlapping(10);

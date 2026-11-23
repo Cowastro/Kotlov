@@ -359,10 +359,15 @@ class OneCOrderExportTest extends TestCase
         $this->assertStringContainsString('aaaaaaaa-0000-0000-0000-00000000000a', urldecode($task->payload['queries']['stock']));
         $this->assertStringNotContainsString('00000000000b', $task->payload['queries']['stock']);
         $this->agent()->get('/1c/agent/tasks/next')->assertOk();
-        // Two lines of the same item (two series): 3 in stock, 2 promised to orders.
+        // Two lines of the same item (two series): 3 in stock; the orders hold 2 (1 reserved, 1 to ship) — this 1C keeps
+        // the reserve in «Товары к отгрузке», not in «Товары на складах».
         $this->sendPart($task->id, 'stock', 200, ['value' => [
-            ['Номенклатура_Key' => self::ITEM, 'ВНаличииBalance' => 2, 'КОтгрузкеBalance' => 2],
+            ['Номенклатура_Key' => self::ITEM, 'ВНаличииBalance' => 2, 'КОтгрузкеBalance' => 0],
             ['Номенклатура_Key' => self::ITEM, 'ВНаличииBalance' => 1, 'КОтгрузкеBalance' => 0],
+        ]])->assertOk();
+        $this->sendPart($task->id, 'reserves', 200, ['value' => [
+            ['Номенклатура_Key' => self::ITEM, 'ВРезервеBalance' => 1, 'КОтгрузкеBalance' => 0],
+            ['Номенклатура_Key' => self::ITEM, 'ВРезервеBalance' => 0, 'КОтгрузкеBalance' => 1],
         ]])->assertOk();
         $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1'])->assertOk();
 

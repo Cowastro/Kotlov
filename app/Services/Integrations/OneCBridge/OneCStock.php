@@ -10,12 +10,16 @@ use DomainException;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Stock of 1C items on the warehouses the site sells from (register «Товары на складах», balance): in stock and
- * promised to orders («к отгрузке», the reserve). Free = in stock − reserve. Read-only for 1C, every 30 minutes.
+ * Stock of 1C items on the warehouses the site sells from: in stock (register «Товары на складах») and the reserve
+ * of customer orders (register «Товары к отгрузке»: «в резерве» + «к отгрузке»). Free = in stock − reserve.
+ * Read-only for 1C, every 30 minutes.
  */
 class OneCStock
 {
     public const REGISTER = 'AccumulationRegister_ТоварыНаСкладах/Balance';
+
+    /** Where this 1C keeps what customer orders hold: «в резерве» and «к отгрузке». */
+    public const RESERVES = 'AccumulationRegister_ТоварыКОтгрузке/Balance';
 
     /** The warehouses the site sells from, by their 1C name. */
     public const WAREHOUSES = ['Основной'];
@@ -38,13 +42,14 @@ class OneCStock
         if ($keys === []) {
             throw new DomainException('Склад «'.implode('», «', self::WAREHOUSES).'» не найден: обновите справочники 1С.');
         }
-        $query = ODataReadTaskHandler::path(self::REGISTER, [
-            '$filter' => collect($keys)->map(fn (string $k): string => "Склад_Key eq guid'".$k."'")->implode(' or '),
-            '$select' => 'Номенклатура_Key,ВНаличииBalance,КОтгрузкеBalance',
-        ]);
+        $filter = collect($keys)->map(fn (string $k): string => "Склад_Key eq guid'".$k."'")->implode(' or ');
+        $queries = [
+            'stock' => ODataReadTaskHandler::path(self::REGISTER, ['$filter' => $filter, '$select' => 'Номенклатура_Key,ВНаличииBalance,КОтгрузкеBalance']),
+            'reserves' => ODataReadTaskHandler::path(self::RESERVES, ['$filter' => $filter, '$select' => 'Номенклатура_Key,ВРезервеBalance,КОтгрузкеBalance']),
+        ];
 
         return $this->tasks->enqueue(ODataReadTaskHandler::TYPE, null, 'Остатки 1С: '.implode(', ', self::WAREHOUSES), $user,
-            ['queries' => ['stock' => $query], 'stock' => true]);
+            ['queries' => $queries, 'stock' => true]);
     }
 
     /** Every 1C item gets its stock; one not in the answer has none. */
@@ -63,6 +68,19 @@ class OneCStock
             $stock[$key] ??= [0.0, 0.0];
             $stock[$key][0] += (float) ($row['ВНаличииBalance'] ?? 0);
             $stock[$key][1] += (float) ($row['КОтгрузкеBalance'] ?? 0);
+        }
+        // What the orders hold; the larger of the two registers counts (one of them may not be kept in this 1C).
+        $reserves = ODataReadTaskHandler::part($task, 'reserves');
+        $held = [];
+        foreach ($reserves['code'] === 200 ? (array) data_get($reserves['json'], 'value', []) : [] as $row) {
+            $key = strtolower((string) ($row['Номенклатура_Key'] ?? ''));
+            if ($key !== '') {
+                $held[$key] = ($held[$key] ?? 0.0) + (float) ($row['ВРезервеBalance'] ?? 0) + (float) ($row['КОтгрузкеBalance'] ?? 0);
+            }
+        }
+        foreach ($held as $key => $sum) {
+            $stock[$key] ??= [0.0, 0.0];
+            $stock[$key][1] = max($stock[$key][1], $sum);
         }
         $now = now();
         DB::transaction(function () use ($stock, $now): void {
