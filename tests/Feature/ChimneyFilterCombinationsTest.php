@@ -56,6 +56,15 @@ class ChimneyFilterCombinationsTest extends TestCase
             $response = $this->get('/dymohody?'.http_build_query($params))->assertOk();
             $this->assertSame($expected, $response->viewData('products')->pluck('id')->sort()->values()->all(), 'Filter combination '.$mask);
         }
+        $diameter = $attributes['Диаметр'];
+        $steel = $attributes['Тип металла'];
+        $this->get('/dymohody?'.http_build_query(['attr' => [
+            $diameter->id => [$diameter->options()->where('name', '115 мм')->value('id')],
+            $steel->id => [$steel->options()->where('name', 'Нержавеющая сталь 430')->value('id')],
+            $thickness->id => [$option],
+        ], 'in_stock' => '1']))->assertOk()
+            ->assertViewHas('chimneySteelGroups', fn ($groups) => $groups->has('304') && $groups->has('430'))
+            ->assertViewHas('monoChimneyDiameterGroups', fn ($groups) => $groups->has(115) && $groups->has(150));
     }
 
     public function test_quick_links_replace_the_same_sidebar_filter_and_preserve_other_selections(): void
