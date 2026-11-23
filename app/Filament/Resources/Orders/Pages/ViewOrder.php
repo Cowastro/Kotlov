@@ -97,6 +97,12 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('vamExpressDraft')->label('Черновик ВАМ')->icon('heroicon-o-document-plus')->color('gray')
+                ->authorize(fn (): bool => OrderResource::canEdit($this->record))
+                ->action(function (): void {
+                    $draft = app(\App\Services\Shipping\VamExpressDrafts::class)->fromOrder($this->record, auth()->user());
+                    $this->redirect(\App\Filament\Resources\VamExpressDrafts\VamExpressDraftResource::getUrl('edit', ['record' => $draft]));
+                }),
             Action::make('vamExpressLabels')->label('Этикетки ВАМ')->icon('heroicon-o-printer')->color('gray')
                 ->visible(fn (): bool => \App\Models\VamExpressShipment::where('order_id', $this->record->id)->exists())
                 ->url(fn (): string => route('admin.orders.vam-express-labels', ['order' => $this->record->id]))->openUrlInNewTab(),

@@ -44,6 +44,10 @@ class ListVamExpressShipments extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            \Filament\Actions\ActionGroup::make([
+                Action::make('calculator')->label('Быстрый расчёт')->url(fn (): string => \App\Filament\Pages\VamExpressCalculator::getUrl()),
+                Action::make('drafts')->label('Черновики доставки')->url(fn (): string => \App\Filament\Resources\VamExpressDrafts\VamExpressDraftResource::getUrl('index')),
+            ])->label('Подготовить доставку')->icon('heroicon-o-calculator')->button()->color('gray'),
             Action::make('resetSelection')->label('Сбросить всё')->icon('heroicon-o-x-mark')->color('gray')
                 ->authorize(fn (): bool => VamExpressShipmentResource::canViewAny())
                 ->visible(fn (): bool => $this->activeTab !== 'all' || filled($this->tableSearch)

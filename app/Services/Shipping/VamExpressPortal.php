@@ -17,7 +17,45 @@ class VamExpressPortal
 
     private float $requestInterval = 1.25;
 
-    public function __construct(private VamExpressHtml $parser) {}
+    public function __construct(private VamExpressHtml $parser)
+    {
+        $this->cookies = new CookieJar;
+    }
+
+    public function draftReference(): array
+    {
+        $context = (new VamExpressDraftReference)->parse($this->request('GET', '/UserUI/TicketEdit.aspx'));
+        $raw = $this->request('POST', '/AppServices/AutocompliteAPI.asmx/GetAvaliableuserProfilesForUserJson', [
+            'query' => '', 'appkey' => $context['lookup_key'], 'id' => $context['user_id'],
+        ]);
+        $data = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
+        $profiles = [];
+        foreach ($data['suggestions'] ?? [] as $profile) {
+            $id = (string) ($profile['data'] ?? '');
+            if (isset($context['profiles'][$id]) && is_string($profile['value'] ?? null)) {
+                $profiles[$id] = strip_tags($profile['value']);
+            }
+        }
+        if (count($profiles) !== count($context['profiles'])) {
+            throw new VamExpressException('Не удалось проверить список профилей текущего аккаунта.');
+        }
+        $context['profiles'] = $profiles;
+
+        return $context;
+    }
+
+    public function searchCities(string $query, string $lookupKey): string
+    {
+        return $this->request('POST', '/AppServices/AutocompliteAPI.asmx/GetCityForAutocompliteJSON', ['query' => $query, 'appkey' => $lookupKey]);
+    }
+
+    public function estimate(array $context, array $payload): string
+    {
+        return $this->request('POST', '/WebServices/UserAPI/CalculatorAPI.asmx/Calculate', [
+            'userid' => $context['calculator_user_id'], 'apikey' => $context['calculator_key'],
+            'jsonString' => json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
+        ]);
+    }
 
     public function login(string $username, string $password): void
     {
