@@ -20,6 +20,7 @@ class VamExpressSync
                 return 'Обновление пока не требуется.';
             }
             $ids = $settings->markAttempt();
+            $observedAt = now();
             $credentials = $settings->get();
             $portal = app(VamExpressPortal::class);
             $portal->login($credentials['username'], $credentials['password']);
@@ -38,9 +39,10 @@ class VamExpressSync
                     $checkedIds[] = $id;
                 }
             }
-            DB::transaction(function () use ($rows, $checkedIds): void {
+            DB::transaction(function () use ($rows, $checkedIds, $observedAt): void {
                 foreach ($rows as $row) {
-                    VamExpressShipment::updateOrCreate(['remote_id' => $row['remote_id']], array_merge($row, ['synced_at' => now(), 'checked_at' => now()]));
+                    $shipment = VamExpressShipment::updateOrCreate(['remote_id' => $row['remote_id']], array_merge($row, ['synced_at' => now(), 'checked_at' => now()]));
+                    app(CarrierOrderProgress::class)->vam($shipment, $observedAt);
                 }
                 VamExpressShipment::whereIn('remote_id', $checkedIds)->update(['checked_at' => now()]);
             });

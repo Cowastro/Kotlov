@@ -1,5 +1,8 @@
 <?php
 
+\Illuminate\Support\Facades\Schedule::command('shipping:sync-evropochta-status')
+    ->everyFiveMinutes()->withoutOverlapping(5)->runInBackground();
+
 \Illuminate\Support\Facades\Schedule::command('shipping:sync-vamexpress')
     ->everyMinute()
     ->when(fn () => app(\App\Services\Shipping\VamExpressSettings::class)->due())
