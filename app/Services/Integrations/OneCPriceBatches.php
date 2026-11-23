@@ -2,11 +2,15 @@
 
 namespace App\Services\Integrations;
 
+use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\OneCAgentTask;
+use App\Models\OneCItem;
 use App\Models\OneCPriceBatch;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\OneCItemCosts;
 use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +22,9 @@ use Illuminate\Support\Facades\DB;
 class OneCPriceBatches
 {
     private const LOADED = ['ok', 'computed', 'raised'];
+
+    /** The draft the nomenclature fills by markup. */
+    public const BY_MARKUP = 'Цены по наценке от себестоимости 1С';
 
     private const GUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
 
@@ -58,9 +65,53 @@ class OneCPriceBatches
         });
     }
 
-    public function approve(OneCPriceBatch $batch, ?User $user): void
+    /**
+     * The chosen 1C items go into the open draft (a new one when none): retail and wholesale = the 1C cost with VAT plus
+     * the markups, in whole rubles. An item already in the draft gets the new prices. Without a cost — left empty.
+     *
+     * @param  iterable<OneCItem>  $items
+     */
+    public function addFromItems(iterable $items, float $retailMarkup, float $wholesaleMarkup, ?User $user): OneCPriceBatch
     {
-        DB::transaction(function () use ($batch, $user): void {
+        return DB::transaction(function () use ($items, $retailMarkup, $wholesaleMarkup, $user): OneCPriceBatch {
+            $batch = OneCPriceBatch::query()->where('status', OneCPriceBatch::DRAFT)->where('comment', self::BY_MARKUP)->latest('id')->first()
+                ?? OneCPriceBatch::query()->create(['status' => OneCPriceBatch::DRAFT, 'created_by' => $user?->id, 'comment' => self::BY_MARKUP]);
+            foreach ($items as $item) {
+                if ($item->is_folder) {
+                    continue;
+                }
+                $cost = (float) $item->cost_gross;
+                $row = IntegrationProduct::query()->whereHas('source', fn ($q) => $q->where('code', 'onec'))
+                    ->where(fn ($q) => $q->where('external_id', $item->ref_key)->orWhere('external_id', 'like', $item->ref_key.'#%'))->first();
+                $batch->items()->updateOrCreate(['item_key' => strtolower($item->ref_key), 'characteristic_key' => null], [
+                    'integration_product_id' => $row?->id,
+                    'code' => $item->code,
+                    'name' => mb_substr((string) $item->description, 0, 250),
+                    'purchase' => $cost > 0 ? $cost : null,
+                    'retail_site' => $item->product_id ? (Product::query()->whereKey($item->product_id)->value('price') ?: null) : null,
+                    'retail' => $cost > 0 ? OneCItemCosts::priceFrom($cost, $retailMarkup) : 0, // 0: «не задана», not sent until set
+                    'wholesale' => $cost > 0 ? OneCItemCosts::priceFrom($cost, $wholesaleMarkup) : 0, // 0: «не задана», not sent until set
+                    'verdict' => $cost > 0 ? 'markup' : 'no_cost',
+                    'note' => $cost > 0
+                        ? 'розница +'.$retailMarkup.' %, опт +'.$wholesaleMarkup.' % от себестоимости '.$cost.' ('.($item->cost_kind === OneCItemCosts::AVERAGE ? 'средняя за 3 мес.' : 'закупка '.$item->cost_date?->format('d.m.Y')).')'
+                        : 'нет закупок в 1С — задайте цены вручную',
+                ]);
+            }
+
+            return $batch->loadCount('items');
+        });
+    }
+
+    /** Items priced below their 1C cost: sent only when the manager confirms it. */
+    public function belowCost(OneCPriceBatch $batch): int
+    {
+        return $batch->items()->whereNotNull('purchase')->where('purchase', '>', 0)
+            ->where(fn ($q) => $q->whereColumn('retail', '<', 'purchase')->orWhereColumn('wholesale', '<', 'purchase'))->count();
+    }
+
+    public function approve(OneCPriceBatch $batch, ?User $user, bool $belowCostConfirmed = false): void
+    {
+        DB::transaction(function () use ($batch, $user, $belowCostConfirmed): void {
             $locked = OneCPriceBatch::query()->lockForUpdate()->findOrFail($batch->id);
             if ($locked->status !== OneCPriceBatch::DRAFT) {
                 throw new DomainException('Отправить можно только черновик.');
@@ -72,6 +123,10 @@ class OneCPriceBatches
             }
             if ($bad > 0) {
                 throw new DomainException("У {$bad} товаров цена не задана или опт выше розницы.");
+            }
+            $below = $this->belowCost($locked);
+            if ($below > 0 && ! $belowCostConfirmed) {
+                throw new DomainException("У {$below} товаров цена ниже себестоимости 1С: исправьте или подтвердите отправку.");
             }
             $locked->forceFill(['status' => OneCPriceBatch::APPROVED, 'approved_by' => $user?->id, 'approved_at' => now(), 'error' => null])->save();
             $this->tasks->enqueue(PriceBatchTaskHandler::TYPE, $locked, 'Цены: пакет №'.$locked->id.', товаров '.$locked->items()->count(), $user);

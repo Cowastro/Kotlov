@@ -118,6 +118,8 @@ class OneCPurchaseCosts
                         'onec_cost_date' => substr((string) $line->doc_date, 0, 10), 'onec_cost_doc' => $line->doc_number]);
             }
         }
+        // the cost of the 1C items too: the price list works from it
+        app(OneCItemCosts::class)->refresh($itemKeys);
 
         return $updated;
     }
