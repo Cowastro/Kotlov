@@ -6,142 +6,22 @@ use App\Models\InstallerProfile;
 use App\Models\InstallerWork;
 use App\Models\User;
 use App\Http\Controllers\InstallerAccountController;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class InstallerAccountTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->withoutMiddleware(\App\Http\Middleware\HandleRedirects::class);
-
-        // The minimal schema below is only for the in-memory sqlite run; on a
-        // shared MySQL test database dropping «users» would break later tests.
-        if (DB::connection()->getDriverName() !== 'sqlite') {
-            return;
-        }
-
-        Schema::disableForeignKeyConstraints();
-
-        try {
-            Schema::dropIfExists('installer_works');
-            Schema::dropIfExists('installer_profiles');
-            Schema::dropIfExists('b2b_client_members');
-            Schema::dropIfExists('b2b_clients');
-            Schema::dropIfExists('users');
-
-            // The installer cabinet now checks whether the user is a B2B partner.
-            Schema::create('b2b_clients', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('user_id');
-                $table->string('status')->default('pending');
-                $table->timestamps();
-            });
-            Schema::create('b2b_client_members', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('b2b_client_id');
-                $table->foreignId('user_id');
-                $table->boolean('is_active')->default(true);
-                $table->timestamps();
-            });
-
-            Schema::create('users', function (Blueprint $table) {
-                $table->id();
-                $table->string('name');
-                $table->string('first_name')->nullable();
-                $table->string('last_name')->nullable();
-                $table->string('email')->unique();
-                $table->timestamp('email_verified_at')->nullable();
-                $table->string('password');
-                $table->string('role')->default('client');
-                $table->boolean('is_crm_user')->default(false)->index();
-                $table->boolean('is_active')->default(true);
-                $table->string('phone')->nullable();
-                $table->string('job_title')->nullable();
-                $table->string('department')->nullable();
-                $table->rememberToken();
-                $table->timestamps();
-            });
-
-            // The authenticated cart middleware runs on cabinet requests too.
-            Schema::dropIfExists('customer_carts');
-            Schema::create('customer_carts', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('user_id')->unique();
-                $table->longText('items');
-                $table->text('meta')->nullable();
-                $table->timestamps();
-            });
-
-            Schema::create('installer_profiles', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('user_id')->unique();
-                $table->string('contact_name')->nullable();
-                $table->string('phone')->nullable();
-                $table->string('additional_phone')->nullable();
-                $table->string('email')->nullable();
-                $table->string('website')->nullable();
-                $table->string('telegram')->nullable();
-                $table->string('viber')->nullable();
-                $table->string('whatsapp')->nullable();
-                $table->string('company_name')->nullable();
-                $table->string('photo')->nullable();
-                $table->text('bio')->nullable();
-                $table->unsignedInteger('experience_years')->default(0);
-                $table->decimal('price_from', 10, 2)->nullable();
-                $table->string('city')->nullable();
-                $table->string('region')->nullable();
-                $table->json('work_regions')->nullable();
-                $table->json('work_cities')->nullable();
-                $table->unsignedInteger('work_radius_km')->nullable();
-                $table->boolean('nationwide')->default(false);
-                $table->string('slug')->nullable();
-                $table->string('short_description')->nullable();
-                $table->string('logo')->nullable();
-                $table->json('gallery')->nullable();
-                $table->json('certificate_files')->nullable();
-                $table->string('certificate_photo')->nullable();
-                $table->boolean('is_published')->default(false);
-                $table->string('status')->default('pending');
-                $table->boolean('is_verified')->default(false);
-                $table->decimal('rating', 4, 2)->default(0);
-                $table->unsignedInteger('reviews_count')->default(0);
-                $table->unsignedInteger('orders_count')->default(0);
-                $table->json('specializations')->nullable();
-                $table->timestamps();
-            });
-
-            Schema::create('installer_works', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('installer_profile_id');
-                $table->unsignedBigInteger('blog_post_id')->nullable();
-                $table->string('title');
-                $table->text('description')->nullable();
-                $table->string('work_type')->nullable();
-                $table->string('city')->nullable();
-                $table->string('region')->nullable();
-                $table->string('equipment_type')->nullable();
-                $table->string('brand')->nullable();
-                $table->json('photos')->nullable();
-                $table->date('completed_at')->nullable();
-                $table->boolean('is_published')->default(true);
-                $table->timestamps();
-            });
-        } finally {
-            Schema::enableForeignKeyConstraints();
-        }
     }
 
     public function test_guest_is_redirected_from_installer_cabinet(): void
