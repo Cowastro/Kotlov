@@ -29,6 +29,12 @@ class CatalogSpecificationFilters
         $specs ??= $product->specs ?? [];
         $rows = $product->relationLoaded('allAttributeValues') ? $product->allAttributeValues
             : ProductAttributeValue::where('product_id', $product->id)->get();
+        foreach ($rows->whereNull('option_id') as $row) {
+            $attribute = $this->attributes->find($row->attribute_id);
+            if ($attribute && filled($row->value)) {
+                $specs[] = ['key' => $attribute->name, 'value' => $row->value];
+            }
+        }
         $existing = $rows->whereNotNull('option_id')->pluck('attribute_id')->all();
         $plan = [];
         foreach ($this->attributes->whereIn('category_id', $ids) as $attribute) {
@@ -37,6 +43,13 @@ class CatalogSpecificationFilters
             }
             $matches = collect();
             $sourceValues = collect();
+            $suffix = $attribute->suffix;
+            if (! filled($suffix) && $attribute->options->isNotEmpty()) {
+                $units = $attribute->options->map(fn ($option) => preg_match('/\d\s*(мм|см|м|квт|вт|л|бар)$/ui', $option->name, $match) ? mb_strtolower($match[1]) : null);
+                if (! $units->contains(null) && $units->unique()->count() === 1) {
+                    $suffix = $units->first();
+                }
+            }
             foreach ($specs as $key => $spec) {
                 $name = is_array($spec) ? ($spec['key'] ?? '') : $key;
                 $value = is_array($spec) ? ($spec['value'] ?? '') : $spec;
@@ -67,8 +80,8 @@ class CatalogSpecificationFilters
                 if ($unit !== '' && ! str_ends_with(mb_strtolower($value), mb_strtolower($unit))) {
                     $value .= ' '.$unit;
                 }
-                $sourceValues->push($this->value($value, $attribute->suffix));
-                $options = $attribute->options->filter(fn ($option) => $this->value($option->name, $attribute->suffix) === $this->value($value, $attribute->suffix));
+                $sourceValues->push($this->value($value, $suffix));
+                $options = $attribute->options->filter(fn ($option) => $this->value($option->name, $suffix) === $this->value($value, $suffix));
                 // Several option IDs with the same visible label are ambiguous too.
                 if ($options->count() === 1) {
                     $matches->push($options->first()->id);
@@ -76,7 +89,7 @@ class CatalogSpecificationFilters
             }
             if ($sourceValues->unique()->count() === 1 && $matches->unique()->count() === 1) {
                 $old = $rows->firstWhere('attribute_id', $attribute->id);
-                if ($old && filled($old->value) && $this->value($old->value, $attribute->suffix) !== $sourceValues->first()) {
+                if ($old && filled($old->value) && $this->value($old->value, $suffix) !== $sourceValues->first()) {
                     continue;
                 }
                 $plan[] = ['product_id' => $product->id, 'attribute_id' => $attribute->id, 'option_id' => $matches->first(), 'expected_value' => $old?->value];

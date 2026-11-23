@@ -18,7 +18,9 @@ class SyncCatalogSpecificationFiltersCommand extends Command
     {
         $cards = 0;
         $plan = [];
-        Product::query()->orderable()->whereNotNull('specs')->with('allAttributeValues:id,product_id,attribute_id,option_id,value')
+        Product::query()->orderable()->where(fn ($q) => $q->whereNotNull('specs')->orWhereHas('allAttributeValues', fn ($v) => $v
+            ->whereNull('option_id')->whereNotNull('value')->whereHas('attribute', fn ($a) => $a->where('in_filter', true)->where('type', 'select'))))
+            ->with('allAttributeValues:id,product_id,attribute_id,option_id,value')
             ->chunkById(300, function ($products) use ($filters, &$cards, &$plan): void {
                 foreach ($products as $product) {
                     $cards++;

@@ -61,10 +61,13 @@ class CatalogSpecificationFiltersTest extends TestCase
         $product = Product::create(['category_id' => $category->id, 'name' => 'Прибор', 'slug' => 'safe-filter-card', 'price' => 100,
             'is_active' => true, 'is_archived' => false, 'specs' => [['key' => 'Цвет', 'value' => 'Белый']]]);
         $value = ProductAttributeValue::create(['product_id' => $product->id, 'attribute_id' => $attribute->id, 'value' => 'Белый']);
+        $withoutSpecs = Product::create(['category_id' => $category->id, 'name' => 'Без JSON', 'slug' => 'filter-without-json', 'price' => 100, 'is_active' => true, 'is_archived' => false]);
+        ProductAttributeValue::create(['product_id' => $withoutSpecs->id, 'attribute_id' => $attribute->id, 'value' => 'Белый']);
         $this->artisan('catalog:sync-specification-filters')->assertSuccessful();
         $this->assertNull($value->fresh()->option_id);
         $this->artisan('catalog:sync-specification-filters', ['--apply' => true])->assertSuccessful();
         $this->assertSame($option->id, $value->fresh()->option_id);
+        $this->assertDatabaseHas('product_attribute_values', ['product_id' => $withoutSpecs->id, 'option_id' => $option->id]);
         $product->update(['specs' => [['key' => 'Цвет', 'value' => 'Чёрный']]]);
         $this->assertSame([], app(CatalogSpecificationFilters::class)->plan($product));
         $value->delete();
