@@ -23,7 +23,12 @@ class EurotermOnlinePriceList
         }
         $credentials->markAttempt();
         $deadline = microtime(true) + 600;
-        $http = Http::withOptions([
+        $http = Http::withHeaders([
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36',
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language' => 'ru-RU,ru;q=0.9',
+            'Referer' => self::URL,
+        ])->withOptions([
             'cookies' => new CookieJar,
             'verify' => resource_path('certificates/globalsign-root-r6.pem'),
             'allow_redirects' => false,
@@ -63,7 +68,7 @@ class EurotermOnlinePriceList
         }
 
         $queue = [self::URL];
-        $visited = $rows = $fingerprints = [];
+        $visited = $rows = $fingerprints = $unpriced = [];
         $hash = hash_init('sha256');
         $parser = app(EurotermPriceList::class);
         while ($queue !== []) {
@@ -75,12 +80,13 @@ class EurotermOnlinePriceList
             }
             $url = array_shift($queue);
             $page = $this->parsePage($get($url));
-            $fingerprint = hash('sha256', implode('|', array_column($page['rows'], 'article')));
+            $fingerprint = hash('sha256', json_encode([array_column($page['rows'], 'article'), $page['unpriced']]));
             if (isset($fingerprints[$fingerprint])) {
                 throw new RuntimeException('Евротерм вернул повтор страницы вместо продолжения прайса. Данные не обновлены.');
             }
             $fingerprints[$fingerprint] = true;
             $visited[$url] = true;
+            $unpriced = array_merge($unpriced, $page['unpriced']);
             hash_update($hash, json_encode($page['rows'], JSON_UNESCAPED_UNICODE));
             foreach ($page['rows'] as $row) {
                 $row['article_key'] = $parser->articleKey($row['article']);
@@ -107,6 +113,7 @@ class EurotermOnlinePriceList
             'supplier' => ['code' => 'euroterm', 'name' => 'ООО «Евротерм»', 'website' => EurotermPriceList::WEBSITE],
             'warehouse' => ['name' => 'Евротерм · Машиностроителей, 9А', 'address' => 'Минск, ул. Машиностроителей, 9А'],
             'rows' => array_values($rows),
+            'unpriced_rows' => $unpriced,
         ];
     }
 
@@ -116,7 +123,7 @@ class EurotermOnlinePriceList
         if ($x->query('//input[@name="task" and (@value="user.logout" or @value="logout")]|//form[contains(@action,"task=user.logout")]')->length === 0) {
             throw new RuntimeException('Вход в Евротерм не подтверждён или сессия истекла. Цены не обновлены.');
         }
-        $rows = [];
+        $rows = $unpriced = [];
         foreach ($x->query('//*[contains(concat(" ",normalize-space(@class)," ")," product-container ")]') as $card) {
             $text = fn (string $query): string => trim($x->query($query, $card)->item(0)?->textContent ?? '');
             $link = $x->query('.//*[contains(@class,"vm-product_name")]/a[@href]', $card)->item(0);
@@ -125,7 +132,16 @@ class EurotermOnlinePriceList
             $retail = $this->number($text('.//span[contains(concat(" ",@class," ")," Priceroz ")]'));
             $rate = $this->number($text('.//*[@id="kurseu"]'));
             if (! $link || $article === '' || $wholesale <= 0 || $retail <= 0 || $rate <= 0) {
-                throw new RuntimeException('В онлайн-прайсе Евротерма отсутствуют артикул или обе цены. Данные не обновлены.');
+                if (! $link) {
+                    throw new RuntimeException('Изменилась структура карточек онлайн-прайса Евротерма. Данные не обновлены.');
+                }
+                $unpriced[] = [
+                    'article' => $article, 'name' => trim($link->textContent),
+                    'source_url' => $this->url($link->getAttribute('href')),
+                    'reason' => $article === '' ? 'missing_article' : 'missing_price',
+                ];
+
+                continue;
             }
             $stock = $text('.//*[contains(concat(" ",@class," ")," stock-info ")]');
             $inStock = preg_match('/^\s*В наличии\s*$/ui', $stock) === 1;
@@ -141,7 +157,7 @@ class EurotermOnlinePriceList
                 'category_path' => [], 'section' => '', 'category' => '', 'brand' => '', 'unit' => '',
             ];
         }
-        if ($rows === []) {
+        if ($rows === [] && $unpriced === []) {
             throw new RuntimeException('Онлайн-прайс Евротерма пуст или его формат изменился.');
         }
         $pages = [];
@@ -151,7 +167,7 @@ class EurotermOnlinePriceList
             }
         }
 
-        return ['rows' => $rows, 'pages' => array_values(array_unique($pages))];
+        return ['rows' => $rows, 'unpriced' => $unpriced, 'pages' => array_values(array_unique($pages))];
     }
 
     private function xpath(string $html): DOMXPath

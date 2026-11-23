@@ -85,6 +85,7 @@ class SyncEurotermPriceListCommand extends Command
                 }
                 $this->line('metric.euroterm.online_rows='.count($payload['rows']));
                 $this->line('metric.euroterm.online_pages='.$payload['source_pages']);
+                $this->line('metric.euroterm.online_unpriced_rows='.count($payload['unpriced_rows'] ?? []));
             } else {
                 $classified = $this->classify($payload['rows'], $parser, $supplier);
             }
