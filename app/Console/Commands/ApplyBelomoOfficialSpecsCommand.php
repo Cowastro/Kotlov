@@ -88,6 +88,12 @@ class ApplyBelomoOfficialSpecsCommand extends Command
                     throw new RuntimeException('Резервная копия не сохранена — изменения отменены.');
                 }
                 foreach ($plan as $row) {
+                    // MySQL keeps JSON keys in its own order: the same specs, documents or images are not a change
+                    foreach (['specs', 'documents', 'images'] as $json) {
+                        if (array_key_exists($json, $row['updates']) && self::sameJson($row['product']->{$json}, $row['updates'][$json])) {
+                            unset($row['updates'][$json]);
+                        }
+                    }
                     $row['product']->fill($row['updates']);
                     if ($row['product']->isDirty()) {
                         $row['product']->save();
@@ -102,5 +108,23 @@ class ApplyBelomoOfficialSpecsCommand extends Command
 
             return self::FAILURE;
         }
+    }
+
+    /** The same value whatever the order of the keys of its objects. */
+    private static function sameJson(mixed $a, mixed $b): bool
+    {
+        $canon = function (mixed $v) use (&$canon): mixed {
+            if (! is_array($v)) {
+                return $v;
+            }
+            $v = array_map($canon, $v);
+            if (! array_is_list($v)) {
+                ksort($v);
+            }
+
+            return $v;
+        };
+
+        return $canon($a) == $canon($b);
     }
 }
