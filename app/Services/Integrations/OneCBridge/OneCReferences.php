@@ -70,6 +70,12 @@ class OneCReferences
             'to_ship_sample' => ['AccumulationRegister_ТоварыКОтгрузке/Balance', ['$top' => '5']],
             'warehouses_sample' => ['Catalog_Склады', ['$top' => '30', '$select' => 'Ref_Key,Description,IsFolder,DeletionMark']],
         ],
+        // «ready»: what each customer order holds (reserve, to ship) — «Готов к отгрузке» vs «Ожидается обеспечение».
+        'ready' => [
+            'order_holds_sample' => ['AccumulationRegister_ТоварыКОтгрузке/Balance', ['$top' => '40',
+                '$select' => 'ДокументОтгрузки,ДокументОтгрузки_Type,Номенклатура_Key,ВРезервеBalance,КОтгрузкеBalance,КОформлениюBalance']],
+            'order_provision_sample' => ['AccumulationRegister_ЗаказыКлиентов/Balance', ['$top' => '40']],
+        ],
         'purchase' => [
             'supplier_order_sample' => ['Document_ЗаказПоставщику', ['$top' => '3', '$orderby' => 'Date desc']],
             'supplier_order_list' => ['Document_ЗаказПоставщику', ['$select' => 'Ref_Key,Number,Date,Posted,DeletionMark,Статус,Организация_Key,Партнер_Key,Контрагент_Key,СуммаДокумента',

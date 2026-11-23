@@ -111,6 +111,9 @@ class Order extends Model
 
     private ?int $pendingStatusHistoryId = null;
 
+    /** A status move the customer is not told of (no SMS): an old order 1C moves, never confirmed on the site. */
+    public bool $quietStatus = false;
+
     /** @var array<string, mixed>|null */
     private ?array $supplySummaryCache = null;
 
@@ -261,7 +264,7 @@ class Order extends Model
         static::updated(function (Order $order): void {
             $historyId = $order->pendingStatusHistoryId;
             $order->pendingStatusHistoryId = null;
-            if ($historyId !== null && $order->wasChanged('status')) {
+            if ($historyId !== null && $order->wasChanged('status') && ! $order->quietStatus) {
                 app(OrderStatusSmsNotifier::class)->record($order, $order->status, 'status:'.$historyId);
             }
         });

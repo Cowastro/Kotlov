@@ -258,6 +258,7 @@ class OneCOrderExportTest extends TestCase
     public function test_an_order_never_confirmed_on_the_site_follows_1c_silently(): void
     {
         // An old order the manager agreed with the customer outside the site: in work in 1C, never confirmed here.
+        config(['services.sms_by.enabled' => true, 'services.sms_by.base_url' => 'https://app.sms.by', 'services.sms_by.token' => 'test-token', 'services.sms_by.alphaname_id' => '42']);
         $notifier = $this->spy(OrderStatusCustomerNotifier::class);
         $order = $this->order(['status' => 'new', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000800', 'onec_order_number' => 'МПУТ-000800',
             'onec_exported_at' => now(), 'onec_checked_at' => now(), 'onec_doc_status' => 'НеСогласован', 'onec_posted' => false]);
@@ -265,11 +266,18 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame('processing', $order->fresh()->status);
         $this->assertStringContainsString('клиенту не сообщали', (string) $order->statusHistory()->latest('id')->value('comment'));
         $notifier->shouldNotHaveReceived('notify');
+        $this->assertSame(0, \DB::table('order_status_sms')->where('order_id', $order->id)->where('event_key', 'like', 'status:%')->count(), 'no SMS either');
 
         // Once it is in work, every next move is the customer's news: closed in 1C → delivered, with the message.
         $this->check1cOrder('Закрыт', true, [['Номенклатура_Key' => self::ITEM, 'Отменено' => false]]);
         $this->assertSame('delivered', $order->fresh()->status);
         $notifier->shouldHaveReceived('notify')->once();
+        $this->assertSame(1, \DB::table('order_status_sms')->where('order_id', $order->id)->where('order_status', 'delivered')->count());
+
+        // Self-pickup ready: the SMS names the 1C order for the warehouse.
+        $pickup = $this->order(['number' => 'K-1003', 'status' => 'processing', 'delivery_type' => 'pickup', 'onec_order_number' => 'МПУТ-000758']);
+        $pickup->transitionTo('shipped', 'Готов к отгрузке');
+        $this->assertSame('KOTLOV: заказ МПУТ-000758 готов к самовывозу.', \DB::table('order_status_sms')->where('order_id', $pickup->id)->where('order_status', 'shipped')->value('message'));
     }
 
     public function test_the_order_stages_follow_1c_once_the_customer_got_the_confirmation(): void
