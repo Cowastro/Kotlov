@@ -80,4 +80,22 @@ class EurotermOnlinePriceListTest extends TestCase
         $this->expectExceptionMessage('HTTP 503');
         app(EurotermOnlinePriceList::class)->load();
     }
+
+    public function test_identical_repeats_are_deduplicated_and_conflicting_articles_are_excluded(): void
+    {
+        Storage::fake('local');
+        app(EurotermPortalCredentials::class)->save('login', 'private-password');
+        Http::fake([
+            'euroterm.by/log-in.html' => Http::response('<form action="/index.php?task=user.login"><input type="password"></form>'),
+            'euroterm.by/index.php*' => Http::response('', 303),
+            'euroterm.by/prajs-list.html' => Http::response(self::page('SKU-01').self::page('SKU-01').self::page('SKU-02')
+                .str_replace('/product.html', '/different-product.html', self::page('SKU-02'))
+                .'<a href="/results25-48.html">2</a>'),
+            'euroterm.by/results25-48.html' => Http::response(self::page('SKU-03')),
+        ]);
+        $payload = app(EurotermOnlinePriceList::class)->load();
+        $this->assertSame(['SKU-01', 'SKU-03'], array_column($payload['rows'], 'article'));
+        $this->assertSame(1, $payload['duplicate_rows']);
+        $this->assertCount(2, $payload['ambiguous_rows']['sku02']);
+    }
 }
