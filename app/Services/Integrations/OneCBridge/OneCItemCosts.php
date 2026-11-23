@@ -63,7 +63,9 @@ class OneCItemCosts
     {
         $price = IntegrationProduct::query()->whereHas('source', fn ($q) => $q->where('code', 'onec'))
             ->where(fn ($q) => $q->where('external_id', $item->ref_key)->orWhere('external_id', 'like', $item->ref_key.'#%'))
-            ->max('price_byn');
+            ->get(['price', 'price_byn'])
+            // the BYN price; the exchange price as it came when it was not converted
+            ->map(fn (IntegrationProduct $p): float => (float) $p->price_byn > 0 ? (float) $p->price_byn : (float) $p->price)->max();
 
         return (float) $price > 0 ? round((float) $price, 2) : null;
     }
