@@ -185,7 +185,6 @@
                 && (!technology || technology === 'diaphragm')
                 && (!direction || direction === 'left')
                 && (!length || length === '250');
-            if (sgmnFitsRequest && isSgmnG4(a) !== isSgmnG4(b)) return isSgmnG4(a) ? -1 : 1;
             var score = function (model) {
                 return (direction && model.direction === direction ? 4 : 0)
                     + (length && model.length === Number(length) ? 4 : 0)
@@ -195,6 +194,8 @@
             };
             if (Boolean(a.stock_priority) !== Boolean(b.stock_priority)) return a.stock_priority ? -1 : 1;
             if (approximate && score(a) !== score(b)) return score(b) - score(a);
+            if (Boolean(a.stock_program) !== Boolean(b.stock_program)) return a.stock_program ? -1 : 1;
+            if (sgmnFitsRequest && isSgmnG4(a) !== isSgmnG4(b)) return isSgmnG4(a) ? -1 : 1;
             if (Boolean(a.request_only) !== Boolean(b.request_only)) return a.request_only ? 1 : -1;
             if (cold && Boolean(a.thermal) !== Boolean(b.thermal)) return a.thermal ? -1 : 1;
             if (Boolean(a.buyable) !== Boolean(b.buyable)) return a.buyable ? -1 : 1;
@@ -216,7 +217,7 @@
             var differences = [];
             if (approximate && direction && model.technology !== 'ultrasonic' && model.direction !== direction) differences.push('сторону входа газа');
             if (approximate && length && model.technology !== 'ultrasonic' && model.length !== Number(length)) differences.push('межосевое расстояние');
-            card.innerHTML = (model.stock_priority ? '<span class="gm-result__badge">В наличии · показываем первым</span>' : (isSgmnG4 ? '<span class="gm-result__badge" style="background:#777">Популярный G4 · под заказ</span>' : '<span class="gm-result__badge" style="background:#777">Под заказ</span>'))
+            card.innerHTML = (model.stock_priority ? '<span class="gm-result__badge">В наличии · показываем первым</span>' : (model.stock_program ? '<span class="gm-result__badge" style="background:#777">Складская программа · наличие уточняется</span>' : (isSgmnG4 ? '<span class="gm-result__badge" style="background:#777">Популярный G4 · под заказ</span>' : '<span class="gm-result__badge" style="background:#777">Под заказ</span>')))
                 + '<div class="gm-result__family">Тип: ' + escapeHtml(model.family_label) + '</div>'
                 + '<strong>' + escapeHtml(model.name) + '</strong>'
                 + '<p>Артикул ' + escapeHtml(model.article_label || model.article) + ' · ' + escapeHtml(model.technology_label) + ' · ' + escapeHtml(model.direction_label) + (model.length ? ' · L=' + model.length + ' мм' : '') + (model.thermal ? ' · с термокомпенсатором' : ' · без термокомпенсатора') + '</p>'
