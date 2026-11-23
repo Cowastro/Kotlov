@@ -70,6 +70,7 @@ class EurotermOnlinePriceList
 
         $queue = [self::URL];
         $visited = $rows = $fingerprints = $unpriced = $ambiguous = [];
+        $repeatedPages = [];
         $duplicates = 0;
         $hash = hash_init('sha256');
         $parser = app(EurotermPriceList::class);
@@ -84,7 +85,9 @@ class EurotermOnlinePriceList
             $page = $this->parsePage($get($url));
             $fingerprint = hash('sha256', json_encode([array_column($page['rows'], 'article'), $page['unpriced']]));
             if (isset($fingerprints[$fingerprint])) {
-                throw new RuntimeException('Евротерм вернул повтор страницы вместо продолжения прайса. Данные не обновлены.');
+                // Supplier pagination aliases can repeat a page. Continue discovering links;
+                // per-article checks below deduplicate exact data and exclude conflicts.
+                $repeatedPages[] = $url;
             }
             $fingerprints[$fingerprint] = true;
             $visited[$url] = true;
@@ -137,6 +140,7 @@ class EurotermOnlinePriceList
             'rows' => array_values($rows),
             'unpriced_rows' => $unpriced,
             'ambiguous_rows' => $ambiguous, 'duplicate_rows' => $duplicates,
+            'repeated_pages' => $repeatedPages,
         ];
         $disk = Storage::disk('local');
         $snapshot = 'suppliers/euroterm/latest-online.json';
