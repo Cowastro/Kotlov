@@ -17,6 +17,7 @@ use App\Models\OneCReference;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCOrderExport;
@@ -26,6 +27,7 @@ use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCOrderStages;
 use App\Services\Integrations\OneCBridge\OneCReferences;
 use App\Services\Integrations\OneCBridge\OneCStock;
+use App\Services\Orders\OrderItemFulfillmentPicker;
 use App\Services\Orders\OrderStatusCustomerNotifier;
 use DomainException;
 use Filament\Actions\Testing\TestAction;
@@ -421,6 +423,24 @@ class OneCOrderExportTest extends TestCase
         $order->refresh();
         $this->assertSame(['delivered', 'paid'], [$order->status, $order->payment_status]);
         $this->assertSame('По 1С: заказ МПУТ-000733 проведён, «Готов к закрытию».', $order->statusHistory()->latest('id')->value('comment'));
+    }
+
+    public function test_our_warehouse_line_takes_the_1c_cost_and_the_free_1c_stock(): void
+    {
+        $sbg = Supplier::query()->updateOrCreate(['code' => 'sanbusinessgroup'], ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true]);
+        $this->source->forceFill(['supplier_id' => $sbg->id])->save();
+        $this->card->forceFill(['onec_cost_byn' => 15.40])->save();
+        OneCItem::query()->create(['ref_key' => self::ITEM, 'code' => 'УТ-00000001', 'description' => 'Переход Моно', 'product_id' => $this->card->id,
+            'stock_on_hand' => 3, 'stock_reserved' => 1, 'stock_synced_at' => now()]);
+        $item = $this->order()->items()->first();
+
+        $picker = app(OrderItemFulfillmentPicker::class);
+        $offers = $picker->offers($item);
+        $this->assertArrayHasKey($sbg->id, $offers);
+        $this->assertSame([true, 2.0, 15.4], [$offers[$sbg->id]['own'], $offers[$sbg->id]['quantity'], $offers[$sbg->id]['price']]);
+        $this->assertStringContainsString('себестоимость 1С', (string) $offers[$sbg->id]['source']);
+        $defaults = $picker->defaults($item, $offers);
+        $this->assertSame(['own_stock', 'available', 15.4], [$defaults['fulfillment_route'], $defaults['availability_status'], $defaults['purchase_price']]);
     }
 
     public function test_an_order_1c_refuses_on_write_goes_again_as_a_draft_and_the_scheme_keeps_drafts(): void

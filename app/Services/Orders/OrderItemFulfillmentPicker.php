@@ -2,9 +2,11 @@
 
 namespace App\Services\Orders;
 
+use App\Models\OneCItem;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Services\Integrations\OneCBridge\OneCStock;
 
 final class OrderItemFulfillmentPicker
 {
@@ -50,20 +52,29 @@ final class OrderItemFulfillmentPicker
                 ->sortByDesc('available_quantity')->first();
 
             $isOwn = $supplier->code === 'sanbusinessgroup' || $integration?->source?->code === 'onec';
+            // Our warehouse in 1C: what is free there (in stock − reserve of other orders), when 1C stock is read.
+            $onecItem = $integration?->source?->code === 'onec'
+                ? OneCItem::query()->where('ref_key', strtolower((string) $integration->external_id))->first() : null;
+            $onecFree = OneCStock::fresh($onecItem) ? OneCStock::free($onecItem) : null;
             $manual = $own?->id === $supplier->id && $product?->manual_stock_management;
             $quantity = match (true) {
                 $manual => $product->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK ? (float) $product->stock_qty : 0.0,
+                $onecFree !== null => $onecFree,
                 $integration?->hasFreshPositiveStock() === true => (float) $integration->stock_quantity,
                 $warehouse !== null => (float) $warehouse->available_quantity,
                 $legacy?->hasFreshPositiveStock() === true => (float) $legacy->stock_quantity,
                 default => null,
             };
-            $price = $integration?->normalizedPriceByn()
+            // Our stock costs what 1C paid for it (cost from the posted purchases), not its selling price.
+            $price = ($isOwn && (float) $product?->onec_cost_byn > 0 ? (float) $product->onec_cost_byn : null)
+                ?? $integration?->normalizedPriceByn()
                 ?? $legacy?->price_byn
                 ?? ((int) $context['supplier_id'] === $supplier->id ? $context['wholesale_price'] : null)
                 ?? ((int) $item->supply_supplier_id === $supplier->id ? $item->supply_purchase_price : null);
             $source = match (true) {
                 $manual => 'Ручное наличие карточки',
+                $onecFree !== null => '1С, склад '.implode(', ', OneCStock::WAREHOUSES).': '.OneCStock::label($onecItem)
+                    .($isOwn && (float) $product?->onec_cost_byn > 0 ? ' · себестоимость 1С' : ''),
                 $integration?->hasFreshPositiveStock() === true => $integration->source->name,
                 $warehouse !== null => $warehouse->warehouse_name,
                 $legacy?->hasFreshPositiveStock() === true => 'Прайс поставщика',
