@@ -374,9 +374,9 @@ class OrderSupplyRoutingTest extends TestCase
         config(['services.evropochta.token' => 'fake-token']);
 
         $page = Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->id])
-            ->assertActionVisible('confirmFulfillment')
+            ->assertActionVisible('confirmItemFulfillment')
             ->assertActionHidden('advanceWorkflow')
-            ->mountAction('confirmFulfillment');
+            ->mountAction('confirmItemFulfillment');
         $instance = $page->instance();
         $schema = $instance->getSchema($instance->getMountedActionSchemaName());
         $this->assertSame($fixture['item']->id, (int) $schema->getComponent('order_item_id')->getState());
@@ -412,8 +412,8 @@ class OrderSupplyRoutingTest extends TestCase
         Supplier::query()->create(['code' => 'unrelated-supplier', 'name' => 'Не связан с позицией', 'is_active' => true]);
         $page = Livewire::actingAs($manager)
             ->test(ViewOrder::class, ['record' => $fixture['order']->id])
-            ->assertActionEnabled('confirmFulfillment')
-            ->mountAction('confirmFulfillment')
+            ->assertActionEnabled('confirmItemFulfillment')
+            ->mountAction('confirmItemFulfillment')
             ->set('mountedActions.0.data.fulfillment_route', 'supplier_purchase');
         $instance = $page->instance();
         $schema = $instance->getSchema($instance->getMountedActionSchemaName());
@@ -430,7 +430,7 @@ class OrderSupplyRoutingTest extends TestCase
             ])
             ->callMountedAction()
             ->assertHasNoActionErrors()
-            ->assertActionDisabled('confirmFulfillment');
+            ->assertActionDisabled('confirmItemFulfillment');
 
         $order = $fixture['order']->fresh();
         $this->assertSame('checking', $order->status);
@@ -456,7 +456,7 @@ class OrderSupplyRoutingTest extends TestCase
         Livewire::actingAs($manager)
             ->test(ViewOrder::class, ['record' => $fixture['order']->id])
             ->assertActionHidden('advanceWorkflow')
-            ->callAction('confirmFulfillment', [
+            ->callAction('confirmItemFulfillment', [
                 'order_item_id' => $fixture['item']->id,
                 'fulfillment_route' => 'supplier_purchase',
                 'supplier_id' => $supplier->id,
@@ -471,7 +471,7 @@ class OrderSupplyRoutingTest extends TestCase
 
         $order = $fixture['order']->fresh();
         $this->assertSame('confirmed', $order->status);
-        $this->assertSame('Наличие подтверждено', $order->status_label);
+        $this->assertSame('Принят в обработку', $order->status_label);
         $this->assertDatabaseHas('order_status_history', [
             'order_id' => $order->id,
             'status_from' => 'checking',

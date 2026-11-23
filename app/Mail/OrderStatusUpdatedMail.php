@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Jobs\Middleware\SkipOutdatedOrderMail;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -18,22 +19,25 @@ class OrderStatusUpdatedMail extends Mailable
     /** @var array{eyebrow:string,title:string,message:string} */
     public readonly array $statusDetails;
 
+    public readonly string $statusAtQueue;
+
     public function __construct(public readonly Order $order)
     {
+        $this->statusAtQueue = $order->status;
         $this->statusDetails = match ($order->status) {
             'processing' => [
                 'eyebrow' => 'ЗАКАЗ В ИСПОЛНЕНИИ',
-                'title' => 'Заказ передан в исполнение',
-                'message' => 'Мы начали подготовку вашего заказа. Следующим этапом будет передача в доставку или подготовка к выдаче.',
+                'title' => 'Комплектация',
+                'message' => 'Комплектуем ваш заказ. Состояние товаров и согласованные сроки указаны ниже.',
             ],
             'shipped' => [
-                'eyebrow' => 'ЗАКАЗ ПЕРЕДАН В ДОСТАВКУ',
-                'title' => 'Заказ передан в доставку',
-                'message' => 'Ваш заказ собран и передан в доставку или подготовлен к выдаче. Менеджер свяжется с вами при необходимости.',
+                'eyebrow' => $order->delivery_type === 'pickup' ? 'ГОТОВ К САМОВЫВОЗУ' : 'ПЕРЕДАН В ДОСТАВКУ',
+                'title' => $order->customerStatusLabel(),
+                'message' => $order->delivery_type === 'pickup' ? 'Ваш заказ подготовлен к самовывозу. Согласуйте получение с магазином.' : 'Ваш заказ собран и передан в доставку.',
             ],
             'delivered' => [
                 'eyebrow' => 'ЗАКАЗ ДОСТАВЛЕН',
-                'title' => 'Заказ доставлен',
+                'title' => 'Получен',
                 'message' => 'Заказ отмечен как доставленный. Благодарим вас за покупку в KOTLOV.BY.',
             ],
             default => [
@@ -42,6 +46,11 @@ class OrderStatusUpdatedMail extends Mailable
                 'message' => 'Статус вашего заказа обновлён.',
             ],
         };
+    }
+
+    public function middleware(): array
+    {
+        return [new SkipOutdatedOrderMail($this->order->id, [$this->statusAtQueue])];
     }
 
     public function envelope(): Envelope

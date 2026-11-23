@@ -25,7 +25,7 @@ class OrderAvailabilityConfirmation
             }
 
             if (! $locked->hasConfirmedFulfillmentForAllItems()) {
-                throw new RuntimeException('Сначала подтвердите наличие и способ исполнения каждой позиции.');
+                throw new RuntimeException('Сначала проверьте план исполнения всего заказа.');
             }
 
             if ($locked->status === 'new') {
@@ -35,7 +35,7 @@ class OrderAvailabilityConfirmation
             }
 
             if ($locked->status !== 'confirmed' || $locked->availability_confirmed_at === null) {
-                $locked->transitionTo('confirmed', 'Наличие и исполнение всех позиций подтверждены менеджером.', [
+                $locked->transitionTo('confirmed', 'Заказ принят в комплектацию. По каждой позиции сохранён план исполнения.', [
                     'availability_confirmed_at' => $locked->availability_confirmed_at ?: now(),
                     'availability_confirmed_by' => $locked->availability_confirmed_by ?: $manager?->id,
                     'manager_id' => $locked->manager_id ?: $manager?->id,
@@ -62,7 +62,7 @@ class OrderAvailabilityConfirmation
 
     private function notifyCustomerIfNeeded(Order $order): bool
     {
-        if ($order->customer_notified_at !== null || ! $order->user_id) {
+        if ($order->customer_notified_at !== null || $order->is_internal) {
             return false;
         }
 

@@ -260,7 +260,7 @@ class OneCOrderExport
         'СуммаДокумента', 'Товары'];
 
     private const MAIN_ROW_FIELDS = ['LineNumber', 'Номенклатура_Key', 'Характеристика_Key', 'КоличествоУпаковок', 'Количество', 'Цена', 'Сумма',
-        'СтавкаНДС_Key', 'СуммаНДС', 'СуммаСНДС', 'Склад_Key'];
+        'СтавкаНДС_Key', 'СуммаНДС', 'СуммаСНДС', 'Склад_Key', 'ВариантОбеспечения'];
 
     /** @return array<string, mixed> the «Заказ клиента» for OData */
     public function body(Order $order, OneCOrderProfile $profile, array $form, ?int $variant = null): array
@@ -331,9 +331,7 @@ class OneCOrderExport
             ]);
             // Every line «Резервировать по мере поступления»: «Отгрузить» stops the posting when the goods are held for
             // another order (in stock, but reserved), and the order went to 1C as a draft.
-            if (array_key_exists('ВариантОбеспечения', $row) || in_array('ВариантОбеспечения', $rowKeys, true)) {
-                $row['ВариантОбеспечения'] = self::RESERVE;
-            }
+            $row['ВариантОбеспечения'] = self::RESERVE;
             foreach (['КодСтроки' => $n, 'КлючСвязи' => $n, 'ИдентификаторСтроки' => (string) Str::uuid(), 'ДатаОтгрузки' => $ship] as $key => $value) {
                 if (in_array($key, $rowKeys, true)) {
                     $row[$key] = $value;
