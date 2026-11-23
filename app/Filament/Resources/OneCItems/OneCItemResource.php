@@ -124,7 +124,7 @@ class OneCItemResource extends Resource
                 Filter::make('no_price')->label('Нет цены в 1С')->query(fn (Builder $query): Builder => $query->where('is_folder', false)
                     ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('integration_products')
                         ->join('integration_sources', 'integration_sources.id', '=', 'integration_products.integration_source_id')
-                        ->where('integration_sources.code', 'onec')->where('integration_products.price_byn', '>', 0)
+                        ->where('integration_sources.code', 'onec')->where(fn ($p) => $p->where('integration_products.price_byn', '>', 0)->orWhere('integration_products.price', '>', 0))
                         ->where(fn ($w) => $w->whereColumn('integration_products.external_id', 'onec_items.ref_key')
                             ->orWhereRaw('integration_products.external_id like '.(DB::connection()->getDriverName() === 'sqlite'
                                 ? "onec_items.ref_key || '#%'" : "concat(onec_items.ref_key, '#%')"))))),
