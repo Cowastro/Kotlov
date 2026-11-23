@@ -20,7 +20,7 @@ final class BelomoSelectorLineup
     {
         $priceList ??= new BelomoPriceList;
 
-        $rows = $priceList->rows();
+        $rows = BelomoOfficialMeterSpecs::selectorRows($priceList->rows());
         $articles = array_column($rows, 'article');
         foreach (EliconGasMeterCatalog::models() as $model) {
             if (! in_array($model['full_article'], $articles, true)) {

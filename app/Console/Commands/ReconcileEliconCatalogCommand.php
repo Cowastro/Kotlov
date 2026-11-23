@@ -105,7 +105,8 @@ class ReconcileEliconCatalogCommand extends Command
                             $specs['Артикул производителя'] = $row['full_article'];
                         }
                     }
-                    $name = preg_replace('/-\s+(G\d)/u', '-$1', $row['name']);
+                    $official = \App\Support\Catalog\BelomoOfficialMeterSpecs::all()[$row['full_article']] ?? null;
+                    $name = $official['name'] ?? ApplyBelomoOfficialSpecsCommand::explicitDistance(preg_replace('/-\s+(G\d)/u', '-$1', $row['name']), $model['length']);
                     $updates = ['name' => $name, 'h1' => $name, 'specs' => $specs];
                     $product->fill($updates);
                     if ($product->isDirty()) {

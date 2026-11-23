@@ -13,7 +13,7 @@ class BelomoSelectorLineupTest extends TestCase
     {
         $models = BelomoSelectorLineup::models();
 
-        $this->assertCount(78, $models);
+        $this->assertCount(79, $models);
         $this->assertSame('1009.00.00.000-00', $models[0]['article_label']);
         $this->assertSame('8349.00.00.000-17', $models[76]['article_label']);
         $this->assertSame('G10', $models[76]['size']);
@@ -22,7 +22,7 @@ class BelomoSelectorLineupTest extends TestCase
         $this->assertSame('Под заказ · уточним цену и срок', $models[76]['availability_label']);
     }
 
-    public function test_all_41_official_models_are_present_without_duplicates_and_pending_article_is_not_guessed(): void
+    public function test_all_official_models_and_confirmed_8181_24_are_present_without_duplicates(): void
     {
         $models = BelomoSelectorLineup::models();
         $articles = array_column($models, 'article_label');
@@ -30,7 +30,7 @@ class BelomoSelectorLineupTest extends TestCase
             $this->assertContains($row['full_article'], $articles);
         }
         $this->assertSame($articles, array_values(array_unique($articles)));
-        $this->assertNotContains('8181.00.00.000-24', $articles);
+        $this->assertContains('8181.00.00.000-24', $articles);
         $left = collect($models)->firstWhere('article_label', '8072.00.00.000-21');
         $this->assertSame(110, $left['length']);
         $this->assertTrue($left['stock_program']);
