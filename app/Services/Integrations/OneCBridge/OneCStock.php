@@ -90,6 +90,7 @@ class OneCStock
                 OneCItem::query()->where('ref_key', $key)->update(['stock_on_hand' => round($onHand, 3), 'stock_reserved' => round($reserved, 3)]);
             }
             OneCItem::query()->update(['stock_synced_at' => $now]);
+            app(OneCStockProjection::class)->refresh();
         });
         $free = collect($stock)->filter(fn (array $s): bool => $s[0] - $s[1] > 0)->count();
         // Lines of open orders our warehouse covers get «Наш склад» and the 1C cost.

@@ -45,6 +45,43 @@ class OneCBridgeTest extends TestCase
         [, $this->key] = OneCAgentToken::issue('test', $this->admin->id);
     }
 
+    public function test_selling_stock_updates_exact_card_link_including_zero_without_prices_or_snapshots(): void
+    {
+        $row = IntegrationProduct::where('external_code', 'УТ-00000001')->firstOrFail();
+        $row->forceFill(['stock_quantity' => 4, 'price' => 63.57, 'stock_confirmed_at' => now()->subWeeks(3)])->save();
+        $item = \App\Models\OneCItem::create(['ref_key' => $row->external_id, 'code' => $row->external_code,
+            'description' => $row->name, 'article' => 'EXACT', 'is_folder' => false, 'deletion_mark' => false,
+            'stock_on_hand' => 7, 'stock_reserved' => 3, 'stock_synced_at' => now()]);
+        $projection = app(\App\Services\Integrations\OneCBridge\OneCStockProjection::class);
+        $this->assertSame(1, $projection->refresh());
+        $this->assertSame('4.000', $row->fresh()->stock_quantity);
+        $item->update(['stock_on_hand' => 0, 'stock_reserved' => 0]);
+        $projection->refresh();
+        $this->assertSame('0.000', $row->fresh()->stock_quantity);
+        $this->assertSame('63.57', $row->fresh()->price);
+        $this->assertSame($row->product_id, $row->fresh()->product_id);
+        $this->assertTrue($row->fresh()->stock_confirmed_at->equalTo($item->stock_synced_at));
+        $context = app(\App\Services\ManagerStorefrontProductContext::class)->offers($row->product, $this->admin)->first();
+        $this->assertFalse($context['in_stock']);
+        $this->assertSame(0.0, $context['stock_quantity']);
+    }
+
+    public function test_selling_stock_does_not_copy_parent_total_into_characteristics_or_use_stale_stock(): void
+    {
+        $row = IntegrationProduct::where('external_code', 'УТ-00000001')->firstOrFail();
+        $item = \App\Models\OneCItem::create(['ref_key' => $row->external_id, 'description' => $row->name,
+            'is_folder' => false, 'deletion_mark' => false, 'stock_on_hand' => 99, 'stock_reserved' => 0,
+            'stock_synced_at' => now()->subHours(4)]);
+        $projection = app(\App\Services\Integrations\OneCBridge\OneCStockProjection::class);
+        $this->assertSame(0, $projection->refresh());
+        $item->update(['stock_synced_at' => now()]);
+        IntegrationProduct::create(['integration_source_id' => $row->integration_source_id,
+            'external_id' => $row->external_id.'#aaaaaaaa-1111-1111-1111-111111111111',
+            'name' => 'Исполнение', 'stock_quantity' => 1]);
+        $this->assertSame(0, $projection->refresh());
+        $this->assertSame('2.000', $row->fresh()->stock_quantity);
+    }
+
     private function approvedBatch(): OneCPriceBatch
     {
         $batches = app(OneCPriceBatches::class);
