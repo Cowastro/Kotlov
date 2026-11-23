@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\VamExpressDrafts\Pages;
 
+use App\Filament\Concerns\HasVamExpressNavigation;
 use App\Filament\Resources\VamExpressDrafts\VamExpressDraftResource;
 use App\Services\Shipping\VamExpressDrafts;
 use App\Services\Shipping\VamExpressException;
@@ -16,6 +17,8 @@ use Livewire\Attributes\Locked;
 
 class EditVamExpressDraft extends EditRecord
 {
+    use HasVamExpressNavigation;
+
     protected static string $resource = VamExpressDraftResource::class;
 
     #[Locked]

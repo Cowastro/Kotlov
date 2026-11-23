@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\HasVamExpressNavigation;
 use App\Filament\Resources\VamExpressDrafts\VamExpressDraftForm;
 use App\Filament\Resources\VamExpressDrafts\VamExpressDraftResource;
 use App\Services\Shipping\VamExpressDrafts;
@@ -19,6 +20,10 @@ use Livewire\Attributes\Locked;
 
 class VamExpressCalculator extends Page
 {
+    use HasVamExpressNavigation;
+
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalculator;
 
     protected static ?string $title = 'Предварительный расчёт ВАМ Экспресс';

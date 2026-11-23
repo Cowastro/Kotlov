@@ -2,17 +2,22 @@
 
 namespace App\Filament\Resources\VamExpressDrafts\Pages;
 
+use App\Filament\Concerns\HasVamExpressNavigation;
 use App\Filament\Resources\VamExpressDrafts\VamExpressDraftResource;
 use App\Models\VamExpressDraft;
 use App\Services\Shipping\VamExpressDrafts;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateVamExpressDraft extends CreateRecord
 {
+    use HasVamExpressNavigation;
+
     protected static bool $canCreateAnother = false;
+
     protected static string $resource = VamExpressDraftResource::class;
 
-    protected function getCreateFormAction(): \Filament\Actions\Action
+    protected function getCreateFormAction(): Action
     {
         return parent::getCreateFormAction()->label('Сохранить черновик');
     }
