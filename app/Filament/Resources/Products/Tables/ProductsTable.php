@@ -15,6 +15,12 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\MarketResearchReport;
 use App\Models\Product;
+use App\Services\Integrations\OneCBridge\OneCStock;
+use App\Services\Integrations\OneCBridge\OneCItemCreator;
+use App\Services\Integrations\OneCBridge\OneCItemCosts;
+use App\Models\OneCItem;
+use App\Filament\Resources\Products\Actions\ProductOneCItemAction;
+use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
@@ -55,6 +61,8 @@ class ProductsTable
 
     public static function configure(Table $table): Table
     {
+        self::$onecLinks = [];
+
         return $table
             ->extraAttributes(['class' => 'products-workspace'])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('is_archived', false))
@@ -99,6 +107,20 @@ class ProductsTable
                     ->limit(18)
                     ->tooltip(fn (Product $record): ?string => $record->sku)
                     ->width('7rem')
+                    ->grow(false)
+                    ->toggleable(),
+
+                // The card in 1C: its code (opens it in «Номенклатура 1С»), free stock, cost and the 1C retail price.
+                TextColumn::make('onec_link')
+                    ->label('1С')
+                    ->state(fn (Product $record): string => self::onecItem($record)?->code ?: (self::onecLink($record)?->external_code ?: 'нет в 1С'))
+                    ->badge()
+                    ->color(fn (Product $record): string => self::onecLink($record) ? 'success' : 'gray')
+                    ->description(fn (Product $record): ?string => self::onecSummary($record))
+                    ->url(fn (Product $record): ?string => ($code = self::onecLink($record)?->external_code)
+                        ? OneCItemResource::getUrl('index', ['search' => $code]) : null)
+                    ->tooltip('Открыть в «Номенклатуре 1С»')
+                    ->width('9rem')
                     ->grow(false)
                     ->toggleable(),
 
@@ -367,6 +389,20 @@ class ProductsTable
             ->defaultSort('created_at', 'desc')
             ->paginated([25, 50, 100])
             ->filters([
+                SelectFilter::make('onec')
+                    ->label('Связь с 1С')
+                    ->options(['yes' => 'Связан с товаром 1С', 'no' => 'Нет в 1С'])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $linked = fn (Builder $q): Builder => $q->whereHas('source', fn (Builder $s): Builder => $s->where('code', 'onec'))
+                            ->where(fn (Builder $m): Builder => $m->whereNull('match_status')->orWhere('match_status', '!=', 'ignored'));
+
+                        return match ($data['value'] ?? null) {
+                            'yes' => $query->whereHas('integrationProducts', $linked),
+                            'no' => $query->whereDoesntHave('integrationProducts', $linked),
+                            default => $query,
+                        };
+                    }),
+
                 SelectFilter::make('category_id')
                     ->label('Категория')
                     ->relationship('category', 'name')
@@ -443,6 +479,7 @@ class ProductsTable
                 panel: 'admin',
             ))
             ->recordActions([
+                ProductOneCItemAction::make()->iconButton()->tooltip('Товар в 1С: привязать или создать'),
                 Action::make('publish_offer_card')
                     ->label('Опубликовать')
                     ->icon('heroicon-o-check-badge')
@@ -1463,5 +1500,40 @@ class ProductsTable
             ->filter(fn ($timestamp): bool => $timestamp instanceof CarbonInterface)
             ->sortBy(fn (CarbonInterface $timestamp): int => $timestamp->getTimestamp())
             ->last();
+    }
+    /** @var array<int, \App\Models\IntegrationProduct|false> the 1C link of each card on the page */
+    private static array $onecLinks = [];
+
+    private static function onecLink(Product $record): ?\App\Models\IntegrationProduct
+    {
+        self::$onecLinks[$record->id] ??= app(OneCItemCreator::class)->linked($record) ?? false;
+
+        return self::$onecLinks[$record->id] ?: null;
+    }
+
+    /** The 1C item of the card (stock and cost are kept on it), by the 1C link of the card. */
+    private static function onecItem(Product $record): ?OneCItem
+    {
+        $link = self::onecLink($record);
+        $key = $link ? strtolower(explode('#', (string) $link->external_id)[0]) : null;
+
+        return $key ? OneCItem::query()->where('ref_key', $key)->first() : null;
+    }
+
+    /** «своб. 1 · себест. 70,80 · розн. 105» */
+    private static function onecSummary(Product $record): ?string
+    {
+        $item = self::onecItem($record);
+        if (! $item) {
+            return null;
+        }
+        $money = fn (float $v): string => number_format($v, 2, ',', ' ');
+        $retail = OneCItemCosts::retail1c($item);
+
+        return collect([
+            OneCStock::fresh($item) ? OneCStock::label($item) : null,
+            $item->cost_gross ? 'себест. '.$money((float) $item->cost_gross) : null,
+            $retail ? 'розн. 1С '.$money($retail) : 'нет цены в 1С',
+        ])->filter()->implode(' · ');
     }
 }

@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\OneCItems\Pages\ListOneCItems;
+use App\Filament\Resources\Products\Pages\ListProducts;
+use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\OneCItem;
 use App\Models\OneCPriceBatch;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\OneCItemCosts;
 use App\Services\Integrations\OneCBridge\OneCPurchaseCosts;
@@ -103,5 +106,23 @@ class OneCPricingTest extends TestCase
             ->filterTable('no_price')->assertCanSeeTableRecords([$bare])->assertCanNotSeeTableRecords([$priced])
             ->callTableBulkAction('setPrices', [$bare], ['retail' => 35, 'wholesale' => 15]);
         $this->assertSame(14.0, (float) OneCPriceBatch::query()->firstOrFail()->items()->value('retail'));
+    }
+
+    public function test_the_products_list_shows_the_1c_link_and_filters_by_it(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        $source = IntegrationSource::query()->updateOrCreate(['code' => 'onec'], ['name' => '1C']);
+        $category = Category::query()->firstOrCreate(['slug' => 'kotly'], ['name' => 'Котлы', 'is_active' => true]);
+        $linked = Product::query()->create(['category_id' => $category->id, 'name' => 'Котёл тестовый 24', 'slug' => 'kotel-test-24', 'price' => 1300]);
+        $bare = Product::query()->create(['category_id' => $category->id, 'name' => 'Кран тестовый', 'slug' => 'kran-test', 'price' => 20]);
+        OneCItem::query()->create(['ref_key' => self::BOILER, 'code' => 'УТ-001', 'description' => 'Котёл тестовый 24', 'product_id' => $linked->id,
+            'cost_gross' => 1000, 'cost_kind' => 'last', 'stock_on_hand' => 3, 'stock_reserved' => 1, 'stock_synced_at' => now()]);
+        IntegrationProduct::query()->create(['integration_source_id' => $source->id, 'external_id' => self::BOILER, 'external_code' => 'УТ-001',
+            'name' => 'Котёл тестовый 24', 'price' => 1300, 'price_byn' => 1300, 'product_id' => $linked->id, 'match_status' => 'matched']);
+
+        Livewire::test(ListProducts::class)->assertOk()
+            ->assertSee('УТ-001')->assertSee('своб. 2 (в нал. 3, резерв 1) · себест. 1 000,00 · розн. 1С 1 300,00')
+            ->filterTable('onec', 'yes')->assertCanSeeTableRecords([$linked])->assertCanNotSeeTableRecords([$bare])
+            ->filterTable('onec', 'no')->assertCanSeeTableRecords([$bare])->assertCanNotSeeTableRecords([$linked]);
     }
 }
