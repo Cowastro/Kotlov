@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Collection;
 
 class PackagingResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = Product::class;
 
     protected static ?string $slug = 'evropochta-packaging';
