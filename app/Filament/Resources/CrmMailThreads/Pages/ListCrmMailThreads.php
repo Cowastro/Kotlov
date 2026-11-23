@@ -267,6 +267,10 @@ class ListCrmMailThreads extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('reservationDesk')->label('Реестр резервов')->icon('heroicon-o-archive-box')
+                ->url(fn (): string => \App\Filament\Pages\SupplierReservations::getUrl())
+                ->visible(fn (): bool => \App\Filament\Pages\SupplierReservations::canAccess()
+                    && $this->mailbox !== 'all' && CrmMailbox::query()->whereKey((int) $this->mailbox)->where('email', 'order@kotlov.by')->exists()),
             Action::make('sync_mail')
                 ->label('Проверить почту')
                 ->icon('heroicon-o-arrow-path')
