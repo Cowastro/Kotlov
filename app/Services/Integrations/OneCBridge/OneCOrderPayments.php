@@ -17,6 +17,8 @@ class OneCOrderPayments
 {
     public const REGISTER = 'AccumulationRegister_РасчетыСКлиентами_RecordType';
 
+    public const OBJECTS = 'Catalog_ОбъектыРасчетов';
+
     private const ORDER_TYPE = 'Document_ЗаказКлиента';
 
     /** cast(guid'…', 'Document_…') is long once encoded: fewer keys per request than plain keys. */
@@ -42,24 +44,29 @@ class OneCOrderPayments
         $queries = [];
         $find = $this->waiting()->whereNull('onec_settlement_key')->orderBy('id')->pluck('onec_order_guid')->unique()->values();
         foreach ($find->chunk(self::KEYS_CHUNK)->values() as $i => $chunk) {
-            $queries['pay_keys_'.($i + 1)] = ODataReadTaskHandler::path(self::REGISTER, ['$filter' => $chunk
-                ->map(fn (string $key): string => "Recorder eq cast(guid'".$key."', '".self::ORDER_TYPE."')")->implode(' or ')]);
+            // Only an object of the order itself: settlements «по договору» are shared by every order of the customer
+            // (ВАМэкспресс, the retail customer) — their records run to megabytes and say nothing of one order.
+            $queries['pay_keys_'.($i + 1)] = ODataReadTaskHandler::path(self::OBJECTS, ['$filter' => $chunk
+                ->map(fn (string $key): string => "Объект eq cast(guid'".$key."', '".self::ORDER_TYPE."')")->implode(' or '),
+                '$select' => 'Ref_Key,Объект,Объект_Type']);
         }
         $objects = $this->waiting()->whereNotNull('onec_settlement_key')->orderBy('id')->pluck('onec_settlement_key')->unique()->values();
         foreach ($objects->chunk(self::CHUNK)->values() as $i => $chunk) {
             $queries['pay_'.($i + 1)] = ODataReadTaskHandler::path(self::REGISTER, ['$filter' => $chunk
-                ->map(fn (string $key): string => "ОбъектРасчетов_Key eq guid'".$key."'")->implode(' or ')]);
+                ->map(fn (string $key): string => "ОбъектРасчетов_Key eq guid'".$key."'")->implode(' or '),
+                '$select' => 'ОбъектРасчетов_Key,Recorder_Type,RecordType,Active,КОплате,Сумма']);
         }
 
         return $queries;
     }
 
-    /** Step 1: the settlement object of each order, from the records the order itself made. @return int orders keyed */
+    /** Step 1: the settlement object whose «Объект» is the order itself. @return int orders keyed */
     public function rememberObjects(array $rows): int
     {
         $n = 0;
-        foreach (collect($rows)->groupBy(fn (array $r): string => strtolower((string) ($r['Recorder'] ?? ''))) as $orderKey => $records) {
-            $object = strtolower((string) ($records->pluck('ОбъектРасчетов_Key')->filter(fn ($k): bool => self::guid($k))->first() ?? ''));
+        foreach (collect($rows)->filter(fn (array $r): bool => str_ends_with((string) ($r['Объект_Type'] ?? ''), self::ORDER_TYPE))
+            ->groupBy(fn (array $r): string => strtolower((string) ($r['Объект'] ?? ''))) as $orderKey => $records) {
+            $object = strtolower((string) ($records->pluck('Ref_Key')->filter(fn ($k): bool => self::guid($k))->first() ?? ''));
             if ($orderKey === '' || $object === '') {
                 continue;
             }
