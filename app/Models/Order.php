@@ -165,6 +165,7 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'carrier_checked_at' => 'datetime',
         'is_internal' => 'boolean',
         'deal_control_at' => 'datetime',
         'deal_stage_changed_at' => 'datetime',
@@ -274,6 +275,9 @@ class Order extends Model
         });
 
         static::updating(function (Order $order) {
+            if ($order->isDirty('delivery_type') || ($order->isDirty('evropochta_tracking_number') && $order->getOriginal('carrier_provider') === 'evropochta')) {
+                $order->forceFill(array_fill_keys(['carrier_provider', 'carrier_reference', 'carrier_display_reference', 'carrier_stage', 'carrier_status_text', 'carrier_checked_at', 'carrier_polled_at'], null));
+            }
             $userId = Auth::id();
             $claimedBy = trim((string) $order->getOriginal('assigned_to'));
 
@@ -538,6 +542,7 @@ class Order extends Model
     public function customerItemFulfillment(OrderItem $item): string
     {
         if ($this->status === 'shipped') {
+            if (in_array($this->carrier_stage, ['accepted', 'transit', 'ready'], true)) return 'Передано перевозчику: '.$item->quantity.' шт.';
             if ($this->isOneCOrderShipped()) return 'Отгружено: '.$item->quantity.' шт.';
             return ($this->delivery_type === 'pickup' ? 'Готово к самовывозу: ' : 'Передано в доставку: ').$item->quantity.' шт.';
         }
@@ -550,6 +555,7 @@ class Order extends Model
 
     public function customerStatusLabel(): string
     {
+        if ($this->status !== 'cancelled' && $this->customerCarrierLabel() !== null) return $this->customerCarrierLabel();
         return match ($this->status) {
             'new', 'checking', 'confirmed' => 'Принят в обработку',
             'processing' => $this->hasFreshOneCReadiness() ? 'Готов к отгрузке' : 'Комплектация',
@@ -563,6 +569,27 @@ class Order extends Model
     public function customerCanViewDetails(): bool
     {
         return array_key_exists($this->status, self::STATUSES);
+    }
+
+    public function customerCarrierLabel(): ?string
+    {
+        if ($this->status === 'cancelled') return null;
+        if ($this->status === 'delivered' && $this->carrier_stage !== 'delivered') return null;
+        return match ($this->carrier_stage) {
+            'accepted' => 'Передан перевозчику', 'transit' => 'В пути', 'ready' => 'Ожидает получения',
+            'delivered' => 'Получен', 'attention' => 'Уточняем доставку', default => null,
+        };
+    }
+
+    public function customerCarrierDescription(): string
+    {
+        return match ($this->carrier_stage) {
+            'accepted' => 'Перевозчик подтвердил приём вашего заказа.',
+            'transit' => 'Ваш заказ находится в пути.',
+            'ready' => 'Заказ прибыл в пункт выдачи и ожидает получения.',
+            'delivered' => 'Перевозчик подтвердил получение заказа. Благодарим за покупку!',
+            'attention' => 'Доставка требует уточнения. Менеджер свяжется с вами.', default => '',
+        };
     }
 
     public function isOneCOrderShipped(): bool

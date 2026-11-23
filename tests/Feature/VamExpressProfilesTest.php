@@ -83,18 +83,18 @@ class VamExpressProfilesTest extends TestCase
             ->assertCanSeeTableRecords([$wanted, $otherProfile, $otherStatus]);
     }
 
-    public function test_statuses_have_distinct_colors_without_treating_processed_or_returns_as_delivered(): void
+    public function test_processed_is_delivered_but_returns_and_payment_are_not(): void
     {
-        $this->assertNotSame(VamExpressStatus::color('Обработана'), VamExpressStatus::color('Доставлена'));
+        $this->assertSame(VamExpressStatus::color('Обработана'), VamExpressStatus::color('Доставлена'));
         $this->assertNotSame(VamExpressStatus::color('В пути'), VamExpressStatus::color('На складе'));
         $this->assertSame('cancelled', VamExpressStatus::group('Отказ на адресе (на складе)'));
         $this->assertSame('warning', VamExpressStatus::group('Частичный отказ (у курьера)'));
         $this->assertSame('return', VamExpressStatus::group('Дост. от кл. (на складе)'));
         $this->assertSame('unknown', VamExpressStatus::group('Неизвестный статус'));
-        $this->shipment('a', 'Обработана');
+        $processed = $this->shipment('a', 'Обработана');
         $delivered = $this->shipment('b', 'Доставлена');
         $this->shipment('c', 'Оплачено');
-        $this->assertSame([$delivered->id], VamExpressStatus::scope(VamExpressShipment::query(), 'delivered')->pluck('id')->all());
+        $this->assertSame([$processed->id, $delivered->id], VamExpressStatus::scope(VamExpressShipment::query(), 'delivered')->orderBy('id')->pluck('id')->all());
     }
 
     private function shipment(string $prefix, string $status, ?string $profile = null): VamExpressShipment

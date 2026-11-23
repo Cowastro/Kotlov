@@ -317,7 +317,8 @@ class EvropochtaOrderShipmentTest extends TestCase
         $this->travel(4)->minutes();
         $component->call('refreshStatus')->assertSee('В пути')->assertSee('Обновление временно недоступно');
         Http::assertSentCount(3);
-        $this->assertSame('confirmed', $order->fresh()->status);
+        $this->assertSame('shipped', $order->fresh()->status);
+        $this->assertSame('В пути', $order->fresh()->customerStatusLabel());
     }
 
     public function test_tracking_sms_is_sent_only_once_to_the_shipment_recipient_after_the_track_is_saved(): void

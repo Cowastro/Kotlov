@@ -86,7 +86,7 @@ class VamExpressSyncTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_repeat_sync_updates_carrier_data_and_keeps_order_link_prices_and_status(): void
+    public function test_repeat_sync_updates_order_progress_and_keeps_link_and_commercial_terms(): void
     {
         $settings = app(VamExpressSettings::class);
         $settings->save('demo', 'secret', true);
@@ -94,7 +94,7 @@ class VamExpressSyncTest extends TestCase
         $order = $this->order();
         $shipment = VamExpressShipment::create($row);
         $shipment->forceFill(['order_id' => $order->id])->save();
-        $before = $order->fresh()->getAttributes();
+        $before = $order->fresh()->only(['subtotal', 'total', 'delivery_price', 'payment_status', 'delivery_type']);
         $this->mock(VamExpressPortal::class, function ($mock) use ($row): void {
             $mock->shouldReceive('login')->twice();
             $mock->shouldReceive('senderProfile')->once()->andReturn('Тестовый отправитель / Юридическое лицо');
@@ -109,7 +109,8 @@ class VamExpressSyncTest extends TestCase
         $this->assertSame('В пути', $shipment->fresh()->carrier_status);
         $this->assertSame('37.00', $shipment->fresh()->delivery_cost);
         $this->assertSame('Тестовый отправитель / Юридическое лицо', $shipment->fresh()->sender_profile);
-        $this->assertSame($before, $order->fresh()->getAttributes());
+        $this->assertSame($before, $order->fresh()->only(array_keys($before)));
+        $this->assertSame('В пути', $order->fresh()->customerStatusLabel());
     }
 
     public function test_failed_login_preserves_existing_data_and_does_not_retry_each_minute(): void

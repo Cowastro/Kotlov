@@ -12,10 +12,9 @@ class VamExpressStatus
         $status = mb_strtolower(trim($status ?? ''));
 
         return match (true) {
-            in_array($status, ['доставлена', 'завершено'], true) => 'delivered',
+            in_array($status, ['обработана', 'доставлена', 'завершено'], true) => 'delivered',
             $status === 'оплачено' => 'paid',
             $status === 'не обработана' => 'new',
-            $status === 'обработана' => 'processed',
             $status === 'на складе' => 'warehouse',
             $status === 'в пути' => 'transit',
             str_starts_with($status, 'частичный отказ'), str_starts_with($status, 'перенос') => 'warning',
@@ -53,9 +52,9 @@ class VamExpressStatus
     public static function scope(Builder $query, string $tab): Builder
     {
         return match ($tab) {
-            'work' => $query->whereIn('carrier_status', ['Не обработана', 'Обработана', 'На складе']),
+            'work' => $query->whereIn('carrier_status', ['Не обработана', 'На складе']),
             'transit' => $query->where('carrier_status', 'В пути'),
-            'delivered' => $query->whereIn('carrier_status', ['Доставлена', 'Завершено']),
+            'delivered' => $query->whereIn('carrier_status', ['Обработана', 'Доставлена', 'Завершено']),
             'attention' => $query->where(fn (Builder $q) => $q->where('carrier_status', 'like', 'Перенос%')
                 ->orWhere('carrier_status', 'like', 'Отказ%')->orWhere('carrier_status', 'like', 'Частичный отказ%')),
             default => $query,

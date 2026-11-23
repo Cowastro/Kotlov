@@ -21,10 +21,19 @@ class OrderStatusUpdatedMail extends Mailable
 
     public readonly string $statusAtQueue;
 
+    public readonly ?string $carrierStageAtQueue;
+
+    public readonly ?string $carrierReferenceAtQueue;
+
     public function __construct(public readonly Order $order)
     {
         $this->statusAtQueue = $order->status;
-        $this->statusDetails = match ($order->status) {
+        $this->carrierStageAtQueue = $order->carrier_stage;
+        $this->carrierReferenceAtQueue = $order->carrier_reference;
+        $this->statusDetails = $order->customerCarrierLabel() !== null ? [
+            'eyebrow' => 'ДОСТАВКА ЗАКАЗА', 'title' => $order->customerStatusLabel(),
+            'message' => $order->customerCarrierDescription(),
+        ] : match ($order->status) {
             'processing' => [
                 'eyebrow' => 'ЗАКАЗ В ИСПОЛНЕНИИ',
                 'title' => 'Комплектация',
@@ -50,7 +59,7 @@ class OrderStatusUpdatedMail extends Mailable
 
     public function middleware(): array
     {
-        return [new SkipOutdatedOrderMail($this->order->id, [$this->statusAtQueue])];
+        return [new SkipOutdatedOrderMail($this->order->id, [$this->statusAtQueue], $this->carrierStageAtQueue ?? null, true, $this->carrierReferenceAtQueue ?? null)];
     }
 
     public function envelope(): Envelope

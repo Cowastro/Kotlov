@@ -42,6 +42,10 @@
             'class' => 'is-confirmed',
         ],
     };
+    if ($order->customerCarrierLabel() !== null) {
+        $statusBanner['title'] = $order->customerStatusLabel();
+        $statusBanner['description'] = $order->customerCarrierDescription();
+    }
 @endphp
 
 <main id="wrapper" class="account-order-page">
@@ -154,6 +158,11 @@
                         <h5 class="mb-20">Получение</h5>
                         <dl class="order-info mb-0">
                             <div><dt>Способ</dt><dd>{{ $deliveryTypeLabel }}</dd></div>
+                            @if($order->carrier_provider)
+                                <div><dt>Перевозчик</dt><dd>{{ $order->carrier_provider === 'vam' ? 'ВАМ Экспресс' : 'Европочта' }}</dd></div>
+                                <div><dt>Отправление</dt><dd style="overflow-wrap:anywhere">{{ $order->carrier_display_reference }}</dd></div>
+                                @if($order->carrier_stage === 'created')<div><dt>Подготовка</dt><dd>Отправление создано. Передача перевозчику ещё не подтверждена.</dd></div>@endif
+                            @endif
                             @if ($deliveryAddress)
                                 <div><dt>Адрес</dt><dd>{{ $deliveryAddress }}</dd></div>
                             @endif

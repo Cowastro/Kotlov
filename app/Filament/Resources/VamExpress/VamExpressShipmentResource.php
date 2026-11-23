@@ -109,7 +109,7 @@ class VamExpressShipmentResource extends Resource
                     ->modalSubmitActionLabel('Сохранить привязку')
                     ->authorize(fn (): bool => static::canViewAny())
                     ->fillForm(fn (VamExpressShipment $record): array => ['order_id' => $record->order_id])
-                    ->modalDescription('Выберите заказ KOTLOV. Статус и сумма заказа не изменятся. Пустое поле снимает привязку.')
+                    ->modalDescription('Выберите заказ KOTLOV. После следующего обновления статус перевозчика отразится в заказе и кабинете клиента. Сумма не меняется. Пустое поле снимает привязку.')
                     ->schema([
                         Select::make('order_id')->label('Номер заказа или имя клиента')->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => mb_strlen(trim($search)) < 2 ? [] : OrderResource::getEloquentQuery()
@@ -131,6 +131,12 @@ class VamExpressShipmentResource extends Resource
                             $order = filled($data['order_id'] ?? null) ? OrderResource::getEloquentQuery()->lockForUpdate()->findOrFail($data['order_id']) : null;
                             if ($order) {
                                 abort_unless(OrderResource::canEdit($order), 403);
+                            }
+                            if ($shipment->order_id && $shipment->order_id !== $order?->id) {
+                                $previousOrder = OrderResource::getEloquentQuery()->lockForUpdate()->find($shipment->order_id);
+                                if ($previousOrder?->carrier_provider === 'vam' && $previousOrder->carrier_reference === $shipment->remote_id) {
+                                    $previousOrder->forceFill(array_fill_keys(['carrier_provider', 'carrier_reference', 'carrier_display_reference', 'carrier_stage', 'carrier_status_text', 'carrier_checked_at'], null))->save();
+                                }
                             }
                             $shipment->forceFill(['order_id' => $order?->id])->save();
                         });

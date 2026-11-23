@@ -53,7 +53,10 @@ final class EvropochtaOrderStatus extends Component
             }
 
             try {
-                $this->rememberStatus($key, $carrier->shipmentStatus($number));
+                $observedAt = now();
+                $status = $carrier->shipmentStatus($number);
+                $this->rememberStatus($key, $status);
+                app(\App\Services\Shipping\CarrierOrderProgress::class)->euro($this->trackingOrder(), $status, $observedAt, $number);
             } catch (EvropochtaShipmentException) {
                 Cache::put($key.':unavailable', true, now()->addMinutes(3));
             }
