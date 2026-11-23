@@ -47,23 +47,28 @@ class OrderStatusSmsTest extends TestCase
         ]);
 
         $order = $this->order();
+        Http::assertNothingSent();
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
         $order->transitionTo('checking');
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
         $order->transitionTo('confirmed');
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
         $order->transitionTo('processing');
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
         $order->forceFill(['evropochta_tracking_number' => 'BY080027046773'])->save();
         app(OrderWorkflow::class)->advance($order, null);
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
         $this->assertTrue($order->fresh()->markDeliveryRefused('Клиент отказался при получении.'));
         $order->fresh()->transitionTo('cancelled');
 
-        Http::assertNothingSent();
         $this->artisan('orders:send-status-sms')->assertSuccessful();
         $this->artisan('orders:send-status-sms')->assertSuccessful();
 
         $this->assertSame([
             'KOTLOV: ORD-2026-0010 принят.',
             'KOTLOV: ORD-2026-0010 проверяем наличие.',
-            'KOTLOV: ORD-2026-0010 наличие подтверждено.',
-            'KOTLOV: ORD-2026-0010 в исполнении.',
+            'KOTLOV: ORD-2026-0010 принят в обработку. Состав и сроки — в письме или у менеджера.',
+            'KOTLOV: ORD-2026-0010 комплектация.',
             'KOTLOV: ORD-2026-0010 передан в доставку. Трек BY080027046773.',
             'KOTLOV: ORD-2026-0010 отменён.',
         ], $sent);
@@ -85,7 +90,9 @@ class OrderStatusSmsTest extends TestCase
         Http::fake([self::SMS_URL => Http::response(['sms_id' => 'order-test'])]);
         $order = $this->order(['status' => 'processing', 'delivery_type' => 'pickup']);
         $this->assertSame(['new'], $order->statusSms()->pluck('order_status')->all());
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
         $order->transitionTo('shipped');
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
         $order->transitionTo('delivered');
         $this->artisan('orders:send-status-sms')->assertSuccessful();
 
@@ -115,6 +122,18 @@ class OrderStatusSmsTest extends TestCase
         $this->assertDatabaseHas('order_status_sms', ['order_id' => $order->id, 'state' => 'unconfirmed']);
         $this->assertDatabaseHas('order_status_sms', ['state' => 'no_phone']);
         $this->assertSame('new', $order->fresh()->status);
+    }
+
+    public function test_old_stage_sms_are_skipped_when_order_advanced_before_the_worker_runs(): void
+    {
+        Http::fake([self::SMS_URL => Http::response(['sms_id' => 'latest-only'])]);
+        $order = $this->order();
+        $order->transitionTo('processing');
+        $order->transitionTo('shipped');
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
+        Http::assertSentCount(1);
+        $this->assertDatabaseHas('order_status_sms', ['order_id' => $order->id, 'order_status' => 'processing', 'state' => 'outdated']);
     }
 
     private function order(array $overrides = []): Order

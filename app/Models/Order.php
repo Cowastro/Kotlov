@@ -531,7 +531,8 @@ class Order extends Model
     private function hasFreshOneCReadiness(): bool
     {
         return filled($this->onec_order_guid) && ! $this->onec_deleted && $this->onec_posted
-            && $this->onec_state === 'ГотовКОтгрузке' && $this->onec_status_received_at?->gte(now()->subHours(3));
+            && $this->onec_state === 'ГотовКОтгрузке'
+            && ($this->onec_paid_checked_at ?? $this->onec_status_received_at)?->gte(now()->subHours(3));
     }
 
     public function customerItemFulfillment(OrderItem $item): string

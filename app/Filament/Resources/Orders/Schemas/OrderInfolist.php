@@ -1281,6 +1281,7 @@ class OrderInfolist
                                         'accepted' => 'Принято SMS.BY',
                                         'unconfirmed' => 'Отправка не подтверждена',
                                         'no_phone' => 'Нет корректного телефона',
+                                        'outdated' => 'Пропущено: этап уже изменился',
                                         default => 'Ожидает отправки',
                                     }),
                                 TextEntry::make('sent_at')

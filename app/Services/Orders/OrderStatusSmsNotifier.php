@@ -64,7 +64,7 @@ final class OrderStatusSmsNotifier
 
         $sent = 0;
         $messages = OrderStatusSms::query()->where('state', 'pending')
-            ->with('order:id,customer_phone')->orderBy('id')->limit(30)->get();
+            ->with('order:id,customer_phone,status,payment_status')->orderBy('id')->limit(30)->get();
         foreach ($messages as $message) {
             $sent += (int) $this->send($message);
         }
@@ -74,6 +74,13 @@ final class OrderStatusSmsNotifier
 
     private function send(OrderStatusSms $message): bool
     {
+        $stage = $message->order_status;
+        if (array_key_exists($stage, Order::STATUSES) && $stage !== $message->order?->status
+            && ! ($stage === 'new' && in_array($message->order?->status, ['new', 'checking', 'confirmed', 'processing'], true))) {
+            OrderStatusSms::whereKey($message->id)->where('state', 'pending')->update(['state' => 'outdated']);
+
+            return false;
+        }
         $phone = $this->recipientPhone($message->order?->customer_phone);
         $row = OrderStatusSms::query()->whereKey($message->id);
         $claimed = (clone $row)->where('state', 'pending')
