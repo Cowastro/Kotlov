@@ -50,7 +50,7 @@ class EditVamExpressDraft extends EditRecord
         $saved = app(VamExpressDrafts::class)->save($record, $data['payload'], $this->loadedVersion, auth()->user());
         $this->loadedVersion = $saved->version;
 
-        return $saved;
+        return $record->refresh();
     }
 
     protected function getHeaderActions(): array
@@ -61,7 +61,8 @@ class EditVamExpressDraft extends EditRecord
                 $this->record->refresh();
                 try {
                     $quote = app(VamExpressQuote::class)->estimate($this->record->payload);
-                    $this->record = app(VamExpressDrafts::class)->attachQuote($this->record, $quote, $this->loadedVersion, auth()->user());
+                    app(VamExpressDrafts::class)->attachQuote($this->record, $quote, $this->loadedVersion, auth()->user());
+                    $this->record->refresh();
                     $this->loadedVersion = $this->record->version;
                     Notification::make()->success()->title('Предварительно '.$quote['amount'].' BYN')->body('Черновик и расчёт сохранены. Заявка перевозчику не отправлялась.')->send();
                 } catch (VamExpressException $e) {
