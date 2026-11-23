@@ -97,6 +97,9 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('vamExpressLabels')->label('Этикетки ВАМ')->icon('heroicon-o-printer')->color('gray')
+                ->visible(fn (): bool => \App\Models\VamExpressShipment::where('order_id', $this->record->id)->exists())
+                ->url(fn (): string => route('admin.orders.vam-express-labels', ['order' => $this->record->id]))->openUrlInNewTab(),
             $this->confirmFulfillmentAction(),
             Action::make('advanceWorkflow')
                 ->label(fn (): string => app(OrderWorkflow::class)->step($this->record)['label'] ?? 'Следующий этап')

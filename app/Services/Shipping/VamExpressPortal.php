@@ -56,6 +56,13 @@ class VamExpressPortal
 
     public function find(string $id): array
     {
+        return array_values(array_filter($this->parser->rows($this->findHtml($id)), fn (array $row): bool => strlen($id) === 32
+            ? $row['remote_id'] === strtolower($id)
+            : substr($row['remote_id'], 0, 7) === strtolower($id)));
+    }
+
+    private function findHtml(string $id): string
+    {
         if (! preg_match('/^(?:[a-f0-9]{7}|[a-f0-9]{32})$/i', $id)) {
             throw new VamExpressException('Некорректный ID ВАМ Экспресс.');
         }
@@ -68,9 +75,34 @@ class VamExpressPortal
             '__EVENTTARGET' => '', '__EVENTARGUMENT' => '',
         ]));
 
-        return array_values(array_filter($this->parser->rows($html), fn (array $row): bool => strlen($id) === 32
-            ? $row['remote_id'] === strtolower($id)
-            : substr($row['remote_id'], 0, 7) === $short));
+        $this->parser->rows($html);
+
+        return $html;
+    }
+
+    public function label(string $remoteId, string $format): string
+    {
+        if (! preg_match('/^[a-f0-9]{32}$/', $remoteId) || ! in_array($format, ['a4', '78'], true)) {
+            throw new VamExpressException('Некорректная заявка или формат этикетки.');
+        }
+        $html = $this->findHtml($remoteId);
+        $xpath = $this->parser->xpath($html);
+        $checkboxes = $xpath->query('//a[@href="TicketEdit.aspx?id='.$remoteId.'"]/ancestor::tr[1]//input[@type="checkbox"][@name]');
+        if ($checkboxes->length !== 1 || ! preg_match('/^ctl00\$MainContent\$lvAllTickets\$ctrl\d+\$cbSelect$/', $checkboxes->item(0)->getAttribute('name'))) {
+            throw new VamExpressException('Заявка не найдена в кабинете ВАМ Экспресс. Обновите её по ID.');
+        }
+        $button = $format === 'a4' ? 'btnPrintVinil' : 'btnPrintVinilForVinilPrinter';
+        $input = $xpath->query('//input[@name="ctl00$MainContent$'.$button.'"]');
+        if ($input->length !== 1) {
+            throw new VamExpressException('Форма печати ВАМ Экспресс изменилась.');
+        }
+        $label = $this->request('POST', '/UserUI/TicketView.aspx', array_merge($this->parser->hidden($html), [
+            '__EVENTTARGET' => '', '__EVENTARGUMENT' => '',
+            $checkboxes->item(0)->getAttribute('name') => 'on',
+            'ctl00$MainContent$'.$button => $input->item(0)->getAttribute('value'),
+        ]));
+
+        return (new VamExpressLabelHtml)->extract($label, substr($remoteId, 0, 7));
     }
 
     private function request(string $method, string $path, array $data = []): string

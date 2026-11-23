@@ -7,6 +7,7 @@ use App\Filament\Resources\VamExpress\Pages\ListVamExpressShipments;
 use App\Models\VamExpressShipment;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -81,6 +82,12 @@ class VamExpressShipmentResource extends Resource
             SelectFilter::make('carrier_status')->label('Статус перевозчика')
                 ->options(fn (): array => static::getEloquentQuery()->whereNotNull('carrier_status')->distinct()->pluck('carrier_status', 'carrier_status')->all()),
         ])->recordActions([
+            ActionGroup::make([
+                Action::make('printA4')->label('А4')->icon('heroicon-o-printer')
+                    ->url(fn (VamExpressShipment $record): string => route('admin.vam-express.label', ['shipment' => $record->id, 'format' => 'a4']))->openUrlInNewTab(),
+                Action::make('print78')->label('Лента 78 мм')->icon('heroicon-o-printer')
+                    ->url(fn (VamExpressShipment $record): string => route('admin.vam-express.label', ['shipment' => $record->id, 'format' => '78']))->openUrlInNewTab(),
+            ])->label('Этикетка')->icon('heroicon-o-printer')->button()->color('gray'),
             Action::make('linkOrder')->label('Привязать заказ')->icon('heroicon-o-link')
                 ->modalSubmitActionLabel('Сохранить привязку')
                 ->authorize(fn (): bool => static::canViewAny())
