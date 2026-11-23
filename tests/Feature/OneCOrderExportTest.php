@@ -331,8 +331,9 @@ class OneCOrderExportTest extends TestCase
             $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1'])->assertOk();
         };
 
-        // First the settlement object of the order: from the records the 1C order made itself.
-        $read('pay_keys_1', [['Recorder' => $guid, 'Recorder_Type' => 'StandardODATA.Document_ЗаказКлиента', 'ОбъектРасчетов_Key' => $object]]);
+        // First the settlement object of the order itself; one «по договору» (no order in it) is never taken.
+        $read('pay_keys_1', [['Ref_Key' => $object, 'Объект' => $guid, 'Объект_Type' => 'StandardODATA.Document_ЗаказКлиента'],
+            ['Ref_Key' => 'ffffffff-0000-0000-0000-0000000000aa', 'Объект' => $guid, 'Объект_Type' => 'StandardODATA.Catalog_ДоговорыКонтрагентов']]);
         $this->assertSame($object, $order->fresh()->onec_settlement_key);
 
         // Then its records: 49.98 planned by the order, 30 paid by bank — not yet paid.
@@ -393,6 +394,11 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame($vam->id, $profiles->forOrder(false, 'transport')->id);
         $this->assertSame($retail->id, $profiles->forOrder(false, 'courier')->id);
         $this->assertSame($retail->id, $profiles->forOrder(false, 'evropochta')->id, 'Европочта — not a client in 1C yet');
+
+        // The carrier is the customer when it collects the money; paid ahead online — retail.
+        $export = app(OneCOrderExport::class);
+        $this->assertSame($vam->id, $export->defaults($this->order(['delivery_type' => 'transport', 'payment_type' => 'cash']))['profile_id']);
+        $this->assertSame($retail->id, $export->defaults($this->order(['number' => 'K-1002', 'delivery_type' => 'transport', 'payment_type' => 'online_card']))['profile_id']);
     }
 
     public function test_an_order_shipped_and_paid_in_1c_is_ready_to_close_and_delivered(): void

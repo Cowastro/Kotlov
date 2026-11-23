@@ -139,7 +139,8 @@ class OneCOrderExport
     public function defaults(Order $order, ?OneCOrderProfile $profile = null): array
     {
         $taxId = $this->companyTaxId($order);
-        $profile ??= $this->profiles->forOrder($taxId !== '', $order->delivery_type);
+        // ВАМэкспресс / Европочта is the 1C customer when it collects the money (the client pays on receipt); paid ahead — retail.
+        $profile ??= $this->profiles->forOrder($taxId !== '', $order->isPaymentOnReceipt() ? $order->delivery_type : null);
         if (! $profile) {
             return ['profile_id' => null, 'h' => []];
         }
