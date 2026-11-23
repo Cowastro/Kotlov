@@ -75,6 +75,16 @@ class InstallerAccountTest extends TestCase
                 $table->timestamps();
             });
 
+            // The authenticated cart middleware runs on cabinet requests too.
+            Schema::dropIfExists('customer_carts');
+            Schema::create('customer_carts', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->unique();
+                $table->longText('items');
+                $table->text('meta')->nullable();
+                $table->timestamps();
+            });
+
             Schema::create('installer_profiles', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->unique();

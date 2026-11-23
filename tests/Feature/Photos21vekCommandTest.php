@@ -27,7 +27,7 @@ class Photos21vekCommandTest extends TestCase
 
     public function test_it_lists_the_item_with_the_same_parameters_and_its_own_gallery(): void
     {
-        $category = Category::query()->create(['name' => 'Отводы', 'slug' => 'kolena-mono', 'is_active' => true]);
+        $category = Category::query()->updateOrCreate(['slug' => 'kolena-mono'], ['name' => 'Отводы', 'is_active' => true]);
         $product = Product::query()->create(['category_id' => $category->id, 'name' => 'Теплов и Сухов Отвод 87 ОМ-Р 430-0.5 D120 (3S)',
             'slug' => 'tis-otvod-120', 'sku' => 'KOTLOV-030300', 'price' => 30, 'is_active' => true, 'images' => ['product/001/001000/otvod.jpeg']]);
         $card = fn (string $url, string $name) => '<div itemType="https://schema.org/Product"><a href="'.$url.'"></a><span itemProp="name">'.$name.'</span></div>';

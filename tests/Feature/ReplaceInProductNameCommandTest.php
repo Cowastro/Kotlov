@@ -13,7 +13,7 @@ class ReplaceInProductNameCommandTest extends TestCase
 
     public function test_it_replaces_the_whole_fragment_in_name_h1_and_meta(): void
     {
-        $category = Category::query()->create(['name' => 'Переходы', 'slug' => 'perehody-adaptery-dymohod', 'is_active' => true]);
+        $category = Category::query()->updateOrCreate(['slug' => 'perehody-adaptery-dymohod'], ['name' => 'Переходы', 'is_active' => true]);
         $product = Product::query()->create([
             'category_id' => $category->id, 'name' => 'Адаптер котла Теплов и Сухов АКМ AISI 304 0.8 150', 'h1' => 'Адаптер АКМ 304 (артикул 3040)',
             'meta_title' => 'Адаптер AISI 304 — купить', 'slug' => 'adapter-akm-304', 'price' => 17.6, 'is_active' => true,

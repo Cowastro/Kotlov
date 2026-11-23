@@ -18,7 +18,7 @@ class RestructureCatalogSectionsMigrationTest extends TestCase
         $accessories = Category::query()->create(['slug' => 'komplektuyushhie-dlya-otopleniya', 'name' => 'Комплектующие', 'parent_id' => 0, 'is_active' => true]);
         $pipes = Category::query()->create(['slug' => 'truby-i-fitingi', 'name' => 'Трубы и фитинги', 'parent_id' => 0, 'is_active' => true]);
         $floor = Category::query()->create(['slug' => 'teplyj-pol', 'name' => 'Электрический тёплый пол', 'parent_id' => 0, 'is_active' => true]);
-        Category::query()->create(['slug' => 'klimat', 'name' => 'Климат', 'parent_id' => 0, 'is_active' => true]);
+        Category::query()->updateOrCreate(['slug' => 'klimat'], ['name' => 'Климат', 'parent_id' => 0, 'is_active' => true]);
         $burners = Category::query()->create(['slug' => 'pelletnye-gorelki', 'name' => 'Пеллетные горелки', 'parent_id' => 0, 'is_active' => true]);
         $regulators = Category::query()->create(['slug' => 'regulyatory', 'name' => 'Автоматика', 'parent_id' => $accessories->id, 'is_active' => true]);
         $valves = Category::query()->create(['slug' => 'krany-i-zapornaya-armatura', 'name' => 'Краны и запорная арматура', 'parent_id' => $pipes->id, 'is_active' => true]);

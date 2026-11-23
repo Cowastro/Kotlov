@@ -150,6 +150,7 @@ class ProductIndexabilityTest extends TestCase
         $offer->setRelation('supplier', new Supplier(['is_active' => true]));
         $product->setRelation('supplierProducts', new Collection([$offer]));
         $product->setRelation('integrationProducts', new Collection);
+        $product->setRelation('purchasePriceSources', new Collection);
 
         $this->assertTrue($product->canBePurchased());
         $this->assertSame('В наличии', $product->publicAvailabilityLabel());
