@@ -17,7 +17,7 @@ class CatalogSpecificationFilters
 
     public function plan(Product $product, ?array $specs = null): array
     {
-        $this->attributes ??= Attribute::where('in_filter', true)->where('type', 'select')->with('options')->get();
+        $this->attributes ??= Attribute::where('in_filter', true)->where('type', 'select')->with('options')->get()->keyBy('id');
         $this->categories ??= Category::all(['id', 'parent_id', 'slug'])->keyBy('id');
         $ids = [];
         $id = $product->category_id;
@@ -27,10 +27,19 @@ class CatalogSpecificationFilters
         }
         $chimney = $this->categories->whereIn('id', $ids)->contains('slug', 'dymohody');
         $specs ??= $product->specs ?? [];
+        if ($chimney) {
+            $evidence = new ChimneyDiameterQuickFilter;
+            if ($thickness = $evidence->wallThickness($product->name)) {
+                $specs[] = ['key' => 'Толщина стали', 'value' => $thickness.' мм'];
+            }
+            if ($grade = $evidence->steelGrade($product->name, $specs)) {
+                $specs[] = ['key' => 'Марка стали', 'value' => 'AISI '.$grade];
+            }
+        }
         $rows = $product->relationLoaded('allAttributeValues') ? $product->allAttributeValues
             : ProductAttributeValue::where('product_id', $product->id)->get();
         foreach ($rows->whereNull('option_id') as $row) {
-            $attribute = $this->attributes->find($row->attribute_id);
+            $attribute = $this->attributes->get($row->attribute_id);
             if ($attribute && filled($row->value)) {
                 $specs[] = ['key' => $attribute->name, 'value' => $row->value];
             }
@@ -68,7 +77,7 @@ class CatalogSpecificationFilters
                     if ($target === 'тип элемента' && $this->key((string) $value) === 'шибер') {
                         $value = 'Шибер (заслонка)';
                     }
-                    if ($target === 'тип металла' && preg_match('/^AISI\s+(304|430)$/i', trim((string) $value), $grade)) {
+                    if ($target === 'тип металла' && preg_match('/^(?:AISI\s+)?(304|430)$/i', trim((string) $value), $grade)) {
                         $value = 'Нержавеющая сталь '.$grade[1];
                     }
                 }

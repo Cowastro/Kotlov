@@ -10,7 +10,8 @@
             @include('partials.catalog-quick-filter-swipe-hint')
             <nav class="catalog-quick-filter__items" aria-label="Быстрый выбор марки стали дымохода">
                 @php
-                    $steelReset = request()->except(['page', 'chimney_steel']);
+                    $steelReset = app(\App\Services\ChimneyDiameterQuickFilter::class)->withoutEquivalentAttributes(
+                        request()->except(['page', 'chimney_steel']), $filterAttributes ?? collect(), 'steel');
                 @endphp
                 <a href="{{ url()->current().($steelReset ? '?'.http_build_query($steelReset) : '') }}#catalog-products"
                    class="catalog-quick-filter__item {{ ! request('chimney_steel') ? 'is-active' : '' }}"
@@ -18,7 +19,7 @@
                 @foreach ($chimneySteelGroups as $grade => $productIds)
                     @php
                         $steelActive = strtoupper((string) request('chimney_steel')) === (string) $grade;
-                        $steelParams = array_merge(request()->except(['page', 'chimney_steel']), ['chimney_steel' => $grade]);
+                        $steelParams = array_merge($steelReset, ['chimney_steel' => $grade]);
                     @endphp
                     <a href="{{ url()->current().'?'.http_build_query($steelParams) }}#catalog-products"
                        class="catalog-quick-filter__item {{ $steelActive ? 'is-active' : '' }}"

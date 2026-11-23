@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Services\CatalogSpecificationFilters;
 use Illuminate\Console\Command;
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 class SyncCatalogSpecificationFiltersCommand extends Command
 {
-    protected $signature = 'catalog:sync-specification-filters {--apply : Add only missing exact option links}';
+    protected $signature = 'catalog:sync-specification-filters {--apply : Add only missing exact option links} {--category= : Limit to one category and its descendants}';
 
     protected $description = 'Audit all published cards and connect confirmed specs to existing category filter options';
 
@@ -18,8 +19,19 @@ class SyncCatalogSpecificationFiltersCommand extends Command
     {
         $cards = 0;
         $plan = [];
-        Product::query()->orderable()->where(fn ($q) => $q->whereNotNull('specs')->orWhereHas('allAttributeValues', fn ($v) => $v
+        $query = Product::query()->orderable();
+        if ($slug = $this->option('category')) {
+            $category = Category::where('slug', $slug)->firstOrFail();
+            $ids = [$category->id];
+            do {
+                $children = Category::whereIn('parent_id', $ids)->whereNotIn('id', $ids)->pluck('id')->all();
+                $ids = array_merge($ids, $children);
+            } while ($children !== []);
+            $query->whereIn('category_id', $ids);
+        }
+        $query->when(! $this->option('category'), fn ($q) => $q->where(fn ($q) => $q->whereNotNull('specs')->orWhereHas('allAttributeValues', fn ($v) => $v
             ->whereNull('option_id')->whereNotNull('value')->whereHas('attribute', fn ($a) => $a->where('in_filter', true)->where('type', 'select'))))
+        )
             ->with('allAttributeValues:id,product_id,attribute_id,option_id,value')
             ->chunkById(300, function ($products) use ($filters, &$cards, &$plan): void {
                 foreach ($products as $product) {

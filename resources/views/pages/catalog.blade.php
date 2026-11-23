@@ -462,7 +462,7 @@
                                                             name="attr[{{ $attr->id }}][]"
                                                             value="{{ $option->id }}"
                                                             {{ in_array($option->id, (array)request('attr.' . $attr->id, [])) ? 'checked' : '' }}
-                                                            onchange="applyAttrFilter({{ $attr->id }}, {{ $option->id }}, this.checked)">
+                                                            onchange="applyAttrFilter({{ $attr->id }}, {{ $option->id }}, this.checked, '{{ $isChimneySection && in_array(mb_strtolower(trim($attr->name)), ['диаметр', 'диаметр дымохода']) ? 'diameter' : ($isChimneySection && in_array(mb_strtolower(trim($attr->name)), ['тип металла', 'марка стали']) ? 'steel' : '') }}')">
                                                         <label for="opt-{{ $option->id }}" class="label">
                                                             <span>{{ $option->name }}</span>
                                                             <span class="count">({{ $option->products_count }})</span>
@@ -486,11 +486,15 @@
                                     $resetCatalogUrl .= '#catalog-products';
                                 @endphp
                                 @if ($hasActiveCatalogFilters)
-                                    <a href="{{ $resetCatalogUrl }}" class="tf-btn btn-outline w-100 mt-8">
+                                    <a href="{{ $resetCatalogUrl }}" class="tf-btn btn-outline w-100 mt-8 d-none d-xl-flex">
                                         <i class="icon icon-X2"></i> Сбросить фильтры
                                     </a>
                                 @endif
 
+                            </div>
+                            <div class="catalog-filter-actions d-xl-none">
+                                <a href="{{ $resetCatalogUrl }}" class="tf-btn btn-outline">Сбросить</a>
+                                <button type="button" class="tf-btn btn-fill" data-bs-dismiss="offcanvas" onclick="applyMobileCatalogFilters()">Показать товары</button>
                             </div>
                         </div>
                     </div>
@@ -715,6 +719,7 @@
 
 </main>
 
+<script src="{{ asset('assets/js/catalog-filters.js') }}?v={{ filemtime(public_path('assets/js/catalog-filters.js')) }}" defer></script>
 <script>
 // ===== Бренды: показать все / скрыть =====
 function toggleBrands(btn) {
@@ -731,70 +736,6 @@ function toggleBrands(btn) {
         btn.dataset.expanded = '1';
         btn.innerHTML = 'Скрыть <i class="icon icon-CaretUp fs-12 ms-4"></i>';
     }
-}
-
-// ===== Фильтры =====
-function applyFilter(key, value) {
-    const url = new URL(window.location.href);
-    if (value === '' || value === null) {
-        url.searchParams.delete(key);
-    } else {
-        url.searchParams.set(key, value);
-    }
-    url.searchParams.delete('page');
-    url.hash = 'catalog-products';
-    window.location.href = url.toString();
-}
-
-function applyPriceFilter() {
-    const url = new URL(window.location.href);
-    const minInput = document.getElementById('price-min-value');
-    const maxInput = document.getElementById('price-max-value');
-    const range = document.getElementById('price-value-range');
-
-    const defaultMin = range ? parseInt(range.dataset.min, 10) : 0;
-    const defaultMax = range ? parseInt(range.dataset.max, 10) : 0;
-    const minValue = minInput ? parseInt(minInput.value, 10) : defaultMin;
-    const maxValue = maxInput ? parseInt(maxInput.value, 10) : defaultMax;
-
-    if (!Number.isNaN(minValue) && minValue > defaultMin) {
-        url.searchParams.set('price_min', minValue);
-    } else {
-        url.searchParams.delete('price_min');
-    }
-
-    if (!Number.isNaN(maxValue) && maxValue < defaultMax) {
-        url.searchParams.set('price_max', maxValue);
-    } else {
-        url.searchParams.delete('price_max');
-    }
-
-    url.searchParams.delete('page');
-    url.hash = 'catalog-products';
-    window.location.href = url.toString();
-}
-
-function applyAttrFilter(attrId, optionId, checked) {
-    const url = new URL(window.location.href);
-    const group = `attr[${attrId}]`;
-    const selectedKeys = [...new Set(url.searchParams.keys())]
-        .filter(key => key === group || key.startsWith(`${group}[`));
-
-    let current = selectedKeys.flatMap(key => url.searchParams.getAll(key));
-
-    if (checked) {
-        if (!current.includes(String(optionId))) {
-            current.push(String(optionId));
-        }
-    } else {
-        current = current.filter(v => v !== String(optionId));
-    }
-
-    selectedKeys.forEach(key => url.searchParams.delete(key));
-    current.forEach(value => url.searchParams.append(`${group}[]`, value));
-    url.searchParams.delete('page');
-    url.hash = 'catalog-products';
-    window.location.href = url.toString();
 }
 
 // ===== Переключение вида grid/list =====
