@@ -158,7 +158,7 @@ class Order extends Model
         'comment', 'admin_comment',
         'corrected_at', 'corrected_by', 'procurement_sent_at', 'procurement_sent_by', 'procurement_recipient',
         'assigned_to', 'telegram_message_id', 'manager_id', 'onec_exported_at',
-        'onec_external_id', 'onec_settlement_key', 'onec_to_pay', 'onec_paid', 'onec_shipped', 'onec_paid_checked_at', 'onec_order_guid', 'onec_order_number', 'onec_status', 'onec_status_received_at',
+        'onec_external_id', 'onec_settlement_key', 'onec_to_pay', 'onec_paid', 'onec_shipped', 'onec_ready_to_ship', 'onec_paid_checked_at', 'onec_order_guid', 'onec_order_number', 'onec_status', 'onec_status_received_at',
         'archived_at', 'archived_by', 'archive_reason',
         'partner_branch_id', 'partner_status', 'partner_assigned_at', 'partner_responded_at', 'partner_note',
     ];
@@ -184,6 +184,7 @@ class Order extends Model
         'onec_to_pay' => 'decimal:2',
         'onec_paid' => 'decimal:2',
         'onec_shipped' => 'decimal:2',
+        'onec_ready_to_ship' => 'boolean',
         'onec_paid_checked_at' => 'datetime',
         'onec_deleted' => 'boolean',
         'onec_checked_at' => 'datetime',
