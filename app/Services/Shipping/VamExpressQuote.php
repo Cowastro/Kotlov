@@ -32,7 +32,7 @@ class VamExpressQuote
         $input = self::inputs($payload);
         $reference = app(VamExpressReference::class);
         $context = $reference->context();
-        if (! isset($context['profiles'][$input['profile_id']]) || ! ($city = $reference->city($input['city_id']))) {
+        if (! isset($context['profiles'][$input['profile_id']]) || ! ($city = $reference->resolveCity($input['city_id'], (string) ($payload['city_label'] ?? '')))) {
             throw new VamExpressException('Выберите профиль и населённый пункт из справочника перевозчика. Если город сохранён давно, найдите его заново.');
         }
         foreach ($input['goods'] as $good) {

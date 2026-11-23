@@ -219,6 +219,23 @@ class VamExpressDraftsTest extends TestCase
         app(VamExpressQuote::class)->estimate($this->payload());
     }
 
+    public function test_saved_city_recovers_after_cache_clear_only_when_carrier_confirms_the_id(): void
+    {
+        $this->staff();
+        $this->reference();
+        Cache::forget('vam-city:'.hash('sha256', 'test-account').':65');
+        $this->mock(VamExpressPortal::class, function ($mock): void {
+            $mock->shouldReceive('searchCities')->once()->with('Кобрин г.', 'lookup-secret')
+                ->andReturn(json_encode(['suggestions' => [['data' => '65', 'value' => 'Кобрин г.', 'deliverydate' => 'вт.', 'deliveryterms' => 'до 2 дней']]], JSON_UNESCAPED_UNICODE));
+            $mock->shouldReceive('estimate')->once()->andReturn('<string>44.9999</string>');
+        });
+        $payload = $this->payload();
+        $payload['city_label'] = 'Кобрин г. (Брестская обл.) ID:65';
+        $this->assertSame('45.00', app(VamExpressQuote::class)->estimate($payload)['amount']);
+        $this->assertSame('65', app(VamExpressReference::class)->city('65')['id']);
+        $this->assertNull(app(VamExpressReference::class)->resolveCity('999', $payload['city_label']));
+    }
+
     private function staff(): User
     {
         $actor = User::factory()->create(['role' => 'manager', 'is_active' => true]);
