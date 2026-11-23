@@ -6,6 +6,7 @@ use DOMDocument;
 use DOMXPath;
 use GuzzleHttp\Cookie\CookieJar;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 class EurotermOnlinePriceList
@@ -68,7 +69,8 @@ class EurotermOnlinePriceList
         }
 
         $queue = [self::URL];
-        $visited = $rows = $fingerprints = $unpriced = [];
+        $visited = $rows = $fingerprints = $unpriced = $ambiguous = [];
+        $duplicates = 0;
         $hash = hash_init('sha256');
         $parser = app(EurotermPriceList::class);
         while ($queue !== []) {
@@ -91,10 +93,30 @@ class EurotermOnlinePriceList
             foreach ($page['rows'] as $row) {
                 $row['article_key'] = $parser->articleKey($row['article']);
                 $row['name_key'] = $parser->nameKey($row['name']);
-                if ($row['article_key'] === '' || isset($rows[$row['article_key']])) {
-                    throw new RuntimeException('Повтор или пустой артикул в онлайн-прайсе Евротерма. Данные не обновлены.');
+                $key = $row['article_key'];
+                if ($key === '') {
+                    $unpriced[] = ['article' => $row['article'], 'name' => $row['name'], 'source_url' => $row['source_url'], 'reason' => 'invalid_article'];
+
+                    continue;
                 }
-                $rows[$row['article_key']] = $row;
+                if (isset($ambiguous[$key])) {
+                    $ambiguous[$key][] = $row;
+
+                    continue;
+                }
+                if (isset($rows[$key])) {
+                    // The stock-sorted catalogue can repeat an unchanged card across pages.
+                    if ($rows[$key] === $row) {
+                        $duplicates++;
+                    } else {
+                        // Never choose between different products/prices sharing one article.
+                        $ambiguous[$key] = [$rows[$key], $row];
+                        unset($rows[$key]);
+                    }
+
+                    continue;
+                }
+                $rows[$key] = $row;
             }
             foreach ($page['pages'] as $next) {
                 $next = $this->url($next);
@@ -107,14 +129,23 @@ class EurotermOnlinePriceList
             }
         }
 
-        return [
+        $payload = [
             'source_date' => now()->timezone('Europe/Minsk')->toDateString(),
             'source_sha256' => hash_final($hash), 'source_kind' => 'online', 'source_pages' => count($visited),
             'supplier' => ['code' => 'euroterm', 'name' => 'ООО «Евротерм»', 'website' => EurotermPriceList::WEBSITE],
             'warehouse' => ['name' => 'Евротерм · Машиностроителей, 9А', 'address' => 'Минск, ул. Машиностроителей, 9А'],
             'rows' => array_values($rows),
             'unpriced_rows' => $unpriced,
+            'ambiguous_rows' => $ambiguous, 'duplicate_rows' => $duplicates,
         ];
+        $disk = Storage::disk('local');
+        $snapshot = 'suppliers/euroterm/latest-online.json';
+        if (! $disk->put($snapshot, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR))) {
+            throw new RuntimeException('Не удалось сохранить проверенный онлайн-прайс Евротерма.');
+        }
+        @chmod($disk->path($snapshot), 0600);
+
+        return $payload;
     }
 
     public function parsePage(string $html): array

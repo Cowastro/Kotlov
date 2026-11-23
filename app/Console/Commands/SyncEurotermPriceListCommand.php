@@ -47,7 +47,7 @@ class SyncEurotermPriceListCommand extends Command
         try {
             $online = blank($this->argument('file'));
             if ($online) {
-                if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+                if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true) && DB::transactionLevel() === 0) {
                     DB::disconnect();
                 }
                 $payload = app(EurotermOnlinePriceList::class)->load();
@@ -86,6 +86,8 @@ class SyncEurotermPriceListCommand extends Command
                 $this->line('metric.euroterm.online_rows='.count($payload['rows']));
                 $this->line('metric.euroterm.online_pages='.$payload['source_pages']);
                 $this->line('metric.euroterm.online_unpriced_rows='.count($payload['unpriced_rows'] ?? []));
+                $this->line('metric.euroterm.online_ambiguous_articles='.count($payload['ambiguous_rows'] ?? []));
+                $this->line('metric.euroterm.online_duplicate_rows='.($payload['duplicate_rows'] ?? 0));
             } else {
                 $classified = $this->classify($payload['rows'], $parser, $supplier);
             }
