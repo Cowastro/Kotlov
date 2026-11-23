@@ -74,10 +74,9 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         // «Готов к отгрузке»: what of each order in work 1C has to ship (register «Товары к отгрузке»).
         $inWork = Order::query()->whereIn('onec_order_guid', $orders)->where('onec_posted', true)
             ->whereIn('onec_doc_status', ['КОбеспечению', 'КВыполнению'])->pluck('onec_order_guid')->unique()->values();
-        foreach ($inWork->chunk(5)->values() as $i => $chunk) {
-            $queries['holds_'.($i + 1)] = ODataReadTaskHandler::path(self::HOLDS, ['$filter' => $chunk
-                ->map(fn (string $key): string => "ДокументОтгрузки eq cast(guid'".$key."', 'Document_ЗаказКлиента')")->implode(' or '),
-                '$select' => 'ДокументОтгрузки,КОтгрузкеBalance']);
+        // A filter by the order finds nothing on this balance: the whole balance is small (only what waits to ship).
+        if ($inWork->isNotEmpty()) {
+            $queries['holds_1'] = ODataReadTaskHandler::path(self::HOLDS, ['$select' => 'ДокументОтгрузки,ДокументОтгрузки_Type,КОтгрузкеBalance']);
         }
         try {
             return $this->tasks->enqueue(self::TYPE, null, 'Проверить документы в 1С: '.($keys->count() + $orders->count() + $supplierOrders->count()).($payments ? ', оплаты: '.count($payments) : ''), $user, ['queries' => $queries]);
