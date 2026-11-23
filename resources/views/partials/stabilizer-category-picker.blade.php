@@ -14,7 +14,7 @@
         <a href="{{ url('/'.$category->slug) }}#stabilizer-guide">Как выбрать стабилизатор ↓</a>
     </div>
     @if ($quickFields->isNotEmpty())
-        <form action="{{ url('/'.$category->slug) }}" method="get" class="stabilizer-picker__form">
+        <form action="{{ url('/'.$category->slug) }}" method="get" class="stabilizer-picker__form" style="--st-fields: {{ $quickFields->count() }}">
             @foreach (\Illuminate\Support\Arr::dot($preserved) as $key => $value)
                 @php $parts = explode('.', $key); $inputName = array_shift($parts); foreach ($parts as $part) $inputName .= '['.$part.']'; @endphp
                 <input type="hidden" name="{{ $inputName }}" value="{{ $value }}">
