@@ -16,6 +16,8 @@ class ChimneyFilterCombinationsTest extends TestCase
     public function test_all_sixteen_combinations_keep_matching_cards_and_exclude_only_actual_mismatches(): void
     {
         $category = Category::updateOrCreate(['slug' => 'dymohody'], ['name' => 'Дымоходы', 'parent_id' => 0, 'is_active' => true]);
+        // Data migrations publish catalogue cards; this matrix must use only its own fixtures.
+        Product::query()->update(['is_active' => false]);
         $attributes = [];
         foreach (['Диаметр' => ['115 мм', '150 мм'], 'Тип металла' => ['Нержавеющая сталь 304', 'Нержавеющая сталь 430'], 'Толщина металла' => ['0.8', '1']] as $name => $values) {
             $attribute = Attribute::create(['category_id' => $category->id, 'name' => $name, 'type' => 'select', 'in_filter' => true, 'suffix' => $name === 'Толщина металла' ? 'мм' : null]);

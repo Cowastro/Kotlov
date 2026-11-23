@@ -104,7 +104,7 @@ class B2bCatalogQuickFiltersTest extends TestCase
         $this->actingAs($admin)->get(route('b2b.catalog', ['workspace' => 1, 'flags' => ['in_stock']]))->assertOk()
             ->assertViewHas('navigationTotal', 1)->assertViewHas('products', fn ($products) => $products->total() === 1);
     }
-    public function test_stock_filter_uses_source_validity_and_successful_one_c_confirmation(): void
+    public function test_stock_filter_uses_line_confirmation_and_catalog_refresh_does_not_revive_stale_one_c_stock(): void
     {
         Product::query()->update(['is_active'=>false]);
         $this->freezeTime();
@@ -115,7 +115,7 @@ class B2bCatalogQuickFiltersTest extends TestCase
         $oneC=\App\Models\IntegrationSource::create(['code'=>'filter-onec','name'=>'1C','driver'=>'commerceml','supplier_id'=>$supplier->id,'is_active'=>true]);
         \App\Models\IntegrationExchangeRun::create(['integration_source_id'=>$oneC->id,'direction'=>'import','operation'=>'catalog','status'=>'success','started_at'=>now(),'finished_at'=>now()]);
         $expected=[];
-        foreach ([['moscow', $moscow,now()->subDays(12),2,true],['moscow-stale',$moscow,now()->subDays(15),2,false],['api',$api,now()->subMinutes(5),3,true],['api-stale',$api,now()->subMinutes(25),3,false],['api-unconfirmed',$api,null,3,false],['one-c',$oneC,now()->subDays(3),4,true],['one-c-zero',$oneC,now(),0,false]] as [$sku,$source,$confirmed,$qty,$available]) {
+        foreach ([['moscow', $moscow,now()->subDays(12),2,true],['moscow-stale',$moscow,now()->subDays(15),2,false],['api',$api,now()->subMinutes(5),3,true],['api-stale',$api,now()->subMinutes(25),3,false],['api-unconfirmed',$api,null,3,false],['one-c-stale',$oneC,now()->subDays(3),4,false],['one-c-fresh',$oneC,now(),4,true],['one-c-unconfirmed',$oneC,null,4,false],['one-c-zero',$oneC,now(),0,false]] as [$sku,$source,$confirmed,$qty,$available]) {
             $p=$this->product($sku);
             $offer=\App\Models\IntegrationProduct::create(['product_id'=>$p->id,'integration_source_id'=>$source->id,'external_id'=>$sku,'name'=>$p->name,'match_status'=>'matched','stock_quantity'=>$qty,'stock_confirmed_at'=>$confirmed,'last_seen_at'=>now()]);
             $this->assertSame($available,$offer->fresh()->hasFreshPositiveStock(),$sku);
