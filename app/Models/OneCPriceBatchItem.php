@@ -11,7 +11,7 @@ class OneCPriceBatchItem extends Model
 
     protected $fillable = [
         'onec_price_batch_id', 'integration_product_id', 'item_key', 'characteristic_key', 'code', 'name',
-        'retail', 'wholesale', 'retail_site', 'purchase', 'verdict', 'note',
+        'retail', 'wholesale', 'retail_site', 'purchase', 'purchase_net', 'verdict', 'note',
     ];
 
     protected $casts = [
@@ -19,6 +19,7 @@ class OneCPriceBatchItem extends Model
         'wholesale' => 'decimal:2',
         'retail_site' => 'decimal:2',
         'purchase' => 'decimal:2',
+        'purchase_net' => 'decimal:2',
     ];
 
     public function batch(): BelongsTo

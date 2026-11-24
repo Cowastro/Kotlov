@@ -92,14 +92,15 @@ class OneCPriceBatches
                     'code' => $item->code,
                     'name' => mb_substr((string) $item->description, 0, 250),
                     'purchase' => $cost > 0 ? $cost : null,
+                    'purchase_net' => $basis['net'] ?? null,
                     'retail_site' => $item->product_id ? (Product::query()->whereKey($item->product_id)->value('price') ?: null) : null,
                     // fixed prices as entered; else the markups over the basis; 0 is «не задана» and is not sent until set
                     'retail' => $fixed ? round($fixedRetail, 2) : ($cost > 0 ? OneCItemCosts::priceFrom($cost, (float) $retailMarkup) : 0),
                     'wholesale' => $fixed ? round($fixedWholesale, 2) : ($cost > 0 ? OneCItemCosts::priceFrom($cost, (float) $wholesaleMarkup) : 0),
                     'verdict' => $fixed ? 'fixed' : ($cost > 0 ? 'markup' : 'no_cost'),
                     'note' => match (true) {
-                        $fixed => 'задано вручную'.($basis ? '; '.$basis['label'].' '.$cost : ''),
-                        $cost > 0 => 'розница +'.$retailMarkup.' %, опт +'.$wholesaleMarkup.' % от: '.$basis['label'].' '.$cost,
+                        $fixed => 'задано вручную'.($basis ? '; '.$basis['label'].' '.$cost.' с НДС' : ''),
+                        $cost > 0 => 'розница +'.$retailMarkup.' %, опт +'.$wholesaleMarkup.' % от: '.$basis['label'].' '.$cost.' с НДС',
                         default => 'нет себестоимости и закупки поставщика — задайте цены вручную',
                     },
                 ]);
@@ -134,6 +135,7 @@ class OneCPriceBatches
                 $batch->items()->updateOrCreate(['item_key' => strtolower($item->ref_key), 'characteristic_key' => null], [
                     'code' => $item->code,
                     'name' => mb_substr((string) $item->description, 0, 250),
+                    'purchase_net' => $item->cost_net ?: null,
                     'purchase' => (float) $item->cost_gross > 0 ? (float) $item->cost_gross : null,
                     'retail_site' => (float) ($cards[$row->product_id] ?? 0) ?: null,
                     'retail' => $retail,
