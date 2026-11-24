@@ -82,19 +82,21 @@ class WholeOrderFulfillmentTest extends TestCase
         $this->assertSame($before, $order->items()->get(['id', 'product_id', 'quantity', 'price', 'total'])->toArray());
         $this->assertSame(['available', 'partial', 'awaiting_supply', 'clarifying'], $order->items()->orderBy('id')->pluck('fulfillment_availability_status')->all());
         $this->assertSame(4, $order->items()->whereNotNull('fulfillment_reservation_requested_at')->count());
-        $task = OneCAgentTask::where('type', 'onec_order')->sole();
-        $rows = $task->payload['body']['Товары'];
+        $this->assertSame(0, OneCAgentTask::where('type', 'onec_order')->count());
+        $export = app(OneCOrderExport::class);
+        $body = $export->body($order->fresh(), OneCOrderProfile::firstOrFail(), $export->defaults($order->fresh()));
+        $rows = $body['Товары'];
         $this->assertCount(4, $rows);
         $this->assertSame([1.0, 5.0, 2.0, 1.0], array_map(fn ($r) => (float) $r['Количество'], $rows));
         foreach ($rows as $row) {
             $this->assertSame(OneCOrderExport::RESERVE, $row['ВариантОбеспечения']);
         }
-        foreach (OneCOrderExport::simplify($task->payload['body'], 4)['Товары'] as $row) {
+        foreach (OneCOrderExport::simplify($body, 4)['Товары'] as $row) {
             $this->assertSame(OneCOrderExport::RESERVE, $row['ВариантОбеспечения']);
         }
         $second = $service->confirm($order->fresh(), $actor, $fingerprint);
         $this->assertFalse($second['notified']);
-        $this->assertSame(1, OneCAgentTask::where('type', 'onec_order')->count());
+        $this->assertSame(0, OneCAgentTask::where('type', 'onec_order')->count());
         $this->assertSame(4, $order->fulfillmentHistory()->count());
         Mail::assertQueuedCount(1);
         $html = (new OrderAvailabilityConfirmedMail($order->fresh(['items', 'user'])))->render();
@@ -131,6 +133,14 @@ class WholeOrderFulfillmentTest extends TestCase
         Storage::fake('local');
         $service = app(WholeOrderFulfillment::class);
         $service->confirm($order, $actor, $service->fingerprint($order));
+        app(OrderWorkflow::class)->advance($order->fresh(), $actor);
+        $order->refresh();
+        app(\App\Services\Orders\OrderDeliveryPreparation::class)->confirm($order, $actor, [
+            'method' => 'courier', 'from' => 'Склад', 'to' => 'Адрес клиента', 'date' => now()->addDay()->toDateString(),
+        ]);
+        $order->refresh();
+        $writer = app(OneCOrderExport::class);
+        $writer->enqueue($order, $writer->defaults($order), $actor);
         $export = OneCAgentTask::where('type', 'onec_order')->sole();
         foreach ($export->payload['body']['Товары'] as $row) {
             $this->assertSame(OneCOrderExport::RESERVE, $row['ВариантОбеспечения']);
@@ -205,7 +215,7 @@ class WholeOrderFulfillmentTest extends TestCase
         $this->assertSame(4, $order->items()->whereNotNull('fulfillment_confirmed_at')->count());
         Mail::swap(new MailFake(new MailManager(app())));
         $this->assertTrue($service->confirm($order->fresh(), $actor, $hash)['notified']);
-        $this->assertSame(1, OneCAgentTask::where('type', 'onec_order')->count());
+        $this->assertSame(0, OneCAgentTask::where('type', 'onec_order')->count());
         $this->assertSame(4, $order->fulfillmentHistory()->count());
         Mail::assertQueuedCount(1);
     }
@@ -275,7 +285,7 @@ class WholeOrderFulfillmentTest extends TestCase
         $order->items()->create(['product_name' => 'Без привязки к 1С', 'quantity' => 2, 'price' => 5]);
         $service = app(WholeOrderFulfillment::class);
         $result = $service->confirm($order, $actor, $service->fingerprint($order));
-        $this->assertNotNull($result['reservation_warning']);
+        $this->assertNull($result['reservation_warning']);
         $this->assertSame(5, $order->items()->count());
         $item = $order->items()->latest('id')->first();
         $this->assertSame('clarifying', $item->fulfillment_availability_status);

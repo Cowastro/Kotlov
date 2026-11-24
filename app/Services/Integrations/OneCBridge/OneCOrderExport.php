@@ -140,7 +140,9 @@ class OneCOrderExport
     {
         $taxId = $this->companyTaxId($order);
         // ВАМэкспресс / Европочта is the 1C customer when it collects the money (the client pays on receipt); paid ahead — retail.
-        $profile ??= $this->profiles->forOrder($taxId !== '', $order->isPaymentOnReceipt() ? $order->delivery_type : null);
+        $delivery = $order->isPaymentOnReceipt() ? $order->delivery_type : null;
+        if ($delivery === 'transport' && app(OneCVamPaymentRule::class)->applies($order)) $delivery = 'vam_express';
+        $profile ??= $this->profiles->forOrder($taxId !== '', $delivery);
         if (! $profile) {
             return ['profile_id' => null, 'h' => []];
         }
@@ -158,21 +160,32 @@ class OneCOrderExport
                 $h['Договор_Key'] = array_key_first($this->contracts($counterparty->ref_key, $h['Организация_Key']));
             }
         }
+        foreach ([app(OneCEvropochtaPaymentRule::class), app(OneCVamPaymentRule::class)] as $paymentRule) {
+            if ($paymentRule->applies($order)) {
+                try {
+                    $h = array_replace($h, $paymentRule->headers($profile));
+                } catch (DomainException) {
+                    // Missing carrier references must never silently use ordinary retail.
+                    $h = array_replace($h, array_fill_keys($paymentRule::FIELDS, null));
+                }
+            }
+        }
         if ($order->manager) {
             $h['Менеджер_Key'] = OneCReference::query()->where('kind', 'user')->where('deletion_mark', false)
                 ->where('description', $order->manager->name)->value('ref_key') ?? $h['Менеджер_Key'];
         }
 
         $pickup = $order->delivery_type === 'pickup';
-        $address = $pickup ? '' : collect([$order->delivery_region, $order->delivery_city, $order->delivery_address])
-            ->map(fn ($v): string => trim((string) $v))->filter()->unique()->implode(', ');
+        $address = $pickup ? '' : ($order->delivery_preparation['to'] ?? collect([$order->delivery_region, $order->delivery_city, $order->delivery_address])
+            ->map(fn ($v): string => trim((string) $v))->filter()->unique()->implode(', '));
         $total = number_format((float) $order->total, 2, ',', '');
         $info = collect([
             $pickup ? 'Самовывоз' : $address,
             'К оплате '.$total.'р.',
-            $pickup ? null : 'Согласовать доставку по звонку',
+            $pickup ? null : ($order->delivery_preparation ? 'Доставка согласована' : 'Согласовать доставку по звонку'),
             'Клиент: '.trim((string) ($order->company_name ?: $order->customer_name)),
             $order->customer_phone ? 'Телефон: '.$order->customer_phone : null,
+            $order->delivery_preparation ? app(\App\Services\Orders\OrderDeliveryPreparation::class)->summary($order) : null,
         ])->filter()->implode("\n");
 
         return [
@@ -209,9 +222,13 @@ class OneCOrderExport
     /** @return list<string> what stops the order */
     public function problems(Order $order, ?OneCOrderProfile $profile, array $form): array
     {
-        $problems = [];
+        $problems = array_merge(app(OneCEvropochtaPaymentRule::class)->problems($order, $profile, $form),
+            app(OneCVamPaymentRule::class)->problems($order, $profile, $form));
+        if ($reason = app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($order)) {
+            $problems[] = $reason;
+        }
         if (! $profile) {
-            return ['Нет схемы заказа 1С: создайте её в «Мост 1С» → «Схемы заказов» по образцу заказа из 1С'];
+            return [...$problems, 'Нет схемы заказа 1С: создайте её в «Мост 1С» → «Схемы заказов» по образцу заказа из 1С'];
         }
         foreach ($this->lines($order) as $line) {
             if ($line['problem']) {
@@ -307,7 +324,7 @@ class OneCOrderExport
         if ($has('НомерПоДаннымКлиента')) {
             $doc['НомерПоДаннымКлиента'] = self::clientNumber($order);
         }
-        $doc['Комментарий'] = (string) ($form['comment'] ?? '');
+        $doc['Комментарий'] = trim((string) ($form['comment'] ?? '')."\n".app(\App\Services\Orders\OrderDeliveryPreparation::class)->summary($order));
 
         $withVat = (bool) ($doc['ЦенаВключаетНДС'] ?? true);
         $vatKey = $profile->row_defaults['СтавкаНДС_Key'] ?? null;
@@ -399,20 +416,24 @@ class OneCOrderExport
 
     public function enqueue(Order $order, array $form, ?User $user): OneCAgentTask
     {
-        $profile = OneCOrderProfile::query()->where('document', OneCOrderProfile::CUSTOMER_ORDER)->where('is_active', true)->find($form['profile_id'] ?? null);
-        $problems = $this->problems($order, $profile, $form);
-        if ($problems !== []) {
-            throw new DomainException(implode('; ', array_slice($problems, 0, 6)).(count($problems) > 6 ? '; и ещё '.(count($problems) - 6) : ''));
-        }
-        $body = $this->body($order, $profile, $form);
-        $find = in_array('НомерПоДаннымКлиента', (array) ($profile->meta['keys'] ?? []), true)
-            ? ODataReadTaskHandler::path('Document_ЗаказКлиента', ['$filter' => "НомерПоДаннымКлиента eq '".self::clientNumber($order)."' and DeletionMark eq false",
-                '$select' => 'Ref_Key,Number', '$top' => '1'])
-            : null;
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($order, $form, $user): OneCAgentTask {
+            $order = Order::lockForUpdate()->findOrFail($order->id);
+            $order->setRelation('items', $order->items()->lockForUpdate()->get());
+            $profile = OneCOrderProfile::query()->where('document', OneCOrderProfile::CUSTOMER_ORDER)->where('is_active', true)->find($form['profile_id'] ?? null);
+            $problems = $this->problems($order, $profile, $form);
+            if ($problems !== []) {
+                throw new DomainException(implode('; ', array_slice($problems, 0, 6)).(count($problems) > 6 ? '; и ещё '.(count($problems) - 6) : ''));
+            }
+            $body = $this->body($order, $profile, $form);
+            $find = in_array('НомерПоДаннымКлиента', (array) ($profile->meta['keys'] ?? []), true)
+                ? ODataReadTaskHandler::path('Document_ЗаказКлиента', ['$filter' => "НомерПоДаннымКлиента eq '".self::clientNumber($order)."' and DeletionMark eq false",
+                    '$select' => 'Ref_Key,Number', '$top' => '1'])
+                : null;
 
-        return $this->tasks->enqueue(OrderTaskHandler::TYPE, $order, 'Заказ №'.$order->number.' → 1С ('.$profile->name.')', $user,
-            ['profile_id' => $profile->id, 'body' => $body, 'find' => $find, 'form' => $form, 'variant' => (int) ($profile->meta['variant'] ?? 0),
-                'load' => (bool) ($profile->meta['load_mode'] ?? false)]);
+            return $this->tasks->enqueue(OrderTaskHandler::TYPE, $order, 'Заказ №'.$order->number.' → 1С ('.$profile->name.')', $user,
+                ['profile_id' => $profile->id, 'body' => $body, 'find' => $find, 'form' => $form, 'variant' => (int) ($profile->meta['variant'] ?? 0),
+                    'load' => (bool) ($profile->meta['load_mode'] ?? false)]);
+        });
     }
 
     /**

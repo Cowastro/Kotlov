@@ -660,6 +660,11 @@ class OrderInfolist
                                 ->color('warning')
                                 ->visible(fn (Order $record): bool => $record->planned_delivery_date !== null),
 
+                            TextEntry::make('delivery_prepared_summary')->label('Согласованная передача')
+                                ->state(fn (Order $record): string => app(\App\Services\Orders\OrderDeliveryPreparation::class)->summary($record))
+                                ->extraAttributes(['class' => 'whitespace-pre-line'])->columnSpanFull()
+                                ->visible(fn (Order $record): bool => filled($record->delivery_preparation['prepared_at'] ?? null)),
+
                             TextEntry::make('evropochta_quote.carrier_price')
                                 ->label('Тариф перевозчика')
                                 ->formatStateUsing($byn)

@@ -174,6 +174,10 @@ class OneCSupplierOrderExport
     /** @param array{profile_id: mixed, counterparty: ?string, contract: ?string, prices_with_vat: bool} $form */
     public function enqueue(Order $order, int $supplierId, array $form, ?User $user): OneCAgentTask
     {
+        $order = $order->fresh();
+        if (! $order->onec_order_guid && ($reason = app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($order))) {
+            throw new DomainException($reason);
+        }
         $group = $this->groups($order)[$supplierId] ?? throw new DomainException('У поставщика нет позиций в этом заказе.');
         $profile = OneCOrderProfile::query()->where('document', OneCOrderProfile::SUPPLIER_ORDER)->where('is_active', true)->find($form['profile_id'] ?? null);
         $counterparty = strtolower((string) ($form['counterparty'] ?? '')) ?: $group['counterparty']?->ref_key;

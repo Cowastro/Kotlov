@@ -26,6 +26,9 @@ class VamExpressDrafts
 
         return DB::transaction(function () use ($order, $actor): VamExpressDraft {
             $order = OrderResource::getEloquentQuery()->lockForUpdate()->findOrFail($order->id);
+            if ($order->status !== 'processing') {
+                throw ValidationException::withMessages(['order_id' => 'Сначала подтвердите заказ и передайте его в исполнение.']);
+            }
             $existing = VamExpressDraft::where('order_id', $order->id)->where('status', 'draft')->first();
             if ($existing) {
                 return $existing;

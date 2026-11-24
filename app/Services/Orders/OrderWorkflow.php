@@ -5,7 +5,6 @@ namespace App\Services\Orders;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\OneCOrderStages;
-use App\Services\Integrations\OneCOrderQueue;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -43,12 +42,12 @@ class OrderWorkflow
         ],
         'processing' => [
             'next' => 'shipped',
-            'label' => 'Передать в доставку',
+            'label' => 'Подтвердить отгрузку',
             'icon' => 'heroicon-o-truck',
             'color' => 'primary',
-            'heading' => 'Передать заказ в доставку?',
-            'description' => 'Подтвердите, что заказ собран и передан в доставку или готов к выдаче клиенту.',
-            'submit' => 'Передать в доставку',
+            'heading' => 'Заказ фактически отгружен?',
+            'description' => 'Подтвердите фактическую передачу собранного заказа перевозчику или нашему водителю. При самовывозе — передачу клиенту.',
+            'submit' => 'Подтвердить отгрузку',
         ],
         'shipped' => [
             'next' => 'delivered',
@@ -78,6 +77,11 @@ class OrderWorkflow
 
     public function blocker(Order $order): ?string
     {
+        if ($order->status === 'processing' && blank($order->onec_order_guid) && ! $order->is_internal
+            && \App\Models\IntegrationSource::where('code', 'onec')->where('is_active', true)->exists()) {
+            return app(OrderDeliveryPreparation::class)->blocker($order)
+                ?: 'Доставка согласована. Сначала оформите заказ в 1С; фактическая отгрузка будет отдельным этапом.';
+        }
         if ($order->executionTransferPending()) {
             return 'Передача в исполнение уже запущена. Дождитесь результата; повторная отправка не требуется.';
         }
@@ -169,23 +173,14 @@ class OrderWorkflow
     /** @return array{title:string,body:string} */
     private function startProcessing(Order $order, ?User $manager): array
     {
-        if (! config('onec.order_queue_enabled', false)) {
-            return $this->transition(
-                $order,
-                $manager,
-                'confirmed',
-                'processing',
-                'Заказ передан в исполнение без синхронизации с 1С.',
-                'Заказ передан в исполнение',
-            );
-        }
-
-        app(OneCOrderQueue::class)->queue($order, $manager, $this->managerAttributes($order, $manager));
-
-        return [
-            'title' => 'Заказ передан в исполнение',
-            'body' => 'Заказ поставлен в очередь центральной 1С. Следующий этап — передача в доставку.',
-        ];
+        return $this->transition(
+            $order,
+            $manager,
+            'confirmed',
+            'processing',
+            'Заказ передан в исполнение. Далее согласуйте доставку; оформление в 1С выполняется отдельно.',
+            'Заказ передан в исполнение',
+        );
     }
 
     /** @return array{title:string,body:string} */

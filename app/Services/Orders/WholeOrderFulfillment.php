@@ -2,14 +2,9 @@
 
 namespace App\Services\Orders;
 
-use App\Models\OneCAgentTask;
 use App\Models\Order;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Services\Integrations\OneCBridge\OneCOrderExport;
-use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
-use App\Services\Integrations\OneCBridge\OrderTaskHandler;
-use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -83,20 +78,8 @@ class WholeOrderFulfillment
             if ($customerNote !== null) {
                 $locked->update(['fulfillment_customer_note' => trim($customerNote)]);
             }
-            // The order lock serializes repeat clicks; an active or completed export is never duplicated.
-            $hasTask = OneCAgentTask::whereMorphedTo('subject', $locked)->where('type', OrderTaskHandler::TYPE)
-                ->whereIn('status', [...OneCAgentTask::ACTIVE, OneCAgentTask::DONE])->exists();
-            if (! $locked->onec_order_guid && ! $hasTask) {
-                try {
-                    if (app(OneCOrderMatcher::class)->found($locked)) {
-                        throw new DomainException('Найден похожий заказ в 1С. Сначала подтвердите его привязку, чтобы не создать дубль.');
-                    }
-                    $export = app(OneCOrderExport::class);
-                    $export->enqueue($locked->fresh('items'), $export->defaults($locked), $actor);
-                } catch (DomainException $exception) {
-                    $warning = $exception->getMessage();
-                }
-            }
+            // Acceptance saves all positions; 1C is an explicit later step
+            // after execution and delivery preparation.
 
             return $locked->fresh(['items', 'user']);
         });

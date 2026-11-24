@@ -27,7 +27,7 @@ class OrderWorkflowSequenceTest extends TestCase
         $this->assertSame('Проверить наличие', $workflow->step($this->order('new'))['label']);
         $this->assertSame('Подтвердить заказ клиенту', $workflow->step($this->order('checking'))['label']);
         $this->assertSame('Передать в исполнение', $workflow->step($this->order('confirmed'))['label']);
-        $this->assertSame('Передать в доставку', $workflow->step($this->order('processing'))['label']);
+        $this->assertSame('Подтвердить отгрузку', $workflow->step($this->order('processing'))['label']);
         $this->assertSame('Отметить доставленным', $workflow->step($this->order('shipped'))['label']);
         $this->assertNull($workflow->step($this->order('delivered')));
         $this->assertNull($workflow->step($this->order('cancelled')));
@@ -36,6 +36,7 @@ class OrderWorkflowSequenceTest extends TestCase
     public function test_manager_can_only_advance_in_sequence_and_availability_is_a_required_gate(): void
     {
         config()->set('onec.order_queue_enabled', false);
+        \App\Models\IntegrationSource::where('code', 'onec')->update(['is_active' => false]);
         Mail::fake();
 
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);

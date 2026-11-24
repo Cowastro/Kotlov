@@ -19,6 +19,9 @@ class VamExpressOrderDelivery
             $shipment = $shipmentId !== null ? VamExpressShipment::lockForUpdate()->findOrFail($shipmentId) : null;
             $locked = Order::lockForUpdate()->findOrFail($order->id);
             abort_unless(OrderResource::canEdit($locked), 403);
+            if (! in_array($locked->status, ['processing', 'shipped'], true)) {
+                throw ValidationException::withMessages(['shipment_id' => 'Сначала подтвердите заказ и передайте его в исполнение.']);
+            }
             if ($locked->archived_at || in_array($locked->status, ['cancelled', 'delivered'], true)) {
                 throw ValidationException::withMessages(['shipment_id' => 'Заказ закрыт. Изменение доставки недоступно.']);
             }

@@ -100,7 +100,9 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            \App\Filament\Resources\Orders\Actions\VamExpressOrderActions::make(),
+            \App\Filament\Resources\Orders\Actions\VamExpressOrderActions::make()
+                ->label(fn (): string => $this->record->delivery_type === 'vam_express' ? 'ВАМ: отправление и статус' : 'Выбрать ВАМ Экспресс')
+                ->visible(fn (): bool => in_array($this->record->status, ['processing', 'shipped', 'delivered'], true)),
             $this->confirmFulfillmentAction(),
             Action::make('advanceWorkflow')
                 ->label(fn (): string => app(OrderWorkflow::class)->step($this->record)['label'] ?? 'Следующий этап')
@@ -109,7 +111,9 @@ class ViewOrder extends ViewRecord
                 ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->visible(fn (): bool => app(OrderWorkflow::class)->step($this->record) !== null
                     && (! $this->record->usesGuidedFulfillment() || ! $this->record->needsFulfillmentConfirmation())
-                    && ! $this->record->needsEvropochtaShipment())
+                    && ! $this->record->needsEvropochtaShipment()
+                    && ! ($this->record->status === 'processing' && blank($this->record->onec_order_guid) && ! $this->record->is_internal
+                        && \App\Models\IntegrationSource::where('code', 'onec')->where('is_active', true)->exists()))
                 ->disabled(fn (): bool => app(OrderWorkflow::class)->blocker($this->record) !== null)
                 ->tooltip(fn (): ?string => app(OrderWorkflow::class)->blocker($this->record))
                 ->requiresConfirmation()
@@ -137,6 +141,7 @@ class ViewOrder extends ViewRecord
                     }
                 }),
             OneCOrderExportAction::make(),
+            \App\Filament\Resources\Orders\Actions\PrepareOrderDeliveryAction::make(),
             OneCOrderLinkAction::make(),
             OneCSupplierOrdersAction::make(),
             ActionGroup::make([
@@ -146,7 +151,9 @@ class ViewOrder extends ViewRecord
                 EvropochtaOrderActions::prepare(),
                 EvropochtaOrderActions::create(),
             ])
-                ->label('Европочта')
+                ->label(fn (): string => filled($this->record->evropochta_tracking_number) ? 'Европочта: ярлык и статус' : 'Оформить Европочту')
+                ->visible(fn (): bool => in_array($this->record->status, ['processing', 'shipped', 'delivered'], true)
+                    && $this->record->delivery_type === 'evropochta')
                 ->icon('heroicon-o-cube')
                 ->color('gray')
                 ->dropdownWidth(Width::Medium)
@@ -856,7 +863,7 @@ class ViewOrder extends ViewRecord
             ->disabled(fn (): bool => ! $this->record->needsFulfillmentConfirmation())
             ->visible(fn (): bool => $this->record->needsFulfillmentConfirmation() && in_array($this->record->status, ['new', 'checking', 'confirmed'], true))
             ->modalHeading('План исполнения всего заказа')->modalWidth(Width::FiveExtraLarge)
-            ->modalDescription('Все позиции останутся в заказе. Доступное резервируется в 1С, недостающее — по мере поступления. Подтверждение резерва не заменяется данными об остатке.')
+            ->modalDescription('Все позиции, включая ожидаемые, останутся в заказе. Сначала подтвердите заказ, затем передайте в исполнение и согласуйте доставку. Оформление в 1С выполняется отдельным шагом после подготовки доставки.')
             ->modalSubmitActionLabel('Принять заказ')
             ->fillForm(fn (): array => ['fingerprint' => app(\App\Services\Orders\WholeOrderFulfillment::class)->fingerprint($this->record)])
             ->schema([

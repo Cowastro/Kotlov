@@ -28,8 +28,8 @@ class OneCOrderQueue
                 throw new DomainException('Активное подключение центральной 1С не настроено.');
             }
 
-            if ($lockedOrder->status !== 'confirmed') {
-                throw new DomainException('Передать в 1С можно только подтверждённый заказ.');
+            if ($reason = app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($lockedOrder)) {
+                throw new DomainException($reason);
             }
 
             if ($lockedOrder->items->isNotEmpty()

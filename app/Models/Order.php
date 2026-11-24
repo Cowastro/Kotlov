@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
+    protected $hidden = ['delivery_preparation'];
     public const DEAL_STAGES = [
         'received' => 'Принят',
         'contacted' => 'Проверка',
@@ -165,6 +166,7 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'delivery_preparation' => 'array',
         'carrier_checked_at' => 'datetime',
         'is_internal' => 'boolean',
         'deal_control_at' => 'datetime',
@@ -420,11 +422,16 @@ class Order extends Model
         if ($this->needsEvropochtaShipment()) {
             $tariffStep = blank($this->evropochta_quote) ? 'Сначала подготовьте отправление и рассчитайте тариф. ' : '';
 
-            return $this->procurementStep().$tariffStep.'В меню «Европочта» нажмите «Оформить Европочту и открыть ярлык». Трек-номер сохранится в заказе. Распечатайте ярлык, затем нажмите «Передать в доставку».';
+            return $this->procurementStep().$tariffStep.'В меню «Европочта» оформите отправление и получите трек. Затем подтвердите «Подготовить доставку / самовывоз» и оформите заказ в 1С. Ярлык не означает фактическую отгрузку.';
         }
 
         if ($this->executionTransferPending()) {
             return 'Заказ принят в обработку. Передача в исполнение уже запущена — дождитесь результата; повторно отправлять заказ не нужно.';
+        }
+
+        if ($this->status === 'processing' && blank($this->onec_order_guid)) {
+            $delivery = app(\App\Services\Orders\OrderDeliveryPreparation::class);
+            return $delivery->blocker($this) ?: 'Доставка согласована. Нажмите «Создать заказ в 1С»: проверьте адреса, трек / ID, оплату и передайте заказ.';
         }
 
         return match ($this->status) {

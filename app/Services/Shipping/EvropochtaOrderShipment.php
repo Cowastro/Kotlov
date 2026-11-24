@@ -18,6 +18,7 @@ final class EvropochtaOrderShipment
 
     public function preparationUnavailableReason(Order $order): ?string
     {
+        if ($order->status !== 'processing') return 'Сначала подтвердите заказ и передайте его в исполнение.';
         if ($order->delivery_type !== EvropochtaCheckout::METHOD
             || in_array($order->status, ['shipped', 'delivered', 'cancelled', 'completed'], true)
             || filled($order->evropochta_tracking_number)) {
@@ -123,6 +124,7 @@ final class EvropochtaOrderShipment
 
     public function unavailableReason(Order $order): ?string
     {
+        if ($order->status !== 'processing' && blank($order->evropochta_tracking_number)) return 'Сначала подтвердите заказ и передайте его в исполнение.';
         if ($order->delivery_type !== EvropochtaCheckout::METHOD || in_array($order->status, ['cancelled', 'delivered'], true)) {
             return 'Этот заказ недоступен для оформления Европочтой.';
         }
