@@ -86,6 +86,10 @@ class OneCReferences
         'supply_variants' => [
             'order_lines_sample' => ['Document_ЗаказКлиента', ['$top' => '150', '$orderby' => 'Date desc', '$select' => 'Number,Товары']],
         ],
+        // «delivery_methods»: the «Способ доставки» values the 1C orders use (the names of СпособыДоставки here).
+        'delivery_methods' => [
+            'delivery_methods_sample' => ['Document_ЗаказКлиента', ['$top' => '500', '$orderby' => 'Date desc', '$select' => 'Number,СпособДоставки']],
+        ],
         'purchase' => [
             'supplier_order_sample' => ['Document_ЗаказПоставщику', ['$top' => '3', '$orderby' => 'Date desc']],
             'supplier_order_list' => ['Document_ЗаказПоставщику', ['$select' => 'Ref_Key,Number,Date,Posted,DeletionMark,Статус,Организация_Key,Партнер_Key,Контрагент_Key,СуммаДокумента',
