@@ -249,11 +249,11 @@ class OneCOrderExport
     public const PROVIDE = 'Требуется';
 
     /**
-     * Every line goes «Обеспечить»: this 1C always posts it (МПУТ-000759), «Отгрузить» stops the posting when the goods
-     * are held for another order. «ИзЗаказов» (other editions' «Резервировать по мере поступления») is not in this 1C's
-     * ВариантыОбеспечения — its name here is read from the 1C orders (samples «supply_variants») before it is used.
+     * Every line goes «Резервировать по мере поступления» (its name in this 1C, read from its orders): what is free is
+     * reserved now, the rest when it comes — it always posts. «Отгрузить» stops the posting when the goods are held for
+     * another order.
      */
-    public const RESERVE = self::PROVIDE;
+    public const RESERVE = 'РезервироватьПоМереПоступления';
 
     private const SERVICE_FIELDS = ['СкидкиРассчитаны', 'Согласован', 'СуммаАвансаДоОбеспечения', 'СуммаПредоплатыДоОтгрузки', 'ДатаСогласования',
         'МаксимальныйКодСтроки', 'АдресДоставкиЗначение', 'АдресДоставкиЗначенияПолей', 'ВремяДоставкиС', 'ВремяДоставкиПо'];
