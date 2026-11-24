@@ -123,12 +123,19 @@ class OneCOrderExportTest extends TestCase
 
     private function order(array $attributes = []): Order
     {
-        $order = (new Order)->forceFill(array_merge(['number' => 'K-1001', 'status' => 'confirmed', 'customer_name' => 'Тестов Иван',
+        $order = (new Order)->forceFill(array_merge(['number' => 'K-1001', 'status' => 'processing', 'customer_name' => 'Тестов Иван',
             'customer_phone' => '+375 29 000-11-22', 'delivery_type' => 'courier', 'delivery_city' => 'Тестовск', 'delivery_address' => 'Ул. Примерная, 1',
             'subtotal' => 49.98, 'total' => 49.98], $attributes));
         $order->save();
         OrderItem::query()->create(['order_id' => $order->id, 'product_id' => $this->card->id, 'product_name' => 'Переход Моно',
-            'price' => 24.99, 'quantity' => 2, 'total' => 49.98, 'pricing_type' => 'retail']);
+            'price' => 24.99, 'quantity' => 2, 'total' => 49.98, 'pricing_type' => 'retail', 'fulfillment_confirmed_at' => now()]);
+        if ($order->status === 'processing' && blank($order->onec_order_guid)) {
+            app(\App\Services\Orders\OrderDeliveryPreparation::class)->confirm($order, $this->admin, [
+                'method' => $order->delivery_type, 'from' => 'Склад', 'to' => $order->delivery_address
+                    ? collect([$order->delivery_city, $order->delivery_address])->filter()->implode(', ') : 'Самовывоз со склада',
+                'date' => now()->addDay()->toDateString(),
+            ]);
+        }
 
         return $order->fresh();
     }
@@ -208,7 +215,10 @@ class OneCOrderExportTest extends TestCase
         $plate = Product::query()->create(['category_id' => $category->id, 'name' => 'Плита Skamol', 'slug' => 'plita', 'price' => 208]);
         $order = $this->order();
         $item = OrderItem::query()->create(['order_id' => $order->id, 'product_id' => $plate->id, 'product_name' => 'Плита Skamol',
-            'price' => 208, 'quantity' => 1, 'total' => 208, 'pricing_type' => 'retail']);
+            'price' => 208, 'quantity' => 1, 'total' => 208, 'pricing_type' => 'retail', 'fulfillment_confirmed_at' => now()]);
+        app(\App\Services\Orders\OrderDeliveryPreparation::class)->confirm($order, $this->admin, [
+            'method' => 'courier', 'from' => 'Склад', 'to' => 'Тестовск, Ул. Примерная, 1', 'date' => now()->addDay()->toDateString(),
+        ]);
         $free = IntegrationProduct::query()->create(['integration_source_id' => $this->source->id, 'external_id' => 'abababab-0000-0000-0000-000000000001',
             'external_code' => 'УТ-00000002', 'name' => 'Плита каминная SkamoEnclosure', 'stock_quantity' => 3, 'price' => 0]);
         $this->actingAs($this->admin);
@@ -295,7 +305,7 @@ class OneCOrderExportTest extends TestCase
         $order->items()->update(['fulfillment_confirmed_at' => now()]);
         $this->check1cOrder('КВыполнению', true, [$line]);
         $this->assertSame('processing', $order->fresh()->status);
-        $this->assertStringStartsWith('Заказ в 1С (МПУТ-000800)', $order->fresh()->workflowNextStep());
+        $this->assertStringContainsString('Комплектация и обеспечение обновляются из 1С', $order->fresh()->workflowNextStep());
 
         // Closed in 1C with every line cancelled: not a delivery, the manager gets a note.
         $this->check1cOrder('Закрыт', true, [array_merge($line, ['Отменено' => true])]);
@@ -390,6 +400,8 @@ class OneCOrderExportTest extends TestCase
         OneCItem::query()->create(['ref_key' => self::ITEM, 'code' => 'УТ-00000001', 'description' => 'Переход Моно', 'product_id' => $this->card->id,
             'stock_on_hand' => 3, 'stock_reserved' => 1, 'stock_synced_at' => now()]);
         $item = $this->order()->items()->first();
+        $item->order->update(['status' => 'confirmed']);
+        $item->update(['fulfillment_confirmed_at' => null]);
 
         $picker = app(OrderItemFulfillmentPicker::class);
         $offers = $picker->offers($item);
@@ -606,6 +618,9 @@ class OneCOrderExportTest extends TestCase
         $order = $this->order(['delivery_type' => 'pickup', 'delivery_city' => 'Минск', 'delivery_address' => null]);
         $other = $this->order(['number' => 'K-2002', 'customer_phone' => '+375 33 999-88-77', 'customer_name' => 'Другой Клиент', 'total' => 300]);
         OrderItem::query()->where('order_id', $other->id)->update(['quantity' => 12, 'total' => 300]);
+        app(\App\Services\Orders\OrderDeliveryPreparation::class)->confirm($other, $this->admin, [
+            'method' => 'courier', 'from' => 'Склад', 'to' => 'Тестовск, Ул. Примерная, 1', 'date' => now()->addDay()->toDateString(),
+        ]);
         $this->syncReferences([
             ['Ref_Key' => 'aaaa0000-0000-0000-0000-000000000758', 'Number' => 'МПУТ-000758', 'Date' => now()->format('Y-m-d\TH:i:s'),
                 'Партнер_Key' => self::RETAIL, 'СуммаДокумента' => 49.98, 'Статус' => 'КОбеспечению', 'Posted' => false, 'DeletionMark' => false,

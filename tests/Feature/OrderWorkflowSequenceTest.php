@@ -36,6 +36,7 @@ class OrderWorkflowSequenceTest extends TestCase
     public function test_manager_can_only_advance_in_sequence_and_availability_is_a_required_gate(): void
     {
         config()->set('onec.order_queue_enabled', false);
+        \App\Models\IntegrationSource::where('code', 'onec')->update(['is_active' => false]);
         Mail::fake();
 
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);

@@ -15,7 +15,7 @@ class OneCOrderQueueTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_confirmed_order_is_moved_to_processing_and_explicitly_queued(): void
+    public function test_confirmed_order_cannot_bypass_delivery_preparation_via_legacy_queue(): void
     {
         $manager = User::factory()->create(['role' => 'manager']);
         $source = IntegrationSource::query()->updateOrCreate(['code' => 'onec'], [
@@ -24,18 +24,12 @@ class OneCOrderQueueTest extends TestCase
         ]);
         $order = $this->order(['status' => 'confirmed']);
 
-        $delivery = app(OneCOrderQueue::class)->queue($order, $manager, [
+        $this->expectException(DomainException::class);
+        app(OneCOrderQueue::class)->queue($order, $manager, [
             'manager_id' => $manager->id,
             'assigned_to' => '@'.$manager->name,
         ]);
 
-        $this->assertSame('processing', $order->fresh()->status);
-        $this->assertSame($manager->id, $order->fresh()->manager_id);
-        $this->assertSame($source->id, $delivery->integration_source_id);
-        $this->assertSame(OrderIntegrationDelivery::STATUS_PENDING, $delivery->status);
-        $this->assertSame('kotlov-order-'.$order->id, $delivery->external_id);
-        $this->assertSame($manager->id, $delivery->queued_by);
-        $this->assertNotNull($delivery->queued_at);
     }
 
     public function test_unconfirmed_order_cannot_be_queued(): void

@@ -66,7 +66,10 @@ class OneCOrderExportAction
                 self::lastTask($record)?->status === OneCAgentTask::FAILED => 'danger',
                 default => 'primary',
             })
-            ->visible(fn (Order $record): bool => self::canManage() && ($nested || ! self::foundShown($record)))
+            ->visible(fn (Order $record): bool => self::canManage()
+                && (self::exported($record) || self::waiting($record)
+                    || app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($record) === null)
+                && ($nested || ! self::foundShown($record)))
             ->modalHeading(fn (Order $record): string => self::exported($record) ? 'Заказ в 1С' : 'Создать заказ клиента в 1С')
             ->modalDescription(fn (Order $record): HtmlString => self::state($record))
             ->modalWidth(fn (Order $record): Width => self::exported($record) || self::waiting($record) ? Width::Large : Width::FiveExtraLarge)
@@ -79,6 +82,9 @@ class OneCOrderExportAction
             ->action(function (Order $record, array $data, Action $action) use ($nested): void {
                 $export = app(OneCOrderExport::class);
                 try {
+                    if (! self::exported($record) && ($reason = app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($record->fresh()))) {
+                        throw new DomainException($reason);
+                    }
                     foreach ((array) ($data['links'] ?? []) as $itemId => $integrationProductId) {
                         $item = $record->items->firstWhere('id', (int) $itemId);
                         if ($item && $integrationProductId) {

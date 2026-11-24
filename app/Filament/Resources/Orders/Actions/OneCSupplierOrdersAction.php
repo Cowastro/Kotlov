@@ -31,7 +31,9 @@ class OneCSupplierOrdersAction
             ->label(fn (Order $record): string => self::label($record))
             ->icon('heroicon-o-truck')
             ->color(fn (Order $record): string => self::pending($record) > 0 ? 'warning' : 'success')
-            ->visible(fn (Order $record): bool => (bool) auth()->user()?->isManager() && app(OneCSupplierOrderExport::class)->groups($record) !== [])
+            ->visible(fn (Order $record): bool => (bool) auth()->user()?->isManager()
+                && (filled($record->onec_order_guid) || app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($record) === null)
+                && app(OneCSupplierOrderExport::class)->groups($record) !== [])
             ->modalHeading('Заказы поставщикам в 1С')
             ->modalDescription(new HtmlString('По одному непроведённому «Заказу поставщику» на каждого поставщика: позиции этого заказа с маршрутом «Закупить у поставщика». '
                 .'Поставщика и договор сайт находит в 1С по УНП, цены — входные цены позиций. Остальное — из схемы, сделанной по образцу заказа поставщику из 1С.'))
