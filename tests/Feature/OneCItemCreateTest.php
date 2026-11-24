@@ -181,7 +181,17 @@ class OneCItemCreateTest extends TestCase
             'header' => ['Организация_Key' => '6e310ed3-97e4-11e9-b722-1c1b0d1de7c2'], 'meta' => ['keys' => []]]);
         $this->actingAs($this->admin);
 
+        Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])->assertActionHidden('onecOrder');
+        $item->forceFill(['fulfillment_route' => 'own_stock', 'fulfillment_confirmed_at' => now(),
+            'fulfillment_confirmed_by' => $this->admin->id])->save();
+        app(\App\Services\Orders\OrderWorkflow::class)->advance($order->fresh(), $this->admin);
+        app(\App\Services\Orders\OrderDeliveryPreparation::class)->confirm($order->fresh(), $this->admin, [
+            'method' => $order->delivery_type, 'from' => 'Тестовый склад', 'to' => 'Согласованный адрес выдачи',
+            'date' => now()->addDay()->toDateString(),
+        ]);
+
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionVisible('onecOrder')
             ->mountAction('onecOrder')->setActionData(['create' => [$item->id => true]])->callMountedAction()
             ->assertNotified('Товары создаются в 1С: 1');
         $this->assertSame(1, OneCAgentTask::query()->where('type', 'odata_read')->whereMorphedTo('subject', $this->card)->count());

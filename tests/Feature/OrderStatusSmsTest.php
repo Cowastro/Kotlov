@@ -35,6 +35,9 @@ class OrderStatusSmsTest extends TestCase
 
     public function test_order_lifecycle_sends_the_buyer_each_status_and_includes_the_tracking_number_on_handover(): void
     {
+        // This scenario exercises the standalone workflow, without export to 1C.
+        \App\Models\IntegrationSource::query()->where('code', 'onec')->update(['is_active' => false]);
+
         $sent = [];
         Http::fake([
             self::SMS_URL => function (Request $request) use (&$sent) {

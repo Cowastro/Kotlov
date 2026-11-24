@@ -66,7 +66,7 @@ class OneCOrderReadinessTest extends TestCase
         } catch (DomainException $e) {
             $this->assertStringContainsString('Заказ нельзя передать в 1С', $e->getMessage());
         }
-        $this->assertSame('confirmed', $order->fresh()->status);
+        $this->assertSame('processing', $order->fresh()->status);
         $this->assertSame(0, OrderIntegrationDelivery::query()->count());
     }
 
@@ -128,7 +128,7 @@ class OneCOrderReadinessTest extends TestCase
     private function order(array $lines, array $attributes = [], string $pricing = 'retail'): Order
     {
         $order = Order::query()->create(array_merge([
-            'number' => 'ORD-READY-'.uniqid(), 'status' => 'confirmed', 'customer_name' => 'Иван Покупатель',
+            'number' => 'ORD-READY-'.uniqid(), 'status' => 'processing', 'customer_name' => 'Иван Покупатель',
             'customer_phone' => '+375291112233', 'delivery_type' => 'pickup', 'payment_type' => 'cash',
             'payment_status' => 'pending', 'subtotal' => 100, 'total' => 100,
         ], $attributes));
@@ -136,6 +136,11 @@ class OneCOrderReadinessTest extends TestCase
             OrderItem::query()->create(['order_id' => $order->id, 'product_id' => $card?->id, 'product_name' => $name,
                 'price' => 100, 'quantity' => 1, 'total' => 100, 'pricing_type' => $pricing, 'fulfillment_confirmed_at' => now()]);
         }
+
+        app(\App\Services\Orders\OrderDeliveryPreparation::class)->confirm($order->fresh(), User::factory()->create(['role' => 'manager']), [
+            'method' => $order->delivery_type, 'from' => 'Тестовый склад', 'to' => 'Согласованный адрес выдачи',
+            'date' => now()->addDay()->toDateString(),
+        ]);
 
         return $order;
     }

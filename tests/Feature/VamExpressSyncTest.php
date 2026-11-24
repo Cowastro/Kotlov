@@ -160,7 +160,7 @@ class VamExpressSyncTest extends TestCase
 
     private function order(): Order
     {
-        return Order::create(['number' => 'ORD-VAM-TEST', 'status' => 'confirmed', 'customer_name' => 'Тестовый получатель',
+        return Order::create(['number' => 'ORD-VAM-TEST', 'status' => 'processing', 'customer_name' => 'Тестовый получатель',
             'customer_phone' => '+375291111111', 'delivery_type' => 'transport', 'payment_type' => 'bank_transfer',
             'payment_status' => 'pending', 'subtotal' => 100, 'total' => 128, 'delivery_price' => 28]);
     }

@@ -94,10 +94,10 @@ class DealByOrderAdminResourceTest extends TestCase
         $page->setActionData(['control_at' => now()->addDay()->toDateTimeString()])
             ->callMountedAction()->assertHasNoActionErrors();
         $order->refresh();
-        $this->assertSame('contacted', $order->deal_stage);
+        $this->assertSame('contacted', $order->effectiveDealStage());
         $this->assertSame('Согласовать доставку', $order->deal_next_action);
         $this->assertSame($manager->id, $order->manager_id);
-        $this->assertSame('new', $order->status);
+        $this->assertSame('checking', $order->status);
         $this->assertTrue($order->statusHistory()->where('user_id', $manager->id)
             ->where('deal_stage_to', 'contacted')->exists());
         $this->assertFalse(OrderResource::getEloquentQuery()->whereKey($order)->exists());

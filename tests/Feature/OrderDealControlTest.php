@@ -229,6 +229,9 @@ class OrderDealControlTest extends TestCase
     {
         Mail::fake();
         config()->set('onec.order_queue_enabled', false);
+        // This scenario exercises the standalone workflow, without export to 1C.
+        \App\Models\IntegrationSource::query()->where('code', 'onec')->update(['is_active' => false]);
+
         $manager = $this->manager();
         $this->actingAs($manager);
         $order = $this->order('confirmed');
