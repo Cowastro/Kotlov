@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\DB;
  */
 class OneCPrices
 {
-    public const ENTITY = 'InformationRegister_ЦеныНоменклатуры';
+    /** The records with their date: the register is subordinate to «Установка цен номенклатуры». */
+    public const ENTITY = 'InformationRegister_ЦеныНоменклатуры_RecordType';
 
     /** «Розничный тип цен» and «Оптовая цена» (manual, without VAT). */
     public const RETAIL = '7b0fbdc2-1ffa-11e9-bad6-1c1b0d1de7c2';
@@ -39,7 +40,7 @@ class OneCPrices
         $since = $full ? null : Cache::get(self::LAST_READ);
         $queries = [];
         foreach (['retail' => self::RETAIL, 'wholesale' => self::WHOLESALE] as $kind => $type) {
-            $filter = "ВидЦены_Key eq guid'".$type."'".($since ? " and Period ge datetime'".$since."'" : '');
+            $filter = "Active eq true and ВидЦены_Key eq guid'".$type."'".($since ? " and Period ge datetime'".$since."'" : '');
             for ($page = 0; $page < ($since ? 2 : self::FULL_PAGES); $page++) {
                 $queries[$kind.'_'.($page + 1)] = ODataReadTaskHandler::path(self::ENTITY, ['$filter' => $filter,
                     '$select' => 'Period,Номенклатура_Key,Цена', '$orderby' => 'Period desc', '$top' => (string) self::PAGE, '$skip' => (string) ($page * self::PAGE)]);
