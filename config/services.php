@@ -12,6 +12,9 @@ return [
         'checkout_enabled' => (bool) env('EVROPOCHTA_CHECKOUT_ENABLED', true),
         'checkout_origin' => (int) env('EVROPOCHTA_CHECKOUT_ORIGIN', 70130010),
     ],
+    'vam_express' => [
+        'terminal_address' => env('VAM_EXPRESS_TERMINAL_ADDRESS', 'г. Минск, ул. Западная, 19а'),
+    ],
     'accounting' => [
         'email' => env('ACCOUNTING_EMAIL', 'buh-sbg@yandex.ru'),
     ],
