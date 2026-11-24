@@ -164,7 +164,7 @@ class EvropochtaOrderShipmentTest extends TestCase
             'receiver_name' => 'Иван', 'receiver_surname' => 'Петров', 'receiver_phone_number' => '375291234567',
         ], $request->data());
         $this->assertSame(self::TRACK, $order->fresh()->evropochta_tracking_number);
-        $this->assertSame('confirmed', $order->fresh()->status);
+        $this->assertSame('processing', $order->fresh()->status);
         $this->assertSame(self::TRACK, app(EvropochtaOrderShipment::class)->create($order, $this->recipient()));
         Http::assertSentCount(1);
 
@@ -234,7 +234,7 @@ class EvropochtaOrderShipmentTest extends TestCase
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
             && $request->hasHeader('Token', 'evropochta-test'));
         $this->assertSame(self::TRACK, $order->fresh()->evropochta_tracking_number);
-        $this->assertSame('confirmed', $order->fresh()->status);
+        $this->assertSame('processing', $order->fresh()->status);
     }
 
     public function test_cancellation_checks_the_current_status_even_if_the_button_was_visible(): void
@@ -514,7 +514,7 @@ class EvropochtaOrderShipmentTest extends TestCase
     private function order(array $attributes = []): Order
     {
         $order = Order::query()->create([
-            'number' => 'ORD-EVROPOCHTA-TEST', 'status' => 'confirmed',
+            'number' => 'ORD-EVROPOCHTA-TEST', 'status' => 'processing',
             'customer_name' => 'Иван Петров', 'customer_phone' => '+375 (29) 123-45-67',
             'delivery_type' => 'evropochta', 'payment_type' => 'bank_transfer', 'payment_status' => 'paid',
             'subtotal' => 100, 'total' => 117.5, 'delivery_price' => 17.5,

@@ -5,6 +5,8 @@ namespace App\Jobs;
 use App\Models\Order;
 use App\Services\Shipping\EvropochtaCheckout;
 use App\Services\SmsByClient;
+use App\Services\Orders\EvropochtaTrackingSmsJournal;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Queue\Queueable;
 use RuntimeException;
 
@@ -32,13 +34,19 @@ final class SendEvropochtaTrackingSms
 
         if (! self::configured()) {
             $pending->update(['evropochta_sms_status' => 'unavailable']);
+            if ($order = (clone $shipment)->first()) app(EvropochtaTrackingSmsJournal::class)->sync($order);
 
             return;
         }
 
         // A timeout may mean SMS.BY accepted the request. Claim the attempt
         // before calling the provider so a replay cannot send a second SMS.
-        if ($pending->where('status', '!=', 'cancelled')->update(['evropochta_sms_status' => 'unconfirmed']) !== 1) {
+        $claimed = DB::transaction(function () use ($pending, $shipment): bool {
+            $claimed = $pending->where('status', '!=', 'cancelled')->update(['evropochta_sms_status' => 'unconfirmed']) === 1;
+            if ($order = (clone $shipment)->first()) app(EvropochtaTrackingSmsJournal::class)->sync($order);
+            return $claimed;
+        });
+        if (! $claimed) {
             return;
         }
 
@@ -52,10 +60,15 @@ final class SendEvropochtaTrackingSms
             return;
         }
 
-        $shipment->update([
-            'evropochta_sms_status' => 'accepted',
-            'evropochta_sms_id' => $id,
-            'evropochta_sms_sent_at' => now(),
-        ]);
+        DB::transaction(function () use ($shipment, $id): void {
+            $shipment->update([
+                'evropochta_sms_status' => 'accepted',
+                'evropochta_sms_id' => $id,
+                'evropochta_sms_sent_at' => now(),
+            ]);
+            DB::table('order_status_sms')->where('order_id', $this->orderId)
+                ->where('event_key', EvropochtaTrackingSmsJournal::eventKey($this->trackingNumber))
+                ->update(['state' => 'accepted', 'sms_id' => $id, 'sent_at' => now(), 'updated_at' => now()]);
+        });
     }
 }

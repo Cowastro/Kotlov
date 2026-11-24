@@ -1291,12 +1291,16 @@ class OrderInfolist
                                         'unconfirmed' => 'Отправка не подтверждена',
                                         'no_phone' => 'Нет корректного телефона',
                                         'outdated' => 'Пропущено: этап уже изменился',
+                                        'tracking_pending' => 'В очереди СМС с треком',
+                                        'unavailable' => 'Сервис СМС не настроен',
+                                        'skipped' => 'Уведомление отключено',
                                         default => 'Ожидает отправки',
                                     }),
                                 TextEntry::make('sent_at')
                                     ->label('Время отправки')
                                     ->dateTime('d.m.Y H:i')
                                     ->placeholder('—'),
+                                TextEntry::make('sms_id')->label('ID сообщения SMS.BY')->placeholder('—'),
                             ]),
 
                         RepeatableEntry::make('statusHistory')
