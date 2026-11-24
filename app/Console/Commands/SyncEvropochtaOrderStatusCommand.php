@@ -22,7 +22,12 @@ class SyncEvropochtaOrderStatusCommand extends Command
         }
         Cache::lock('evropochta-status-sync', 180)->get(function () use ($carrier, $progress): void {
             $orders = Order::where('delivery_type', 'evropochta')->whereNotNull('evropochta_tracking_number')
-                ->whereNotIn('status', ['cancelled', 'delivered'])->whereNull('archived_at')
+                ->where(function ($query): void {
+                    $query->where(fn ($q) => \App\Support\Shipping\EvropochtaStatus::scope($q, 'work'))
+                        // Read a previously unverified archived track once, preserving rate limits and no customer notifications.
+                        ->orWhereNull('carrier_checked_at')->orWhereNull('carrier_reference')
+                        ->orWhereColumn('carrier_reference', '!=', 'evropochta_tracking_number');
+                })
                 ->where(fn ($q) => $q->whereNull('carrier_polled_at')->orWhere('carrier_polled_at', '<=', now()->subMinutes(30)))
                 ->orderBy('carrier_polled_at')->orderBy('id')->limit(5)->get();
             foreach ($orders as $order) {

@@ -40,7 +40,7 @@ class EvropochtaShipmentSummary
     public static function status(Order $order): string
     {
         $number = $order->evropochta_tracking_number;
-        if (blank($number)) return 'Не оформлено';
+        if (blank($number)) return $order->status === 'cancelled' ? 'Заказ отменён · отправление не оформлено' : 'Не оформлено';
         if ($order->carrier_provider === 'evropochta' && $order->carrier_reference === $number && filled($order->carrier_status_text)) {
             return $order->carrier_status_text;
         }
