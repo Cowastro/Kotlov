@@ -25,7 +25,7 @@ class ManageOrderDealAction
             ->label('Этап сделки и контроль')
             ->icon('heroicon-o-adjustments-horizontal')
             ->modalHeading('Этап сделки и следующий шаг')
-            ->modalDescription('Переход на исполнение, передачу или завершение выполняет соответствующее действие заказа. Укажите ответственного и следующий шаг. Отложенный заказ вернётся на контроль в указанное время.')
+            ->modalDescription('Шкала следует состоянию заказа. Можно сохранить контроль текущего этапа или выполнить следующий шаг: проверку, принятие в обработку, комплектацию, доставку и получение. Отложенный заказ вернётся на контроль в указанное время.')
             ->modalSubmitActionLabel('Сохранить')
             ->modalWidth('lg')
             ->visible(fn (Order $record): bool => $record->dealIsActive())
@@ -46,7 +46,11 @@ class ManageOrderDealAction
                 Hidden::make('status')->required(),
                 Hidden::make('expected_manager_id'),
                 Hidden::make('expected_assigned_to'),
-                Select::make('stage')->label('Этап сделки')->options(Order::DEAL_STAGES)
+                Select::make('stage')->label('Этап заказа')->options(function (Order $record): array {
+                    $keys = array_keys(Order::DEAL_STAGES);
+                    $index = array_search($record->effectiveDealStage(), $keys, true);
+                    return array_slice(Order::DEAL_STAGES, $index, 2, true);
+                })
                     ->helperText('При переходе проверяется готовность заказа. Пропустить неподтверждённый этап нельзя.')
                     ->live()->required(),
                 Select::make('manager_id')->label('Ответственный')

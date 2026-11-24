@@ -18,12 +18,12 @@ use Illuminate\Support\Facades\DB;
 class Order extends Model
 {
     public const DEAL_STAGES = [
-        'received' => 'Получен',
-        'contacted' => 'Связались',
-        'agreed' => 'Условия согласованы',
-        'processing' => 'Исполнение',
-        'handover' => 'Передача клиенту',
-        'completed' => 'Завершён',
+        'received' => 'Принят',
+        'contacted' => 'Проверка',
+        'agreed' => 'В обработке',
+        'processing' => 'Комплектация',
+        'handover' => 'Доставка',
+        'completed' => 'Получен',
     ];
 
     public function fulfillmentDealStage(): string
@@ -34,6 +34,8 @@ class Order extends Model
     public static function fulfillmentDealStageForStatus(?string $status): string
     {
         return match ($status) {
+            'checking' => 'contacted',
+            'confirmed' => 'agreed',
             'processing', 'waiting_payment', 'paid' => 'processing',
             'shipped' => 'handover',
             'delivered', 'completed' => 'completed',
@@ -43,11 +45,9 @@ class Order extends Model
 
     public function effectiveDealStage(): string
     {
-        $keys = array_keys(self::DEAL_STAGES);
-        $stored = array_search($this->deal_stage, $keys, true);
-        $actual = array_search($this->fulfillmentDealStage(), $keys, true);
-
-        return $keys[max($stored === false ? 0 : $stored, $actual)];
+        // Old manual CRM marks must not claim a check, dispatch or receipt
+        // that has not happened in the order workflow.
+        return $this->fulfillmentDealStage();
     }
 
     /** @return array<string, OrderStatusHistory> */
@@ -389,10 +389,32 @@ class Order extends Model
             && blank($this->evropochta_tracking_number);
     }
 
+    public function executionTransferPending(): bool
+    {
+        return $this->exists && $this->status === 'confirmed' && app(\App\Services\Integrations\OneCBridge\OneCAgentTasks::class)
+            ->activeFor($this, \App\Services\Integrations\OneCBridge\OrderTaskHandler::TYPE) !== null;
+    }
+
     public function workflowNextStep(): string
     {
+        if (in_array($this->status, ['delivered', 'completed', 'cancelled'], true)) {
+            return $this->status === 'cancelled'
+                ? 'Заказ закрыт. Дальнейшая передача не требуется.'
+                : 'Заказ получен. Проверить оплату и взаиморасчёты.';
+        }
+
         if ($this->usesGuidedFulfillment() && $this->needsFulfillmentConfirmation()) {
             return 'Нажмите «Принять весь заказ»: проверьте доступное и ожидаемое количество по всем позициям.';
+        }
+
+        if ($this->status === 'shipped' && $this->customerCarrierLabel()) {
+            return $this->customerCarrierLabel().'. '.$this->customerCarrierDescription();
+        }
+
+        if (filled($this->onec_order_guid) && ! $this->onec_deleted && in_array($this->status, ['confirmed', 'processing', 'shipped'], true)) {
+            return $this->status === 'shipped'
+                ? 'Заказ отгружен. Ожидаем подтверждение получения от перевозчика или отметку о вручении нашим транспортом.'
+                : 'Заказ принят в работу. Комплектация и обеспечение обновляются из 1С; после отгрузки ожидаем данные доставки и получения.';
         }
 
         if ($this->needsEvropochtaShipment()) {
@@ -401,8 +423,8 @@ class Order extends Model
             return $this->procurementStep().$tariffStep.'В меню «Европочта» нажмите «Оформить Европочту и открыть ярлык». Трек-номер сохранится в заказе. Распечатайте ярлык, затем нажмите «Передать в доставку».';
         }
 
-        if (filled($this->onec_order_guid) && ! $this->onec_deleted && in_array($this->status, ['confirmed', 'processing', 'shipped'], true)) {
-            return 'Заказ в 1С ('.$this->onec_order_number.'): его ведут в 1С, этапы «В исполнении» и «Доставлен» сайт ставит сам по статусу 1С.';
+        if ($this->executionTransferPending()) {
+            return 'Заказ принят в обработку. Передача в исполнение уже запущена — дождитесь результата; повторно отправлять заказ не нужно.';
         }
 
         return match ($this->status) {

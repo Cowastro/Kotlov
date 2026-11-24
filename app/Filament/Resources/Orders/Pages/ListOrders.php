@@ -187,9 +187,6 @@ class ListOrders extends ListRecords
 
     private function completedDeals(Builder $query): Builder
     {
-        return $query->where('status', '!=', 'cancelled')
-            ->where(fn (Builder $completed): Builder => $completed
-                ->whereIn('status', ['delivered', 'completed'])
-                ->orWhere('deal_stage', 'completed'));
+        return $query->whereIn('status', ['delivered', 'completed']);
     }
 }

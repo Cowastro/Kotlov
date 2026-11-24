@@ -30,21 +30,20 @@ class OrderDealControl
                 throw ValidationException::withMessages(['stage' => 'Заказ изменил другой сотрудник. Обновите страницу и повторите действие.']);
             }
 
-            $stages = array_keys(Order::DEAL_STAGES);
             $stage = (string) ($data['stage'] ?? '');
             if (! isset(Order::DEAL_STAGES[$stage])) {
                 throw ValidationException::withMessages(['stage' => 'Выберите этап сделки.']);
             }
-            $actualIndex = array_search($locked->fulfillmentDealStage(), $stages, true);
-            $targetIndex = array_search($stage, $stages, true);
             $nextFulfillmentStage = match ($locked->status) {
+                'new' => 'contacted',
+                'checking' => 'agreed',
                 'confirmed' => 'processing',
                 'processing' => 'handover',
                 'shipped' => 'completed',
                 default => null,
             };
             $advance = $stage === $nextFulfillmentStage;
-            if (! $advance && ($targetIndex < $actualIndex || ($targetIndex > 2 && $stage !== $locked->fulfillmentDealStage()))) {
+            if (! $advance && $stage !== $locked->fulfillmentDealStage()) {
                 throw ValidationException::withMessages(['stage' => 'Этап должен соответствовать исполнению заказа. Сначала подтвердите наличие и предыдущий этап исполнения.']);
             }
             if ($advance && ($blocker = app(OrderWorkflow::class)->blocker($locked))) {
@@ -53,9 +52,6 @@ class OrderDealControl
 
             $beforeStage = $locked->effectiveDealStage();
             $comment = trim((string) ($data['comment'] ?? ''));
-            if ($targetIndex < array_search($beforeStage, $stages, true) && $comment === '') {
-                throw ValidationException::withMessages(['comment' => 'Укажите причину возврата на предыдущий этап.']);
-            }
             $nextAction = trim((string) ($data['next_action'] ?? ''));
             $controlAt = filled($data['control_at'] ?? null) ? Carbon::parse($data['control_at']) : null;
             if ($stage !== 'completed' && ($nextAction === '' || ! $controlAt || $controlAt->isPast())) {
@@ -71,8 +67,8 @@ class OrderDealControl
                 throw ValidationException::withMessages(['manager_id' => 'Выберите действующего менеджера.']);
             }
             $onHold = $stage !== 'completed' && (bool) ($data['on_hold'] ?? false);
-            // Fulfillment stages follow the actual order status, including later corrections.
-            $storedStage = $targetIndex > 2 ? ($locked->deal_stage ?: 'received') : $stage;
+            // Requested steps are recorded only after the workflow succeeds.
+            $storedStage = $locked->fulfillmentDealStage();
             $previous = collect([
                 Order::DEAL_STAGES[$beforeStage], $locked->deal_next_action,
                 $locked->deal_control_at?->timezone('Europe/Minsk')->format('d.m.Y H:i'),

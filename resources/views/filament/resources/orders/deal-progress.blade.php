@@ -2,9 +2,9 @@
     $order = $getRecord();
     $stages = \App\Models\Order::DEAL_STAGES;
     $history = $order->dealStageHistory();
-    $compactLabels = ['received' => 'Получен', 'contacted' => 'Контакт', 'agreed' => 'Условия',
-        'processing' => 'В работе', 'handover' => 'Передача', 'completed' => 'Завершён'];
-    $mobileLabels = array_replace($compactLabels, ['handover' => 'Выдача', 'completed' => 'Готово']);
+    $compactLabels = ['received' => 'Принят', 'contacted' => 'Проверка', 'agreed' => 'Обработка',
+        'processing' => 'Сборка', 'handover' => 'Доставка', 'completed' => 'Получен'];
+    $mobileLabels = $compactLabels;
     $currentIndex = array_search($order->effectiveDealStage(), array_keys($stages), true);
     $active = $order->dealIsActive();
     $completed = $order->effectiveDealStage() === 'completed' && $order->status !== 'cancelled';
@@ -28,7 +28,7 @@
     }
 @endphp
 <section class="order-deal {{ $isTable ? 'order-deal--compact' : 'order-deal--full' }}"
-    wire:key="order-deal-layout-v3-{{ $order->getKey() }}-{{ $isTable ? 'table' : 'card' }}-{{ $order->effectiveDealStage() }}"
+    wire:key="order-deal-layout-v4-{{ $order->getKey() }}-{{ $isTable ? 'table' : 'card' }}-{{ $order->effectiveDealStage() }}"
     style="display:block;flex:none;{{ $isTable ? 'width:384px;min-width:384px;max-width:384px;' : 'width:100%;min-width:0;' }}">
     <div class="order-deal__heading">
         <strong title="Исполнение заказа · {{ \App\Models\Order::STATUSES[$order->status] ?? $order->status }}">{{ $order->status === 'cancelled' ? 'Закрыт с причиной' : $stages[$order->effectiveDealStage()] }}</strong>
@@ -52,8 +52,8 @@
             @endphp
             <button type="button"
                 class="order-deal__step {{ $loop->index < $currentIndex || $completed ? 'is-done' : '' }} {{ $loop->index === $currentIndex && ! $completed ? 'is-current' : '' }}"
-                @disabled(! $active)
-                @if ($active) wire:click.stop="mountAction('manageDeal', @js(['stage' => $key]), @js($context))" @endif
+                @disabled(! $active || $loop->index < $currentIndex || $loop->index > $currentIndex + 1)
+                @if ($active && $loop->index >= $currentIndex && $loop->index <= $currentIndex + 1) wire:click.stop="mountAction('manageDeal', @js(['stage' => $key]), @js($context))" @endif
                 title="{{ $hint }}"
                 aria-label="{{ $label }}"
                 aria-description="{{ $hint }}"
