@@ -202,7 +202,8 @@ class OneCOrderExport
     private function deliveryMethod(Order $order, OneCOrderProfile $profile): ?string
     {
         return match ($order->delivery_type) {
-            'evropochta' => 'ДоПеревозчика',
+            // the carrier takes it to the customer; «ДоПеревозчика» is not in this 1C (task 209)
+            'evropochta' => 'СиламиПеревозчикаПоАдресу',
             'pickup' => 'Самовывоз',
             default => $profile->header['СпособДоставки'] ?? null,
         };
