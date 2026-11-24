@@ -234,6 +234,9 @@ class SyncRnProfiCommand extends Command
         try {
             $file = $this->resolvePriceFile();
             $rows = $this->readPriceRows($file);
+            if ($rows === []) {
+                throw new \RuntimeException('RN-Profi source contains no usable product rows. Check the tab identity, headers and source prices; no data was updated.');
+            }
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
             return self::FAILURE;
@@ -524,7 +527,8 @@ class SyncRnProfiCommand extends Command
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         if ($extension === 'csv') {
             $raw = $this->csvToRows((string) file_get_contents($path));
-            return $this->normaliseSheetRows('csv', $raw);
+            $sheetName = trim((string) $this->option('google-csv-sheet'));
+            return $this->normaliseSheetRows($sheetName !== '' ? $sheetName : pathinfo($path, PATHINFO_FILENAME), $raw);
         }
 
         $content = (string) file_get_contents($path);
@@ -586,7 +590,8 @@ class SyncRnProfiCommand extends Command
             $retail = $this->money($this->cell($row, $columns, 'retail_price'));
             $stockText = $this->cell($row, $columns, 'stock');
             $qty = $this->quantity($this->cell($row, $columns, 'qty'));
-            $qtyIsPackage = $this->quantityColumnIsPackage($sheetName, $raw[$headerIndex][$columns['qty'] ?? -1] ?? '');
+            $packageQuantity = $this->quantity($this->cell($row, $columns, 'package_qty'));
+            $qtyIsPackage = isset($columns['package_qty']) && ! isset($columns['qty']);
             $brand = $this->cell($row, $columns, 'brand');
             $category = $this->cell($row, $columns, 'category');
 
@@ -616,6 +621,7 @@ class SyncRnProfiCommand extends Command
                 'retail_price' => $retail,
                 'stock_text' => $stockText,
                 'qty' => $qty,
+                'package_quantity' => $packageQuantity,
                 'qty_is_package' => $qtyIsPackage,
             ];
         }
@@ -631,10 +637,13 @@ class SyncRnProfiCommand extends Command
 
         foreach (array_slice($rows, 0, 80, true) as $index => $row) {
             $columns = [];
+            $priorities = [];
             foreach ($row as $columnIndex => $value) {
                 $key = $this->headerKey((string) ($value ?? ''));
-                if ($key !== null && ! isset($columns[$key])) {
+                $priority = $key !== null ? $this->headerPriority($key, (string) ($value ?? '')) : 0;
+                if ($key !== null && (! isset($columns[$key]) || $priority > $priorities[$key])) {
                     $columns[$key] = (int) $columnIndex;
+                    $priorities[$key] = $priority;
                 }
             }
 
@@ -663,14 +672,6 @@ class SyncRnProfiCommand extends Command
         return [$bestIndex, $this->inferMissingColumns($rows, $bestIndex, $bestColumns)];
     }
 
-    private function quantityColumnIsPackage(string $sheetName, mixed $headerValue): bool
-    {
-        $text = mb_strtolower($this->clean($sheetName . ' ' . (string) ($headerValue ?? '')));
-
-        return str_contains($text, 'varmega')
-            && (str_contains($text, 'упаков') || str_contains($text, 'kolichestvo v upakovke'));
-    }
-
     private function headerKey(string $value): ?string
     {
         $value = $this->normaliseHeader($value);
@@ -679,6 +680,9 @@ class SyncRnProfiCommand extends Command
         }
 
         $aliases = [
+            // Packaging is a separate fact for every brand and input format.
+            // Match it before the broad quantity aliases below.
+            'package_qty' => ['количество в упаковке', 'кол-во в упаковке', 'количество в упак', 'кол-во в упак', 'упаковка, шт', 'упаковка шт', 'штук в упаковке', 'kolichestvo v upakovke'],
             'article' => ['артикул', 'код', 'код товара', 'sku', 'vendor code', 'номенклатурный номер'],
             'brand' => ['бренд', 'производитель', 'тм', 'торговая марка', 'brand'],
             'name' => ['наименование', 'название', 'товар', 'модель', 'номенклатура', 'размер', 'радиатор', 'радиаторы', 'name'],
@@ -700,15 +704,32 @@ class SyncRnProfiCommand extends Command
         return null;
     }
 
+    private function headerPriority(string $key, string $value): int
+    {
+        $value = $this->normaliseHeader($value);
+        if ($key === 'name') {
+            return match (true) {
+                in_array($value, ['наименование', 'название', 'товар', 'модель', 'номенклатура', 'name'], true) => 3,
+                in_array($value, ['размер', 'радиатор', 'радиаторы'], true) => 2,
+                default => 1,
+            };
+        }
+
+        // Keep the existing article-column choice (old/new codes may both be present).
+        return 1;
+    }
+
     private function inferMissingColumns(array $rows, int $headerIndex, array $columns): array
     {
         $priceColumn = $columns['price'] ?? $columns['retail_price'] ?? null;
         $header = $rows[$headerIndex] ?? [];
 
-        if (! isset($columns['name']) && $priceColumn !== null) {
+        $nameIsSectionHeading = isset($columns['name'])
+            && $this->headerPriority('name', (string) ($header[$columns['name']] ?? '')) < 2;
+        if ((! isset($columns['name']) || $nameIsSectionHeading) && $priceColumn !== null) {
             $candidates = [];
             for ($i = 0; $i < $priceColumn; $i++) {
-                if (isset($columns['stock'], $columns['qty']) && in_array($i, [$columns['stock'], $columns['qty']], true)) {
+                if (in_array($i, [$columns['stock'] ?? -1, $columns['qty'] ?? -1, $columns['package_qty'] ?? -1, $columns['article'] ?? -1], true)) {
                     continue;
                 }
 
@@ -742,7 +763,7 @@ class SyncRnProfiCommand extends Command
             $candidates = [];
 
             foreach (range($priceColumn + 1, $priceColumn + 4) as $candidate) {
-                if (in_array($candidate, [$columns['stock'] ?? -1, $columns['qty'] ?? -1, $columns['name'] ?? -1, $columns['article'] ?? -1], true)) {
+                if (in_array($candidate, [$columns['stock'] ?? -1, $columns['qty'] ?? -1, $columns['package_qty'] ?? -1, $columns['name'] ?? -1, $columns['article'] ?? -1], true)) {
                     continue;
                 }
 
@@ -935,7 +956,7 @@ class SyncRnProfiCommand extends Command
         }
 
         $match = $this->match($row, $brandId);
-        $stock = $this->stock($row['stock_text'], $row['qty']);
+        $stock = $this->stock($row['stock_text'], ($row['qty_is_package'] ?? false) ? null : $row['qty']);
 
         $action = match (true) {
             $row['price'] === null => 'price_missing',
@@ -4118,7 +4139,7 @@ PROMPT;
                 'brand' => $row['brand'],
                 'category' => $row['category_text'],
                 'retail_price' => $row['retail_price'],
-                'package_quantity' => ($row['qty_is_package'] ?? false) ? $row['qty'] : null,
+                'package_quantity' => $row['package_quantity'] ?? (($row['qty_is_package'] ?? false) ? $row['qty'] : null),
                 'quantity_is_package' => (bool) ($row['qty_is_package'] ?? false),
                 'source' => $row['raw_source'] ?? [],
             ], JSON_UNESCAPED_UNICODE),
@@ -4320,8 +4341,8 @@ PROMPT;
     private function stock(string $text, ?float $qty): array
     {
         $low = mb_strtolower($this->clean($text));
-        if ($qty !== null && $qty > 0) {
-            return ['status' => 'in_stock', 'in_stock' => true, 'delivery_days' => 0];
+        if (str_contains($low, 'нет') || str_contains($low, 'отсут') || str_contains($low, 'снят')) {
+            return ['status' => 'out_of_stock', 'in_stock' => false, 'delivery_days' => null];
         }
         if (str_contains($low, 'ожидается') || str_contains($low, 'ожид') || str_contains($low, 'скоро')) {
             return ['status' => 'expected', 'in_stock' => false, 'delivery_days' => 3];
@@ -4329,16 +4350,10 @@ PROMPT;
         if (str_contains($low, 'под заказ') || str_contains($low, 'заказ')) {
             return ['status' => 'preorder', 'in_stock' => false, 'delivery_days' => null];
         }
-        if (str_contains($low, 'нет') || str_contains($low, 'отсут') || str_contains($low, 'снят')) {
-            return ['status' => 'out_of_stock', 'in_stock' => false, 'delivery_days' => null];
-        }
-        if (str_contains($low, 'есть') || str_contains($low, 'налич') || str_contains($low, 'склад')) {
+        if ($qty !== null && $qty > 0) {
             return ['status' => 'in_stock', 'in_stock' => true, 'delivery_days' => 0];
         }
-        if (str_contains($low, 'под заказ') || str_contains($low, 'заказ')) {
-            return ['status' => 'preorder', 'in_stock' => false, 'delivery_days' => null];
-        }
-        if (str_contains($low, 'нет') || str_contains($low, 'отсут') || str_contains($low, 'снят')) {
+        if ($qty !== null && $qty <= 0) {
             return ['status' => 'out_of_stock', 'in_stock' => false, 'delivery_days' => null];
         }
         if (str_contains($low, 'есть') || str_contains($low, 'налич') || str_contains($low, 'склад')) {
