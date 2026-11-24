@@ -17,13 +17,29 @@ class OrderStatusHistory extends Model
 
     public function enteredDealStage(): ?string
     {
+        if ($this->status_from !== $this->status_to) {
+            $from = Order::fulfillmentDealStageForStatus($this->status_from);
+            $to = Order::fulfillmentDealStageForStatus($this->status_to);
+            return $this->status_to === 'cancelled' ? null
+                : ($from !== $to || ($this->status_from === null && $this->status_to === 'new') ? $to : null);
+        }
+
+        // Historical contact/agreement marks were CRM notes, not a check or
+        // customer confirmation. Keep their history without attributing them
+        // to the new operational scale.
+        if (in_array($this->deal_stage_to, ['received', 'contacted', 'agreed'], true)) {
+            return null;
+        }
+
         if (isset(Order::DEAL_STAGES[$this->deal_stage_to]) && $this->deal_stage_from !== $this->deal_stage_to) {
             return $this->deal_stage_to;
         }
 
         // Read stage changes already recorded before structured stage fields were added.
         if (preg_match('/\AКонтроль сделки\. Было: ([^\r\n·]+).*?\r?\nСтало: ([^\r\n·]+)/us', (string) $this->comment, $matches)) {
-            $keys = array_flip(Order::DEAL_STAGES);
+            $keys = array_flip(Order::DEAL_STAGES) + [
+                'Исполнение' => 'processing', 'Передача клиенту' => 'handover', 'Завершён' => 'completed',
+            ];
             $from = $keys[trim($matches[1])] ?? null;
             $to = $keys[trim($matches[2])] ?? null;
 

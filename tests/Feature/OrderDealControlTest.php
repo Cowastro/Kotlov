@@ -21,11 +21,59 @@ class OrderDealControlTest extends TestCase
 
     public function test_existing_orders_derive_their_stage_from_fulfillment(): void
     {
-        foreach (['new' => 'received', 'processing' => 'processing', 'shipped' => 'handover', 'delivered' => 'completed'] as $status => $stage) {
+        foreach (['new' => 'received', 'checking' => 'contacted', 'confirmed' => 'agreed', 'processing' => 'processing', 'shipped' => 'handover', 'delivered' => 'completed'] as $status => $stage) {
             $order = $this->order($status);
             $this->assertSame($stage, $order->effectiveDealStage());
         }
         $this->assertFalse($this->order('cancelled')->dealIsActive());
+    }
+
+    public function test_confirmed_order_uses_third_step_despite_stale_manual_marks(): void
+    {
+        $order = $this->order('confirmed');
+        $order->forceFill(['deal_stage' => 'received'])->save();
+        $html = view('filament.resources.orders.deal-progress', ['getRecord' => fn () => $order])->render();
+        $this->assertStringContainsString('В обработке</strong>', $html);
+        $this->assertStringContainsString('3 / 6', $html);
+        $order->forceFill(['deal_stage' => 'completed'])->save();
+        $this->assertSame('agreed', $order->effectiveDealStage());
+        $this->assertFalse($order->canRequestCustomerReview());
+    }
+
+    public function test_pending_agent_transfer_does_not_offer_duplicate_execution(): void
+    {
+        $order = $this->order('confirmed');
+        \App\Models\OneCAgentTask::create([
+            'type' => \App\Services\Integrations\OneCBridge\OrderTaskHandler::TYPE,
+            'subject_type' => $order->getMorphClass(), 'subject_id' => $order->id,
+            'title' => 'Передача заказа', 'status' => 'queued',
+        ]);
+        $this->assertNull(app(\App\Services\Orders\OrderWorkflow::class)->step($order));
+        $this->assertStringContainsString('повторно отправлять заказ не нужно', $order->workflowNextStep());
+        $this->assertSame('agreed', $order->effectiveDealStage());
+    }
+
+    public function test_label_is_not_dispatch_and_dispatch_is_not_receipt(): void
+    {
+        $order = $this->order('processing');
+        $order->forceFill(['carrier_stage' => 'created', 'deal_stage' => 'completed'])->save();
+        $this->assertSame('processing', $order->effectiveDealStage());
+        $order->forceFill(['status' => 'shipped', 'carrier_stage' => 'transit'])->save();
+        $this->assertSame('handover', $order->effectiveDealStage());
+        $this->assertStringContainsString('В пути', $order->workflowNextStep());
+        $order->forceFill(['status' => 'delivered', 'carrier_stage' => 'delivered'])->save();
+        $html = view('filament.resources.orders.deal-progress', ['getRecord' => fn () => $order])->render();
+        $this->assertSame('completed', $order->effectiveDealStage());
+        $this->assertStringNotContainsString('is-current', $html);
+        $this->assertSame(6, substr_count($html, 'is-done'));
+    }
+
+    public function test_checking_to_confirmation_uses_availability_gate(): void
+    {
+        $manager = $this->manager();
+        $order = $this->order('checking');
+        $this->expectException(ValidationException::class);
+        $this->save($order, $manager, ['stage' => 'agreed']);
     }
 
     public function test_manager_can_change_stage_and_schedule_control_from_the_order_list(): void
@@ -57,10 +105,10 @@ class OrderDealControlTest extends TestCase
             \Illuminate\Support\Carbon::parse($localDeadline, 'Europe/Minsk')->utc()->format('Y-m-d H:i:s'),
             $order->deal_control_at->utc()->format('Y-m-d H:i:s'),
         );
-        $event = $order->statusHistory()->latest('id')->first();
+        $event = $order->statusHistory()->where('comment', 'like', 'Контроль сделки.%')->latest('id')->first();
         $this->assertSame($manager->id, $event->user_id);
         $this->assertStringContainsString('Уточнить адрес доставки', $event->comment);
-        $this->assertStringContainsString('Связались', $event->comment);
+        $this->assertStringContainsString('Проверка', $event->comment);
 
         Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->getRouteKey()])
             ->assertSee('Уточнить адрес доставки')
@@ -122,20 +170,18 @@ class OrderDealControlTest extends TestCase
         $this->save($this->order(), $customer);
     }
 
-    public function test_returning_to_an_earlier_stage_requires_a_recorded_reason(): void
+    public function test_manual_marks_cannot_rewind_actual_fulfillment(): void
     {
         $manager = $this->manager();
-        $order = $this->order();
-        $this->save($order, $manager, ['stage' => 'agreed']);
+        $order = $this->order('confirmed');
         try {
-            $this->save($order->fresh(), $manager, ['stage' => 'contacted']);
-            $this->fail('Returning to a previous stage requires a reason.');
+            $this->save($order->fresh(), $manager, ['stage' => 'contacted', 'comment' => 'Клиент изменил комплектацию']);
+            $this->fail('A control note must not rewind actual fulfillment.');
         } catch (ValidationException $exception) {
-            $this->assertArrayHasKey('comment', $exception->errors());
+            $this->assertArrayHasKey('stage', $exception->errors());
         }
-        $this->save($order->fresh(), $manager, ['stage' => 'contacted', 'comment' => 'Клиент изменил комплектацию']);
-        $this->assertSame('contacted', $order->fresh()->effectiveDealStage());
-        $this->assertStringContainsString('Клиент изменил комплектацию', $order->statusHistory()->latest('id')->first()->comment);
+        $this->assertSame('agreed', $order->fresh()->effectiveDealStage());
+        $this->assertSame('confirmed', $order->fresh()->status);
     }
 
     public function test_tooltip_keeps_the_stage_author_and_time_when_control_is_rescheduled(): void
@@ -143,7 +189,8 @@ class OrderDealControlTest extends TestCase
         $this->travelTo(now()->setTime(9, 0));
         $manager = $this->manager();
         $colleague = $this->manager();
-        $order = $this->save($this->order(), $manager);
+        $this->actingAs($manager);
+        $order = $this->save($this->order(), $manager, ['stage' => 'contacted']);
         $enteredAt = now()->copy();
         $this->travel(2)->hours();
         $order = $this->save($order, $colleague, ['next_action' => 'Повторно позвонить', 'manager_id' => $colleague->id]);
@@ -152,10 +199,10 @@ class OrderDealControlTest extends TestCase
         $this->assertSame($manager->id, $event->user_id);
         $this->assertTrue($event->created_at->equalTo($enteredAt));
         $html = view('filament.resources.orders.deal-progress', ['getRecord' => fn () => $order, 'isTable' => true])->render();
-        $hint = "Связались\n".$manager->name."\n".$enteredAt->timezone('Europe/Minsk')->format('d.m.Y H:i').' (Минск)';
+        $hint = "Проверка\n".$manager->name."\n".$enteredAt->timezone('Europe/Minsk')->format('d.m.Y H:i').' (Минск)';
         $this->assertStringContainsString('title="'.e($hint).'"', $html);
-        $this->assertStringContainsString('>Условия</span>', $html);
-        $this->assertStringContainsString('>Передача</span>', $html);
+        $this->assertStringContainsString('>Обработка</span>', $html);
+        $this->assertStringContainsString('>Доставка</span>', $html);
     }
 
     public function test_legacy_stage_history_ignores_reminder_edits_and_requested_transitions(): void
@@ -175,8 +222,7 @@ class OrderDealControlTest extends TestCase
             ]);
         }
         $history = $order->load('statusHistory.user')->dealStageHistory();
-        $this->assertSame(['contacted'], array_keys($history));
-        $this->assertSame($entered->id, $history['contacted']->id);
+        $this->assertSame([], $history);
     }
 
     public function test_later_stages_use_the_existing_order_workflow_and_finish_control(): void
@@ -264,7 +310,7 @@ class OrderDealControlTest extends TestCase
         $this->assertSame(0, $notifier->notify());
     }
 
-    public function test_completed_queue_includes_all_finished_deals_without_sms_or_review_conditions(): void
+    public function test_completed_queue_uses_receipt_and_ignores_old_manual_completion_marks(): void
     {
         $manager = $this->manager();
         $delivered = $this->order('delivered');
@@ -276,8 +322,8 @@ class OrderDealControlTest extends TestCase
         Livewire::actingAs($manager)->test(ListOrders::class)
             ->call('selectOrderTab', 'finished')
             ->assertSet('activeTab', 'finished')
-            ->assertCanSeeTableRecords([$delivered, $stageFinished])
-            ->assertCanNotSeeTableRecords([$cancelled, $active])
+            ->assertCanSeeTableRecords([$delivered])
+            ->assertCanNotSeeTableRecords([$cancelled, $active, $stageFinished])
             ->assertSee('Завершённые');
     }
 
@@ -307,7 +353,7 @@ class OrderDealControlTest extends TestCase
     private function save(Order $order, User $manager, array $attributes = []): Order
     {
         return app(OrderDealControl::class)->save($order, $manager, $attributes + [
-            'stage' => 'contacted', 'next_action' => 'Позвонить клиенту',
+            'stage' => $order->effectiveDealStage(), 'next_action' => 'Позвонить клиенту',
             'control_at' => now()->addDay(), 'on_hold' => false, 'manager_id' => $manager->id,
             'version' => (int) $order->deal_version, 'status' => $order->status, 'comment' => null,
             'expected_manager_id' => $order->manager_id, 'expected_assigned_to' => $order->assigned_to,

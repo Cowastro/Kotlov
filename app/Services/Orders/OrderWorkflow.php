@@ -64,7 +64,7 @@ class OrderWorkflow
     /** @return array{next:string,label:string,icon:string,color:string,heading:string,description:string,submit:string}|null */
     public function step(Order $order): ?array
     {
-        return self::managedBy1c($order) ? null : (self::STEPS[$order->status] ?? null);
+        return self::managedBy1c($order) || $order->executionTransferPending() ? null : (self::STEPS[$order->status] ?? null);
     }
 
     /**
@@ -78,6 +78,10 @@ class OrderWorkflow
 
     public function blocker(Order $order): ?string
     {
+        if ($order->executionTransferPending()) {
+            return 'Передача в исполнение уже запущена. Дождитесь результата; повторная отправка не требуется.';
+        }
+
         if (self::managedBy1c($order)) {
             return 'Заказ в 1С ('.$order->onec_order_number.'): доставку и выдачу ведёт 1С — этап и уведомление клиенту сменятся сами по состоянию заказа в 1С.';
         }
