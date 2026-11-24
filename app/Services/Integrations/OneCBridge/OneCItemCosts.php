@@ -61,9 +61,12 @@ class OneCItemCosts
             'cost_doc' => null, 'cost_kind' => self::AVERAGE];
     }
 
-    /** Retail price of the item in 1C as the exchange brings it (with VAT), or null. */
+    /** Retail price of the item in 1C with VAT («Розничная с НДС»), or null. */
     public static function retail1c(OneCItem $item): ?float
     {
+        if ($item->prices_synced_at !== null) {
+            return $item->price_retail ?: null;
+        }
         $price = IntegrationProduct::query()->whereHas('source', fn ($q) => $q->where('code', 'onec'))
             ->where(fn ($q) => $q->where('external_id', $item->ref_key)->orWhere('external_id', 'like', $item->ref_key.'#%'))
             ->get(['price', 'price_byn'])

@@ -59,7 +59,27 @@ class Product extends Model
         'is_featured', 'is_new', 'is_sale', 'sale_campaign', 'sale_ends_at', 'sort_order', 'variant_selector_excluded',
         'meta_title', 'meta_keywords', 'meta_description',
         'rating', 'reviews_count', 'views_count', 'popularity_score', 'popularity_updated_at',
+        'onec_retail_byn', 'onec_retail_at',
     ];
+
+    /**
+     * One price everywhere: a card with a retail price in 1C sells at it. Any other price written to it — a supplier's
+     * price list, a manual edit — gives way, except a sale on now (its price returns to the 1C one when it ends).
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Product $product): void {
+            $onec = (float) $product->onec_retail_byn;
+            if ($onec > 0 && ! $product->onSaleNow() && abs((float) $product->price - $onec) >= 0.005) {
+                $product->price = $onec;
+            }
+        });
+    }
+
+    public function onSaleNow(): bool
+    {
+        return (bool) $this->is_sale && $this->sale_ends_at !== null && $this->sale_ends_at->isFuture();
+    }
 
     protected $casts = [
         'shipping_parcel' => 'array',
@@ -76,6 +96,8 @@ class Product extends Model
         'is_featured' => 'boolean',
         'is_new' => 'boolean',
         'is_sale' => 'boolean',
+        'onec_retail_byn' => 'decimal:2',
+        'onec_retail_at' => 'datetime',
         'sale_ends_at' => 'datetime',
         'variant_selector_excluded' => 'boolean',
         'price' => 'decimal:2',

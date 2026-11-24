@@ -662,6 +662,12 @@ Schedule::command('onec:sync-references --orders-only --days=3')
     ->between('08:00', '21:30')
     ->withoutOverlapping(10);
 
+// «Мост 1С»: retail and wholesale prices of 1C — the 1C retail price is the price of the site card.
+Schedule::command('onec:sync-prices')
+    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
+    ->cron('15,45 7-21 * * *')
+    ->withoutOverlapping(10);
+
 // «Мост 1С»: stock and reserve of the selling warehouse, read-only.
 Schedule::command('onec:sync-stock')
     ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
