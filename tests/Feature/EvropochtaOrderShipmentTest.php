@@ -64,6 +64,7 @@ class EvropochtaOrderShipmentTest extends TestCase
         $this->assertStringContainsString('Ленинского Комсомола, 43, №567', $saved->delivery_address);
         $this->assertSame(6.34, $saved->evropochta_quote['carrier_price']);
         $this->assertSame(70130010, $saved->evropochta_quote['parcel']['store_id_start']);
+        $this->assertSame(['id' => 70130010, 'address' => 'г. Минск, Монтажников, 2, №1'], $saved->evropochta_quote['origin']);
         $this->assertSame(40930011, $saved->evropochta_quote['store_id_finish']);
         $this->assertEquals(['weight' => 1.25, 'length' => 24, 'width' => 24, 'height' => 20],
             array_intersect_key($saved->evropochta_quote['parcel'], array_flip(['weight', 'length', 'width', 'height'])));

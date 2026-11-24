@@ -175,16 +175,27 @@ class OneCOrderExport
                 ->where('description', $order->manager->name)->value('ref_key') ?? $h['Менеджер_Key'];
         }
 
+        $carrier = app(OneCCarrierDelivery::class)->carrier($order);
         $pickup = $order->delivery_type === 'pickup';
         $address = $pickup ? '' : ($order->delivery_preparation['to'] ?? collect([$order->delivery_region, $order->delivery_city, $order->delivery_address])
             ->map(fn ($v): string => trim((string) $v))->filter()->unique()->implode(', '));
-        $total = number_format((float) $order->total, 2, ',', '');
+        $recipientAddress = collect([$order->delivery_region, $order->delivery_city, $order->delivery_address])
+            ->map(fn ($v): string => trim((string) $v))->filter()->unique()->implode(', ');
+        if ($carrier) {
+            $terminal = app(OneCCarrierDelivery::class)->terminal($order);
+            $reference = app(OneCCarrierDelivery::class)->reference($order);
+            $address = $terminal ? $terminal.($reference ? ' · '.$reference : '') : '';
+        }
+        $total = number_format($carrier && $order->payment_status === 'paid' ? 0 : (float) $order->total, 2, ',', '');
         $info = collect([
-            $pickup ? 'Самовывоз' : $address,
+            $pickup ? 'Самовывоз' : ($carrier ? 'Адрес получателя: '.$recipientAddress : $address),
+            $carrier ? 'Терминал отправления: '.$terminal : null,
             'К оплате '.$total.'р.',
             $pickup ? null : ($order->delivery_preparation ? 'Доставка согласована' : 'Согласовать доставку по звонку'),
             'Клиент: '.trim((string) ($order->company_name ?: $order->customer_name)),
+            $carrier ? 'Получатель: '.$order->customer_name : null,
             $order->customer_phone ? 'Телефон: '.$order->customer_phone : null,
+            $carrier && $order->comment ? 'Комментарий клиента: '.$order->comment : null,
             $order->delivery_preparation ? app(\App\Services\Orders\OrderDeliveryPreparation::class)->summary($order) : null,
         ])->filter()->implode("\n");
 
@@ -201,9 +212,8 @@ class OneCOrderExport
 
     private function deliveryMethod(Order $order, OneCOrderProfile $profile): ?string
     {
+        if (app(OneCCarrierDelivery::class)->carrier($order)) return 'ДоКлиента';
         return match ($order->delivery_type) {
-            // the carrier takes it to the customer; «ДоПеревозчика» is not in this 1C (task 209)
-            'evropochta' => 'СиламиПеревозчикаПоАдресу',
             'pickup' => 'Самовывоз',
             default => $profile->header['СпособДоставки'] ?? null,
         };
@@ -212,8 +222,10 @@ class OneCOrderExport
     private function withDeliveryDetails(Order $order, string $text): string
     {
         $delivery = app(\App\Services\Orders\OrderDeliveryPreparation::class);
-        if (! $order->delivery_preparation && ! $delivery->reference($order)) return trim($text);
+        $reference = app(OneCCarrierDelivery::class)->reference($order);
+        if (! $order->delivery_preparation && ! $reference && ! $delivery->reference($order)) return trim($text);
         $details = $delivery->summary($order);
+        if ($reference && ! str_contains($details, $reference)) $details .= "\nТрек / ID: ".$reference;
         return str_contains($text, $details) ? trim($text) : trim($text."\n".$details);
     }
 
@@ -244,6 +256,10 @@ class OneCOrderExport
             app(OneCVamPaymentRule::class)->problems($order, $profile, $form));
         if ($reason = app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($order)) {
             $problems[] = $reason;
+        }
+        if (app(OneCCarrierDelivery::class)->carrier($order)) {
+            if (blank($form['address'] ?? null)) $problems[] = 'Не определён терминал отправления перевозчика. Проверьте отделение отправления.';
+            if (($form['delivery'] ?? null) !== 'ДоКлиента') $problems[] = 'Для завоза на терминал выберите «Наша транспортная служба до клиента».';
         }
         if (! $profile) {
             return [...$problems, 'Нет схемы заказа 1С: создайте её в «Мост 1С» → «Схемы заказов» по образцу заказа из 1С'];
@@ -326,8 +342,13 @@ class OneCOrderExport
         foreach (array_intersect((array) ($meta['address'] ?? []), [OneCOrderProfiles::ADDRESS_FIELD]) as $key) {
             $doc[$key] = (string) ($form['address'] ?? '');
         }
+        if (app(OneCCarrierDelivery::class)->carrier($order)) {
+            $doc['СпособДоставки'] = 'ДоКлиента';
+            $doc[OneCOrderProfiles::ADDRESS_FIELD] = (string) ($form['address'] ?? $this->defaults($order, $profile)['address']);
+            $doc['ДополнительнаяИнформацияПоДоставке'] = $this->withDeliveryDetails($order, (string) ($form['info'] ?? $this->defaults($order, $profile)['info']));
+        }
         foreach ((array) ($meta['info'] ?? []) as $key) {
-            $doc[$key] = $this->withDeliveryDetails($order, (string) ($form['info'] ?? ''));
+            $doc[$key] = $this->withDeliveryDetails($order, (string) ($form['info'] ?? $doc['ДополнительнаяИнформацияПоДоставке'] ?? ''));
         }
         if (in_array('ДатаСогласования', (array) ($meta['dates'] ?? []), true)) {
             $doc['ДатаСогласования'] = $now;
@@ -399,7 +420,12 @@ class OneCOrderExport
             $doc['ЭтапыГрафикаОплаты'] = [$stage];
         }
 
-        return self::simplify($doc, $variant);
+        $body = self::simplify($doc, $variant);
+        // The sending terminal is the driver's actual destination, including on a simplified retry.
+        if (app(OneCCarrierDelivery::class)->carrier($order)) {
+            $body[OneCOrderProfiles::ADDRESS_FIELD] = $doc[OneCOrderProfiles::ADDRESS_FIELD];
+        }
+        return $body;
     }
 
     /** @param array<string, mixed> $doc */
