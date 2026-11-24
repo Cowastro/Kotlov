@@ -66,15 +66,15 @@ class OneCPricesSyncTest extends TestCase
         $meter = Product::query()->create(['category_id' => $category->id, 'name' => 'Счётчик газа тестовый', 'slug' => 'schetchik', 'price' => 199]);
         $cord = Product::query()->create(['category_id' => $category->id, 'name' => 'Шнур тестовый', 'slug' => 'shnur', 'price' => 99]);
         foreach ([self::METER => $meter, self::CORD => $cord] as $key => $card) {
-            OneCItem::query()->create(['ref_key' => $key, 'code' => 'УТ-'.substr($key, -4), 'description' => $card->name]);
+            OneCItem::query()->create(['ref_key' => $key, 'code' => 'УТ-'.substr($key, -4), 'description' => $card->name, 'product_id' => $card->id]);
             IntegrationProduct::query()->create(['integration_source_id' => $source->id, 'external_id' => $key.'#00000000-0000-0000-0000-000000000000',
                 'name' => $card->name, 'product_id' => $card->id, 'match_status' => 'matched']);
         }
 
         // the first read is whole; newest first — the first record of an item is its price; no stock needed (the meter has none)
         $task = $this->read([
-            'retail_1' => [['Period' => '2026-11-23T21:18:00', 'Номенклатура_Key' => self::METER, 'Цена' => 208.33],
-                ['Period' => '2026-11-01T10:00:00', 'Номенклатура_Key' => self::METER, 'Цена' => 150]],
+            'retail_1' => [['Period' => now()->subDay()->format('Y-m-d\TH:i:s'), 'Номенклатура_Key' => self::METER, 'Цена' => 208.33],
+                ['Period' => now()->subMonths(2)->format('Y-m-d\TH:i:s'), 'Номенклатура_Key' => self::METER, 'Цена' => 150]],
             'wholesale_1' => [['Period' => '2026-11-23T21:18:00', 'Номенклатура_Key' => self::METER, 'Цена' => 183.33],
                 ['Period' => '2026-11-20T21:55:00', 'Номенклатура_Key' => self::CORD, 'Цена' => 69.33]],
         ], full: true);
@@ -100,7 +100,7 @@ class OneCPricesSyncTest extends TestCase
         $next = app(OneCPrices::class)->enqueue(null);
         $this->assertStringContainsString('Period ge datetime', urldecode((string) $next->payload['queries']['retail_1']));
         $next->forceFill(['status' => OneCAgentTask::CANCELLED])->save();
-        $this->read(['retail_1' => [['Period' => '2026-11-24T12:00:00', 'Номенклатура_Key' => self::CORD, 'Цена' => 86.67]]]);
+        $this->read(['retail_1' => [['Period' => now()->format('Y-m-d\TH:i:s'), 'Номенклатура_Key' => self::CORD, 'Цена' => 86.67]]]);
         $this->assertSame(104.0, (float) $cord->fresh()->price);
         $this->assertSame(250.0, (float) $meter->fresh()->price);
     }
@@ -116,5 +116,30 @@ class OneCPricesSyncTest extends TestCase
             ->assertFormFieldIsDisabled('price')
             ->call('save')->assertHasNoFormErrors();
         $this->assertSame(250.0, (float) $card->fresh()->price);
+    }
+
+    public function test_an_old_1c_price_of_a_good_not_in_stock_does_not_change_the_site_price(): void
+    {
+        $category = Category::query()->firstOrCreate(['slug' => 'schetchiki'], ['name' => 'Счётчики', 'is_active' => true]);
+        $old = Product::query()->create(['category_id' => $category->id, 'name' => 'Котёл старый', 'slug' => 'kotel-old', 'price' => 1500]);
+        $stocked = Product::query()->create(['category_id' => $category->id, 'name' => 'Котёл на складе', 'slug' => 'kotel-stock', 'price' => 1500]);
+        // a 1C retail price of 2024, nothing on the warehouse: the site keeps its own
+        $oldItem = OneCItem::query()->create(['ref_key' => self::METER, 'code' => 'УТ-1', 'description' => 'Котёл старый', 'product_id' => $old->id,
+            'price_retail' => 900, 'price_retail_at' => '2024-03-01', 'prices_synced_at' => now(), 'stock_on_hand' => 0, 'stock_synced_at' => now()]);
+        // the same old price, but in stock: 1C leads
+        OneCItem::query()->create(['ref_key' => self::CORD, 'code' => 'УТ-2', 'description' => 'Котёл на складе', 'product_id' => $stocked->id,
+            'price_retail' => 1700, 'price_retail_at' => '2024-03-01', 'prices_synced_at' => now(), 'stock_on_hand' => 2, 'stock_synced_at' => now()]);
+
+        $this->assertSame([1, 0], app(OneCPrices::class)->applyToCards());
+        $this->assertSame(1500.0, (float) $old->fresh()->price);
+        $this->assertNull($old->fresh()->onec_retail_byn);
+        $this->assertSame(1700.0, (float) $stocked->fresh()->price);
+
+        // held by 1C on the first run, the good sold out and its price is old: the card is let go
+        $old->forceFill(['onec_retail_byn' => 900, 'price' => 900])->save();
+        $this->assertSame([0, 1], app(OneCPrices::class)->applyToCards());
+        $old->fresh()->forceFill(['price' => 1500])->save();
+        $this->assertSame(1500.0, (float) $old->fresh()->price, 'a supplier or a manager can set it again');
+        $this->assertFalse(OneCPrices::leads($oldItem));
     }
 }
