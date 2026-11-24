@@ -192,11 +192,28 @@ class OneCOrderExport
             'profile_id' => $profile->id,
             'h' => $h,
             'status' => $profile->header['Статус'] ?? 'НеСогласован',
-            'delivery' => $pickup ? 'Самовывоз' : ($profile->header['СпособДоставки'] ?? null),
+            'delivery' => $this->deliveryMethod($order, $profile),
             'address' => $address,
-            'info' => $info,
-            'comment' => trim('Заказ с сайта kotlov.by №'.$order->number.($order->comment ? '. Комментарий клиента: '.$order->comment : '')),
+            'info' => $this->withDeliveryDetails($order, $info),
+            'comment' => $this->withDeliveryDetails($order, 'Заказ с сайта kotlov.by №'.$order->number.($order->comment ? '. Комментарий клиента: '.$order->comment : '')),
         ];
+    }
+
+    private function deliveryMethod(Order $order, OneCOrderProfile $profile): ?string
+    {
+        return match ($order->delivery_type) {
+            'evropochta' => 'ДоПеревозчика',
+            'pickup' => 'Самовывоз',
+            default => $profile->header['СпособДоставки'] ?? null,
+        };
+    }
+
+    private function withDeliveryDetails(Order $order, string $text): string
+    {
+        $delivery = app(\App\Services\Orders\OrderDeliveryPreparation::class);
+        if (! $order->delivery_preparation && ! $delivery->reference($order)) return trim($text);
+        $details = $delivery->summary($order);
+        return str_contains($text, $details) ? trim($text) : trim($text."\n".$details);
     }
 
     public function counterpartyByTaxId(string $taxId): ?OneCReference
@@ -301,14 +318,15 @@ class OneCOrderExport
         if ($has('Статус') && filled($form['status'] ?? null)) {
             $doc['Статус'] = $form['status'];
         }
-        if ($has('СпособДоставки') && filled($form['delivery'] ?? null)) {
-            $doc['СпособДоставки'] = $form['delivery'];
+        $deliveryMethod = $form['delivery'] ?? $this->deliveryMethod($order, $profile);
+        if ($has('СпособДоставки') && filled($deliveryMethod)) {
+            $doc['СпособДоставки'] = $deliveryMethod;
         }
         foreach (array_intersect((array) ($meta['address'] ?? []), [OneCOrderProfiles::ADDRESS_FIELD]) as $key) {
             $doc[$key] = (string) ($form['address'] ?? '');
         }
         foreach ((array) ($meta['info'] ?? []) as $key) {
-            $doc[$key] = (string) ($form['info'] ?? '');
+            $doc[$key] = $this->withDeliveryDetails($order, (string) ($form['info'] ?? ''));
         }
         if (in_array('ДатаСогласования', (array) ($meta['dates'] ?? []), true)) {
             $doc['ДатаСогласования'] = $now;
@@ -324,7 +342,7 @@ class OneCOrderExport
         if ($has('НомерПоДаннымКлиента')) {
             $doc['НомерПоДаннымКлиента'] = self::clientNumber($order);
         }
-        $doc['Комментарий'] = trim((string) ($form['comment'] ?? '')."\n".app(\App\Services\Orders\OrderDeliveryPreparation::class)->summary($order));
+        $doc['Комментарий'] = $this->withDeliveryDetails($order, (string) ($form['comment'] ?? ''));
 
         $withVat = (bool) ($doc['ЦенаВключаетНДС'] ?? true);
         $vatKey = $profile->row_defaults['СтавкаНДС_Key'] ?? null;
