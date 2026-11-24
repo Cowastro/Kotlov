@@ -80,7 +80,7 @@ class OneCItemCosts
      * What a price is counted from: the 1C cost; when the goods have not come yet (no purchase in 1C) — the purchase
      * price of the linked card's suppliers (with VAT, the lowest).
      *
-     * @return array{cost: float, net: ?float, label: string}|null
+     * @return array{cost: float, net?: ?float, label: string}|null
      */
     public static function basis(OneCItem $item): ?array
     {
@@ -90,7 +90,14 @@ class OneCItemCosts
         }
         $price = self::supplierBasis($item);
 
-        return $price ? $price + ['label' => 'закупка поставщика (в 1С ещё не поступал)'] : null;
+        if ($price === null) {
+            return null;
+        }
+        if ($price['net'] === null) {
+            unset($price['net']);
+        }
+
+        return $price + ['label' => 'закупка поставщика (в 1С ещё не поступал)'];
     }
 
     public static function supplierPrice(OneCItem $item): ?float
