@@ -20,7 +20,7 @@ class SyncRnProfiChunksCommand extends Command
     private const SHEETS = [
         '1. Радиаторы секционные БП',
         '2. Радиаторы секционные НП',
-        '3. Дизайн-радиаторы SHIFT, INSI',
+        '3. Дизайн-радиаторы SHIFT, INSIGNIA',
         '4. Комплектующие',
         '5. Сталь RT',
         '6. Varmega повер.отопление',
@@ -34,9 +34,36 @@ class SyncRnProfiChunksCommand extends Command
         'Полотенцесушители',
         'Конвекторы ROYAL THERMO',
         '14. Конвекторы НОВАТЕРМ',
-        '15. Радиаторы ИТАЛИЯ NOVA FLORI',
+        '15. Радиаторы ИТАЛИЯ NOVA FLORIDA',
         'Инструмент',
         '16. Вентиляция',
+    ];
+
+    // Verified against the supplier's Google Sheets navigation. XLSX sheet names
+    // are truncated to 31 characters and must never identify a Google tab.
+    private const SHEET_GIDS = [
+        '1. Радиаторы секционные БП' => '2046613895',
+        '2. Радиаторы секционные НП' => '837236391',
+        '3. Дизайн-радиаторы SHIFT, INSIGNIA' => '1846942646',
+        '4. Комплектующие' => '951901999',
+        '5. Сталь RT' => '1087654012',
+        '6. Varmega повер.отопление' => '1549060415',
+        '7. Varmega Slide-fit' => '1855615823',
+        '8. VARMEGA Inox Press' => '1936972731',
+        '9. VARMEGA Радиаторная арматура' => '561682745',
+        '10. VARMEGA Арматура' => '1066696163',
+        '11. VARMEGA Насосы' => '95275265',
+        '12. Котлы THERMEX' => '21327137',
+        '13. Бойлеры ROYAL THERMO' => '886125361',
+        'Конвекторы ROYAL THERMO' => '946137704',
+        '14. Конвекторы НОВАТЕРМ' => '1585119399',
+        '15. Радиаторы ИТАЛИЯ NOVA FLORIDA' => '662323938',
+        'Инструмент' => '1739996913',
+    ];
+
+    private const SHEET_ALIASES = [
+        '3. Дизайн-радиаторы SHIFT, INSI' => '3. Дизайн-радиаторы SHIFT, INSIGNIA',
+        '15. Радиаторы ИТАЛИЯ NOVA FLORI' => '15. Радиаторы ИТАЛИЯ NOVA FLORIDA',
     ];
 
     public function handle(): int
@@ -69,6 +96,9 @@ class SyncRnProfiChunksCommand extends Command
                 '--sync-retail-prices' => (bool) $this->option('sync-retail-prices'),
                 '--only-linked' => (bool) $this->option('only-linked'),
             ];
+            if (isset(self::SHEET_GIDS[$sheet])) {
+                $params['--google-csv-gid'] = self::SHEET_GIDS[$sheet];
+            }
 
             if ($apply) {
                 $params['--apply'] = true;
@@ -101,6 +131,12 @@ class SyncRnProfiChunksCommand extends Command
             return self::SHEETS;
         }
 
-        return $selected;
+        $selected = array_map(fn (string $sheet): string => self::SHEET_ALIASES[$sheet] ?? $sheet, $selected);
+        if (array_diff($selected, self::SHEETS) !== []) {
+            $this->error('Unknown RN-Profi tab; refuse a name lookup that may return the contents sheet.');
+            return [];
+        }
+
+        return array_values(array_unique($selected));
     }
 }
