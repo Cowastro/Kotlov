@@ -10,6 +10,8 @@ use App\Models\IntegrationSource;
 use App\Models\OneCItem;
 use App\Models\OneCPriceBatch;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\OneCItemCosts;
 use App\Services\Integrations\OneCBridge\OneCPurchaseCosts;
@@ -157,5 +159,31 @@ class OneCPricingTest extends TestCase
         $batch->forceFill(['status' => OneCPriceBatch::CREATED])->save();
         $this->assertSame(120.0, (float) OneCItemCosts::lastSent($meter)->wholesale);
         $this->assertSame('+20 %', OneCItemCosts::markup(120, $meter));
+    }
+
+    public function test_the_retail_of_a_supplier_price_list_goes_to_1c_as_a_draft(): void
+    {
+        $metabel = Supplier::query()->updateOrCreate(['code' => 'metabel'], ['name' => 'Мета-Бел', 'is_active' => true]);
+        $category = Category::query()->firstOrCreate(['slug' => 'pechi'], ['name' => 'Печи-камины', 'is_active' => true]);
+        $ritm = Product::query()->create(['category_id' => $category->id, 'name' => 'Печь-камин тестовая Ритм', 'slug' => 'ritm-test', 'price' => 1314]);
+        $neva = Product::query()->create(['category_id' => $category->id, 'name' => 'Печь-камин тестовая Нева', 'slug' => 'neva-test', 'price' => 1290]);
+        // 1C sells Ритм below its last purchase; Нева is right already
+        OneCItem::query()->create(['ref_key' => self::BOILER, 'code' => 'УТ-1564', 'description' => 'Печь-камин Ритм', 'product_id' => $ritm->id,
+            'price_retail' => 1314, 'price_wholesale' => 1116.9, 'cost_gross' => 1368, 'cost_kind' => 'last', 'prices_synced_at' => now()]);
+        OneCItem::query()->create(['ref_key' => self::PIPE, 'code' => 'УТ-0716', 'description' => 'Печь-камин Нева', 'product_id' => $neva->id,
+            'price_retail' => 1290, 'price_wholesale' => 1000, 'prices_synced_at' => now()]);
+        foreach ([[$ritm, 'R-1', 1690], [$neva, 'N-1', 1290]] as [$card, $article, $retail]) {
+            SupplierProduct::query()->create(['supplier_id' => $metabel->id, 'supplier_article' => $article, 'supplier_article_normalized' => $article,
+                'product_id' => $card->id, 'match_status' => 'matched', 'raw' => ['retail_byn' => $retail]]);
+        }
+
+        $batch = app(OneCPriceBatches::class)->addFromSupplierRetail('metabel', null);
+        $this->assertSame(1, $batch->items_count, 'only where 1C differs');
+        $row = $batch->items()->first();
+        $this->assertSame(['УТ-1564', 1690.0, 1116.9, 'supplier'], [$row->code, (float) $row->retail, (float) $row->wholesale, $row->verdict]);
+        $this->assertStringContainsString('в 1С была 1 314,00', (string) $row->note);
+        // the 1C wholesale is old too (below the last purchase): flagged, not sent without fixing or confirming
+        $this->assertStringContainsString('опт 1С ниже себестоимости', (string) $row->note);
+        $this->assertSame(1, app(OneCPriceBatches::class)->belowCost($batch));
     }
 }

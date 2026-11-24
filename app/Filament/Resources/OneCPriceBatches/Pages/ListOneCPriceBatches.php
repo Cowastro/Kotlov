@@ -6,8 +6,10 @@ use App\Filament\Resources\OneCAgentTasks\Actions\IssueAgentKeyAction;
 use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
 use App\Models\OneCAgentToken;
+use App\Models\Supplier;
 use App\Services\Integrations\OneCPriceBatches;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Enums\Width;
@@ -42,6 +44,21 @@ class ListOneCPriceBatches extends ListRecords
                 ->action(function (): void {
                     $batch = app(OneCPriceBatches::class)->buildFromPriceless(auth()->user());
                     Notification::make()->success()->title('Пакет №'.$batch->id.' сформирован: товаров '.$batch->items_count)->send();
+                    $this->redirect(OneCPriceBatchResource::getUrl('view', ['record' => $batch]));
+                }),
+            Action::make('fromSupplier')
+                ->label('Розница из прайса поставщика')
+                ->icon('heroicon-o-document-arrow-down')
+                ->modalHeading('Розница из прайса поставщика в 1С')
+                ->modalDescription('Товары поставщика, связанные с 1С, попадут в черновик: розница — из прайса поставщика (например, МРЦ Мета-Бел), опт — нынешний опт 1С. Только те, у кого розница 1С отличается. Проверьте и отправьте в 1С.')
+                ->schema([
+                    Select::make('supplier')->label('Поставщик')->required()->searchable()
+                        ->options(fn (): array => Supplier::query()->where('is_active', true)->orderBy('name')->pluck('name', 'code')->all())
+                        ->default('metabel'),
+                ])
+                ->action(function (array $data): void {
+                    $batch = app(OneCPriceBatches::class)->addFromSupplierRetail((string) $data['supplier'], auth()->user());
+                    Notification::make()->success()->title('Пакет №'.$batch->id.': товаров '.$batch->items_count)->send();
                     $this->redirect(OneCPriceBatchResource::getUrl('view', ['record' => $batch]));
                 }),
             Action::make('bridge')->label('Мост 1С')->icon('heroicon-o-arrows-right-left')->color('gray')

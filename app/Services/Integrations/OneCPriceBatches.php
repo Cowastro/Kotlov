@@ -8,6 +8,8 @@ use App\Models\OneCAgentTask;
 use App\Models\OneCItem;
 use App\Models\OneCPriceBatch;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCBridge\OneCItemCosts;
@@ -100,6 +102,46 @@ class OneCPriceBatches
                         $cost > 0 => 'розница +'.$retailMarkup.' %, опт +'.$wholesaleMarkup.' % от: '.$basis['label'].' '.$cost,
                         default => 'нет себестоимости и закупки поставщика — задайте цены вручную',
                     },
+                ]);
+            }
+
+            return $batch->loadCount('items');
+        });
+    }
+
+    /**
+     * A supplier's price list carries the retail price (Мета-Бел: МРЦ): its goods linked to 1C go into a draft with that
+     * retail; the wholesale stays the 1C one (empty — the manager sets it). Only goods whose 1C retail differs.
+     */
+    public function addFromSupplierRetail(string $supplierCode, ?User $user): OneCPriceBatch
+    {
+        $supplier = Supplier::query()->where('code', $supplierCode)->firstOrFail();
+        $comment = 'Розница из прайса: '.$supplier->name;
+
+        return DB::transaction(function () use ($supplier, $comment, $user): OneCPriceBatch {
+            $batch = OneCPriceBatch::query()->where('status', OneCPriceBatch::DRAFT)->where('comment', $comment)->latest('id')->first()
+                ?? OneCPriceBatch::query()->create(['status' => OneCPriceBatch::DRAFT, 'created_by' => $user?->id, 'comment' => $comment]);
+            $rows = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->get(['product_id', 'raw']);
+            $items = OneCItem::query()->whereIn('product_id', $rows->pluck('product_id'))->where('is_folder', false)->get()->keyBy('product_id');
+            $cards = Product::query()->whereIn('id', $rows->pluck('product_id'))->pluck('price', 'id');
+            foreach ($rows as $row) {
+                $retail = round((float) data_get($row->raw, 'retail_byn', 0), 2);
+                $item = $items[$row->product_id] ?? null;
+                if ($retail <= 0 || ! $item || abs((float) $item->price_retail - $retail) < 0.005) {
+                    continue;
+                }
+                $wholesale = (float) $item->price_wholesale > 0 && (float) $item->price_wholesale <= $retail ? (float) $item->price_wholesale : 0;
+                $batch->items()->updateOrCreate(['item_key' => strtolower($item->ref_key), 'characteristic_key' => null], [
+                    'code' => $item->code,
+                    'name' => mb_substr((string) $item->description, 0, 250),
+                    'purchase' => (float) $item->cost_gross > 0 ? (float) $item->cost_gross : null,
+                    'retail_site' => (float) ($cards[$row->product_id] ?? 0) ?: null,
+                    'retail' => $retail,
+                    'wholesale' => $wholesale,
+                    'verdict' => 'supplier',
+                    'note' => 'розница из прайса '.$supplier->name.'; в 1С была '.($item->price_retail ? number_format((float) $item->price_retail, 2, ',', ' ') : 'нет')
+                        .($wholesale > 0 ? '' : '; опт задайте вручную')
+                        .($wholesale > 0 && (float) $item->cost_gross > $wholesale ? '; опт 1С ниже себестоимости — поправьте' : ''),
                 ]);
             }
 
