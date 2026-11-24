@@ -24,6 +24,7 @@ class EvropochtaShipmentSummary
     public static function source(Order $order): string
     {
         if (! self::snapshot($order)) return self::amount($order) !== null ? 'По заказу · проверьте сумму в заявке' : 'Сумма отправления не сохранена';
+        if ((self::snapshot($order)['source'] ?? null) === 'api_update') return 'Установлено через API Европочты';
         return self::amount($order) > 0 ? 'При оформлении отправления' : 'Без наложенного платежа';
     }
 
@@ -49,10 +50,14 @@ class EvropochtaShipmentSummary
 
     public static function color(Order $order): string
     {
-        if ($order->carrier_provider !== 'evropochta' || $order->carrier_reference !== $order->evropochta_tracking_number) return 'gray';
+        if ($order->carrier_provider !== 'evropochta' || $order->carrier_reference !== $order->evropochta_tracking_number) {
+            return (self::snapshot($order)['status'] ?? null) === 'Заявка создана'
+                || (filled($order->evropochta_tracking_number) && (Cache::get('evropochta.order-status.v2.'.$order->evropochta_tracking_number.':latest')['code'] ?? null) === 0)
+                ? 'info' : 'gray';
+        }
         return match ($order->carrier_stage) {
             'delivered' => 'success', 'attention' => 'danger', 'ready' => 'primary',
-            'transit' => 'warning', 'accepted' => 'info', default => 'gray',
+            'transit' => 'warning', 'created', 'accepted' => 'info', default => 'gray',
         };
     }
 }

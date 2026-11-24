@@ -132,10 +132,7 @@ final class EvropochtaOrderShipment
             return 'Ключ API Европочты не настроен.';
         }
 
-        if ($order->payment_type === EvropochtaCheckout::COD_PAYMENT
-            && ($order->payment_status !== 'pending' || (float) $order->total <= 0)) {
-            return 'Для наложенного платежа нужен заказ с положительной суммой, ожидающий оплаты.';
-        }
+        if ($reason = EvropochtaPayment::blocker($order)) return $reason;
 
         $signature = $order->evropochta_quote['order_item_signature'] ?? null;
         if ($signature !== null && $signature !== $this->itemSignature($this->orderItems($order))) {
@@ -214,11 +211,10 @@ final class EvropochtaOrderShipment
                 $payload['receiver_patronymic_name'] = trim($contact['receiver_patronymic_name']);
             }
 
-            if ($lockedOrder->payment_type === EvropochtaCheckout::COD_PAYMENT) {
-                $amount = (float) $lockedOrder->total;
-                $payload['payment_amount'] = $amount;
-                $payload['declared_amount'] = $amount;
-                $payload['cash_on_delivery_payer'] = 0;
+            $payload = array_replace($payload, EvropochtaPayment::payload($lockedOrder));
+            if (isset($recipient['payment_review_signature'])
+                && ! hash_equals(EvropochtaPayment::signature($lockedOrder), (string) $recipient['payment_review_signature'])) {
+                throw new EvropochtaShipmentException('Сумма или условия оплаты изменились. Закройте окно и проверьте расчёт заново.');
             }
 
             // The order lock prevents parallel requests. The carrier's external_id also protects retries after a timeout.
@@ -229,6 +225,7 @@ final class EvropochtaOrderShipment
                 ! SendEvropochtaTrackingSms::configured() => 'unavailable',
                 default => 'pending',
             };
+            if ($lockedOrder->payment_status === 'pending') $lockedOrder->payment_type = EvropochtaCheckout::COD_PAYMENT;
             $lockedOrder->evropochta_tracking_number = $number;
             $lockedOrder->evropochta_sms_status = $smsStatus;
             // Keep the amounts sent at creation, rather than recomputing them from a later edited order.
