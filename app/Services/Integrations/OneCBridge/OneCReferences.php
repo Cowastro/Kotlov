@@ -76,6 +76,12 @@ class OneCReferences
                 '$select' => 'ДокументОтгрузки,ДокументОтгрузки_Type,Номенклатура_Key,ВРезервеBalance,КОтгрузкеBalance,КОформлениюBalance']],
             'order_provision_sample' => ['AccumulationRegister_ЗаказыКлиентов/Balance', ['$top' => '40']],
         ],
+        // «prices» (agent 10+): the last price of every item per price type (which register this 1C keeps them in).
+        'prices' => [
+            'prices_sample' => ['InformationRegister_ЦеныНоменклатуры/SliceLast', ['$top' => '5']],
+            'prices25_sample' => ['InformationRegister_ЦеныНоменклатуры25/SliceLast', ['$top' => '5']],
+            'price_types_sample' => ['Catalog_ВидыЦен', ['$select' => 'Ref_Key,Description,ЦенаВключаетНДС,СпособЗаданияЦены,DeletionMark']],
+        ],
         'purchase' => [
             'supplier_order_sample' => ['Document_ЗаказПоставщику', ['$top' => '3', '$orderby' => 'Date desc']],
             'supplier_order_list' => ['Document_ЗаказПоставщику', ['$select' => 'Ref_Key,Number,Date,Posted,DeletionMark,Статус,Организация_Key,Партнер_Key,Контрагент_Key,СуммаДокумента',
