@@ -231,6 +231,14 @@ final class EvropochtaOrderShipment
             };
             $lockedOrder->evropochta_tracking_number = $number;
             $lockedOrder->evropochta_sms_status = $smsStatus;
+            // Keep the amounts sent at creation, rather than recomputing them from a later edited order.
+            $quote['shipment'] = ['number' => $number, 'status' => 'Заявка создана',
+                'payment_amount' => $payload['payment_amount'] ?? 0,
+                'declared_amount' => $payload['declared_amount'] ?? null,
+                'shipment_payer' => $payload['shipment_payer'],
+                'cash_on_delivery_payer' => $payload['cash_on_delivery_payer'] ?? null,
+                'created_at' => now()->toIso8601String()];
+            $lockedOrder->evropochta_quote = $quote;
             if (! $lockedOrder->save()) {
                 throw new EvropochtaShipmentException('Трек-номер получен, но не сохранён. Повторите действие для восстановления номера.');
             }
