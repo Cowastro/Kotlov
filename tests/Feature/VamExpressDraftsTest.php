@@ -98,7 +98,7 @@ class VamExpressDraftsTest extends TestCase
     public function test_order_draft_is_idempotent_encrypted_and_quotes_invalidate_without_modifying_order(): void
     {
         $actor = $this->staff();
-        $order = Order::create(['number' => 'ORD-VAM-DRAFT', 'status' => 'confirmed', 'customer_name' => 'Иван Петров',
+        $order = Order::create(['number' => 'ORD-VAM-DRAFT', 'status' => 'processing', 'customer_name' => 'Иван Петров',
             'customer_phone' => '291111111', 'delivery_address' => 'Адрес из заказа', 'delivery_city' => 'Кобрин', 'total' => 325]);
         $order->items()->create(['product_name' => 'Дымоход Теплов и Сухов', 'quantity' => 12, 'price' => 10]);
         $before = $order->fresh()->getAttributes();

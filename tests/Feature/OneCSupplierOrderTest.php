@@ -80,7 +80,13 @@ class OneCSupplierOrderTest extends TestCase
             'delivery_type' => 'pickup', 'subtotal' => 210, 'total' => 210, 'onec_order_number' => 'МПУТ-000800']);
         $order->save();
         OrderItem::query()->create(['order_id' => $order->id, 'product_id' => $card->id, 'product_name' => $card->name, 'price' => 210, 'quantity' => 1, 'total' => 210,
-            'pricing_type' => 'retail', 'fulfillment_route' => 'supplier_purchase', 'fulfillment_supplier_id' => $supplier->id, 'fulfillment_purchase_price' => 168, 'supply_delivery_days' => 5]);
+            'pricing_type' => 'retail', 'fulfillment_route' => 'supplier_purchase', 'fulfillment_supplier_id' => $supplier->id, 'fulfillment_purchase_price' => 168, 'supply_delivery_days' => 5, 'fulfillment_confirmed_at' => now(), 'fulfillment_confirmed_by' => $admin->id]);
+        app(\App\Services\Orders\OrderWorkflow::class)->advance($order->fresh(), $admin);
+        app(\App\Services\Orders\OrderDeliveryPreparation::class)->confirm($order->fresh(), $admin, [
+            'method' => $order->delivery_type, 'from' => 'Тестовый склад', 'to' => 'Согласованный адрес выдачи',
+            'date' => now()->addDay()->toDateString(),
+        ]);
+
 
         $this->actingAs($admin);
 

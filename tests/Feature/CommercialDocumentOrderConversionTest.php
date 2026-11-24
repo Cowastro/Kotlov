@@ -239,6 +239,12 @@ class CommercialDocumentOrderConversionTest extends TestCase
             'fulfillment_confirmed_at' => now(),
         ])->save();
         $order->forceFill(['status' => 'confirmed'])->save();
+        app(\App\Services\Orders\OrderWorkflow::class)->advance($order->fresh(), $manager);
+        $this->assertSame(0, OrderIntegrationDelivery::query()->count());
+        app(\App\Services\Orders\OrderDeliveryPreparation::class)->confirm($order->fresh(), $manager, [
+            'method' => $order->delivery_type, 'from' => 'Тестовый склад', 'to' => 'Согласованный адрес выдачи',
+            'date' => now()->addDay()->toDateString(),
+        ]);
         $delivery = app(OneCOrderQueue::class)->queue($order->fresh(), $manager);
 
         $this->assertSame(OrderIntegrationDelivery::STATUS_PENDING, $delivery->status);

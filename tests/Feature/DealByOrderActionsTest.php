@@ -30,15 +30,21 @@ class DealByOrderActionsTest extends TestCase
 
     public function test_deal_by_actions_move_through_the_workflow_and_keep_history(): void
     {
+        // This scenario exercises the standalone workflow, without export to 1C.
+        \App\Models\IntegrationSource::query()->where('code', 'onec')->update(['is_active' => false]);
         $order = $this->order();
-        foreach (['contacted', 'agreed'] as $stage) {
+        foreach (['contacted'] as $stage) {
             $this->page($order)->mountAction('manageDeal')->setActionData([
                 'stage' => $stage, 'manager_id' => auth()->id(), 'next_action' => 'Согласовать заказ',
                 'control_at' => now()->addDay()->toDateTimeString(),
             ])->callMountedAction()->assertHasNoActionErrors();
             $this->assertSame($stage, $order->fresh()->effectiveDealStage());
         }
-        $this->page($order)->callAction('advanceWorkflow')->assertHasNoActionErrors();
+        $this->assertSame('checking', $order->fresh()->status);
+        $this->page($order)->mountAction('manageDeal')->setActionData([
+            'stage' => 'agreed', 'manager_id' => auth()->id(), 'next_action' => 'Согласовать заказ',
+            'control_at' => now()->addDay()->toDateTimeString(),
+        ])->callMountedAction()->assertHasActionErrors(['stage']);
         $this->assertSame('checking', $order->fresh()->status);
         $this->page($order)->assertActionDisabled('advanceWorkflow');
         $order->items()->update(['fulfillment_confirmed_at' => now(), 'fulfillment_route' => 'own_stock',
