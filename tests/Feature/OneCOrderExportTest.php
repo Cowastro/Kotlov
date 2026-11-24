@@ -177,10 +177,10 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame(8.33, $body['Товары'][0]['СуммаНДС']);
         // Always «Резервировать по мере поступления», even when the scheme says «Отгрузить» and 1C has it: goods held for
         // another order stop the posting of «Отгрузить». Short of stock — the same.
-        $this->assertSame('Требуется', $body['Товары'][0]['ВариантОбеспечения']);
+        $this->assertSame('РезервироватьПоМереПоступления', $body['Товары'][0]['ВариантОбеспечения']);
         $more = $this->order(['number' => 'K-1003']);
         $more->items()->update(['quantity' => 3, 'total' => 74.97]);
-        $this->assertSame('Требуется', $export->body($more->fresh(), $profile, $export->defaults($more->fresh()))['Товары'][0]['ВариантОбеспечения']);
+        $this->assertSame('РезервироватьПоМереПоступления', $export->body($more->fresh(), $profile, $export->defaults($more->fresh()))['Товары'][0]['ВариантОбеспечения']);
         // No planned delivery: tomorrow, in the header and on the line.
         $tomorrow = now('Europe/Minsk')->addDay()->format('Y-m-d').'T00:00:00';
         $this->assertSame($tomorrow, $body['ЖелаемаяДатаОтгрузки']);
