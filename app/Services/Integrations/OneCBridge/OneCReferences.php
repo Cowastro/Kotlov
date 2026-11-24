@@ -82,6 +82,10 @@ class OneCReferences
             'prices25_sample' => ['InformationRegister_ЦеныНоменклатуры25/SliceLast', ['$top' => '5']],
             'price_types_sample' => ['Catalog_ВидыЦен', ['$select' => 'Ref_Key,Description,ЦенаВключаетНДС,СпособЗаданияЦены,DeletionMark']],
         ],
+        // «supply_variants»: the «Действие» values of the lines of recent 1C orders (the names of ВариантыОбеспечения).
+        'supply_variants' => [
+            'order_lines_sample' => ['Document_ЗаказКлиента', ['$top' => '150', '$orderby' => 'Date desc', '$select' => 'Number,Товары']],
+        ],
         'purchase' => [
             'supplier_order_sample' => ['Document_ЗаказПоставщику', ['$top' => '3', '$orderby' => 'Date desc']],
             'supplier_order_list' => ['Document_ЗаказПоставщику', ['$select' => 'Ref_Key,Number,Date,Posted,DeletionMark,Статус,Организация_Key,Партнер_Key,Контрагент_Key,СуммаДокумента',
