@@ -40,7 +40,8 @@ class HttpCapacityTest extends TestCase
             $this->leases[] = $lease;
         }
         $this->assertNull($guard->acquire(['REQUEST_URI' => '/search?q=pump']));
-        foreach (['/admin/suppliers', '/admin/crm-mail-threads/1228', '/cart', '/b2b/catalog', '/1c/exchange', '/webpay/notify'] as $path) {
+        // a full public pool never turns the 1C agent away
+        foreach (['/admin/suppliers', '/admin/crm-mail-threads/1228', '/cart', '/b2b/catalog', '/1c/exchange', '/webpay/notify', '/1c/agent/tasks/next'] as $path) {
             $lease = $guard->acquire(['REQUEST_URI' => $path]);
             $this->assertIsResource($lease);
             HttpCapacity::release($lease);
@@ -51,10 +52,10 @@ class HttpCapacityTest extends TestCase
         $this->leases[] = $lease;
     }
 
-    public function test_all_pools_have_a_combined_ceiling_of_22_and_locks_release(): void
+    public function test_all_pools_have_a_combined_ceiling_of_23_and_locks_release(): void
     {
         $guard = new HttpCapacity($this->directory);
-        foreach (['/catalog' => 12, '/admin' => 4, '/livewire-f410ccd1/update' => 4, '/1c/exchange' => 2] as $path => $limit) {
+        foreach (['/catalog' => 12, '/admin' => 4, '/livewire-f410ccd1/update' => 4, '/1c/exchange' => 2, '/1c/agent/tasks/7/part' => 1] as $path => $limit) {
             for ($i = 0; $i < $limit; $i++) {
                 $lease = $guard->acquire(['REQUEST_URI' => $path]);
                 $this->assertIsResource($lease);
@@ -62,7 +63,7 @@ class HttpCapacityTest extends TestCase
             }
             $this->assertNull($guard->acquire(['REQUEST_URI' => $path]));
         }
-        $this->assertCount(22, $this->leases);
+        $this->assertCount(23, $this->leases);
     }
 
     public function test_ajax_rejection_is_json_and_does_not_suggest_automatic_post_retry(): void
@@ -74,6 +75,8 @@ class HttpCapacityTest extends TestCase
         $this->assertStringNotContainsString('refresh', $guard->busyResponse([])['body']);
         $this->assertSame('admin', $guard->pool(['HTTP_HOST' => 'admin.kotlov.by:443', 'REQUEST_URI' => '/livewire/update']));
         $this->assertSame('public', $guard->pool(['REQUEST_URI' => '/cartoon']));
+        $this->assertSame('agent', $guard->pool(['REQUEST_URI' => '/1c/agent/tasks/171/part?name=orders_1&code=200']));
+        $this->assertSame('integration', $guard->pool(['REQUEST_URI' => '/1c/exchange?type=catalog']));
     }
 
     public function test_separate_php_process_observes_the_same_capacity_limit(): void

@@ -5,8 +5,9 @@ namespace App\Support;
 /** Single-host admission control. Must work without Composer, Laravel or MySQL. */
 class HttpCapacity
 {
-    // Leave eight of the account's 30 DB connections for scheduled jobs.
-    private const SLOTS = ['public' => 12, 'admin' => 4, 'interactive' => 4, 'integration' => 2];
+    // Leave seven of the account's 30 DB connections for scheduled jobs. The 1C agent has its own slot: it asks one
+    // thing at a time, and the morning peak of visitors must not turn its answers away (a failed document check).
+    private const SLOTS = ['public' => 12, 'admin' => 4, 'interactive' => 4, 'integration' => 2, 'agent' => 1];
 
     public function __construct(private readonly string $directory) {}
 
@@ -46,6 +47,9 @@ class HttpCapacity
     {
         $path = parse_url($server['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
         $host = strtolower(explode(':', $server['HTTP_HOST'] ?? '')[0]);
+        if (preg_match('~^/1c/agent(?:/|$)~', $path)) {
+            return 'agent';
+        }
         if (preg_match('~^/(?:1c/exchange(?:/|$)|webpay/notify$|telegram/webhook$|integrations/)~', $path)) {
             return 'integration';
         }
