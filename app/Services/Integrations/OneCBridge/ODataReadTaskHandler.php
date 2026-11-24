@@ -94,6 +94,9 @@ class ODataReadTaskHandler implements OneCAgentTaskHandler
         if (data_get($task->payload, 'nomenclature')) {
             return app(OneCNomenclature::class)->import($task);
         }
+        if (data_get($task->payload, 'prices')) {
+            return app(OneCPrices::class)->import($task);
+        }
         if (data_get($task->payload, 'stock')) {
             return app(OneCStock::class)->import($task);
         }

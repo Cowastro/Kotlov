@@ -100,11 +100,14 @@ class OneCItemResource extends Resource
                     ->state(fn (OneCItem $r): ?float => $r->is_folder ? null : OneCItemCosts::retail1c($r))->numeric(2)->placeholder('нет цены')
                     ->description(fn (OneCItem $r): ?string => $r->is_folder ? null : OneCItemCosts::markup(OneCItemCosts::retail1c($r), $r))
                     ->color(fn (OneCItem $r): ?string => ($p = OneCItemCosts::retail1c($r)) && $r->cost_gross && $p < $r->cost_gross ? 'danger' : null),
-                TextColumn::make('wholesale_sent')->label('Опт')->alignRight()->toggleable()
-                    ->state(fn (OneCItem $r): ?float => $r->is_folder ? null : (OneCItemCosts::lastSent($r)?->wholesale !== null ? (float) OneCItemCosts::lastSent($r)->wholesale : null))
-                    ->numeric(2)->placeholder('—')
-                    ->description(fn (OneCItem $r): ?string => ($sent = $r->is_folder ? null : OneCItemCosts::lastSent($r))
-                        ? OneCItemCosts::markup((float) $sent->wholesale, $r).' · пакет №'.$sent->onec_price_batch_id : null),
+                // «Оптовая с НДС» as 1C has it; before the 1C prices are read — what we sent last
+                TextColumn::make('wholesale_sent')->label('Опт 1С')->alignRight()->toggleable()
+                    ->state(fn (OneCItem $r): ?float => $r->is_folder ? null : ($r->prices_synced_at !== null ? ($r->price_wholesale ?: null)
+                        : (OneCItemCosts::lastSent($r)?->wholesale !== null ? (float) OneCItemCosts::lastSent($r)->wholesale : null)))
+                    ->numeric(2)->placeholder('нет цены')
+                    ->description(fn (OneCItem $r): ?string => $r->is_folder ? null : ($r->prices_synced_at !== null
+                        ? OneCItemCosts::markup($r->price_wholesale ?: null, $r)
+                        : (($sent = OneCItemCosts::lastSent($r)) ? OneCItemCosts::markup((float) $sent->wholesale, $r).' · пакет №'.$sent->onec_price_batch_id : null))),
                 TextColumn::make('article')->label('Артикул')->searchable()->toggleable()->fontFamily('mono'),
                 TextColumn::make('kind')->label('Вид номенклатуры')->toggleable()
                     ->state(fn (OneCItem $r): ?string => $r->kind_key ? $refs->label('item_kind', $r->kind_key) : null),

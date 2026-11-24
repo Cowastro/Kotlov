@@ -12,12 +12,15 @@ class OneCItem extends Model
 
     protected $fillable = ['ref_key', 'code', 'description', 'article', 'parent_key', 'is_folder', 'deletion_mark', 'kind_key', 'unit_key',
         'path', 'product_id', 'created_from_site', 'same_name_count', 'synced_at', 'stock_on_hand', 'stock_reserved', 'stock_synced_at',
-        'cost_net', 'cost_gross', 'cost_date', 'cost_doc', 'cost_kind'];
+        'cost_net', 'cost_gross', 'cost_date', 'cost_doc', 'cost_kind', 'price_retail', 'price_wholesale', 'prices_synced_at'];
 
     protected $casts = [
         'cost_net' => 'float',
         'cost_gross' => 'float',
         'cost_date' => 'date',
+        'price_retail' => 'float',
+        'price_wholesale' => 'float',
+        'prices_synced_at' => 'datetime',
         'site_link_count' => 'integer',
         'characteristic_count' => 'integer',
         'link_conflict' => 'boolean',
