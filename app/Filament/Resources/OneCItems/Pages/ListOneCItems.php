@@ -4,6 +4,7 @@ namespace App\Filament\Resources\OneCItems\Pages;
 
 use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Filament\Resources\OneCItems\OneCItemResource;
+use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
 use App\Models\OneCItem;
 use App\Services\Integrations\OneCBridge\OneCNomenclature;
 use DomainException;
@@ -54,6 +55,9 @@ class ListOneCItems extends ListRecords
                         Notification::make()->warning()->title($e->getMessage())->send();
                     }
                 }),
+            // the price batches for 1C: the drafts «Задать цены» fills, sent to 1C from there
+            Action::make('priceBatches')->label('Цены для 1С')->color('warning')->icon('heroicon-o-currency-dollar')
+                ->url(OneCPriceBatchResource::getUrl('index')),
             Action::make('bridge')->label('Мост 1С')->color('gray')->icon('heroicon-o-arrows-right-left')
                 ->url(OneCAgentTaskResource::getUrl('index')),
         ];
