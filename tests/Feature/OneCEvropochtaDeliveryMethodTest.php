@@ -28,8 +28,8 @@ class OneCEvropochtaDeliveryMethodTest extends TestCase
     {
         [$order, $profile, $export] = $this->fixture();
         $form = $export->defaults($order, $profile);
-        $this->assertSame('ДоПеревозчика', $form['delivery']);
-        $this->assertSame('ДоПеревозчика', $export->body($order, $profile, $form)['СпособДоставки']);
+        $this->assertSame('СиламиПеревозчикаПоАдресу', $form['delivery']);
+        $this->assertSame('СиламиПеревозчикаПоАдресу', $export->body($order, $profile, $form)['СпособДоставки']);
         $this->assertSame('ДоКлиента', $profile->fresh()->header['СпособДоставки']);
     }
 
@@ -42,7 +42,7 @@ class OneCEvropochtaDeliveryMethodTest extends TestCase
         foreach (['ДополнительнаяИнформацияПоДоставке', 'Комментарий'] as $field) $this->assertSame(1, substr_count($body[$field], 'TEST-TRACK-123'));
         $body = $export->body($order, $profile, ['comment' => 'Мой комментарий'], 4);
         $this->assertStringContainsString('TEST-TRACK-123', $body['Комментарий']);
-        $this->assertSame('ДоПеревозчика', $body['СпособДоставки']);
+        $this->assertSame('СиламиПеревозчикаПоАдресу', $body['СпособДоставки']);
     }
 
     public function test_other_delivery_methods_preserve_their_defaults_and_do_not_use_old_europochta_track(): void
