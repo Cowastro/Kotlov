@@ -77,6 +77,18 @@ class EvropochtaShipmentSummaryTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_status_colors_follow_confirmed_carrier_stages(): void
+    {
+        $order = $this->order(['payment_amount' => 77.9, 'status' => 'Заявка создана']);
+        $this->assertSame('info', Summary::color($order));
+        foreach (['created' => 'info', 'accepted' => 'info', 'transit' => 'warning',
+            'ready' => 'primary', 'delivered' => 'success', 'attention' => 'danger'] as $stage => $color) {
+            $order->forceFill(['carrier_provider' => 'evropochta', 'carrier_reference' => self::TRACK, 'carrier_stage' => $stage]);
+            $this->assertSame($color, Summary::color($order));
+        }
+        Http::assertNothingSent();
+    }
+
     public function test_zero_is_only_shown_when_it_was_saved_at_creation(): void
     {
         $order = $this->order(['payment_amount' => 0, 'status' => 'Заявка создана', 'shipment_payer' => 1]);

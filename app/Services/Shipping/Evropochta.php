@@ -199,6 +199,23 @@ class Evropochta
         return $this->statusFromResponse($response, $number, 'Не удалось подтвердить статус отправления.');
     }
 
+    public function updatePayment(string $number, float $amount): void
+    {
+        $this->validateShipmentNumber($number);
+        if (! is_finite($amount) || $amount < 0) throw new EvropochtaShipmentException('Проверьте сумму к получению.');
+        try {
+            $response = $this->request()->asJson()->send('PATCH', "postal/{$number}", ['json' => [
+                'payment_amount' => round($amount, 2), 'shipment_payer' => EvropochtaPayment::SENDER,
+                'cash_on_delivery_payer' => EvropochtaPayment::SENDER,
+            ]]);
+        } catch (ConnectionException) {
+            throw new EvropochtaShipmentException('Европочта не подтвердила изменение. Не повторяйте запрос сразу; проверьте историю заявки.');
+        }
+        if (! $response->successful() || $response->json('message') !== 'Внесены изменения в заявку') {
+            throw new EvropochtaShipmentException('Европочта не подтвердила новые условия оплаты. Проверьте историю заявки.');
+        }
+    }
+
     /** @return array{code: int, status: string} */
     public function cancelShipment(string $number): array
     {

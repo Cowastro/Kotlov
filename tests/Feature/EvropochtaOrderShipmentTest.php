@@ -138,6 +138,12 @@ class EvropochtaOrderShipmentTest extends TestCase
         $this->assertSame('12,5 кг · 40 × 18 × 25 см', $preview->getComponent('ep_parcel')->getState());
         $this->assertStringContainsString('Красноармейская, 63', $preview->getComponent('ep_destination')->getState());
         $this->assertTrue($preview->getComponent('notify_receiver')->getState());
+        $this->assertSame('100,00 BYN', $preview->getComponent('ep_goods')->getState());
+        $this->assertSame('17,50 BYN', $preview->getComponent('ep_delivery')->getState());
+        $this->assertSame('117,50 BYN', $preview->getComponent('ep_total')->getState());
+        $this->assertSame('0,00 BYN', $preview->getComponent('ep_cod')->getState());
+        $this->assertStringContainsString('наш магазин', $preview->getComponent('ep_payers')->getState());
+
 
         $page->setActionData($this->recipient() + ['label_format' => 'thermal'])
             ->callMountedAction()
@@ -458,6 +464,56 @@ class EvropochtaOrderShipmentTest extends TestCase
         } finally {
             Http::assertNothingSent();
         }
+    }
+
+
+    public function test_unpaid_manual_order_collects_one_total_and_cannot_move_carrier_fees_to_the_customer(): void
+    {
+        $order = $this->order(['payment_type' => 'cash', 'payment_status' => 'pending', 'discount' => 10, 'total' => 107.5]);
+        Http::fake([self::API.'postal/create' => Http::response(['number' => self::TRACK])]);
+        app(EvropochtaOrderShipment::class)->create($order, $this->recipient() + [
+            'payment_amount' => 125, 'shipment_payer' => 1, 'cash_on_delivery_payer' => 1,
+        ]);
+        [$request] = Http::recorded()->sole();
+        $this->assertSame(107.5, $request['payment_amount']);
+        $this->assertSame(0, $request['shipment_payer']);
+        $this->assertSame(0, $request['cash_on_delivery_payer']);
+        $this->assertSame('evropochta_cod', $order->fresh()->payment_type);
+        $this->assertEquals(107.5, $order->fresh()->evropochta_quote['shipment']['payment_amount']);
+    }
+
+    public function test_already_paid_cod_order_does_not_collect_money_again(): void
+    {
+        $order = $this->order(['payment_type' => 'evropochta_cod', 'payment_status' => 'paid']);
+        Http::fake([self::API.'postal/create' => Http::response(['number' => self::TRACK])]);
+        app(EvropochtaOrderShipment::class)->create($order, $this->recipient());
+        [$request] = Http::recorded()->sole();
+        $this->assertArrayNotHasKey('payment_amount', $request->data());
+        $this->assertSame(0, $request['shipment_payer']);
+        $this->assertSame(0, $order->fresh()->evropochta_quote['shipment']['payment_amount']);
+    }
+
+    public function test_changed_payment_review_stops_creation_before_any_carrier_request(): void
+    {
+        $order = $this->order(['payment_type' => 'cash', 'payment_status' => 'pending']);
+        $review = \App\Services\Shipping\EvropochtaPayment::signature($order);
+        $order->update(['delivery_price' => 20, 'total' => 120]);
+        Http::preventStrayRequests();
+        try {
+            app(EvropochtaOrderShipment::class)->create($order, $this->recipient() + ['payment_review_signature' => $review]);
+            $this->fail('Changed total must be reviewed again.');
+        } catch (\App\Services\Shipping\EvropochtaShipmentException $e) {
+            $this->assertStringContainsString('изменились', $e->getMessage());
+        }
+        Http::assertNothingSent();
+        $this->assertNull($order->fresh()->evropochta_tracking_number);
+    }
+
+    public function test_inconsistent_total_cannot_be_sent_as_cash_on_delivery(): void
+    {
+        $order = $this->order(['payment_type' => 'evropochta_cod', 'payment_status' => 'pending', 'total' => 135]);
+        $this->assertStringContainsString('не совпадают', app(EvropochtaOrderShipment::class)->unavailableReason($order));
+        Http::assertNothingSent();
     }
 
     private function manualOrder(array $attributes = []): Order

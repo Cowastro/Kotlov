@@ -8,6 +8,8 @@ use App\Models\Order;
 use App\Services\Shipping\Evropochta;
 use App\Services\Shipping\EvropochtaCheckout;
 use App\Services\Shipping\EvropochtaOrderShipment;
+use App\Services\Shipping\EvropochtaPayment;
+use Filament\Forms\Components\Hidden;
 use App\Services\Shipping\EvropochtaShipmentException;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -104,9 +106,10 @@ final class EvropochtaOrderActions
             ->disabled(fn (Order $record): bool => app(EvropochtaOrderShipment::class)->unavailableReason($record) !== null)
             ->tooltip(fn (Order $record): ?string => app(EvropochtaOrderShipment::class)->unavailableReason($record))
             ->modalHeading('Оформить Европочту и открыть ярлык')
-            ->modalDescription('Проверьте получателя и выберите формат печати. После оформления ярлык может появиться с задержкой.')
+            ->modalDescription('Проверьте итог для клиента и получателя. Доставку и комиссию Европочты оплачивает наш магазин; дополнительных платежей клиенту нет.')
             ->modalSubmitActionLabel('Оформить и открыть ярлык')
             ->fillForm(fn (Order $record): array => [
+                'payment_review_signature' => EvropochtaPayment::signature($record->fresh()),
                 'receiver_name' => preg_match('/^\S+$/u', trim((string) $record->customer_name)) ? trim($record->customer_name) : null,
                 'receiver_phone_number' => $record->customer_phone,
                 'label_format' => 'thermal',
@@ -131,10 +134,7 @@ final class EvropochtaOrderActions
 
                         return $dimensions;
                     }),
-                TextEntry::make('ep_cod')
-                    ->label('К оплате в отделении')
-                    ->state(fn (Order $record): string => number_format((float) $record->total, 2, ',', ' ').' BYN')
-                    ->visible(fn (Order $record): bool => $record->payment_type === EvropochtaCheckout::COD_PAYMENT),
+                ...self::paymentFields(),
                 TextEntry::make('ep_name_on_order')
                     ->label('Получатель в заказе')
                     ->state(fn (Order $record): string => $record->customer_name ?: '—'),
@@ -166,6 +166,29 @@ final class EvropochtaOrderActions
                     'format' => $data['label_format'],
                 ]);
             });
+    }
+
+    public static function paymentFields(): array
+    {
+        return [
+                TextEntry::make('ep_goods')->label('Товары')
+                    ->state(fn (Order $record): string => number_format((float) $record->subtotal, 2, ',', ' ').' BYN'),
+                TextEntry::make('ep_discount')->label('Скидка')
+                    ->state(fn (Order $record): string => number_format((float) $record->discount, 2, ',', ' ').' BYN')
+                    ->visible(fn (Order $record): bool => (float) $record->discount > 0),
+                TextEntry::make('ep_delivery')->label('Доставка — уже включена в итог')
+                    ->state(fn (Order $record): string => number_format((float) $record->delivery_price, 2, ',', ' ').' BYN'),
+                TextEntry::make('ep_total')->label('Общий итог заказа')
+                    ->state(fn (Order $record): string => number_format((float) $record->total, 2, ',', ' ').' BYN')->weight('bold'),
+                TextEntry::make('ep_cod')->label('Клиент платит при получении — одной суммой')
+                    ->state(fn (Order $record): string => number_format(EvropochtaPayment::collect($record), 2, ',', ' ').' BYN')
+                    ->helperText(fn (Order $record): string => $record->payment_status === 'paid'
+                        ? 'Заказ уже оплачен. Повторно деньги с клиента не взыскиваются.'
+                        : 'Наложенный платёж включает товары и доставку с учётом скидки. Доплат Европочте нет.'),
+                TextEntry::make('ep_payers')->label('Услуги Европочты')
+                    ->state('Доставку и комиссию наложенного платежа оплачивает наш магазин.'),
+                Hidden::make('payment_review_signature'),
+        ];
     }
 
     public static function printLabel(string $format): Action

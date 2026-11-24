@@ -12,6 +12,11 @@ class ListShipments extends ListRecords
 
     protected static string $resource = ShipmentResource::class;
 
+    public function getSubheading(): ?string
+    {
+        return 'Меню «Управление» у заказа: подготовка, оформление, статус, ярлыки и отмена. Клиент платит один итог; доставку и комиссию Европочты оплачивает магазин.';
+    }
+
     protected function getHeaderActions(): array
     {
         return [ShipmentResource::quoteAction()];

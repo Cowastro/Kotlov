@@ -10,6 +10,11 @@ use App\Services\Shipping\Evropochta;
 use App\Services\Shipping\EvropochtaShipmentSummary;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Enums\FiltersLayout;
+use App\Services\Shipping\EvropochtaPayment;
+use App\Services\Shipping\EvropochtaShipmentManagement;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -85,42 +90,127 @@ class ShipmentResource extends Resource
                 TextColumn::make('evropochta_tracking_number')->label('Трек-номер')
                     ->searchable()->placeholder('Ожидает оформления'),
             ])
+            ->filters([
+                SelectFilter::make('shipment_stage')->label('Этап отправления')->options([
+                    'not_created' => 'Не оформлено', 'created' => 'Создано, не передано',
+                    'accepted' => 'Принято Европочтой', 'transit' => 'В пути', 'ready' => 'В отделении получателя',
+                    'delivered' => 'Вручено', 'attention' => 'Отмена / возврат / проблема',
+                ])->query(function (Builder $query, array $data): Builder {
+                    $stage = $data['value'] ?? null;
+                    if (! $stage) return $query;
+                    if ($stage === 'not_created') return $query->whereNull('evropochta_tracking_number');
+                    if ($stage === 'created') return $query->whereNotNull('evropochta_tracking_number')
+                        ->where(fn (Builder $q): Builder => $q->whereNull('carrier_stage')->orWhere('carrier_stage', 'created'));
+                    return $query->where('carrier_provider', 'evropochta')->where('carrier_stage', $stage);
+                }),
+                SelectFilter::make('payment_status')->label('Оплата заказа')->options(['pending' => 'Ожидает оплаты', 'paid' => 'Оплачен', 'refunded' => 'Возврат оплаты']),
+            ], layout: FiltersLayout::AboveContent)->filtersFormColumns(2)->deferFilters(false)->persistFiltersInSession()
             ->recordActions([
-                EvropochtaOrderActions::track(),
-                static::quoteAction()
-                    ->authorize(fn (Order $record): bool => OrderResource::canView($record)),
-                Action::make('saveTrackingNumber')
-                    ->label('Записать трек-номер')
-                    ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
-                    ->fillForm(fn (Order $record): array => [
-                        'tracking_number' => $record->evropochta_tracking_number,
-                    ])
-                    ->schema([
-                        TextInput::make('tracking_number')->label('Трек-номер')
-                            ->trim()->required()->maxLength(100),
-                    ])
-                    ->action(function (Order $record, array $data): void {
-                        $saved = DB::transaction(function () use ($record, $data): bool {
-                            $order = static::getEloquentQuery()->lockForUpdate()->find($record->getKey());
+                ActionGroup::make([
+                    EvropochtaOrderActions::prepare(),
+                    EvropochtaOrderActions::create(),
+                    static::refreshAction(),
+                    EvropochtaOrderActions::track(),
+                    EvropochtaOrderActions::printLabel('thermal'),
+                    EvropochtaOrderActions::printLabel('address'),
+                    static::paymentAction(),
+                    static::cancelAction(),
+                    static::quoteAction()
+                        ->authorize(fn (Order $record): bool => OrderResource::canView($record)),
+                    Action::make('saveTrackingNumber')
+                        ->label('Записать трек-номер')
+                        ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
+                        ->fillForm(fn (Order $record): array => [
+                            'tracking_number' => $record->evropochta_tracking_number,
+                        ])
+                        ->schema([
+                            TextInput::make('tracking_number')->label('Трек-номер')
+                                ->trim()->required()->maxLength(100),
+                        ])
+                        ->action(function (Order $record, array $data): void {
+                            $saved = DB::transaction(function () use ($record, $data): bool {
+                                $order = static::getEloquentQuery()->lockForUpdate()->find($record->getKey());
 
-                            if (! $order || ! OrderResource::canEdit($order)) {
-                                return false;
+                                if (! $order || ! OrderResource::canEdit($order)) {
+                                    return false;
+                                }
+
+                                $order->evropochta_tracking_number = $data['tracking_number'];
+
+                                return $order->save();
+                            });
+
+                            if ($saved) {
+                                Notification::make()->title('Трек-номер сохранён')->success()->send();
+
+                                return;
                             }
 
-                            $order->evropochta_tracking_number = $data['tracking_number'];
-
-                            return $order->save();
-                        });
-
-                        if ($saved) {
-                            Notification::make()->title('Трек-номер сохранён')->success()->send();
-
-                            return;
-                        }
-
-                        Notification::make()->title('Заказ больше недоступен для изменения')->danger()->send();
-                    }),
+                            Notification::make()->title('Заказ больше недоступен для изменения')->danger()->send();
+                        }),
+                ])->label('Управление')->icon('heroicon-o-ellipsis-horizontal')->button()->color('gray'),
             ]);
+    }
+
+    public static function refreshAction(): Action
+    {
+        return Action::make('refreshEvropochta')->label('Проверить статус')->icon('heroicon-o-arrow-path')
+            ->authorize(fn (Order $record): bool => OrderResource::canView($record))
+            ->visible(fn (Order $record): bool => filled($record->evropochta_tracking_number))
+            ->disabled(fn (): bool => ! app(Evropochta::class)->configured())
+            ->action(function (Order $record, Action $action): void {
+                try {
+                    $status = app(EvropochtaShipmentManagement::class)->refresh($record, auth()->user());
+                    Notification::make()->success()->title($status)->send();
+                } catch (RuntimeException $e) {
+                    Notification::make()->danger()->title($e->getMessage())->send();
+                    $action->halt();
+                }
+            });
+    }
+
+    public static function paymentAction(): Action
+    {
+        return Action::make('updateEvropochtaPayment')->label('Установить сумму к получению')->icon('heroicon-o-currency-dollar')
+            ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
+            ->visible(fn (Order $record): bool => filled($record->evropochta_tracking_number)
+                && ! in_array($record->status, ['cancelled', 'delivered'], true) && ! $record->archived_at)
+            ->disabled(fn (Order $record): bool => ! app(Evropochta::class)->configured() || EvropochtaPayment::blocker($record) !== null)
+            ->tooltip(fn (Order $record): ?string => EvropochtaPayment::blocker($record))
+            ->modalDescription('Европочта получит одну итоговую сумму. Доставка и комиссия — за счёт нашего магазина. Изменение возможно, пока посылка не принята Европочтой.')
+            ->modalSubmitActionLabel('Сохранить в Европочте')
+            ->fillForm(fn (Order $record): array => ['payment_review_signature' => EvropochtaPayment::signature($record->fresh())])
+            ->schema(EvropochtaOrderActions::paymentFields())
+            ->action(function (Order $record, array $data, Action $action): void {
+                try {
+                    app(EvropochtaShipmentManagement::class)->changePayment($record, auth()->user(), $data['payment_review_signature'] ?? '');
+                    $record->refresh();
+                    Notification::make()->success()->title('Европочта подтвердила сумму. Доставка и комиссия — за наш счёт.')->send();
+                } catch (RuntimeException $e) {
+                    Notification::make()->danger()->title($e->getMessage())->send();
+                    $action->halt();
+                }
+            });
+    }
+
+    public static function cancelAction(): Action
+    {
+        return Action::make('cancelEvropochta')->label('Отменить отправление')->icon('heroicon-o-x-circle')->color('danger')
+            ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
+            ->visible(fn (Order $record): bool => filled($record->evropochta_tracking_number)
+                && ! in_array($record->status, ['cancelled', 'delivered'], true) && ! $record->archived_at)
+            ->disabled(fn (): bool => ! app(Evropochta::class)->configured())
+            ->requiresConfirmation()->modalDescription('Отменится только заявка Европочты, сам заказ останется. Доступно только до приёма посылки перевозчиком.')
+            ->action(function (Order $record, Action $action): void {
+                try {
+                    app(EvropochtaShipmentManagement::class)->cancel($record, auth()->user());
+                    $record->refresh();
+                    Notification::make()->success()->title('Отправление отменено в Европочте')->send();
+                } catch (RuntimeException $e) {
+                    Notification::make()->danger()->title($e->getMessage())->send();
+                    $action->halt();
+                }
+            });
     }
 
     public static function quoteAction(): Action
