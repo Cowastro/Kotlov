@@ -12,7 +12,6 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Enums\FiltersLayout;
 use App\Services\Shipping\EvropochtaPayment;
 use App\Services\Shipping\EvropochtaShipmentManagement;
 use Filament\Forms\Components\TextInput;
@@ -92,19 +91,22 @@ class ShipmentResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('shipment_stage')->label('Этап отправления')->options([
-                    'not_created' => 'Не оформлено', 'created' => 'Создано, не передано',
+                    'not_created' => 'Не оформлено', 'unverified' => 'Статус не получен', 'created' => 'Создано, не передано',
                     'accepted' => 'Принято Европочтой', 'transit' => 'В пути', 'ready' => 'В отделении получателя',
                     'delivered' => 'Вручено', 'attention' => 'Отмена / возврат / проблема',
                 ])->query(function (Builder $query, array $data): Builder {
                     $stage = $data['value'] ?? null;
                     if (! $stage) return $query;
                     if ($stage === 'not_created') return $query->whereNull('evropochta_tracking_number');
+                    if ($stage === 'unverified') return $query->whereNotNull('evropochta_tracking_number')->whereNull('carrier_checked_at');
                     if ($stage === 'created') return $query->whereNotNull('evropochta_tracking_number')
-                        ->where(fn (Builder $q): Builder => $q->whereNull('carrier_stage')->orWhere('carrier_stage', 'created'));
+                        ->where(fn (Builder $q): Builder => $q->where('carrier_stage', 'created')->orWhere(fn (Builder $q): Builder =>
+                            $q->where('evropochta_quote->shipment->status', 'Заявка создана')
+                                ->whereColumn('evropochta_quote->shipment->number', 'evropochta_tracking_number')));
                     return $query->where('carrier_provider', 'evropochta')->where('carrier_stage', $stage);
                 }),
                 SelectFilter::make('payment_status')->label('Оплата заказа')->options(['pending' => 'Ожидает оплаты', 'paid' => 'Оплачен', 'refunded' => 'Возврат оплаты']),
-            ], layout: FiltersLayout::AboveContent)->filtersFormColumns(2)->deferFilters(false)->persistFiltersInSession()
+            ])->deferFilters(false)->persistFiltersInSession()
             ->recordActions([
                 ActionGroup::make([
                     EvropochtaOrderActions::prepare(),

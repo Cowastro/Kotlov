@@ -47,9 +47,10 @@ class CarrierOrderProgress
     {
         DB::transaction(function () use ($id, $provider, $reference, $display, $stage, $text, $observedAt): void {
             $order = Order::lockForUpdate()->find($id);
-            if (! $order || $order->is_internal || $order->archived_at || in_array($order->status, ['cancelled', 'delivered'], true)) {
-                return;
-            }
+            if (! $order) return;
+            $closed = $order->is_internal || $order->archived_at || in_array($order->status, ['cancelled', 'delivered'], true);
+            // Closed retail orders still need their carrier status recorded, without reopening or notifying them.
+            if ($closed && $provider !== 'evropochta') return;
             if ($provider === 'evropochta' && ($order->delivery_type !== 'evropochta' || $order->evropochta_tracking_number !== $reference)) {
                 return;
             }
@@ -71,7 +72,7 @@ class CarrierOrderProgress
             $order->forceFill(['carrier_provider' => $provider, 'carrier_reference' => $reference,
                 'carrier_display_reference' => $display, 'carrier_status_text' => mb_substr($text, 0, 255),
                 'carrier_checked_at' => $observedAt, 'carrier_stage' => $stage ?? $previous])->save();
-            if ($stage === null || $stage === 'created') {
+            if ($closed || $stage === null || $stage === 'created') {
                 return;
             }
             $target = $stage === 'delivered' ? 'delivered' : ($stage === 'attention' ? $order->status : 'shipped');

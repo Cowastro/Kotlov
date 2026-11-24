@@ -141,6 +141,8 @@ class EvropochtaShipmentManagementTest extends TestCase
     public function test_filters_and_listing_do_not_generate_carrier_requests(): void
     {
         $o = $this->order();
+        $o->forceFill(['carrier_stage' => 'created', 'carrier_provider' => 'evropochta',
+            'carrier_reference' => self::TRACK, 'carrier_status_text' => 'Заявка создана', 'carrier_checked_at' => now()])->save();
         $page = Livewire::test(ListShipments::class)->assertSuccessful()->assertCanSeeTableRecords([$o]);
         $page->filterTable('shipment_stage', 'not_created')->assertCanNotSeeTableRecords([$o]);
         $page->filterTable('shipment_stage', 'created')->assertCanSeeTableRecords([$o]);
