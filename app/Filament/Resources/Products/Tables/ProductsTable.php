@@ -391,7 +391,7 @@ class ProductsTable
             ->filters([
                 SelectFilter::make('onec')
                     ->label('Связь с 1С')
-                    ->options(['yes' => 'Связан с товаром 1С', 'no' => 'Нет в 1С'])
+                    ->options(['yes' => 'Связан с товаром 1С', 'no' => 'Нет в 1С', 'price' => 'Цена из 1С (розница 1С)'])
                     ->query(function (Builder $query, array $data): Builder {
                         $linked = fn (Builder $q): Builder => $q->whereHas('source', fn (Builder $s): Builder => $s->where('code', 'onec'))
                             ->where(fn (Builder $m): Builder => $m->whereNull('match_status')->orWhere('match_status', '!=', 'ignored'));
@@ -399,6 +399,7 @@ class ProductsTable
                         return match ($data['value'] ?? null) {
                             'yes' => $query->whereHas('integrationProducts', $linked),
                             'no' => $query->whereDoesntHave('integrationProducts', $linked),
+                            'price' => $query->where('onec_retail_byn', '>', 0),
                             default => $query,
                         };
                     }),

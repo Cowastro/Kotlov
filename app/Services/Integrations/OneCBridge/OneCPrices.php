@@ -2,7 +2,6 @@
 
 namespace App\Services\Integrations\OneCBridge;
 
-use App\Models\IntegrationProduct;
 use App\Models\OneCAgentTask;
 use App\Models\OneCItem;
 use App\Models\Product;
@@ -82,9 +81,10 @@ class OneCPrices
         $changed = [];
         DB::transaction(function () use ($last, $vat, &$changed): void {
             foreach (['retail' => 'price_retail', 'wholesale' => 'price_wholesale'] as $kind => $column) {
-                foreach ($last[$kind] ?? [] as $key => [, $price]) {
+                foreach ($last[$kind] ?? [] as $key => [$period, $price]) {
                     $value = $price > 0 ? round($price * $vat, 2) : null;
-                    if (OneCItem::query()->where('ref_key', $key)->where(fn ($q) => $q->whereNull($column)->orWhere($column, '!=', $value))->update([$column => $value]) && $kind === 'retail') {
+                    $values = [$column => $value] + ($kind === 'retail' ? ['price_retail_at' => substr((string) $period, 0, 10) ?: null] : []);
+                    if (OneCItem::query()->where('ref_key', $key)->where(fn ($q) => $q->whereNull($column)->orWhere($column, '!=', $value))->update($values) && $kind === 'retail') {
                         $changed[] = $key;
                     }
                 }
@@ -92,36 +92,53 @@ class OneCPrices
         });
         OneCItem::query()->whereIn('ref_key', array_keys(($last['retail'] ?? []) + ($last['wholesale'] ?? [])))->update(['prices_synced_at' => now()]);
         Cache::forever(self::LAST_READ, now()->subDay()->format('Y-m-d\T00:00:00'));
-        // a first read covers every card; then only those whose 1C retail price changed
-        $applied = $this->applyToCards(data_get($task->payload, 'since') === null ? null : $changed);
+        // every card each time: a good that comes into stock takes its 1C retail price
+        [$applied, $released] = $this->applyToCards();
 
         return 'Цены 1С: розница '.count($last['retail'] ?? []).', опт '.count($last['wholesale'] ?? []).($applied ? ', цен на сайте изменено: '.$applied : '')
+            .($released ? ', карточек без наличия отпущено: '.$released : '')
             .($fullPages > 0 && data_get($task->payload, 'since') === null && $fullPages >= self::FULL_PAGES ? ' (прочитаны не все записи — увеличить FULL_PAGES)' : '');
     }
 
-    /** The 1C retail price becomes the price of every linked card; a card without one keeps its price. @return int cards changed */
-    /** @param list<string>|null $keys only these 1C items; null — every one with a retail price */
-    public function applyToCards(?array $keys = null): int
+    /** Days a retail price set in 1C leads the site even for a good not in stock (a fresh «Установка цен»). */
+    public const FRESH_DAYS = 30;
+
+    /**
+     * The 1C retail price leads the card when the good is in stock on the selling warehouse, or it was set in 1C lately.
+     * An old 1C price of a good not in stock may be stale: the card keeps its own then.
+     */
+    public static function leads(OneCItem $item): bool
     {
-        if ($keys === []) {
-            return 0;
+        if ((float) $item->price_retail <= 0) {
+            return false;
         }
+        $inStock = OneCStock::fresh($item) && (float) $item->stock_on_hand > 0;
+
+        return $inStock || ($item->price_retail_at !== null && $item->price_retail_at->gte(now()->subDays(self::FRESH_DAYS)->startOfDay()));
+    }
+
+    /**
+     * One price everywhere, where 1C leads: the card takes the 1C retail price. Where it does not (not in stock, an old
+     * price) the card is let go — its price is no more held to the 1C one. @return array{0: int, 1: int} changed, let go
+     */
+    public function applyToCards(): array
+    {
         $changed = 0;
-        OneCItem::query()->whereNotNull('price_retail')->where('price_retail', '>', 0)->where('is_folder', false)
-            ->when($keys !== null, fn ($q) => $q->whereIn('ref_key', $keys))
-            ->chunkById(500, function ($items) use (&$changed): void {
-                $links = IntegrationProduct::query()->whereHas('source', fn ($q) => $q->where('code', 'onec'))->whereNotNull('product_id')
-                    ->where(fn ($q) => $q->whereNull('match_status')->orWhere('match_status', '!=', 'ignored'))
-                    ->where(function ($q) use ($items): void {
-                        foreach ($items as $item) {
-                            $q->orWhere('external_id', $item->ref_key)->orWhere('external_id', 'like', $item->ref_key.'#%');
-                        }
-                    })->get(['external_id', 'product_id']);
-                $byKey = $items->keyBy('ref_key');
-                foreach ($links as $link) {
-                    $item = $byKey[strtolower(explode('#', (string) $link->external_id)[0])] ?? null;
-                    $card = $item ? Product::query()->find($link->product_id) : null;
+        $released = 0;
+        OneCItem::query()->whereNotNull('product_id')->where('is_folder', false)
+            ->chunkById(500, function ($items) use (&$changed, &$released): void {
+                $cards = Product::query()->whereIn('id', $items->pluck('product_id'))->get()->keyBy('id');
+                foreach ($items as $item) {
+                    $card = $cards[$item->product_id] ?? null;
                     if (! $card) {
+                        continue;
+                    }
+                    if (! self::leads($item)) {
+                        if ($card->onec_retail_byn !== null) {
+                            $card->forceFill(['onec_retail_byn' => null, 'onec_retail_at' => null])->save();
+                            $released++;
+                        }
+
                         continue;
                     }
                     $price = (float) $item->price_retail;
@@ -137,6 +154,6 @@ class OneCPrices
                 }
             });
 
-        return $changed;
+        return [$changed, $released];
     }
 }
