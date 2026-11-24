@@ -35,6 +35,25 @@ class OneCPriceBatchesTest extends TestCase
             'external_code' => 'УТ-00000002', 'name' => 'Без карточки', 'stock_quantity' => 1, 'price' => 0, 'match_status' => 'unmatched']);
     }
 
+    public function test_supplier_cost_excluding_vat_is_compared_to_gross_prices_on_the_same_basis(): void
+    {
+        $card = Product::where('slug', 'bak')->firstOrFail();
+        $card->manual_purchase_price_byn = 150;
+        $offer = new \App\Models\SupplierProduct([
+            'price_byn' => 120.34, 'raw' => ['vat_included' => false], 'match_confidence' => 'manual_price_list',
+        ]);
+        $offer->setRelation('supplier', new \App\Models\Supplier(['is_active' => true]));
+        $card->setRelation('supplierProducts', new \Illuminate\Database\Eloquent\Collection([$offer]));
+        $card->setRelation('purchasePriceSources', new \Illuminate\Database\Eloquent\Collection());
+
+        $basis = \App\Services\Integrations\OneCBridge\OneCItemCosts::cardSupplierBasis($card);
+        $this->assertEquals(120.34, $basis['net']);
+        $this->assertEquals(144.41, $basis['cost']);
+        $this->assertEquals(8.7, round((156.97 / $basis['cost'] - 1) * 100, 1));
+        $card->manual_purchase_price_byn = 135;
+        $this->assertEquals(135, \App\Services\Integrations\OneCBridge\OneCItemCosts::cardSupplierBasis($card)['cost']);
+    }
+
     public function test_a_batch_is_built_approved_handed_to_the_agent_once_and_closed_with_the_1c_document(): void
     {
         $service = app(OneCPriceBatches::class);

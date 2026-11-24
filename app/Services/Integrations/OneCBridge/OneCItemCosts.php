@@ -80,20 +80,25 @@ class OneCItemCosts
      * What a price is counted from: the 1C cost; when the goods have not come yet (no purchase in 1C) — the purchase
      * price of the linked card's suppliers (with VAT, the lowest).
      *
-     * @return array{cost: float, label: string}|null
+     * @return array{cost: float, net: ?float, label: string}|null
      */
     public static function basis(OneCItem $item): ?array
     {
         if ((float) $item->cost_gross > 0) {
-            return ['cost' => (float) $item->cost_gross, 'label' => 'себестоимость 1С ('.($item->cost_kind === self::AVERAGE
+            return ['cost' => (float) $item->cost_gross, 'net' => $item->cost_net ?: null, 'label' => 'себестоимость 1С ('.($item->cost_kind === self::AVERAGE
                 ? 'средняя за 3 мес.' : 'закупка '.$item->cost_date?->format('d.m.Y')).')'];
         }
-        $price = self::supplierPrice($item);
+        $price = self::supplierBasis($item);
 
-        return $price ? ['cost' => $price, 'label' => 'закупка поставщика (в 1С ещё не поступал)'] : null;
+        return $price ? $price + ['label' => 'закупка поставщика (в 1С ещё не поступал)'] : null;
     }
 
     public static function supplierPrice(OneCItem $item): ?float
+    {
+        return self::supplierBasis($item)['cost'] ?? null;
+    }
+
+    private static function supplierBasis(OneCItem $item): ?array
     {
         $productId = $item->product_id ?: IntegrationProduct::query()->whereHas('source', fn ($q) => $q->where('code', 'onec'))
             ->where(fn ($q) => $q->where('external_id', $item->ref_key)->orWhere('external_id', 'like', $item->ref_key.'#%'))
@@ -102,12 +107,26 @@ class OneCItemCosts
         if (! $card) {
             return null;
         }
-        $prices = collect([(float) $card->manual_purchase_price_byn])
-            ->concat($card->operationalSupplierProducts()->pluck('price_byn'))
-            ->concat($card->usablePurchasePriceSources()->pluck('price_byn'))
-            ->map(fn ($price): float => (float) $price)->filter(fn (float $price): bool => $price > 0);
+        return self::cardSupplierBasis($card);
+    }
 
-        return $prices->isEmpty() ? null : round($prices->min(), 2);
+    /** Compare supplier sources on a VAT-inclusive basis, retaining a documented net cost. */
+    public static function cardSupplierBasis(Product $card): ?array
+    {
+        $prices = collect([['cost' => (float) $card->manual_purchase_price_byn, 'net' => null]]);
+        foreach ($card->operationalSupplierProducts() as $offer) {
+            $amount = (float) $offer->price_byn;
+            $exclusive = data_get($offer->raw, 'vat_included') === false;
+            $prices->push([
+                'cost' => $exclusive ? round($amount * config('onec.price_documents.vat_rate'), 2) : $amount,
+                'net' => $exclusive ? $amount : null,
+            ]);
+        }
+        foreach ($card->usablePurchasePriceSources() as $source) {
+            $prices->push(['cost' => (float) $source->price_byn, 'net' => null]);
+        }
+
+        return $prices->where('cost', '>', 0)->sortBy('cost')->first();
     }
 
     /** The prices we sent to 1C last for the item (a batch handed to the agent), or null. */

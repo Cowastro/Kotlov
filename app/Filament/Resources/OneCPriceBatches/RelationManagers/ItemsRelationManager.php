@@ -41,15 +41,16 @@ class ItemsRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('code')->label('Код 1С')->searchable()->toggleable(),
                 TextColumn::make('name')->label('Товар')->searchable()->wrap(),
-                TextColumn::make('purchase')->label('Себестоимость / закупка')->numeric(2)->alignRight()->placeholder('—'),
-                TextColumn::make('retail_site')->label('Розница сайта')->numeric(2)->alignRight()->placeholder('—'),
+                TextColumn::make('purchase_net')->label('Себестоимость / закупка без НДС')->numeric(2)->alignRight()->placeholder('—'),
+                TextColumn::make('purchase')->label('Себестоимость / закупка с НДС')->numeric(2)->alignRight()->placeholder('—'),
+                TextColumn::make('retail_site')->label('Розница сайта с НДС')->numeric(2)->alignRight()->placeholder('—'),
                 TextInputColumn::make('retail')->label('Розница с НДС')->type('number')->step('0.01')
                     ->rules(['required', 'numeric', 'min:0.01'])->disabled(fn (): bool => ! $editable()),
                 TextInputColumn::make('wholesale')->label('Опт с НДС')->type('number')->step('0.01')
                     ->rules(['required', 'numeric', 'min:0.01'])->disabled(fn (): bool => ! $editable()),
-                TextColumn::make('margin')->label('Наценка розн. / опт')->alignRight()
+                TextColumn::make('margin')->label('Наценка розн. / опт')->tooltip('Сравнение розницы и опта с закупкой. Все суммы для сравнения включают НДС.')->alignRight()
                     ->state(fn (OneCPriceBatchItem $record): ?string => (float) $record->purchase > 0
-                        ? round(((float) $record->retail / (float) $record->purchase - 1) * 100).' % / '.round(((float) $record->wholesale / (float) $record->purchase - 1) * 100).' %' : null)
+                        ? round(((float) $record->retail / (float) $record->purchase - 1) * 100, 1).' % / '.round(((float) $record->wholesale / (float) $record->purchase - 1) * 100, 1).' %' : null)
                     // below the 1C cost: red, and the batch is not sent without a confirmation
                     ->color(fn (OneCPriceBatchItem $record): ?string => (float) $record->purchase > 0
                         && ((float) $record->retail < (float) $record->purchase || (float) $record->wholesale < (float) $record->purchase) ? 'danger' : null)

@@ -5,6 +5,7 @@ namespace App\Services\Integrations;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
+use App\Services\Integrations\OneCBridge\OneCItemCosts;
 use App\Services\Market\MarketPriceSummary;
 use Illuminate\Support\Collection;
 
@@ -105,13 +106,7 @@ class PricelessStockPriceProposal
         if ((float) $card->onec_cost_vat_byn > 0) {
             return round((float) $card->onec_cost_vat_byn, 2);
         }
-        $prices = collect([(float) $card->manual_purchase_price_byn])
-            ->concat($card->operationalSupplierProducts()->pluck('price_byn'))
-            ->concat($card->usablePurchasePriceSources()->pluck('price_byn'))
-            ->map(fn ($price): float => (float) $price)
-            ->filter(fn (float $price): bool => $price > 0);
-
-        return $prices->isEmpty() ? null : round($prices->min(), 2);
+        return OneCItemCosts::cardSupplierBasis($card)['cost'] ?? null;
     }
 
     private function marketMedian(Product $card): ?float
