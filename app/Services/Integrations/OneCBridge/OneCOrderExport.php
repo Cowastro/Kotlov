@@ -140,7 +140,9 @@ class OneCOrderExport
     {
         $taxId = $this->companyTaxId($order);
         // ВАМэкспресс / Европочта is the 1C customer when it collects the money (the client pays on receipt); paid ahead — retail.
-        $profile ??= $this->profiles->forOrder($taxId !== '', $order->isPaymentOnReceipt() ? $order->delivery_type : null);
+        $delivery = $order->isPaymentOnReceipt() ? $order->delivery_type : null;
+        if ($delivery === 'transport' && app(OneCVamPaymentRule::class)->applies($order)) $delivery = 'vam_express';
+        $profile ??= $this->profiles->forOrder($taxId !== '', $delivery);
         if (! $profile) {
             return ['profile_id' => null, 'h' => []];
         }
@@ -158,13 +160,14 @@ class OneCOrderExport
                 $h['Договор_Key'] = array_key_first($this->contracts($counterparty->ref_key, $h['Организация_Key']));
             }
         }
-        $paymentRule = app(OneCEvropochtaPaymentRule::class);
-        if ($paymentRule->applies($order)) {
-            try {
-                $h = array_replace($h, $paymentRule->headers($profile));
-            } catch (DomainException) {
-                // Missing carrier references must never silently use ordinary retail.
-                $h = array_replace($h, array_fill_keys(OneCEvropochtaPaymentRule::FIELDS, null));
+        foreach ([app(OneCEvropochtaPaymentRule::class), app(OneCVamPaymentRule::class)] as $paymentRule) {
+            if ($paymentRule->applies($order)) {
+                try {
+                    $h = array_replace($h, $paymentRule->headers($profile));
+                } catch (DomainException) {
+                    // Missing carrier references must never silently use ordinary retail.
+                    $h = array_replace($h, array_fill_keys($paymentRule::FIELDS, null));
+                }
             }
         }
         if ($order->manager) {
@@ -219,7 +222,8 @@ class OneCOrderExport
     /** @return list<string> what stops the order */
     public function problems(Order $order, ?OneCOrderProfile $profile, array $form): array
     {
-        $problems = app(OneCEvropochtaPaymentRule::class)->problems($order, $profile, $form);
+        $problems = array_merge(app(OneCEvropochtaPaymentRule::class)->problems($order, $profile, $form),
+            app(OneCVamPaymentRule::class)->problems($order, $profile, $form));
         if ($reason = app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($order)) {
             $problems[] = $reason;
         }
