@@ -235,6 +235,8 @@ final class EvropochtaOrderShipment
                 throw new EvropochtaShipmentException('Трек-номер получен, но не сохранён. Повторите действие для восстановления номера.');
             }
 
+            app(\App\Services\Orders\EvropochtaTrackingSmsJournal::class)->sync($lockedOrder);
+
             if ($smsStatus === 'pending') {
                 $orderId = (int) $lockedOrder->getKey();
                 DB::afterCommit(static function () use ($orderId, $number, $phone): void {
