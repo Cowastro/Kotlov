@@ -158,6 +158,15 @@ class OneCOrderExport
                 $h['Договор_Key'] = array_key_first($this->contracts($counterparty->ref_key, $h['Организация_Key']));
             }
         }
+        $paymentRule = app(OneCEvropochtaPaymentRule::class);
+        if ($paymentRule->applies($order)) {
+            try {
+                $h = array_replace($h, $paymentRule->headers($profile));
+            } catch (DomainException) {
+                // Missing carrier references must never silently use ordinary retail.
+                $h = array_replace($h, array_fill_keys(OneCEvropochtaPaymentRule::FIELDS, null));
+            }
+        }
         if ($order->manager) {
             $h['Менеджер_Key'] = OneCReference::query()->where('kind', 'user')->where('deletion_mark', false)
                 ->where('description', $order->manager->name)->value('ref_key') ?? $h['Менеджер_Key'];
@@ -210,7 +219,7 @@ class OneCOrderExport
     /** @return list<string> what stops the order */
     public function problems(Order $order, ?OneCOrderProfile $profile, array $form): array
     {
-        $problems = [];
+        $problems = app(OneCEvropochtaPaymentRule::class)->problems($order, $profile, $form);
         if ($reason = app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($order)) {
             $problems[] = $reason;
         }
