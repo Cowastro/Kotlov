@@ -126,5 +126,9 @@ class OneCPricesSyncTest extends TestCase
         $old->fresh()->forceFill(['price' => 1500])->save();
         $this->assertSame(1500.0, (float) $old->fresh()->price, 'a supplier or a manager can set it again');
         $this->assertFalse(OneCPrices::leads($oldItem));
+
+        // in stock, but the 1C retail is below the last purchase — old: it does not lead
+        $this->assertFalse(OneCPrices::leads(new OneCItem(['price_retail' => 1314, 'cost_gross' => 1368, 'price_retail_at' => now()->toDateString(),
+            'stock_on_hand' => 3, 'stock_synced_at' => now()])));
     }
 }

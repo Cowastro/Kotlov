@@ -112,6 +112,10 @@ class OneCPrices
         if ((float) $item->price_retail <= 0) {
             return false;
         }
+        // a retail price below the last purchase is old (Мета-Бел after its new list): the card keeps its own
+        if ((float) $item->cost_gross > 0 && (float) $item->price_retail < (float) $item->cost_gross) {
+            return false;
+        }
         $inStock = OneCStock::fresh($item) && (float) $item->stock_on_hand > 0;
 
         return $inStock || ($item->price_retail_at !== null && $item->price_retail_at->gte(now()->subDays(self::FRESH_DAYS)->startOfDay()));
