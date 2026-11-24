@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -14,6 +15,7 @@ use App\Services\Integrations\OneCBridge\OneCItemCosts;
 use App\Services\Integrations\OneCBridge\OneCPrices;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class OneCPricesSyncTest extends TestCase
@@ -101,6 +103,19 @@ class OneCPricesSyncTest extends TestCase
         $this->read(['retail_1' => [['Period' => now()->format('Y-m-d\TH:i:s'), 'Номенклатура_Key' => self::CORD, 'Цена' => 86.67]]]);
         $this->assertSame(104.0, (float) $cord->fresh()->price);
         $this->assertSame(250.0, (float) $meter->fresh()->price);
+    }
+
+    public function test_the_card_form_shows_the_1c_price_and_does_not_change_it(): void
+    {
+        $this->actingAs(User::query()->where('role', 'admin')->firstOrFail());
+        $category = Category::query()->firstOrCreate(['slug' => 'schetchiki'], ['name' => 'Счётчики', 'is_active' => true]);
+        $card = Product::query()->create(['category_id' => $category->id, 'name' => 'Счётчик газа тестовый', 'slug' => 'schetchik', 'price' => 250, 'onec_retail_byn' => 250]);
+
+        Livewire::test(EditProduct::class, ['record' => $card->getRouteKey()])
+            ->assertSee('Цена из 1С: 250,00 BYN — меняется в 1С')
+            ->assertFormFieldIsDisabled('price')
+            ->call('save')->assertHasNoFormErrors();
+        $this->assertSame(250.0, (float) $card->fresh()->price);
     }
 
     public function test_an_old_1c_price_of_a_good_not_in_stock_does_not_change_the_site_price(): void
