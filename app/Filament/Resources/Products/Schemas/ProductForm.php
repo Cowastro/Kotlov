@@ -261,7 +261,12 @@ class ProductForm
                                                     ->required()
                                                     ->numeric()
                                                     ->prefix('BYN')
-                                                    ->helperText('Автоматически из цены поставщика × курс НБРБ. Можно скорректировать вручную.')
+                                                    // one price everywhere: a retail price set in 1C is the price, it is changed in 1C
+                                                    ->helperText(fn ($record): string => (float) $record?->onec_retail_byn > 0
+                                                        ? 'Цена из 1С: '.number_format((float) $record->onec_retail_byn, 2, ',', ' ').' BYN — меняется в 1С («Установка цен» или «Цены для 1С» в номенклатуре). Здесь не изменится'.($record->onSaleNow() ? ' (сейчас действует акция).' : '.')
+                                                        : 'Автоматически из цены поставщика × курс НБРБ. Можно скорректировать вручную. Если в 1С задать розницу, цена будет браться из 1С.')
+                                                    ->disabled(fn ($record): bool => (float) $record?->onec_retail_byn > 0 && ! $record->onSaleNow())
+                                                    ->dehydrated(fn ($record): bool => ! ((float) $record?->onec_retail_byn > 0 && ! $record->onSaleNow()))
                                                     ->default(0)
                                                     ->columnSpan(2),
 
