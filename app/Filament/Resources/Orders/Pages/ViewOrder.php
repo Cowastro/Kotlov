@@ -101,6 +101,7 @@ class ViewOrder extends ViewRecord
     {
         return [
             \App\Filament\Resources\Orders\Actions\VamExpressOrderActions::make()
+                ->label(fn (): string => $this->record->delivery_type === 'vam_express' ? 'ВАМ: отправление и статус' : 'Выбрать ВАМ Экспресс')
                 ->visible(fn (): bool => in_array($this->record->status, ['processing', 'shipped', 'delivered'], true)),
             $this->confirmFulfillmentAction(),
             Action::make('advanceWorkflow')
@@ -150,7 +151,7 @@ class ViewOrder extends ViewRecord
                 EvropochtaOrderActions::prepare(),
                 EvropochtaOrderActions::create(),
             ])
-                ->label('Европочта')
+                ->label(fn (): string => filled($this->record->evropochta_tracking_number) ? 'Европочта: ярлык и статус' : 'Оформить Европочту')
                 ->visible(fn (): bool => in_array($this->record->status, ['processing', 'shipped', 'delivered'], true)
                     && $this->record->delivery_type === 'evropochta')
                 ->icon('heroicon-o-cube')

@@ -142,4 +142,18 @@ class OrderDeliveryPreparationTest extends TestCase
         $this->expectException(DomainException::class);
         app(\App\Services\Integrations\OneCBridge\OneCSupplierOrderExport::class)->enqueue($order, 1, [], null);
     }
+
+    public function test_existing_europochta_label_shows_tracking_without_a_second_dispatch_step(): void
+    {
+        $actor = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $this->actingAs($actor);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
+        $order = $this->order('processing', 'evropochta');
+        $order->forceFill(['evropochta_tracking_number' => 'TEST-TRACK', 'carrier_stage' => 'created'])->save();
+        \App\Models\IntegrationSource::updateOrCreate(['code' => 'onec'], ['name' => '1C', 'is_active' => true]);
+        \Livewire\Livewire::test(\App\Filament\Resources\Orders\Pages\ViewOrder::class, ['record' => $order->id])
+            ->assertSee('Европочта: ярлык и статус')->assertActionHidden('createEvropochtaShipment')
+            ->assertActionHidden('advanceWorkflow')->assertActionVisible('prepareOrderDelivery');
+        $this->assertSame('processing', $order->fresh()->status);
+    }
 }
