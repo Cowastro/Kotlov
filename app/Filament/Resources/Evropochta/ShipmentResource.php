@@ -7,6 +7,7 @@ use App\Filament\Resources\Orders\Actions\EvropochtaOrderActions;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use App\Services\Shipping\Evropochta;
+use App\Services\Shipping\EvropochtaShipmentSummary;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
@@ -58,12 +59,26 @@ class ShipmentResource extends Resource
                     ->url(fn (Order $record): ?string => OrderResource::canView($record)
                         ? OrderResource::getUrl('view', ['record' => $record])
                         : null),
-                TextColumn::make('customer_name')->label('Получатель')->searchable(),
-                TextColumn::make('customer_phone')->label('Телефон'),
-                TextColumn::make('delivery_city')->label('Город'),
+                TextColumn::make('customer_name')->label('Получатель')->searchable()
+                    ->description(fn (Order $record): ?string => $record->customer_phone),
+                TextColumn::make('shipment_status')->label('Статус Европочты')->badge()
+                    ->state(fn (Order $record): string => EvropochtaShipmentSummary::status($record))
+                    ->color(fn (Order $record): string => EvropochtaShipmentSummary::color($record))
+                    ->description(fn (Order $record): ?string => $record->carrier_reference === $record->evropochta_tracking_number
+                        && $record->carrier_checked_at ? 'Проверено '.$record->carrier_checked_at->format('d.m H:i') : null),
+                TextColumn::make('cod_amount')->label('Наложенный платёж')->money('BYN')
+                    ->state(fn (Order $record): ?float => EvropochtaShipmentSummary::amount($record))
+                    ->placeholder('Нет данных')->description(fn (Order $record): string => EvropochtaShipmentSummary::source($record)),
+                TextColumn::make('shipment_payer')->label('Доставку оплачивает')
+                    ->state(fn (Order $record): string => EvropochtaShipmentSummary::payer($record, 'shipment_payer')),
+                TextColumn::make('cod_payer')->label('Комиссию наложенного платежа')
+                    ->state(fn (Order $record): string => EvropochtaShipmentSummary::amount($record) === 0.0
+                        ? 'Нет наложенного платежа' : EvropochtaShipmentSummary::payer($record, 'cash_on_delivery_payer'))
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('delivery_city')->label('Город')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('delivery_address')->label('Отделение / адрес')->wrap(),
-                TextColumn::make('delivery_price')->label('Доставка в заказе')->money('BYN'),
-                TextColumn::make('evropochta_quote.carrier_price')->label('Тариф перевозчика')->money('BYN')->placeholder('—'),
+                TextColumn::make('delivery_price')->label('Доставка в заказе')->money('BYN')->toggleable(),
+                TextColumn::make('evropochta_quote.carrier_price')->label('Тариф перевозчика')->money('BYN')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('evropochta_quote.parcel.box')->label('Упаковка')
                     ->formatStateUsing(fn (string $state): string => implode(' × ', config("evropochta_packaging.{$state}.outer", [])).' см')
                     ->placeholder('—')->toggleable(),

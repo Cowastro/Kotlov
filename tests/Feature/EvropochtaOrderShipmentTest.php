@@ -405,6 +405,11 @@ class EvropochtaOrderShipmentTest extends TestCase
         $this->assertSame(117.5, $request['declared_amount']);
         $this->assertSame(0, $request['cash_on_delivery_payer']);
         $this->assertSame(0, $request['shipment_payer']);
+        $snapshot = $order->fresh()->evropochta_quote['shipment'];
+        $this->assertSame(self::TRACK, $snapshot['number']);
+        $this->assertEquals(117.5, $snapshot['payment_amount']);
+        $this->assertSame(0, $snapshot['shipment_payer']);
+        $this->assertSame(0, $snapshot['cash_on_delivery_payer']);
         $this->assertSame('pending', $order->fresh()->payment_status);
     }
 
