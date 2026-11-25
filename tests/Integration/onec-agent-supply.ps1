@@ -88,6 +88,17 @@ try {
     Assert-Equal 0 ([Kotlov.NativeCom]::Get($dispatch, 'CompareMode')) 'IDispatch writes properties'
     [void][Kotlov.NativeCom]::Call($dispatch, 'RemoveAll', @())
     Assert-Equal 0 ([Kotlov.NativeCom]::Get($dispatch, 'Count')) 'IDispatch invokes methods without arguments'
+    $wrappedArguments = New-Object object[] 2
+    $wrappedArguments[0] = [Management.Automation.PSObject]::AsPSObject('wrapped-key')
+    $wrappedArguments[1] = [Management.Automation.PSObject]::AsPSObject(296)
+    [void][Kotlov.NativeCom]::Call($dispatch, 'Add', $wrappedArguments)
+    Assert-Equal $true ([Kotlov.NativeCom]::Call($dispatch, 'Exists', @('wrapped-key'))) 'PS2 wrapped text becomes a native COM string'
+    $nativeValue = $dispatch.GetType().InvokeMember('Item', [Reflection.BindingFlags]::GetProperty, $null, $dispatch, @('wrapped-key'))
+    Assert-Equal 296 $nativeValue 'PS2 wrapped number becomes a native COM number'
+    [void][Kotlov.NativeCom]::Call($dispatch, 'RemoveAll', @())
+    [Kotlov.NativeCom]::Set($dispatch, 'CompareMode', [Management.Automation.PSObject]::AsPSObject(1))
+    Assert-Equal 1 ([Kotlov.NativeCom]::Get($dispatch, 'CompareMode')) 'wrapped property value is marshaled correctly'
+    Assert-Fails { [Kotlov.NativeCom]::Call($dispatch, 'NoSuchDiagnosticMethod', @()) } 'COM method NoSuchDiagnosticMethod'
 } finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($dispatch) }
 # Native diagnostics execute normal posting in a transaction that is always rolled back. No 1C is contacted.
 function Native-Mock {
