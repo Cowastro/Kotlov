@@ -24,7 +24,7 @@ class OrderSupplyTaskHandler implements OneCAgentTaskHandler
         }
         // An older agent must keep processing its other work, without receiving unknown task types.
         $health = app(OneCAgentTasks::class)->health();
-        if (! $health['online'] || version_compare((string) $health['version'], '15', '<')) {
+        if (! $health['online'] || version_compare((string) $health['version'], '16', '<')) {
             return 0;
         }
         $count = 0;
@@ -38,10 +38,16 @@ class OrderSupplyTaskHandler implements OneCAgentTaskHandler
             if ($count >= max(1, min(100, $limit))) {
                 break;
             }
-            $last = OneCAgentTask::query()->where('type', self::TYPE)->whereMorphedTo('subject', $order)->latest('id')->first();
-            // A write failure needs review, not another automatic attempt every half hour.
-            if ($last && ($last->isActive() || $last->status === OneCAgentTask::FAILED
-                || (! $preview && ! data_get($last->payload, 'preview') && $last->created_at->gt(now()->subMinutes(25))))) {
+            $tasks = OneCAgentTask::query()->where('type', self::TYPE)->whereMorphedTo('subject', $order);
+            if ((clone $tasks)->whereIn('status', OneCAgentTask::ACTIVE)->exists()) {
+                continue;
+            }
+            // A successful preview says nothing about an earlier failed write or its recovery. Only an explicit
+            // review/cancellation of that write may remove the retry barrier; previews remain available to diagnose it.
+            $lastWrite = (clone $tasks)->where(fn ($q) => $q->whereNull('payload->preview')->orWhere('payload->preview', false))
+                ->latest('id')->first();
+            if (! $preview && $lastWrite && ($lastWrite->status === OneCAgentTask::FAILED
+                || $lastWrite->created_at->gt(now()->subMinutes(25)))) {
                 continue;
             }
             try {

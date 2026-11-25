@@ -53,7 +53,7 @@ class OneCOrderSupplyTest extends TestCase
 
     public function test_only_open_posted_orders_are_queued_once_and_failures_stop_automatic_retry(): void
     {
-        $this->agent('15');
+        $this->agent('16');
         $open = $this->order();
         $this->order(['status' => 'delivered']);
         $this->order(['onec_doc_status' => 'Закрыт']);
@@ -69,9 +69,25 @@ class OneCOrderSupplyTest extends TestCase
         Mail::assertNothingQueued();
     }
 
+    public function test_agent_without_recovery_diagnostics_cannot_take_supply_writes(): void
+    {
+        $plain = $this->agent('15');
+        $order = $this->order();
+        $handler = app(OrderSupplyTaskHandler::class);
+        $this->assertSame(0, $handler->enqueueOpen());
+        $write = app(OneCAgentTasks::class)->enqueue($handler::TYPE, $order, 'Supply', null,
+            ['key' => $order->onec_order_guid, 'number' => $order->onec_order_number, 'preview' => false]);
+        $read = app(OneCAgentTasks::class)->enqueue('odata_read', null, 'Read', null, ['queries' => []]);
+        $this->withHeaders(['Authorization' => 'Bearer '.$plain, 'X-Kotlov-Agent' => '15'])
+            ->get('/1c/agent/tasks/next')->assertOk()->assertSee('task|'.$read->id.'|odata_read');
+        $this->assertSame(OneCAgentTask::QUEUED, $write->fresh()->status);
+        $this->withHeaders(['Authorization' => 'Bearer '.$plain, 'X-Kotlov-Agent' => '16'])
+            ->get('/1c/agent/tasks/next')->assertOk()->assertSee('task|'.$write->id.'|'.$handler::TYPE);
+    }
+
     public function test_preview_does_not_change_customer_status_or_send_notifications(): void
     {
-        $this->agent('15');
+        $this->agent('16');
         $order = $this->order();
         $handler = app(OrderSupplyTaskHandler::class);
         $this->assertSame(1, $handler->enqueueOpen(20, true));
@@ -84,9 +100,30 @@ class OneCOrderSupplyTest extends TestCase
         Mail::assertNothingQueued();
     }
 
+    public function test_successful_preview_never_unblocks_an_unreviewed_failed_write(): void
+    {
+        $this->agent('16');
+        $order = $this->order();
+        $handler = app(OrderSupplyTaskHandler::class);
+        $this->assertSame(1, $handler->enqueueOpen());
+        $write = OneCAgentTask::where('type', $handler::TYPE)->firstOrFail();
+        $write->forceFill(['status' => OneCAgentTask::FAILED, 'created_at' => now()->subHour()])->save();
+
+        $this->assertSame(1, $handler->enqueueOpen(20, true));
+        $preview = OneCAgentTask::where('type', $handler::TYPE)->latest('id')->firstOrFail();
+        $this->assertTrue((bool) data_get($preview->payload, 'preview'));
+        $preview->update(['status' => OneCAgentTask::DONE]);
+        $this->assertSame(0, $handler->enqueueOpen(), 'A preview must not unblock the failed write');
+        $this->assertSame(OneCAgentTask::FAILED, $write->fresh()->status);
+        $this->assertSame('processing', $order->fresh()->status);
+        $write->update(['status' => OneCAgentTask::CANCELLED]);
+        $this->assertSame(1, $handler->enqueueOpen(), 'Explicit review clears the failed-write barrier after cooldown');
+        Mail::assertNothingQueued();
+    }
+
     public function test_wrong_order_result_is_saved_as_failure_and_not_retried(): void
     {
-        $this->agent('15');
+        $this->agent('16');
         $this->order();
         app(OrderSupplyTaskHandler::class)->enqueueOpen();
         $task = OneCAgentTask::where('type', OrderSupplyTaskHandler::TYPE)->firstOrFail();
