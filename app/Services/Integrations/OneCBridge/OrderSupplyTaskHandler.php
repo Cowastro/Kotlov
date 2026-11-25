@@ -24,7 +24,7 @@ class OrderSupplyTaskHandler implements OneCAgentTaskHandler
         }
         // An older agent must keep processing its other work, without receiving unknown task types.
         $health = app(OneCAgentTasks::class)->health();
-        if (! $health['online'] || version_compare((string) $health['version'], '16', '<')) {
+        if (! $health['online'] || version_compare((string) $health['version'], '17', '<')) {
             return 0;
         }
         $count = 0;
@@ -65,14 +65,34 @@ class OrderSupplyTaskHandler implements OneCAgentTaskHandler
 
     public function lines(OneCAgentTask $task): array
     {
-        return ['key|'.data_get($task->payload, 'key'), 'number|'.data_get($task->payload, 'number'),
+        $lines = ['key|'.data_get($task->payload, 'key'), 'number|'.data_get($task->payload, 'number'),
             'preview|'.(data_get($task->payload, 'preview') ? '1' : '0')];
+        if (data_get($task->payload, 'diagnose_posting')) {
+            $lines[] = 'probe|1';
+            $lines[] = 'expected_total|'.number_format((float) data_get($task->payload, 'expected_total'), 2, '.', '');
+        }
+
+        return $lines;
     }
 
     public function claimed(OneCAgentTask $task): void {}
 
     public function finished(OneCAgentTask $task, array $result): ?string
     {
+        if (data_get($task->payload, 'diagnose_posting')) {
+            if (! $result['ok']) {
+                return null;
+            }
+            $report = ODataReadTaskHandler::part($task, 'native_probe');
+            if ($report['code'] !== 200 || data_get($report['json'], 'posting_validated') !== true || data_get($report['json'], 'rolled_back') !== true
+                || strtolower((string) data_get($report['json'], 'document_key')) !== strtolower((string) data_get($task->payload, 'key'))
+                || data_get($report['json'], 'number') !== data_get($task->payload, 'number')
+                || data_get($report['json'], 'expected_total') !== number_format((float) data_get($task->payload, 'expected_total'), 2, '.', '')) {
+                throw new DomainException('Не подтверждён результат контрольного проведения и отката 1С.');
+            }
+
+            return 'Штатное проведение проверено внутри отменённой транзакции; изменения не сохранены.';
+        }
         if (! $result['ok']) {
             if ($task->subject instanceof Order && ! $task->subject->managerComments()->where('body', 'like', '%Задача обеспечения №'.$task->id.':%')->exists()) {
                 $task->subject->managerComments()->create(['author_name' => 'Мост 1С',

@@ -1,14 +1,14 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 16: preserve posting and recovery errors.
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 17: native rollback-only posting diagnostics and segregated supply guard.
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
 # odata_read, doc_status — read-only lists of 1C; onec_order_supply — supply actions of a posted open order.
 #   agent.ps1 -Check   read-only check: the site key and the 1C OData user work
 #   agent.ps1          one run (the scheduler starts it every 5 minutes): does every task waiting in the queue
-param([switch]$Check)
+param([switch]$Check, [string]$NativeProbe)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '16'
+$AgentVersion = '17'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -350,6 +350,7 @@ function Set-SupplyFromBalances($doc, [string]$orderKey, [bool]$creating, $stock
     # Existing dispatch decisions consume this order's share before waiting rows are considered.
     if (-not $creating) {
         foreach ($r in $doc['Товары']) {
+            if ($r['Обособленно'] -or ($r['Назначение_Key'] -and $r['Назначение_Key'] -ne $zero)) { continue }
             if (-not $r['Отменено'] -and $r['ВариантОбеспечения'] -eq 'Отгрузить') {
                 $d = Supply-Dimension $r ([string]$doc['Склад_Key'])
                 $available[$d] = [Math]::Max([decimal]0, [decimal]$available[$d] - [decimal]$r['Количество'])
@@ -361,7 +362,7 @@ function Set-SupplyFromBalances($doc, [string]$orderKey, [bool]$creating, $stock
         if ($r['Отменено'] -or [decimal]$r['Количество'] -le 0) { continue }
         if (-not $creating -and @('КОбеспечению', 'РезервироватьПоМереПоступления') -notcontains $r['ВариантОбеспечения']) { continue }
         # Segregated or serial-specific supply needs 1C's own allocation; do not borrow ordinary stock for it.
-        if (($r['Назначение_Key'] -and $r['Назначение_Key'] -ne $zero) -or ($r['Серия_Key'] -and $r['Серия_Key'] -ne $zero)) { continue }
+        if ($r['Обособленно'] -or ($r['Назначение_Key'] -and $r['Назначение_Key'] -ne $zero) -or ($r['Серия_Key'] -and $r['Серия_Key'] -ne $zero)) { continue }
         $d = Supply-Dimension $r ([string]$doc['Склад_Key'])
         $action = 'КОбеспечению'
         if ([decimal]$available[$d] -ge [decimal]$r['Количество']) {
@@ -404,13 +405,16 @@ function Post-SupplyDocument([string]$url) {
 
 function Do-OrderSupply([string]$id, [string[]]$lines) {
     if ($id -notmatch '^\d+$') { throw 'Некорректный номер задачи обеспечения' }
-    $key = ''; $expected = ''; $preview = $false
+    $key = ''; $expected = ''; $preview = $false; $probe = $false; $expectedTotal = ''
     foreach ($l in $lines) {
         if ($l.StartsWith('key|')) { $key = Supply-Guid $l.Substring(4) }
         if ($l.StartsWith('number|')) { $expected = $l.Substring(7) }
         if ($l -eq 'preview|1') { $preview = $true }
+        if ($l -eq 'probe|1') { $probe = $true }
+        if ($l.StartsWith('expected_total|')) { $expectedTotal = $l.Substring(15) }
     }
     if (-not $key -or -not $expected) { throw 'Нет точной связи заказа для обеспечения' }
+    if ($probe) { return Do-NativeSupplyProbe $id $key $expected $expectedTotal }
     $journal = Join-Path $DoneDir ('supply-' + $id + '.json')
     $json = New-SupplyJson
     if (Test-Path $journal) {
@@ -473,7 +477,149 @@ function Do-OrderSupply([string]$id, [string[]]$lines) {
     return @(('changed=' + $changed), ('document_key=' + $key))
 }
 
+# Find the infobase behind this exact LOCAL IIS publication, never a guessed server/database or another user.
+function Find-NativeInfobase([string]$odataUrl, [string]$iisConfig) {
+    $uri = New-Object Uri($odataUrl)
+    if (@('127.0.0.1', 'localhost', '::1') -notcontains $uri.Host -or $uri.AbsolutePath -notmatch '(?i)^(.*)/odata/standard\.odata/?$') { throw 'Для проверки нужна локальная публикация OData' }
+    $publication = [Uri]::UnescapeDataString($matches[1]).TrimEnd('/')
+    if ($publication.Contains('..')) { throw 'Недопустимый путь публикации' }
+    $paths = @()
+    if (Test-Path $iisConfig) {
+        $iis = New-Object Xml.XmlDocument; $iis.Load($iisConfig)
+        foreach ($vd in $iis.SelectNodes('/configuration/system.applicationHost/sites/site/application/virtualDirectory')) {
+            $prefix = ([string]$vd.ParentNode.GetAttribute('path')).TrimEnd('/') + ([string]$vd.GetAttribute('path')).TrimEnd('/')
+            if ($publication -ne $prefix -and -not $publication.StartsWith($prefix + '/', [StringComparison]::OrdinalIgnoreCase)) { continue }
+            $physical = [Environment]::ExpandEnvironmentVariables($vd.GetAttribute('physicalPath'))
+            $suffix = $publication.Substring($prefix.Length).TrimStart('/')
+            if ($suffix) { $physical = Join-Path $physical $suffix }
+            $paths += Join-Path $physical 'default.vrd'
+        }
+    }
+    $bases = @{}
+    foreach ($path in $paths) {
+        if (-not (Test-Path $path)) { continue }
+        $vrd = New-Object Xml.XmlDocument; $vrd.Load($path)
+        $ib = $vrd.DocumentElement.GetAttribute('ib')
+        if ($ib) { $bases[$ib] = $true }
+    }
+    if ($bases.Count -ne 1) { throw 'Не найдена однозначная база локальной публикации IIS; проверка остановлена' }
+    $ib = @($bases.Keys)[0]
+    if ($ib -match '(?i)(^|;)\s*(Usr|Pwd|UC)\s*=' -or $ib -notmatch '(?i)(^|;)\s*(Srvr|File)\s*=') { throw 'Недопустимая строка базы публикации; проверка остановлена' }
+    return $ib.TrimEnd(';') + ';'
+}
+
+function Native-ProbeError($record) {
+    $messages = @(); $e = $record.Exception
+    while ($e) { $messages = @([string]$e.Message) + $messages; $e = $e.InnerException }
+    return ($messages -join "`n")
+}
+
+function Native-ProbeMessages($connection) {
+    $texts = @()
+    try {
+        $messages = $connection.GetUserMessages()
+        for ($i = 0; $i -lt $messages.Count(); $i++) { $texts += [string]$messages.Get($i).Text }
+    } catch { } # The exception itself remains available on versions without this method.
+    return ,$texts
+}
+
+# No field is assigned. Native posting is attempted under the API user inside our own transaction, ALWAYS rolled
+# back. This obtains 1C's exception chain and user messages without DataLoadMode or bypassing business validation.
+function Invoke-NativePostingProbe($connection, $doc, [string]$expected, [decimal]$total) {
+    $report = @{ number = $expected; expected_total = $total.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture); posting_validated = $false; rolled_back = $false; error = ''; messages = @() }
+    $started = $false
+    try {
+        if ([string]$doc.Номер -ne $expected -or [decimal]$doc.СуммаДокумента -ne $total) { throw 'Не совпали номер или сумма контрольного заказа: запись не выполнялась' }
+        if (-not $doc.Проведен -or $doc.ПометкаУдаления -or $connection.XMLString($doc.Статус) -eq 'Закрыт') { throw 'Контрольный документ закрыт, удалён или не проведён: запись не выполнялась' }
+        $connection.BeginTransaction(); $started = $true
+        $doc.ОбменДанными.Загрузка = $false
+        $doc.Записать($connection.РежимЗаписиДокумента.Проведение, $connection.РежимПроведенияДокумента.Неоперативный)
+        if (-not $connection.TransactionActive()) { throw '1С завершила контрольную транзакцию до отката: требуется проверка документа' }
+        $report['posting_validated'] = $true
+    } catch {
+        $report['error'] = Native-ProbeError $_
+        $report['messages'] = Native-ProbeMessages $connection
+    } finally {
+        if ($started) {
+            try {
+                if ($connection.TransactionActive()) { $connection.RollbackTransaction() }
+                $report['rolled_back'] = -not $connection.TransactionActive()
+            } catch { $report['error'] += "`nОшибка отката: " + (Native-ProbeError $_) }
+        }
+        if ($report['messages'].Count -eq 0) { $report['messages'] = Native-ProbeMessages $connection }
+    }
+    return $report
+}
+
+function Run-NativeProbeWorker([string]$id) {
+    if ($id -notmatch '^\d+$') { throw 'Некорректный номер контрольной задачи' }
+    $json = New-SupplyJson
+    $request = $json.DeserializeObject((Read-Answer (Join-Path $DoneDir ('native-probe-' + $id + '-request.json'))))
+    $key = Supply-Guid ([string]$request['key']); $expected = [string]$request['number']
+    $total = [decimal]::Parse([string]$request['total'], [Globalization.CultureInfo]::InvariantCulture)
+    if (-not $key -or -not $expected -or $total -le 0) { throw 'Нет точных реквизитов контрольного заказа' }
+    $report = @{ number = $expected; document_key = $key; posting_validated = $false; rolled_back = $false; error = ''; messages = @() }
+    $connector = $null; $connection = $null; $doc = $null; $password = ''
+    try {
+        $iisConfig = Join-Path $env:windir 'System32/inetsrv/config/applicationHost.config'
+        $nativeIis = Join-Path $env:windir 'Sysnative/inetsrv/config/applicationHost.config'
+        if (Test-Path $nativeIis) { $iisConfig = $nativeIis }
+        $ib = Find-NativeInfobase $OData $iisConfig
+        $password = Unprotect $cfg['odata_password']
+        $user = ([string]$cfg['odata_user']).Replace('"', '""')
+        $connector = New-Object -ComObject 'V83.COMConnector'
+        $connection = $connector.Connect($ib + 'Usr="' + $user + '";Pwd="' + $password.Replace('"', '""') + '";')
+        $uuid = $connection.NewObject('УникальныйИдентификатор', $key)
+        $doc = $connection.Документы.ЗаказКлиента.ПолучитьСсылку($uuid).ПолучитьОбъект()
+        $report = Invoke-NativePostingProbe $connection $doc $expected $total
+        $report['document_key'] = $key
+    } catch { $report['error'] = Native-ProbeError $_ }
+    finally {
+        foreach ($o in @($doc, $connection, $connector)) {
+            if ($o -and [Runtime.InteropServices.Marshal]::IsComObject($o)) {
+                try { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($o) } catch { }
+            }
+        }
+    }
+    if ($password) {
+        $report['error'] = ([string]$report['error']).Replace($password.Replace('"', '""'), '[REDACTED]').Replace($password, '[REDACTED]')
+        $safeMessages = @()
+        foreach ($m in $report['messages']) { $safeMessages += ([string]$m).Replace($password.Replace('"', '""'), '[REDACTED]').Replace($password, '[REDACTED]') }
+        $report['messages'] = $safeMessages
+    }
+    $text = $json.Serialize($report)
+    [IO.File]::WriteAllText((Join-Path $DoneDir ('native-probe-' + $id + '-result.json')), $text, $Utf8)
+}
+
+function Do-NativeSupplyProbe([string]$id, [string]$key, [string]$expected, [string]$total) {
+    if ($id -notmatch '^\d+$' -or $total -notmatch '^\d+\.\d{2}$') { throw 'Некорректные реквизиты контрольной задачи' }
+    $json = New-SupplyJson
+    $request = Join-Path $DoneDir ('native-probe-' + $id + '-request.json')
+    $result = Join-Path $DoneDir ('native-probe-' + $id + '-result.json')
+    if ((Test-Path $request) -and -not (Test-Path $result)) { throw 'Контрольная проверка прервана: проверьте документ в 1С перед новым запуском' }
+    if (-not (Test-Path $result)) {
+        [IO.File]::WriteAllText($request, $json.Serialize(@{ key = $key; number = $expected; total = $total }), $Utf8)
+        $hostPath = Join-Path $PSHOME 'powershell.exe'
+        if ([IntPtr]::Size -eq 8 -and -not [Type]::GetTypeFromProgID('V83.COMConnector')) {
+            $x86 = Join-Path $env:windir 'SysWOW64/WindowsPowerShell/v1.0/powershell.exe'
+            if (Test-Path $x86) { $hostPath = $x86 }
+        }
+        $scriptPath = Join-Path $Root 'agent.ps1'
+        $worker = Start-Process -FilePath $hostPath -ArgumentList ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $scriptPath + '" -NativeProbe ' + $id) -WindowStyle Hidden -PassThru
+        if (-not $worker.WaitForExit(120000)) { $worker.Kill(); throw 'Истёк срок контрольной проверки: проверьте документ в 1С, повтор остановлен' }
+        if (-not (Test-Path $result)) { throw 'Контрольная проверка не вернула отчёт: повтор остановлен' }
+    }
+    $up = Join-Path $Root 'last-upload.txt'
+    $sent = Invoke-Curl ($Site + '/1c/agent/tasks/' + $id + '/part?name=native_probe&code=200') 'POST' ($SiteHeaders + @('Content-Type: application/octet-stream')) $null $result @() $up
+    if ($sent -ne '200') { throw 'Сайт не принял отчёт контрольной проверки; отчёт сохранён у агента' }
+    $report = $json.DeserializeObject((Read-Answer $result))
+    if ($report['document_key'] -ne $key -or $report['number'] -ne $expected -or ($report['posting_validated'] -and $report['expected_total'] -ne $total)) { throw 'Не совпала связь контрольного отчёта 1С' }
+    if (-not $report['posting_validated'] -or -not $report['rolled_back']) { throw (($report['messages'] -join ' ') + ' ' + $report['error']) }
+    return @('changed=0', 'posting_validated=1', 'rolled_back=1', ('document_key=' + $key))
+}
+
 if (-not (Test-Path $DoneDir)) { [void](New-Item -ItemType Directory -Path $DoneDir) }
+if ($NativeProbe) { Run-NativeProbeWorker $NativeProbe; exit 0 }
 
 for ($round = 0; $round -lt 20; $round++) {
     $code = Invoke-Curl ($Site + '/1c/agent/tasks/next') 'GET' $SiteHeaders $null $null @() $Out
