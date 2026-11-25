@@ -60,31 +60,6 @@
     </section>
     @endif
 
-    @if($xoProduct)
-    <section class="promo-feature" id="xo-ceramic-pro-promo">
-        <div class="container">
-            <article class="promo-feature__card">
-                <a href="{{ route('promotions.xo-ceramic-pro') }}" class="promo-feature__media" aria-label="Подробнее об акции KOTLOV XO Ceramic PRO">
-                    <img loading="eager" src="{{ asset('img/promotions/kotlov-xo-ceramic-pro-sale-cover-v2.webp') }}" alt="KOTLOV XO Ceramic PRO 100 кВт: модель, реальная топка и контроллер">
-                </a>
-                <div class="promo-feature__copy">
-                    <span class="promo-feature__badge">−10% · В НАЛИЧИИ</span>
-                    <h2 class="mb-16">KOTLOV XO Ceramic PRO 100 кВт</h2>
-                    <p class="mb-0" style="color:rgba(255,255,255,.7)">Промышленная пеллетная горелка со встроенным Wi‑Fi, съёмной топкой, шамотированной камерой, каскадной самоочисткой и инженерным сопровождением.</p>
-                    <div class="promo-feature__price">
-                        <span class="promo-feature__new">{{ number_format($xoProduct->price, 0, '.', ' ') }} BYN</span>
-                        @if($xoProduct->price_old > $xoProduct->price)<span class="promo-feature__old">{{ number_format($xoProduct->price_old, 0, '.', ' ') }} BYN</span>@endif
-                    </div>
-                    <div class="promo-feature__actions">
-                        <a href="{{ route('promotions.xo-ceramic-pro') }}" class="tf-btn animate-btn">Условия акции</a>
-                        <a href="/{{ $xoProduct->category->slug }}/{{ $xoProduct->slug }}" class="tf-btn btn-white">Карточка товара</a>
-                    </div>
-                </div>
-            </article>
-        </div>
-    </section>
-    @endif
-
     @if($evoProduct)
     <section class="promo-feature promo-feature--evo">
         <div class="container">

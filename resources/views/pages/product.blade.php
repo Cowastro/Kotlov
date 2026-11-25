@@ -386,9 +386,6 @@
 
                                 <x-spotlight-gift-note :product="$product" />
 
-                                @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt' && $product->is_sale)
-                                    <x-xo-promo-note />
-                                @endif
 
                                 @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140' && $product->is_sale)
                                     <x-xo-evo-promo-note />
@@ -1046,6 +1043,21 @@
                 @if ($hasSpecs)
                     <div class="tab-pane" id="specifications" role="tabpanel">
                         <div class="tab-content_desc site-prose">
+                            @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt')
+                                <section class="mb-4" aria-labelledby="xo-mount-heading">
+                                    <h3 id="xo-mount-heading">Монтажные размеры Ceramic PRO 100 кВт</h3>
+                                    <p>Проём в дверце котла фигурный. Ширина внизу — 298 мм, полная высота — 278 мм, ширина верхней горизонтальной кромки — 136 мм. Высота прямых боковых участков — 170 мм.</p>
+                                    <p>Четыре отверстия в дверце — Ø13 мм. Расстояние между центрами по горизонтали — 350 мм, по вертикали — 252 мм. Выступ горелки внутрь топки от привалочной плоскости — 257 мм.</p>
+                                    <figure>
+                                        <a href="{{ asset('img/products/xo-ceramic-pro-100-mount.png') }}">
+                                            <img class="img-fluid" loading="lazy" width="1560" height="1170" src="{{ asset('img/products/xo-ceramic-pro-100-mount.png') }}" alt="Чертёж Ceramic PRO 100 кВт с боковым видом горелки, контуром выреза и центрами отверстий в дверце котла">
+                                        </a>
+                                        <figcaption>Паспорт OXI Ceramic PRO 100/150, редакция 01, стр. 9, рис. 5.1. Перед разметкой сверьте исполнение вашей горелки с чертежом. Все размеры в миллиметрах.</figcaption>
+                                    </figure>
+                                    <a href="{{ asset('img/products/xo-ceramic-pro-100-mount.png') }}">Открыть чертёж в полном размере</a>
+                                    · <a href="https://oxi.ua/en/tech">Документация производителя</a>
+                                </section>
+                            @endif
                             @if ($manufacturerPump && $pumpDetailDocument)
                                 <div class="border rounded-3 p-3 mb-3 text-secondary">
                                     @if ($pumpDetailDocument)

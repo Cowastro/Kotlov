@@ -531,7 +531,7 @@ Route::post('/city/select', CitySelectionController::class)
     ->name('city.select.submit');
 Route::get('/akcii', [PromotionController::class, 'index'])->name('promotions.index');
 Route::get('/akcii/ecokamin-skidki', [PromotionController::class, 'ecokamin'])->name('promotions.ecokamin');
-Route::get('/akcii/kotlov-xo-ceramic-pro', [PromotionController::class, 'xoCeramicPro'])->name('promotions.xo-ceramic-pro');
+Route::permanentRedirect('/akcii/kotlov-xo-ceramic-pro', '/pelletnye-gorelki/pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt')->name('promotions.xo-ceramic-pro');
 Route::get('/akcii/kotlov-xo-evo-26', [PromotionController::class, 'xoEvo26'])->name('promotions.xo-evo-26');
 Route::get('/akcii/hotta-ceramik-20-30', [PromotionController::class, 'hottaCeramik'])->name('promotions.hotta-ceramik');
 Route::view('/dostavka', 'pages.dostavka');
