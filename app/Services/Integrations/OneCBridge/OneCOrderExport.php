@@ -95,6 +95,47 @@ class OneCOrderExport
         return $lines;
     }
 
+    /** The agreed delivery charge and order discount are spread across the existing goods, in whole kopecks. */
+    public function pricedLines(Order $order): array
+    {
+        $lines = $this->lines($order);
+        foreach ($lines as &$line) {
+            $line['goods_gross'] = $line['gross'];
+        }
+        unset($line);
+        $delivery = (int) round((float) $order->delivery_price * 100);
+        $discount = (int) round((float) $order->discount * 100);
+        if ($lines === [] || ($delivery === 0 && $discount === 0)) {
+            return $lines;
+        }
+
+        $rawSubtotal = array_sum(array_map(fn (array $line): int => (int) round((float) $line['item']->total * 100), $lines));
+        if ($delivery < 0 || $discount < 0 || $discount > $rawSubtotal
+            || $rawSubtotal !== (int) round((float) $order->subtotal * 100)
+            || $rawSubtotal - $discount + $delivery !== (int) round((float) $order->total * 100)) {
+            throw new DomainException('Суммы товаров, скидки и доставки не совпадают с итогом заказа. Пересчитайте заказ перед отправкой в 1С.');
+        }
+
+        $weights = array_map(fn (array $line): int => max(0, (int) round($line['gross'] * 100)), $lines);
+        $goods = array_sum($weights);
+        $target = $goods - $discount + $delivery;
+        if ($goods === 0) {
+            $weights = array_fill(0, count($lines), 1);
+        }
+        $weightTotal = array_sum($weights);
+        $weightSoFar = 0;
+        $allocated = 0;
+        foreach ($lines as $i => &$line) {
+            $weightSoFar += $weights[$i];
+            $cumulative = (int) round($target * ($weightSoFar / $weightTotal));
+            $line['gross'] = ($cumulative - $allocated) / 100;
+            $allocated = $cumulative;
+        }
+        unset($line);
+
+        return $lines;
+    }
+
     /** @return array<int, string> free 1C items (not linked to a card, not «не для сайта») for a search */
     public function searchItems(string $text, int $limit = 30): array
     {
@@ -272,6 +313,11 @@ class OneCOrderExport
         if ($this->lines($order) === []) {
             $problems[] = 'В заказе нет позиций';
         }
+        try {
+            $this->pricedLines($order);
+        } catch (DomainException $exception) {
+            $problems[] = $exception->getMessage();
+        }
         foreach (['Организация_Key', 'Склад_Key', 'Партнер_Key', 'Контрагент_Key', 'Соглашение_Key'] as $field) {
             if (blank($form['h'][$field] ?? null)) {
                 $problems[] = 'Не выбрано: '.OneCOrderProfiles::FIELDS[$field][0]
@@ -311,7 +357,7 @@ class OneCOrderExport
         'СуммаДокумента', 'Товары'];
 
     private const MAIN_ROW_FIELDS = ['LineNumber', 'Номенклатура_Key', 'Характеристика_Key', 'КоличествоУпаковок', 'Количество', 'Цена', 'Сумма',
-        'СтавкаНДС_Key', 'СуммаНДС', 'СуммаСНДС', 'Склад_Key', 'ВариантОбеспечения'];
+        'СтавкаНДС_Key', 'СуммаНДС', 'СуммаСНДС', 'Склад_Key', 'ВариантОбеспечения', 'СуммаРучнойСкидки', 'ПроцентРучнойСкидки'];
 
     /** @return array<string, mixed> the «Заказ клиента» for OData */
     public function body(Order $order, OneCOrderProfile $profile, array $form, ?int $variant = null): array
@@ -369,23 +415,40 @@ class OneCOrderExport
         $rows = [];
         $total = 0.0;
         $totalVat = 0.0;
-        foreach ($this->lines($order) as $i => $line) {
+        foreach ($this->pricedLines($order) as $i => $line) {
             $n = $i + 1;
             $gross = round($line['gross'], 2);
             $vat = round($gross * $rate / (1 + $rate), 2);
             $sum = $withVat ? $gross : round($gross - $vat, 2);
+            $price = round($sum / max($line['qty'], 0.001), 2);
+            $rounding = 0.0;
+            if ((float) $order->delivery_price > 0 || (float) $order->discount > 0) {
+                // A whole-kopeck unit price may not divide an allocated total (e.g. 335 BYN / 130 units).
+                // Use 1C's fixed-amount discount for the rounding remainder; qty, VAT and payable stay exact.
+                $price = ceil(((int) round($sum * 100)) / max($line['qty'], 0.001) - 0.000000001) / 100;
+                $rounding = round(round($price * $line['qty'], 2) - $sum, 2);
+                if ($rounding > 0 && ! in_array('СуммаРучнойСкидки', $rowKeys, true)) {
+                    throw new DomainException('Обновите схему заказа 1С: для точного распределения доставки нужна поддержка суммы ручной скидки.');
+                }
+            }
             $row = array_merge((array) $profile->row_defaults, [
                 'LineNumber' => (string) $n,
                 'Номенклатура_Key' => $line['key'],
                 'Характеристика_Key' => $line['characteristic'] ?: OneCReferences::ZERO,
                 'КоличествоУпаковок' => $line['qty'],
                 'Количество' => $line['qty'],
-                'Цена' => round($sum / max($line['qty'], 0.001), 2),
+                'Цена' => $price,
                 'Сумма' => $sum,
                 'СуммаНДС' => $vat,
                 'СуммаСНДС' => $gross,
                 'Склад_Key' => $doc['Склад_Key'] ?? OneCReferences::ZERO,
             ]);
+            if ($rounding > 0) {
+                $row['СуммаРучнойСкидки'] = $rounding;
+                if (in_array('ПроцентРучнойСкидки', $rowKeys, true)) {
+                    $row['ПроцентРучнойСкидки'] = round($rounding / round($price * $line['qty'], 2) * 100, 2);
+                }
+            }
             // A safe initial value. Agent 11 checks the actual warehouse, characteristic and other orders' holds
             // immediately before creating the document, then sets covered lines to «Отгрузить».
             $row['ВариантОбеспечения'] = self::PROVIDE;

@@ -314,7 +314,12 @@ class OneCOrderExportAction
     private static function linesTable(Order $order): HtmlString
     {
         $e = fn ($v): string => e((string) $v);
-        $rows = collect(app(OneCOrderExport::class)->lines($order))->map(fn (array $l): string => '<tr>'
+        try {
+            $lines = app(OneCOrderExport::class)->pricedLines($order);
+        } catch (DomainException $exception) {
+            return new HtmlString('<p style="color:#b91c1c">'.$e($exception->getMessage()).'</p>');
+        }
+        $rows = collect($lines)->map(fn (array $l): string => '<tr>'
             .'<td style="padding:4px 8px">'.$e($l['name']).'</td>'
             .'<td style="padding:4px 8px">'.($l['key']
                 ? '<span style="color:#15803d">✓</span> '.$e(trim(($l['onec_code'] ? $l['onec_code'].' · ' : '').$l['onec_name']))
@@ -324,8 +329,11 @@ class OneCOrderExportAction
 
         return new HtmlString('<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#6b7280">'
             .'<th style="padding:4px 8px">Позиция на сайте</th><th style="padding:4px 8px">Номенклатура 1С</th><th style="padding:4px 8px;text-align:right">Кол-во</th>'
-            .'<th style="padding:4px 8px;text-align:right">Сумма с НДС</th></tr></thead><tbody>'.$rows.'</tbody></table>'
-            .((float) $order->delivery_price > 0 ? '<p style="margin:6px 8px 0;color:#92400e">Доставка '.$e(number_format((float) $order->delivery_price, 2, ',', ' '))
-                .' р. не входит в товары заказа 1С — она указана в «К оплате».</p>' : ''));
+            .'<th style="padding:4px 8px;text-align:right">Сумма в 1С с НДС</th></tr></thead><tbody>'.$rows.'</tbody></table>'
+            .'<p style="margin:8px">Товары: '.$e(number_format(array_sum(array_column($lines, 'goods_gross')), 2, ',', ' '))
+            .' BYN · Доставка: '.$e(number_format((float) $order->delivery_price, 2, ',', ' '))
+            .' BYN · Скидка: '.$e(number_format((float) $order->discount, 2, ',', ' '))
+            .' BYN · <b>Итого в 1С: '.$e(number_format(array_sum(array_column($lines, 'gross')), 2, ',', ' ')).' BYN</b></p>'
+            .((float) $order->delivery_price > 0 ? '<p style="margin:6px 8px 0">Доставка включена в цены товаров и распределена пропорционально их стоимости.</p>' : ''));
     }
 }
