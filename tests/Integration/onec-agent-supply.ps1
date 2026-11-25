@@ -76,7 +76,20 @@ $d = Doc @($segregated, (Row 2))
 Assert-Equal 1 (Set-SupplyFromBalances $d $key $false @((Stock 2)) @()) 'segregated dispatch does not consume an ordinary-stock budget'
 Assert-Equal 'Отгрузить' $segregated['ВариантОбеспечения'] 'existing segregated dispatch is preserved'
 
-# Native diagnostics execute normal posting in a transaction that is always rolled back. No COM/1C is contacted.
+# Compile the same C# 2-compatible dispatch adapter used by the worker.
+[void](New-SupplyJson)
+# Exercise real late-bound COM without contacting 1C or any external service.
+$dispatch = New-Object -ComObject Scripting.Dictionary
+try {
+    [void][Kotlov.NativeCom]::Call($dispatch, 'Add', @('probe', 296))
+    Assert-Equal $true ([Kotlov.NativeCom]::Call($dispatch, 'Exists', @('probe'))) 'IDispatch invokes methods with arguments'
+    Assert-Equal 1 ([Kotlov.NativeCom]::Get($dispatch, 'Count')) 'IDispatch reads properties'
+    [Kotlov.NativeCom]::Set($dispatch, 'CompareMode', 0)
+    Assert-Equal 0 ([Kotlov.NativeCom]::Get($dispatch, 'CompareMode')) 'IDispatch writes properties'
+    [void][Kotlov.NativeCom]::Call($dispatch, 'RemoveAll', @())
+    Assert-Equal 0 ([Kotlov.NativeCom]::Get($dispatch, 'Count')) 'IDispatch invokes methods without arguments'
+} finally { [void][Runtime.InteropServices.Marshal]::ReleaseComObject($dispatch) }
+# Native diagnostics execute normal posting in a transaction that is always rolled back. No 1C is contacted.
 function Native-Mock {
     $script:nativeActive = $false; $script:nativeWrites = 0; $script:nativeRollbacks = 0
     $script:nativeFail = $false; $script:nativeRollbackFail = $false; $script:nativeClosed = $false

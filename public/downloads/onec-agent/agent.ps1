@@ -1,4 +1,4 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 17: native rollback-only posting diagnostics and segregated supply guard.
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 18: explicit late-bound COM dispatch for rollback-only diagnostics.
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
@@ -8,7 +8,7 @@
 param([switch]$Check, [string]$NativeProbe)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '17'
+$AgentVersion = '18'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -242,8 +242,42 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Management.Automation;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Web.Script.Serialization;
 namespace Kotlov {
+    // 1C exposes late-bound IDispatch members which PowerShell 2's COM adapter may not discover.
+    // Invoke them directly through CLR COM dispatch; this changes no 1C user or business-validation mode.
+    public static class NativeCom {
+        public static object Call(object value, string name, object[] parameters) {
+            PSObject ps = PSObject.AsPSObject(value);
+            object target = ps.BaseObject;
+            if (Marshal.IsComObject(target)) return target.GetType().InvokeMember(name, BindingFlags.InvokeMethod, null, target, parameters);
+            PSMethodInfo method = ps.Methods[name];
+            if (method == null) throw new MissingMethodException(name);
+            return method.Invoke(parameters);
+        }
+        public static object Get(object value, string name) {
+            PSObject ps = PSObject.AsPSObject(value);
+            object target = ps.BaseObject;
+            if (Marshal.IsComObject(target)) return target.GetType().InvokeMember(name, BindingFlags.GetProperty, null, target, new object[0]);
+            IDictionary map = target as IDictionary;
+            if (map != null) return map[name];
+            PSPropertyInfo property = ps.Properties[name];
+            if (property == null) throw new MissingMemberException(name);
+            return property.Value;
+        }
+        public static void Set(object value, string name, object data) {
+            PSObject ps = PSObject.AsPSObject(value);
+            object target = ps.BaseObject;
+            if (Marshal.IsComObject(target)) { target.GetType().InvokeMember(name, BindingFlags.SetProperty, null, target, new object[] { data }); return; }
+            IDictionary map = target as IDictionary;
+            if (map != null) { map[name] = data; return; }
+            PSPropertyInfo property = ps.Properties[name];
+            if (property == null) throw new MissingMemberException(name);
+            property.Value = data;
+        }
+    }
     public sealed class OneCJson {
         private readonly JavaScriptSerializer json = new JavaScriptSerializer();
         public OneCJson() { json.MaxJsonLength = 8388608; }
@@ -517,8 +551,16 @@ function Native-ProbeError($record) {
 function Native-ProbeMessages($connection) {
     $texts = @()
     try {
-        $messages = $connection.GetUserMessages()
-        for ($i = 0; $i -lt $messages.Count(); $i++) { $texts += [string]$messages.Get($i).Text }
+        $messages = [Kotlov.NativeCom]::Call($connection, 'GetUserMessages', @())
+        if ($messages -is [Collections.IList]) {
+            foreach ($message in $messages) { $texts += [string][Kotlov.NativeCom]::Get($message, 'Text') }
+        } else {
+            $count = [int][Kotlov.NativeCom]::Call($messages, 'Count', @())
+            for ($i = 0; $i -lt $count; $i++) {
+                $message = [Kotlov.NativeCom]::Call($messages, 'Get', @($i))
+                $texts += [string][Kotlov.NativeCom]::Get($message, 'Text')
+            }
+        }
     } catch { } # The exception itself remains available on versions without this method.
     return ,$texts
 }
@@ -529,12 +571,16 @@ function Invoke-NativePostingProbe($connection, $doc, [string]$expected, [decima
     $report = @{ number = $expected; expected_total = $total.ToString('0.00', [Globalization.CultureInfo]::InvariantCulture); posting_validated = $false; rolled_back = $false; error = ''; messages = @() }
     $started = $false
     try {
-        if ([string]$doc.Номер -ne $expected -or [decimal]$doc.СуммаДокумента -ne $total) { throw 'Не совпали номер или сумма контрольного заказа: запись не выполнялась' }
-        if (-not $doc.Проведен -or $doc.ПометкаУдаления -or $connection.XMLString($doc.Статус) -eq 'Закрыт') { throw 'Контрольный документ закрыт, удалён или не проведён: запись не выполнялась' }
-        $connection.BeginTransaction(); $started = $true
-        $doc.ОбменДанными.Загрузка = $false
-        $doc.Записать($connection.РежимЗаписиДокумента.Проведение, $connection.РежимПроведенияДокумента.Неоперативный)
-        if (-not $connection.TransactionActive()) { throw '1С завершила контрольную транзакцию до отката: требуется проверка документа' }
+        if ([string][Kotlov.NativeCom]::Get($doc, 'Номер') -ne $expected -or [decimal][Kotlov.NativeCom]::Get($doc, 'СуммаДокумента') -ne $total) { throw 'Не совпали номер или сумма контрольного заказа: запись не выполнялась' }
+        $status = [Kotlov.NativeCom]::Get($doc, 'Статус')
+        if (-not [Kotlov.NativeCom]::Get($doc, 'Проведен') -or [Kotlov.NativeCom]::Get($doc, 'ПометкаУдаления') -or [Kotlov.NativeCom]::Call($connection, 'XMLString', @($status)) -eq 'Закрыт') { throw 'Контрольный документ закрыт, удалён или не проведён: запись не выполнялась' }
+        [void][Kotlov.NativeCom]::Call($connection, 'BeginTransaction', @()); $started = $true
+        $exchange = [Kotlov.NativeCom]::Get($doc, 'ОбменДанными')
+        [Kotlov.NativeCom]::Set($exchange, 'Загрузка', $false)
+        $writeMode = [Kotlov.NativeCom]::Get([Kotlov.NativeCom]::Get($connection, 'РежимЗаписиДокумента'), 'Проведение')
+        $postingMode = [Kotlov.NativeCom]::Get([Kotlov.NativeCom]::Get($connection, 'РежимПроведенияДокумента'), 'Неоперативный')
+        [void][Kotlov.NativeCom]::Call($doc, 'Записать', @($writeMode, $postingMode))
+        if (-not [Kotlov.NativeCom]::Call($connection, 'TransactionActive', @())) { throw '1С завершила контрольную транзакцию до отката: требуется проверка документа' }
         $report['posting_validated'] = $true
     } catch {
         $report['error'] = Native-ProbeError $_
@@ -542,8 +588,8 @@ function Invoke-NativePostingProbe($connection, $doc, [string]$expected, [decima
     } finally {
         if ($started) {
             try {
-                if ($connection.TransactionActive()) { $connection.RollbackTransaction() }
-                $report['rolled_back'] = -not $connection.TransactionActive()
+                if ([Kotlov.NativeCom]::Call($connection, 'TransactionActive', @())) { [void][Kotlov.NativeCom]::Call($connection, 'RollbackTransaction', @()) }
+                $report['rolled_back'] = -not [Kotlov.NativeCom]::Call($connection, 'TransactionActive', @())
             } catch { $report['error'] += "`nОшибка отката: " + (Native-ProbeError $_) }
         }
         if ($report['messages'].Count -eq 0) { $report['messages'] = Native-ProbeMessages $connection }
@@ -559,7 +605,7 @@ function Run-NativeProbeWorker([string]$id) {
     $total = [decimal]::Parse([string]$request['total'], [Globalization.CultureInfo]::InvariantCulture)
     if (-not $key -or -not $expected -or $total -le 0) { throw 'Нет точных реквизитов контрольного заказа' }
     $report = @{ number = $expected; document_key = $key; posting_validated = $false; rolled_back = $false; error = ''; messages = @() }
-    $connector = $null; $connection = $null; $doc = $null; $password = ''
+    $connector = $null; $connection = $null; $doc = $null; $password = ''; $phase = 'publication'
     try {
         $iisConfig = Join-Path $env:windir 'System32/inetsrv/config/applicationHost.config'
         $nativeIis = Join-Path $env:windir 'Sysnative/inetsrv/config/applicationHost.config'
@@ -567,10 +613,16 @@ function Run-NativeProbeWorker([string]$id) {
         $ib = Find-NativeInfobase $OData $iisConfig
         $password = Unprotect $cfg['odata_password']
         $user = ([string]$cfg['odata_user']).Replace('"', '""')
+        $phase = 'connector'
         $connector = New-Object -ComObject 'V83.COMConnector'
-        $connection = $connector.Connect($ib + 'Usr="' + $user + '";Pwd="' + $password.Replace('"', '""') + '";')
-        $uuid = $connection.NewObject('УникальныйИдентификатор', $key)
-        $doc = $connection.Документы.ЗаказКлиента.ПолучитьСсылку($uuid).ПолучитьОбъект()
+        $phase = 'connect'
+        $connection = [Kotlov.NativeCom]::Call($connector, 'Connect', @($ib + 'Usr="' + $user + '";Pwd="' + $password.Replace('"', '""') + '";'))
+        $phase = 'document'
+        $uuid = [Kotlov.NativeCom]::Call($connection, 'NewObject', @('УникальныйИдентификатор', $key))
+        $manager = [Kotlov.NativeCom]::Get([Kotlov.NativeCom]::Get($connection, 'Документы'), 'ЗаказКлиента')
+        $reference = [Kotlov.NativeCom]::Call($manager, 'ПолучитьСсылку', @($uuid))
+        $doc = [Kotlov.NativeCom]::Call($reference, 'ПолучитьОбъект', @())
+        $phase = 'native_validation'
         $report = Invoke-NativePostingProbe $connection $doc $expected $total
         $report['document_key'] = $key
     } catch { $report['error'] = Native-ProbeError $_ }
@@ -581,6 +633,9 @@ function Run-NativeProbeWorker([string]$id) {
             }
         }
     }
+    $report['worker_phase'] = $phase
+    $report['process_bits'] = [IntPtr]::Size * 8
+    $report['system_account'] = [Security.Principal.WindowsIdentity]::GetCurrent().IsSystem
     if ($password) {
         $report['error'] = ([string]$report['error']).Replace($password.Replace('"', '""'), '[REDACTED]').Replace($password, '[REDACTED]')
         $safeMessages = @()
