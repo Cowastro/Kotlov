@@ -136,16 +136,17 @@ Assert-Fails { Do-OrderSupply '7' $lines } 'прервана'
 Assert-Equal $beforeReads $script:reads 'interrupted write requires review, not a blind replay'
 # Transport-level contract: take the real HTTP helpers and stub curl, not the implementation under test.
 foreach ($f in $ast.FindAll({ param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] }, $false)) {
-    if (@('Read-SupplyDocument', 'Write-SupplyRows') -contains $f.Name) { Invoke-Expression $f.Extent.Text }
+    if (@('Read-SupplyDocument', 'Write-SupplyRows', 'Post-SupplyDocument') -contains $f.Name) { Invoke-Expression $f.Extent.Text }
 }
 $Body = Join-Path $Root 'body.json'; $Out = Join-Path $Root 'answer.json'
 $OData = 'http://127.0.0.1/test/'; $ODataUser = 'test'
 $CreatableEntities = @('Document_ЗаказКлиента')
 $script:exists = $false; $script:lastHeaders = @(); $script:lastMethod = ''; $script:postedBody = $null
 function Invoke-Curl([string]$url, [string]$method, [string[]]$headers, [string]$user, [string]$bodyFile, [string[]]$form, [string]$outFile, [string]$responseHeaders = '') {
-    $script:lastHeaders = $headers; $script:lastMethod = $method
+    $script:lastHeaders = $headers; $script:lastMethod = $method; $script:lastUrl = $url
     if ($responseHeaders) { [IO.File]::WriteAllText($responseHeaders, "HTTP/1.1 200 OK`r`nETag: `"actual-version`"`r`n", $Utf8) }
     if ($method -eq 'POST') {
+        if (-not $bodyFile) { return '200' }
         $script:postedBody = $json.DeserializeObject((Read-Answer $bodyFile))
         [IO.File]::WriteAllText($outFile, $json.Serialize(@{ Ref_Key = $key; Number = 'TEST-1C' }), $Utf8)
         return '201'
@@ -154,16 +155,23 @@ function Invoke-Curl([string]$url, [string]$method, [string[]]$headers, [string]
     if ($script:exists) {
         [IO.File]::WriteAllText($outFile, $json.Serialize(@{ value = @(@{ Ref_Key = $key; Number = 'TEST-1C' }) }), $Utf8)
     } else {
-        [IO.File]::WriteAllText($outFile, $json.Serialize((Doc @((Row 2)))), $Utf8)
+        $mockDoc = Doc @((Row 2))
+        if ($script:missingVersion) { $mockDoc.Remove('DataVersion') }
+        [IO.File]::WriteAllText($outFile, $json.Serialize($mockDoc), $Utf8)
     }
     return '200'
 }
 $http = Read-SupplyDocument (Supply-DocumentUrl $key)
-Assert-Equal '"actual-version"' $http['etag'] 'use the actual 1C ETag response'
+Assert-Equal 'v1' $http['etag'] 'use 1C DataVersion, independent of HTTP ETag'
+$script:missingVersion = $true
+Assert-Fails { Read-SupplyDocument (Supply-DocumentUrl $key) } 'DataVersion'
+$script:missingVersion = $false
 Write-SupplyRows (Supply-DocumentUrl $key) @((Row 2)) $http['etag']
 Assert-Equal 'PATCH' $script:lastMethod 'only the goods table is patched'
-Assert-Equal $true ($script:lastHeaders -contains 'If-Match: "actual-version"') 'If-Match sent to 1C'
+Assert-Equal $true ($script:lastHeaders -contains 'If-Match: v1') 'DataVersion sent as If-Match to 1C'
 Assert-Fails { Write-SupplyRows (Supply-DocumentUrl $key) @((Row 2)) '' } 'версию документа'
+Post-SupplyDocument (Supply-DocumentUrl $key)
+Assert-Equal $true ($script:lastUrl.EndsWith('/Post?PostingModeOperational=false')) '1C posting mode is a query parameter'
 $d = Doc @((Row 2), (Row 2))
 $payload = [Convert]::ToBase64String($Utf8.GetBytes($json.Serialize($d)))
 [void](Do-Create @('supply|live', ('body|' + $payload)) 'Document_ЗаказКлиента')

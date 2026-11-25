@@ -1,4 +1,4 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 11: live supply and dispatch actions.
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 12: 1C DataVersion supply checks.
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
@@ -8,7 +8,7 @@
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '11'
+$AgentVersion = '12'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -340,11 +340,12 @@ function Supply-DocumentUrl([string]$key) {
 }
 
 function Read-SupplyDocument([string]$url) {
-    $headFile = Join-Path $Root 'last-supply-headers.txt'
-    $doc = Read-SupplyJson ($url + '?$format=json') $headFile
-    $etag = ''
-    if ((Read-Answer $headFile) -match '(?im)^ETag:\s*([^\r\n]+)') { $etag = $matches[1].Trim() }
-    return @{ doc = $doc; etag = $etag }
+    $doc = Read-SupplyJson ($url + '?$format=json')
+    # 1C's standard OData interface uses the entity's DataVersion directly as If-Match.
+    # It need not expose an HTTP ETag. Never replace the token with '*' or omit the condition.
+    $version = [string]$doc['DataVersion']
+    if (-not $version -or $version -notmatch '^[A-Za-z0-9+/]+={0,2}$') { throw '1С не вернула корректную DataVersion: запись обеспечения остановлена' }
+    return @{ doc = $doc; etag = $version }
 }
 
 function Write-SupplyRows([string]$url, $rows, [string]$etag) {
@@ -355,7 +356,7 @@ function Write-SupplyRows([string]$url, $rows, [string]$etag) {
 }
 
 function Post-SupplyDocument([string]$url) {
-    $code = Invoke-Curl ($url + '/Post(PostingModeOperational=false)') 'POST' @('Accept: application/json') $ODataUser $null @() $Out
+    $code = Invoke-Curl ($url + '/Post?PostingModeOperational=false') 'POST' @('Accept: application/json') $ODataUser $null @() $Out
     if ($code -ne '200' -and $code -ne '204') { throw ('Не проведено обеспечение 1С: ' + $code + ' ' + (Read-Answer $Out)) }
 }
 
@@ -383,7 +384,7 @@ function Do-OrderSupply([string]$id, [string[]]$lines) {
     $original = $json.Serialize($doc['Товары'])
     $changed = Set-OrderSupply $doc $key $false
     if ($preview) {
-        if (-not $before['etag']) { throw 'Проверка без записи: 1С не вернула ETag, автоматическое обновление нельзя включить' }
+        if (-not $before['etag']) { throw 'Проверка без записи: 1С не вернула DataVersion, автоматическое обновление нельзя включить' }
         $ready = 0; $waiting = 0
         foreach ($r in $doc['Товары']) {
             if ($r['Отменено']) { continue }
