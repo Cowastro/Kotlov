@@ -159,7 +159,7 @@ class CreatePrometallCardsCommand extends Command
         return match (true) {
             str_starts_with($s, 'печи "') => 'drovianye-peci-bannye',
             $s === 'печное литье' => 'pechnoe-i-kaminnoe-lite',
-            $s === 'аксессуары для бани' => $has('камни', 'пирамидки') ? 'kamni-dlya-bani' : 'pechi-dlya-bani',
+            $s === 'аксессуары для бани' => $has('камни', 'пирамидки') ? 'kamni-dlya-bani' : 'aksessuary-dlya-parnoy',
             $s === 'дымоходные элементы на банные печи' => $has('конвектор') ? 'teplosyomniki' : 'truby-mono',
             $s === 'комплектующие к печам' => match (true) {
                 $has('стекл') => 'stekla-dlya-pechey-i-kaminov',

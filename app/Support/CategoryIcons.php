@@ -28,7 +28,7 @@ final class CategoryIcons
         'kupeli' => ['water', 'M6 3h12v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3Zm0 5h12M18 15h3v2.5M9 20v2m6-2v2'],
         'dveri-dlya-ban-i-saun' => ['wood', 'M6 2h12v20H6V2Zm3 3h6v9H9V5Zm5 11.5v2'],
         'okna-dlya-bani-i-sauny' => ['combined', 'M4 4h16v16H4V4Zm0 8h16M12 4v16'],
-        'pechi-dlya-bani' => ['indirect', 'M5 9h11l-1.4 11H6.4L5 9ZM4 9h13M7.5 9a3 3 0 0 1 6 0M16 12l5-5'],
+        'aksessuary-dlya-parnoy' => ['indirect', 'M5 9h11l-1.4 11H6.4L5 9ZM4 9h13M7.5 9a3 3 0 0 1 6 0M16 12l5-5'],
         'kupeli-2' => ['lightning', 'M3 10h18v6a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-6Zm3 4c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 3 0M15 10V3m3.5 7V3M15 5.5h3.5'],
         'mangalyi' => ['flame', 'M3 9h18l-2 5H5L3 9Zm3 5-2 7m14-7 2 7M8 9c0-2 1.5-2 1.5-4M12 9c0-2 1.5-2 1.5-4M16 9c0-2 1.5-2 1.5-4'],
         // dymohody

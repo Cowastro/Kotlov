@@ -84,7 +84,7 @@ class SyncPrometallCommandTest extends TestCase
         $category = fn (string $section, string $name) => \App\Console\Commands\CreatePrometallCardsCommand::targetCategory($section, $name);
         $this->assertSame('drovianye-peci-bannye', $category('Печи "Атмосфера" в ламелях', 'Печь банная "Атмосфера L" в ламелях'));
         $this->assertSame('kamni-dlya-bani', $category('Аксессуары для бани', 'Керамические камни для бани "МОВИ"'));
-        $this->assertSame('pechi-dlya-bani', $category('Аксессуары для бани', 'Ковш для бани'));
+        $this->assertSame('aksessuary-dlya-parnoy', $category('Аксессуары для бани', 'Ковш для бани'));
         $this->assertSame('teplosyomniki', $category('Дымоходные элементы на банные печи', 'Дымоход-конвектор "Жадеит" наборный'));
         $this->assertSame('truby-mono', $category('Дымоходные элементы на банные печи', 'Стартовый дымоход 115-136'));
         $this->assertSame('stekla-dlya-pechey-i-kaminov', $category('Комплектующие к печам', 'Изделие из стекла (кромка) 245*273*4'));
