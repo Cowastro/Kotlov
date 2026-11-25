@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="690" viewBox="0 0 1120 690" role="img" aria-labelledby="title desc">
+<title id="title">KOTLOV XO Ceramic PRO 100 кВт — монтажные размеры</title>
+<desc id="desc">Вид дверцы котла со стороны горелки. Фигурный вырез 298 на 278 мм. Четыре отверстия диаметром 13 мм с расстоянием между центрами 350 на 252 мм.</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 8 6" refX="8" refY="3" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 8 3 0 6z" fill="#344054"/></marker>
+  <g id="hole"><circle r="6.5" fill="white" stroke="#101828" stroke-width="1.5"/><path d="M-10 0h20 M0 -10v20" stroke="#536578" stroke-width=".8"/></g>
+  <style>text{font-family:Arial,sans-serif;fill:#182737}.dim{stroke:#344054;stroke-width:1;marker-start:url(#arrow);marker-end:url(#arrow)}.ext{stroke:#8996a3;stroke-width:.8;fill:none}.n{font-size:15px;text-anchor:middle;paint-order:stroke;stroke:white;stroke-width:4px}.section{font-size:21px;font-weight:bold}.label{font-size:18px}.value{font-size:21px;font-weight:bold}</style>
+</defs>
+<rect width="1120" height="690" fill="white"/>
+<text x="44" y="57" font-size="33" font-weight="bold">KOTLOV XO Ceramic PRO 100 кВт</text>
+<text x="45" y="94" font-size="22">Монтажные размеры горелки и дверцы котла</text>
+<path d="M44 115h1032" stroke="#c4cdd5"/>
+<text x="44" y="157" class="section">Вырез и отверстия в дверце</text>
+<g transform="translate(145 263) scale(1.12)">
+  <path d="M26 278V108L107 0H243L324 108V278Z" fill="#eff4f7" stroke="#182737" stroke-width="2"/>
+  <path d="M175 -10v302" stroke="#9daab5" stroke-dasharray="7 4"/>
+  <use href="#hole" x="0" y="47"/><use href="#hole" x="350" y="47"/><use href="#hole" x="0" y="299"/><use href="#hole" x="350" y="299"/>
+  <path class="ext" d="M0 37V-66 M350 37V-66 M107 0v-34 M243 0v-34 M26 278v49 M324 278v49 M-9 47h-52 M-9 299h-52 M243 0h160 M324 278h79 M324 108h43"/>
+  <path class="dim" d="M0 -60H350"/><text class="n" x="175" y="-67">350</text>
+  <path class="dim" d="M107 -27H243"/><text class="n" x="175" y="-33">136</text>
+  <path class="dim" d="M26 321H324"/><text class="n" x="175" y="317">298</text>
+  <path class="dim" d="M-52 47V299"/><text class="n" transform="translate(-58 173) rotate(-90)">252</text>
+  <path class="dim" d="M397 0V278"/><text class="n" transform="translate(410 139) rotate(-90)">278</text>
+  <path class="dim" d="M364 108V278"/><text class="n" transform="translate(359 193) rotate(-90)">170</text>
+</g>
+<text x="668" y="157" class="section">Крепление</text>
+<text x="668" y="204" class="value">4 отверстия Ø13 мм</text>
+<text x="668" y="237" class="label">Межосевое расстояние 350 × 252 мм.</text>
+<text x="668" y="269" class="label">Верхний ряд на 47 мм ниже верха выреза.</text>
+<text x="668" y="301" class="label">Нижний ряд на 21 мм ниже низа выреза.</text>
+<text x="668" y="365" class="section">Установка в котёл</text>
+<text x="668" y="409" class="value">257 мм</text>
+<text x="668" y="442" class="label">Выступ внутрь топки от плоскости</text>
+<text x="668" y="468" class="label">прилегания горелки к дверце.</text>
+<path d="M44 645h1032" stroke="#c4cdd5"/>
+<text x="44" y="674" font-size="16">Размеры указаны в миллиметрах. Для разметки используйте размеры на схеме с учётом исполнения горелки.</text>
+</svg>
