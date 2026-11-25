@@ -988,6 +988,15 @@ class CatalogController extends Controller
             ];
         }
 
+        $saunaSections = [];
+        if ($category->slug === 'pechi-dlya-bani' && ! request()->anyFilled(['subcategory', 'page', 'brand', 'attr', 'price_min', 'price_max', 'sort', 'q'])) {
+            foreach (['Дровяные печи' => SaunaStoveFilterNormalizer::WOOD_CATEGORIES, 'Электрокаменки' => ['elektrokamenki']] as $title => $slugs) {
+                $ids = $subcategories->whereIn('slug', $slugs)->flatMap(fn (Category $child) => $subcategoryIds[$child->id]);
+                $offers = (clone $query)->whereIntegerInRaw('category_id', $ids)->limit(8)->get();
+                $saunaSections[$title] = $offers->sortByDesc(fn (Product $offer) => $offer->hasVerifiedPublicPrice())->take(2);
+            }
+        }
+
         $totalCount = $query->count();
         $products = $query->paginate(24)->withQueryString()->fragment('catalog-products');
         if ($isMinskFireplaceCatalog && $products->onFirstPage()
@@ -1748,6 +1757,7 @@ class CatalogController extends Controller
         }
 
         return view('pages.catalog', compact(
+            'saunaSections',
             'isChimneySection',
             'ecokaminPromoHits',
             'ecokaminPromoMaxDiscount',

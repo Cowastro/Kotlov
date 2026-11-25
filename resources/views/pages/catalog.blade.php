@@ -104,6 +104,8 @@
 
     @if (in_array($category->slug, ['vodosnabzhenie', 'promyshlennye-nasosy'], true))
         @include('partials.pump-task-navigation')
+    @elseif ($saunaSections)
+        @include('partials.sauna-stove-sections')
     @elseif ($isBoilerHub)
         @include('partials.boiler-catalog-navigation')
     @elseif ($isWaterHeaterHub)
@@ -174,7 +176,7 @@
         @include('partials.stabilizer-category-picker')
     @endif
 
-    @if ($category->slug === 'pechi-dlya-bani')
+    @if ($category->slug === 'pechi-dlya-bani' && ! $saunaSections)
         <nav class="container my-3 d-flex flex-wrap gap-2" aria-label="Выбрать оборудование для парной">
             @if ($saunaPickerSlug)
                 <a class="tf-btn btn-white btn-stroke" href="{{ url('/'.$saunaPickerSlug) }}">Дровяные печи</a>
