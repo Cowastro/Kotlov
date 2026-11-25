@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\CartCouponService;
+use App\Support\Catalog\SpotlightProducts;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -538,7 +540,7 @@ class Product extends Model
 
     public function qualifiesForOnlineOrderDiscount(): bool
     {
-        if (! \App\Services\CartCouponService::onlineDiscountIsPublic()) {
+        if (! CartCouponService::onlineDiscountIsPublic()) {
             return false;
         }
         $categorySlug = $this->category?->slug;
@@ -978,7 +980,7 @@ class Product extends Model
     /** Promoted products first (App\Support\Catalog\SpotlightProducts). */
     public function scopePrioritizeSpotlight($query)
     {
-        $slugs = \App\Support\Catalog\SpotlightProducts::slugs();
+        $slugs = SpotlightProducts::slugs();
         if ($slugs === []) {
             return $query;
         }
@@ -1081,6 +1083,11 @@ class Product extends Model
     public function integrationProducts(): HasMany
     {
         return $this->hasMany(IntegrationProduct::class);
+    }
+
+    public function oneCItems(): HasMany
+    {
+        return $this->hasMany(OneCItem::class);
     }
 
     public function warehouseStocks(): HasMany
