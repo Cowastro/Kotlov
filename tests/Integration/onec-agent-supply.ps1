@@ -99,7 +99,7 @@ Assert-Equal $true $decoded['rows'][0]['values'][2] 'nested boolean is preserved
 function Copy-Json($v) { return ,(New-SupplyJson).DeserializeObject((New-SupplyJson).Serialize($v)) }
 function Reset-Server {
     $script:server = Copy-Json (Doc @((Row 2)))
-    $script:reads = 0; $script:writes = 0; $script:posts = 0; $script:failPost = $false; $script:concurrent = $false
+    $script:reads = 0; $script:writes = 0; $script:posts = 0; $script:failPost = $false; $script:failRecovery = $false; $script:concurrent = $false
 }
 function Read-SupplyDocument([string]$url) {
     $script:reads++
@@ -116,6 +116,7 @@ function Write-SupplyRows([string]$url, $rows, [string]$etag) {
 function Post-SupplyDocument([string]$url) {
     $script:posts++
     if ($script:failPost -and $script:posts -eq 1) { throw 'stock conflict' }
+    if ($script:failRecovery -and $script:posts -eq 2) { throw 'recovery posting failed' }
 }
 $lines = @(('key|' + $key), 'number|TEST-1C')
 Reset-Server
@@ -151,6 +152,16 @@ $beforeReads = $script:reads
 [IO.File]::WriteAllText((Join-Path $DoneDir 'supply-7.json'), '{"phase":"pending"}', $Utf8)
 Assert-Fails { Do-OrderSupply '7' $lines } 'прервана'
 Assert-Equal $beforeReads $script:reads 'interrupted write requires review, not a blind replay'
+Reset-Server
+$script:failPost = $true; $script:failRecovery = $true
+Assert-Fails { Do-OrderSupply '8' $lines } 'stock conflict; восстановление не подтверждено: recovery posting failed'
+$failedJournal = $json.DeserializeObject((Read-Answer (Join-Path $DoneDir 'supply-8.json')))
+Assert-Equal 'stock conflict' $failedJournal['posting_error'] 'original posting error survives a failed recovery'
+Assert-Equal 'recovery posting failed' $failedJournal['recovery_error'] 'recovery error is recorded separately'
+Assert-Equal 'pending' $failedJournal['phase'] 'failed recovery never claims that registers are restored'
+$beforeReads = $script:reads
+Assert-Fails { Do-OrderSupply '8' $lines } 'прервана'
+Assert-Equal $beforeReads $script:reads 'failed recovery blocks blind replay'
 # Transport-level contract: take the real HTTP helpers and stub curl, not the implementation under test.
 foreach ($f in $ast.FindAll({ param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] }, $false)) {
     if (@('Read-SupplyDocument', 'Write-SupplyRows', 'Post-SupplyDocument') -contains $f.Name) { Invoke-Expression $f.Extent.Text }
