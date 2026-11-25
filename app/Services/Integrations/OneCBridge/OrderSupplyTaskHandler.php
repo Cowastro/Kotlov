@@ -24,7 +24,7 @@ class OrderSupplyTaskHandler implements OneCAgentTaskHandler
         }
         // An older agent must keep processing its other work, without receiving unknown task types.
         $health = app(OneCAgentTasks::class)->health();
-        if (! $health['online'] || version_compare((string) $health['version'], '14', '<')) {
+        if (! $health['online'] || version_compare((string) $health['version'], '15', '<')) {
             return 0;
         }
         $count = 0;

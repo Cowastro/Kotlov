@@ -1,4 +1,4 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 14: staged supply exchange with normal posting.
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 15: explicit empty POST length for IIS.
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
@@ -8,7 +8,7 @@
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '14'
+$AgentVersion = '15'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -397,7 +397,8 @@ function Write-SupplyRows([string]$url, $rows, [string]$etag) {
 }
 
 function Post-SupplyDocument([string]$url) {
-    $code = Invoke-Curl ($url + '/Post?PostingModeOperational=false') 'POST' @('Accept: application/json') $ODataUser $null @() $Out
+    # HTTP.sys/IIS on the 1C server rejects an empty POST without an explicit length (411).
+    $code = Invoke-Curl ($url + '/Post?PostingModeOperational=false') 'POST' @('Accept: application/json', 'Content-Length: 0') $ODataUser $null @() $Out
     if ($code -ne '200' -and $code -ne '204') { throw ('Не проведено обеспечение 1С: ' + $code + ' ' + (Read-Answer $Out)) }
 }
 
