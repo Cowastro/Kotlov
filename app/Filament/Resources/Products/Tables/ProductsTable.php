@@ -488,6 +488,7 @@ class ProductsTable
             ))
             ->recordActions([
                 ProductOneCItemAction::make()->iconButton()->tooltip('Товар в 1С: привязать или создать'),
+                RequestSupplierReserveAction::make()->button()->outlined()->size('sm'),
                 Action::make('publish_offer_card')
                     ->label('Опубликовать')
                     ->icon('heroicon-o-check-badge')
@@ -522,7 +523,6 @@ class ProductsTable
                         'filters' => ['product_id' => ['value' => $record->id]],
                     ])),
                 ActionGroup::make([
-                    RequestSupplierReserveAction::make(),
                     Action::make('market_price_details')
                         ->label('Рынок и цены')
                         ->icon('heroicon-o-presentation-chart-line')
@@ -1308,21 +1308,16 @@ class ProductsTable
     {
         $suppliers = self::productSuppliers($record);
         $showNames = $suppliers->count() > 1;
-        $rows = $suppliers->map(function (Supplier $supplier) use ($record, $showNames): ?string {
+        $rows = $suppliers->map(function (Supplier $supplier) use ($showNames): ?string {
             $phone = $supplier->contactPhoneNumbers()[0] ?? null;
-            $email = $supplier->contactEmailAddresses()[0] ?? null;
-            if (! $phone && ! $email) {
+            if (! $phone) {
                 return null;
             }
 
-            $links = collect([
-                $phone ? AdminPhoneLinks::render($phone)?->toHtml() : null,
-                $email ? sprintf(
-                    '<button type="button" class="text-primary-600 hover:underline" wire:click.stop="mountTableAction(\'request_supplier_reserve\', \'%s\')" title="Запросить резерв через CRM: %s" aria-label="Запросить резерв у поставщика через CRM">✉</button>',
-                    e((string) $record->getKey()),
-                    e($email),
-                ) : null,
-            ])->filter()->implode('');
+            $links = AdminPhoneLinks::render($phone)?->toHtml();
+            if (! $links) {
+                return null;
+            }
 
             return '<span class="products-supplier-contact">'
                 .($showNames ? '<span class="products-supplier-contact-name text-gray-500">'.e($supplier->name).':</span>' : '')
