@@ -40,7 +40,8 @@ class SaunaStoveHubTest extends TestCase
         $this->get('https://kotlov.by/pechi-dlya-bani')->assertOk()
             ->assertSeeText('Печи для бани и сауны')->assertSeeText('Банная печь Дрова')
             ->assertSeeText('Электрокаменка Тепло')->assertSeeText('550.00 BYN')->assertSeeText('825.00 BYN')->assertSeeText('В наличии')
-            ->assertDontSeeText('Длинный черпак');
+            ->assertDontSeeText('Длинный черпак')
+            ->assertSeeInOrder(['id="sauna-group-0"', 'Банная печь Дрова', '550,00 BYN', 'В наличии', 'id="sauna-group-1"', 'Электрокаменка Тепло', '825,00 BYN', 'В наличии'], false);
         $this->get('https://kotlov.by/aksessuary-dlya-parnoy')->assertOk()->assertSeeText('Длинный черпак');
         $destination = 'https://kotlov.by/aksessuary-dlya-parnoy/fixture-pechi-dlya-bani?ref=old';
         $this->get('https://kotlov.by/pechi-dlya-bani/fixture-pechi-dlya-bani?ref=old')

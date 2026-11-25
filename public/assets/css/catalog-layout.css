@@ -129,3 +129,20 @@
  #catalog-filters .catalog-filter-actions .tf-btn{min-height:44px;padding:10px 12px;font-size:14px;justify-content:center;white-space:nowrap}
  #catalog-filters .catalog-filter-actions button{flex:1}
 }
+
+.sauna-offers { margin-block: 24px; }
+.sauna-offers__groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 12px; }
+.sauna-offers__group { padding: clamp(16px, 2vw, 28px); border: 1px solid #dedbd7; border-radius: 18px; background: #faf9f7; }
+.sauna-offers__group h2 { font-size: clamp(20px, 2vw, 28px); line-height: 1.2; margin-bottom: 12px; }
+.sauna-offers__item { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 16px; padding: 12px 0; }
+.sauna-offers__item + .sauna-offers__item { border-top: 1px solid #dedbd7; }
+.sauna-offers__item img { width: 76px; height: 76px; object-fit: contain; background: white; border-radius: 8px; }
+.sauna-offers__item strong, .sauna-offers__name, .sauna-offers__stock { display: block; }
+.sauna-offers__name { line-height: 1.35; overflow-wrap: anywhere; margin-bottom: 4px; }
+.sauna-offers__stock { color: #505453; font-size: 14px; }
+.sauna-offers__item:hover .sauna-offers__name, .sauna-offers__item:focus-visible .sauna-offers__name { text-decoration: underline; }
+@media (max-width: 767px) {
+    .sauna-offers__groups { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .sauna-offers__item { grid-template-columns: 60px minmax(0, 1fr); gap: 12px; }
+    .sauna-offers__item img { width: 60px; height: 60px; }
+}
