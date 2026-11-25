@@ -100,23 +100,6 @@
         </div>
     </section>
 
-    @if ($zordOffers)
-        <section class="container sauna-offers" aria-labelledby="zord-heading">
-            <h2 id="zord-heading" class="h4 mb-3">Какой газ определяют сигнализаторы ЗОРД</h2>
-            <div class="zord-offers">
-                @foreach ($zordOffers as ['model' => $model, 'gases' => $gases, 'product' => $offer])
-                    <a class="zord-offers__card sauna-offers__group" href="{{ url('/'.$offer->category->slug.'/'.$offer->slug) }}">
-                        <img src="{{ $offer->image_url }}" width="76" height="76" alt="" loading="lazy">
-                        <h3 class="h6">{{ $model }}</h3>
-                        <p>{{ $gases }}</p>
-                        <strong>{{ $offer->hasVerifiedPublicPrice() ? number_format($offer->price, 2, ',', ' ').' BYN' : 'Цену уточняйте' }}</strong>
-                        <span class="sauna-offers__stock">{{ $offer->publicAvailabilityLabel() }}</span>
-                    </a>
-                @endforeach
-            </div>
-        </section>
-    @endif
-
     @if ($bufferSections)
         @include('partials.stove-offer-sections', ['sections' => $bufferSections, 'groupPrefix' => 'buffer'])
     @endif
@@ -644,7 +627,7 @@
                         {{-- Сетка товаров --}}
                         <div class="wrapper-shop tf-grid-layout tf-col-2 {{ $category->slug === 'pechi-kaminy' ? 'md-col-4' : 'md-col-3' }}" id="gridLayout">
                             @forelse ($products as $product)
-                                @include('partials.product-card', ['product' => $product, 'catalogUnified' => true, 'showCatalogFacts' => !empty($fireplaceSpecsByProduct), 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? []])
+                                @include('partials.product-card', ['product' => $product, 'catalogUnified' => true, 'showCatalogFacts' => !empty($fireplaceSpecsByProduct), 'fireplaceCardSpecs' => isset($detectorFacts[$product->sku]) ? ['Определяет' => $detectorFacts[$product->sku]] : ($fireplaceSpecsByProduct[$product->id] ?? [])])
                             @empty
                                 <div class="wd-full text-center py-48">
                                     <i class="icon icon-Package fs-48 cl-text-3 mb-16"></i>
