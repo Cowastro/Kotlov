@@ -1,4 +1,4 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 15: explicit empty POST length for IIS.
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 16: preserve posting and recovery errors.
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
@@ -8,7 +8,7 @@
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '15'
+$AgentVersion = '16'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -447,10 +447,22 @@ function Do-OrderSupply([string]$id, [string[]]$lines) {
         Post-SupplyDocument $url
     } catch {
         $failure = [string]$_
-        $latest = Read-SupplyDocument $url
-        if ($latest['doc']['DataVersion'] -ne $written['doc']['DataVersion']) { throw ($failure + '; заказ изменён после записи — автоматический откат остановлен, требуется проверка в 1С') }
-        Write-SupplyRows $url $snapshot['rows'] $latest['etag']
-        Post-SupplyDocument $url
+        # Capture the FIRST error before any read/write reuses the HTTP response file. A failed recovery must
+        # never replace the actual reason why the changed order could not be posted.
+        $snapshot['posting_error'] = $failure
+        [IO.File]::WriteAllText($journal, $json.Serialize($snapshot), $Utf8)
+        try {
+            $latest = Read-SupplyDocument $url
+            if ($latest['doc']['DataVersion'] -ne $written['doc']['DataVersion']) { throw 'заказ изменён после записи — автоматический откат остановлен' }
+            Write-SupplyRows $url $snapshot['rows'] $latest['etag']
+            Post-SupplyDocument $url
+            $restored = Read-SupplyDocument $url
+            if (-not $restored['doc']['Posted'] -or $json.Serialize($restored['doc']['Товары']) -ne $original) { throw '1С не подтвердила восстановление исходных строк' }
+        } catch {
+            $snapshot['recovery_error'] = [string]$_
+            [IO.File]::WriteAllText($journal, $json.Serialize($snapshot), $Utf8)
+            throw ($failure + '; восстановление не подтверждено: ' + $snapshot['recovery_error'] + '; требуется проверка документа в 1С')
+        }
         $snapshot['phase'] = 'restored'
         [IO.File]::WriteAllText($journal, $json.Serialize($snapshot), $Utf8)
         throw ($failure + '; исходные строки восстановлены, ошибка сохранена в задаче')
