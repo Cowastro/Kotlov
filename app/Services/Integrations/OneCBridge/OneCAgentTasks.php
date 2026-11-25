@@ -93,7 +93,16 @@ class OneCAgentTasks
             $data = collect($result['data'] ?? [])->filter(fn ($v): bool => is_scalar($v))
                 ->map(fn ($v): string => mb_substr((string) $v, 0, 200))->take(20)->all();
             $error = $ok ? null : mb_substr(trim((string) ($result['error'] ?? '')) ?: 'Агент не сообщил причину', 0, 2000);
-            $summary = $this->handler($task->type)->finished($task, ['ok' => $ok, 'error' => $error, 'data' => $data]);
+            try {
+                $summary = $this->handler($task->type)->finished($task, ['ok' => $ok, 'error' => $error, 'data' => $data]);
+            } catch (DomainException $exception) {
+                if (! data_get($task->payload, 'create_group')) {
+                    throw $exception;
+                }
+                $ok = false;
+                $error = mb_substr($exception->getMessage(), 0, 2000);
+                $summary = null;
+            }
             $task->forceFill([
                 'status' => $ok ? OneCAgentTask::DONE : OneCAgentTask::FAILED, 'finished_at' => now(),
                 'result' => $data ?: null, 'error' => $error, 'summary' => $summary ? mb_substr($summary, 0, 250) : null,

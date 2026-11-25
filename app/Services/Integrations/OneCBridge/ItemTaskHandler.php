@@ -2,6 +2,7 @@
 
 namespace App\Services\Integrations\OneCBridge;
 
+use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\OneCAgentTask;
 use App\Models\Product;
@@ -34,6 +35,9 @@ class ItemTaskHandler implements OneCAgentTaskHandler
 
     public function finished(OneCAgentTask $task, array $result): ?string
     {
+        if (data_get($task->payload, 'create_group')) {
+            return app(OneCGroupCreator::class)->finished($task, $result);
+        }
         $product = $task->subject;
         if (! $result['ok'] || ! $product instanceof Product) {
             return null;
@@ -56,6 +60,10 @@ class ItemTaskHandler implements OneCAgentTaskHandler
 
     public function url(OneCAgentTask $task): ?string
     {
+        if (data_get($task->payload, 'create_group')) {
+            return OneCItemResource::getUrl('index');
+        }
+
         return $task->subject_id ? ProductResource::getUrl('edit', ['record' => $task->subject_id]) : null;
     }
 }
