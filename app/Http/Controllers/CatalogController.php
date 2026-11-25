@@ -34,6 +34,13 @@ use Illuminate\Support\Collection;
 
 class CatalogController extends Controller
 {
+    private const FEATURED_FIREPLACES = [
+        'pech-kamin-ecokamin-bavariya-optima',
+        'pech-otopitelnaya-termokraft-ognivo-2k',
+        'pech-kamin-ecokamin-bavariya-uglovaya',
+        'pech-kamin-ecokamin-bavariya-prizmatik-pristenno-uglovoy',
+    ];
+
     private const PELLET_POWER_RANGES = [
         'up-to-25' => ['label' => 'до 25 кВт', 'min' => null, 'max' => 25],
         '26-50' => ['label' => '26–50 кВт', 'min' => 25, 'max' => 50],
@@ -744,6 +751,21 @@ class CatalogController extends Controller
         $isPipesCatalog = $category->slug === 'truby-i-fitingi'
             || $category->parent?->slug === 'truby-i-fitingi';
 
+        $hasFeaturedFireplaces = false;
+        $heatingSections = [];
+        $showHeatingSections = $isStoveHeatingCatalog && ! request()->anyFilled([
+            'sort', 'brand', 'subcategory', 'price_min', 'price_max', 'attr', 'q', 'page',
+        ]);
+        if ($category->slug === 'pechi-kaminy' && blank(request('sort'))) {
+            $hasFeaturedFireplaces = $this->prioritizeStockedModels($query, self::FEATURED_FIREPLACES);
+        }
+        if ($isStoveHeatingCatalog && blank(request('sort')) && ! request('subcategory')) {
+            $casting = $subcategories->firstWhere('slug', 'pechnoe-i-kaminnoe-lite');
+            if ($casting) {
+                $query->deprioritizeCategories($subcategoryIds[$casting->id]->all());
+            }
+        }
+
         // Promoted products (SpotlightProducts) open the section in the default order.
         if (blank(request('sort'))) {
             $query->prioritizeSpotlight();
@@ -808,10 +830,8 @@ class CatalogController extends Controller
                     $catalogStockAlreadyOrdered = true;
                 }
 
-                if (in_array($category->slug, ['pechki', 'kaminy'], true) && ! request('subcategory')) {
-                    $accessoryCategorySlugs = $category->slug === 'pechki'
-                        ? ['pechnoe-i-kaminnoe-lite']
-                        : ['aksessuary-kaminy'];
+                if ($category->slug === 'kaminy' && ! request('subcategory')) {
+                    $accessoryCategorySlugs = ['aksessuary-kaminy'];
                     $accessoryCategoryIds = Category::query()
                         ->whereIn('slug', $accessoryCategorySlugs)
                         ->whereIn('id', $allCategoryIds)
@@ -988,6 +1008,25 @@ class CatalogController extends Controller
             ];
         }
 
+        if ($showHeatingSections) {
+            $groups = [
+                'Отопительные печи для дачи' => [
+                    ['burzhuiki-pechi', 'peci-drovianye-otopitelnye'],
+                    ['pech-otopitelnaya-tsar-pechi-potapyich', 'pech-otopitelnaya-avoska-tmf'],
+                ],
+                'Печи-камины' => [['pechi-kaminy'], [self::FEATURED_FIREPLACES[1], self::FEATURED_FIREPLACES[0]]],
+            ];
+            foreach ($groups as $title => [$slugs, $preferred]) {
+                $ids = Category::active()->whereIn('slug', $slugs)->pluck('id')
+                    ->flatMap(fn ($id) => $this->collectCategoryAndDescendantIds($id));
+                $models = (clone $query)->reorder()->whereIntegerInRaw('category_id', $ids)
+                    ->where('price', '>', 0)->where('requires_price_confirmation', false);
+                $this->prioritizeStockedModels($models, $preferred);
+                $heatingSections[$title] = $models->prioritizeConfirmedStock()->orderBy('id')->lazy(24)
+                    ->filter(fn (Product $p) => $p->hasVerifiedPublicPrice() && $p->publicAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK)
+                    ->take(2)->collect();
+            }
+        }
         $saunaSections = [];
         if ($category->slug === 'pechi-dlya-bani' && ! request()->anyFilled(['subcategory', 'page', 'brand', 'attr', 'price_min', 'price_max', 'sort', 'q'])) {
             foreach (['Дровяные печи' => SaunaStoveFilterNormalizer::WOOD_CATEGORIES, 'Электрокаменки' => ['elektrokamenki']] as $title => $slugs) {
@@ -999,7 +1038,7 @@ class CatalogController extends Controller
 
         $totalCount = $query->count();
         $products = $query->paginate(24)->withQueryString()->fragment('catalog-products');
-        if ($isMinskFireplaceCatalog && $products->onFirstPage()
+        if ($isMinskFireplaceCatalog && $products->onFirstPage() && ! $hasFeaturedFireplaces
             && ! request()->anyFilled(['sort', 'brand', 'subcategory', 'price_min', 'price_max', 'attr'])) {
             $pageProducts = $products->getCollection();
             $branded = $pageProducts->filter(fn (Product $product) => $product->brand_id !== null);
@@ -1757,7 +1796,7 @@ class CatalogController extends Controller
         }
 
         return view('pages.catalog', compact(
-            'saunaSections',
+            'saunaSections', 'heatingSections',
             'isChimneySection',
             'ecokaminPromoHits',
             'ecokaminPromoMaxDiscount',
@@ -2051,6 +2090,23 @@ class CatalogController extends Controller
             'count' => $count,
             'active' => $active,
         ];
+    }
+
+    private function prioritizeStockedModels(\Illuminate\Database\Eloquent\Builder $query, array $slugs): bool
+    {
+        $candidates = (clone $query)->reorder()->whereIn('products.slug', $slugs)->get()->keyBy('slug');
+        $rank = [];
+        foreach ($slugs as $slug) {
+            $product = $candidates->get($slug);
+            if ($product && $product->hasVerifiedPublicPrice() && $product->publicAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK) {
+                $rank[] = 'WHEN '.(int) $product->id.' THEN '.count($rank);
+            }
+        }
+        if ($rank) {
+            $query->orderByRaw('CASE products.id '.implode(' ', $rank).' ELSE '.count($rank).' END');
+        }
+
+        return $rank !== [];
     }
 
     private function collectCategoryAndDescendantIds(int $categoryId): Collection
