@@ -79,6 +79,23 @@ $Root = Join-Path $repo ('storage/app/supply-agent-test-' + [guid]::NewGuid().To
 $DoneDir = Join-Path $Root 'done'
 [void](New-Item -ItemType Directory -Path $DoneDir -Force)
 $json = New-SupplyJson
+# Reproduce the PowerShell 2 transport boundary explicitly: nested PSObjects must not expose adapted properties.
+$rawRows = $json.DeserializeObject('[{"Количество":1,"Цена":210,"Отменено":false,"ВариантОбеспечения":"КОбеспечению"}]')
+$wrappedRows = [System.Management.Automation.PSObject]::AsPSObject($rawRows)
+$journalData = @{ phase = 'pending'; rows = $wrappedRows }
+$legacyJson = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+Assert-Fails { $legacyJson.Serialize($journalData) } 'PSParameterizedProperty'
+$encoded = $json.Serialize($journalData)
+$decoded = $json.DeserializeObject($encoded)
+Assert-Equal 1 $decoded['rows'].Count 'wrapped singleton remains an array'
+Assert-Equal 210 $decoded['rows'][0]['Цена'] 'wrapped decimal is unchanged'
+Assert-Equal $false $decoded['rows'][0]['Отменено'] 'wrapped boolean is unchanged'
+Assert-Equal $false ($encoded -match 'PSParameterizedProperty|PSObject|Members') 'no PowerShell infrastructure on the wire'
+$nested = @{ rows = @([System.Management.Automation.PSObject]::AsPSObject(@{ values = @([decimal]1.25, $null, $true) })) }
+$decoded = $json.DeserializeObject($json.Serialize($nested))
+Assert-Equal 1.25 $decoded['rows'][0]['values'][0] 'nested decimal is preserved'
+Assert-Equal $null $decoded['rows'][0]['values'][1] 'nested null is preserved'
+Assert-Equal $true $decoded['rows'][0]['values'][2] 'nested boolean is preserved'
 function Copy-Json($v) { return ,(New-SupplyJson).DeserializeObject((New-SupplyJson).Serialize($v)) }
 function Reset-Server {
     $script:server = Copy-Json (Doc @((Row 2)))

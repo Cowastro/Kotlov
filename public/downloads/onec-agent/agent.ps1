@@ -1,4 +1,4 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 12: 1C DataVersion supply checks.
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 13: PowerShell 2 JSON supply support.
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
@@ -8,7 +8,7 @@
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '12'
+$AgentVersion = '13'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -233,9 +233,47 @@ function Send-Result([string]$id, [string[]]$form, [string]$doneFile) {
 # No supplier feeds, old exchange stock, other orders' reserves, or automatic cancellation of a posting.
 function New-SupplyJson {
     Add-Type -AssemblyName System.Web.Extensions
-    $j = New-Object System.Web.Script.Serialization.JavaScriptSerializer
-    $j.MaxJsonLength = 8388608
-    return $j
+    if (-not ('Kotlov.OneCJson' -as [type])) {
+        # PowerShell 2 can leave PSObject wrappers inside dictionaries/arrays. JavaScriptSerializer then sees
+        # PowerShell's adapted properties (including indexers) instead of JSON data and reports a circular reference.
+        # Unwrap recursively in CLR code, not through the PowerShell pipeline, which can wrap the values again.
+        $source = @'
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Management.Automation;
+using System.Web.Script.Serialization;
+namespace Kotlov {
+    public sealed class OneCJson {
+        private readonly JavaScriptSerializer json = new JavaScriptSerializer();
+        public OneCJson() { json.MaxJsonLength = 8388608; }
+        public object DeserializeObject(string text) { return json.DeserializeObject(text); }
+        public string Serialize(object value) { return json.Serialize(Clean(value, 0)); }
+        private static object Clean(object value, int depth) {
+            if (depth > 64) throw new InvalidOperationException("JSON nesting exceeds 64 levels");
+            PSObject wrapper = value as PSObject;
+            if (wrapper != null) return Clean(wrapper.BaseObject, depth + 1);
+            if (value == null || value is string || value is decimal || value is DateTime || value.GetType().IsPrimitive) return value;
+            IDictionary dictionary = value as IDictionary;
+            if (dictionary != null) {
+                Dictionary<string, object> clean = new Dictionary<string, object>();
+                foreach (DictionaryEntry entry in dictionary) clean.Add(Convert.ToString(entry.Key), Clean(entry.Value, depth + 1));
+                return clean;
+            }
+            IEnumerable sequence = value as IEnumerable;
+            if (sequence != null) {
+                List<object> clean = new List<object>();
+                foreach (object item in sequence) clean.Add(Clean(item, depth + 1));
+                return clean;
+            }
+            throw new InvalidOperationException("Unsupported JSON value: " + value.GetType().FullName);
+        }
+    }
+}
+'@
+        Add-Type -TypeDefinition $source -ReferencedAssemblies @('System.dll', [System.Management.Automation.PSObject].Assembly.Location, [System.Web.Script.Serialization.JavaScriptSerializer].Assembly.Location)
+    }
+    return New-Object Kotlov.OneCJson
 }
 
 function Supply-Guid([string]$v) {
