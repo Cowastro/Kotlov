@@ -95,6 +95,8 @@ class OneCStock
         $free = collect($stock)->filter(fn (array $s): bool => $s[0] - $s[1] > 0)->count();
         // Lines of open orders our warehouse covers get «Наш склад» and the 1C cost.
         $routed = app(OneCOwnStockRouting::class)->fillOpenOrders();
+        // The agent rereads the relevant live registers before changing a document.
+        app(OrderSupplyTaskHandler::class)->enqueueOpen();
 
         return 'Остатки 1С ('.implode(', ', self::WAREHOUSES).'): товаров в наличии '.collect($stock)->filter(fn (array $s): bool => $s[0] > 0)->count()
             .', свободно '.$free.', в резерве '.collect($stock)->filter(fn (array $s): bool => $s[1] > 0)->count()

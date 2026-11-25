@@ -1,14 +1,14 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 8: «Мост 1С».
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 11: live supply and dispatch actions.
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
-# odata_read, doc_status — read-only lists of 1C.
+# odata_read, doc_status — read-only lists of 1C; onec_order_supply — supply actions of a posted open order.
 #   agent.ps1 -Check   read-only check: the site key and the 1C OData user work
 #   agent.ps1          one run (the scheduler starts it every 5 minutes): does every task waiting in the queue
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '10'
+$AgentVersion = '11'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -48,10 +48,11 @@ function Js([string]$s) { return '"' + $s.Replace('\', '\\').Replace('"', '\"') 
 
 # One HTTP call through curl. Secrets go through a temporary config file, never the command line.
 # Returns the HTTP status; the answer is in $outFile.
-function Invoke-Curl([string]$url, [string]$method, [string[]]$headers, [string]$user, [string]$bodyFile, [string[]]$form, [string]$outFile) {
+function Invoke-Curl([string]$url, [string]$method, [string[]]$headers, [string]$user, [string]$bodyFile, [string[]]$form, [string]$outFile, [string]$responseHeaders = '') {
     $cfg = [IO.Path]::GetTempFileName()
     $lines = @('silent', 'show-error', 'max-time = 300', ('url = ' + (Q $url)), ('output = ' + (Q $outFile)), ('write-out = "%{http_code}"'))
     if ($method) { $lines += 'request = ' + (Q $method) }
+    if ($responseHeaders) { $lines += 'dump-header = ' + (Q $responseHeaders) }
     foreach ($h in $headers) { $lines += 'header = ' + (Q $h) }
     if ($user) { $lines += 'user = ' + (Q $user) }
     if ($bodyFile) { $lines += 'data-binary = ' + (Q ('@' + $bodyFile)) }
@@ -173,7 +174,7 @@ function Read-Created([string]$answer, [string]$existed) {
 # ---- onec_order / onec_item: an UNPOSTED «Заказ клиента» or a new «Номенклатура». The site prepared the object,
 # the agent first looks for it (the same order number, the same article) and creates it only when 1C has none ----
 function Do-Create([string[]]$lines, [string]$entity) {
-    $find = ''; $b64 = ''; $load = $false
+    $find = ''; $b64 = ''; $load = $false; $supply = $false
     foreach ($l in $lines) {
         $i = $l.IndexOf('|')
         if ($i -lt 0) { continue }
@@ -182,6 +183,7 @@ function Do-Create([string[]]$lines, [string]$entity) {
         if ($k -eq 'find') { $find = $v }
         if ($k -eq 'body') { $b64 = $v }
         if ($k -eq 'mode' -and $v -eq 'load') { $load = $true }
+        if ($k -eq 'supply' -and $v -eq 'live') { $supply = $true }
     }
     if (-not $b64) { throw 'В задаче нет объекта для 1С' }
     if ($CreatableEntities -notcontains $entity) { throw ('Агент не создаёт «' + $entity + '»') }
@@ -195,7 +197,14 @@ function Do-Create([string[]]$lines, [string]$entity) {
         if ($answer -match '"Ref_Key"\s*:\s*"([0-9a-fA-F-]{36})"') { return Read-Created $answer '1' }
     }
 
-    [IO.File]::WriteAllBytes($Body, [Convert]::FromBase64String($b64))
+    if ($supply -and $entity -eq 'Document_ЗаказКлиента') {
+        $json = New-SupplyJson
+        $doc = $json.DeserializeObject($Utf8.GetString([Convert]::FromBase64String($b64)))
+        [void](Set-OrderSupply $doc '' $true)
+        [IO.File]::WriteAllText($Body, $json.Serialize($doc), $Utf8)
+    } else {
+        [IO.File]::WriteAllBytes($Body, [Convert]::FromBase64String($b64))
+    }
     $url = $OData + [Uri]::EscapeDataString($entity) + '?$format=json'
     # «mode|load»: 1C writes the object as a draft without its write handlers (1C_OData-DataLoadMode); all its
     # logic and checks run when a manager posts it in 1C.
@@ -218,6 +227,195 @@ function Send-Result([string]$id, [string[]]$form, [string]$doneFile) {
     }
     Log ('Задача №' + $id + ': сайт не принял ответ (' + $code + '), повторю позже')
     return $false
+}
+
+# Supply is checked against live 1C registers, on the line's warehouse and characteristic.
+# No supplier feeds, old exchange stock, other orders' reserves, or automatic cancellation of a posting.
+function New-SupplyJson {
+    Add-Type -AssemblyName System.Web.Extensions
+    $j = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+    $j.MaxJsonLength = 8388608
+    return $j
+}
+
+function Supply-Guid([string]$v) {
+    if ($v -notmatch '^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$') { throw 'Некорректный ключ 1С в обеспечении' }
+    return $v.ToLowerInvariant()
+}
+
+function Supply-Dimension($row, [string]$warehouse) {
+    $zero = '00000000-0000-0000-0000-000000000000'
+    if ($row['Склад_Key'] -and $row['Склад_Key'] -ne $zero) { $warehouse = [string]$row['Склад_Key'] }
+    if ($warehouse -eq $zero) { throw 'В строке заказа не определён склад 1С' }
+    $characteristic = $zero
+    if ($row['Характеристика_Key']) { $characteristic = [string]$row['Характеристика_Key'] }
+    return (Supply-Guid $warehouse) + '|' + (Supply-Guid ([string]$row['Номенклатура_Key'])) + '|' + (Supply-Guid $characteristic)
+}
+
+function Read-SupplyJson([string]$url, [string]$headFile = '') {
+    $code = Invoke-Curl $url 'GET' @('Accept: application/json') $ODataUser $null @() $Out $headFile
+    if ($code -ne '200') { throw ('Не прочитано обеспечение 1С: ' + $code + ' ' + (Read-Answer $Out)) }
+    return (New-SupplyJson).DeserializeObject((Read-Answer $Out))
+}
+
+function Read-SupplyBalances($doc) {
+    $groups = @{}
+    foreach ($r in $doc['Товары']) {
+        if ($r['Отменено']) { continue }
+        $d = (Supply-Dimension $r ([string]$doc['Склад_Key'])).Split('|')
+        if (-not $groups.ContainsKey($d[0])) { $groups[$d[0]] = @{} }
+        $groups[$d[0]][$d[1]] = $true
+    }
+    $stock = @(); $holds = @()
+    foreach ($warehouse in $groups.Keys) {
+        $keys = @($groups[$warehouse].Keys)
+        for ($i = 0; $i -lt $keys.Count; $i += 8) {
+            $parts = @()
+            for ($n = $i; $n -lt [Math]::Min($i + 8, $keys.Count); $n++) { $parts += "Номенклатура_Key eq guid'" + $keys[$n] + "'" }
+            $filter = "Склад_Key eq guid'" + $warehouse + "' and (" + ($parts -join ' or ') + ')'
+            foreach ($register in @('ТоварыНаСкладах', 'ТоварыКОтгрузке')) {
+                $url = $OData + [Uri]::EscapeDataString('AccumulationRegister_' + $register) + '/Balance?$format=json&$top=5001&$filter=' + [Uri]::EscapeDataString($filter)
+                $answer = Read-SupplyJson $url
+                if (-not $answer.ContainsKey('value') -or $answer['odata.nextLink'] -or $answer['@odata.nextLink'] -or @($answer['value']).Count -gt 5000) { throw 'Неполный ответ регистров 1С: действия строк не изменены' }
+                if ($register -eq 'ТоварыНаСкладах') { $stock += @($answer['value']) } else { $holds += @($answer['value']) }
+            }
+        }
+    }
+    return @{ stock = $stock; holds = $holds }
+}
+
+# Mutates only ВариантОбеспечения. Whole lines wait if they are not fully covered; no partial dispatch is created.
+function Set-OrderSupply($doc, [string]$orderKey, [bool]$creating = $false) {
+    $balances = Read-SupplyBalances $doc
+    return Set-SupplyFromBalances $doc $orderKey $creating $balances['stock'] $balances['holds']
+}
+
+function Set-SupplyFromBalances($doc, [string]$orderKey, [bool]$creating, $stock, $holds) {
+    $zero = '00000000-0000-0000-0000-000000000000'
+    $available = @{}; $shipping = @{}; $held = @{}; $own = @{}
+    foreach ($r in $stock) {
+        if ($r['Назначение_Key'] -and $r['Назначение_Key'] -ne $zero) { continue }
+        $d = Supply-Dimension $r ''
+        $available[$d] += [decimal]$r['ВНаличииBalance']
+        $shipping[$d] += [decimal]$r['КОтгрузкеBalance']
+    }
+    foreach ($r in $holds) {
+        if ($r['Назначение_Key'] -and $r['Назначение_Key'] -ne $zero) { continue }
+        $d = Supply-Dimension $r ''
+        $q = [decimal]$r['ВРезервеBalance'] + [decimal]$r['КОтгрузкеBalance']
+        $held[$d] += $q
+        if ($orderKey -and $r['ДокументОтгрузки'] -eq $orderKey -and $r['ДокументОтгрузки_Type'] -eq 'StandardODATA.Document_ЗаказКлиента') { $own[$d] += $q }
+    }
+    foreach ($d in @($available.Keys)) {
+        $available[$d] = [Math]::Max([decimal]0, [decimal]$available[$d] - [Math]::Max([decimal]0, [Math]::Max([decimal]$held[$d], [decimal]$shipping[$d]) - [decimal]$own[$d]))
+    }
+    # Existing dispatch decisions consume this order's share before waiting rows are considered.
+    if (-not $creating) {
+        foreach ($r in $doc['Товары']) {
+            if (-not $r['Отменено'] -and $r['ВариантОбеспечения'] -eq 'Отгрузить') {
+                $d = Supply-Dimension $r ([string]$doc['Склад_Key'])
+                $available[$d] = [Math]::Max([decimal]0, [decimal]$available[$d] - [decimal]$r['Количество'])
+            }
+        }
+    }
+    $changed = 0
+    foreach ($r in $doc['Товары']) {
+        if ($r['Отменено'] -or [decimal]$r['Количество'] -le 0) { continue }
+        if (-not $creating -and @('КОбеспечению', 'РезервироватьПоМереПоступления') -notcontains $r['ВариантОбеспечения']) { continue }
+        # Segregated or serial-specific supply needs 1C's own allocation; do not borrow ordinary stock for it.
+        if (($r['Назначение_Key'] -and $r['Назначение_Key'] -ne $zero) -or ($r['Серия_Key'] -and $r['Серия_Key'] -ne $zero)) { continue }
+        $d = Supply-Dimension $r ([string]$doc['Склад_Key'])
+        $action = 'КОбеспечению'
+        if ([decimal]$available[$d] -ge [decimal]$r['Количество']) {
+            $action = 'Отгрузить'
+            $available[$d] -= [decimal]$r['Количество']
+        }
+        if ($r['ВариантОбеспечения'] -ne $action) { $r['ВариантОбеспечения'] = $action; $changed++ }
+    }
+    return $changed
+}
+
+function Supply-DocumentUrl([string]$key) {
+    return $OData + [Uri]::EscapeDataString('Document_ЗаказКлиента') + "(guid'" + (Supply-Guid $key) + "')"
+}
+
+function Read-SupplyDocument([string]$url) {
+    $headFile = Join-Path $Root 'last-supply-headers.txt'
+    $doc = Read-SupplyJson ($url + '?$format=json') $headFile
+    $etag = ''
+    if ((Read-Answer $headFile) -match '(?im)^ETag:\s*([^\r\n]+)') { $etag = $matches[1].Trim() }
+    return @{ doc = $doc; etag = $etag }
+}
+
+function Write-SupplyRows([string]$url, $rows, [string]$etag) {
+    if (-not $etag -or $etag -eq '*') { throw '1С не вернула версию документа: запись обеспечения остановлена' }
+    [IO.File]::WriteAllText($Body, (New-SupplyJson).Serialize(@{ 'Товары' = $rows }), $Utf8)
+    $code = Invoke-Curl ($url + '?$format=json') 'PATCH' @('Content-Type: application/json; charset=utf-8', 'Accept: application/json', ('If-Match: ' + $etag)) $ODataUser $Body @() $Out
+    if ($code -ne '200' -and $code -ne '204') { throw ('Не записано обеспечение 1С: ' + $code + ' ' + (Read-Answer $Out)) }
+}
+
+function Post-SupplyDocument([string]$url) {
+    $code = Invoke-Curl ($url + '/Post(PostingModeOperational=false)') 'POST' @('Accept: application/json') $ODataUser $null @() $Out
+    if ($code -ne '200' -and $code -ne '204') { throw ('Не проведено обеспечение 1С: ' + $code + ' ' + (Read-Answer $Out)) }
+}
+
+function Do-OrderSupply([string]$id, [string[]]$lines) {
+    if ($id -notmatch '^\d+$') { throw 'Некорректный номер задачи обеспечения' }
+    $key = ''; $expected = ''; $preview = $false
+    foreach ($l in $lines) {
+        if ($l.StartsWith('key|')) { $key = Supply-Guid $l.Substring(4) }
+        if ($l.StartsWith('number|')) { $expected = $l.Substring(7) }
+        if ($l -eq 'preview|1') { $preview = $true }
+    }
+    if (-not $key -or -not $expected) { throw 'Нет точной связи заказа для обеспечения' }
+    $journal = Join-Path $DoneDir ('supply-' + $id + '.json')
+    $json = New-SupplyJson
+    if (Test-Path $journal) {
+        $saved = $json.DeserializeObject((Read-Answer $journal))
+        if ($saved['phase'] -eq 'done') { return @(('changed=' + $saved['changed']), ('document_key=' + $key)) }
+        if ($saved['phase'] -ne 'restored') { throw 'Предыдущая запись обеспечения прервана: проверьте документ в 1С перед повтором. Исходные строки сохранены в журнале агента.' }
+    }
+    $url = Supply-DocumentUrl $key
+    $before = Read-SupplyDocument $url
+    $doc = $before['doc']
+    if ($doc['Ref_Key'] -ne $key -or $doc['Number'] -ne $expected) { throw 'Не совпала связь заказа 1С: документ не изменён' }
+    if (-not $doc['Posted'] -or $doc['DeletionMark'] -or $doc['Статус'] -eq 'Закрыт') { return @('changed=0', ('document_key=' + $key)) }
+    $original = $json.Serialize($doc['Товары'])
+    $changed = Set-OrderSupply $doc $key $false
+    if ($preview) {
+        if (-not $before['etag']) { throw 'Проверка без записи: 1С не вернула ETag, автоматическое обновление нельзя включить' }
+        $ready = 0; $waiting = 0
+        foreach ($r in $doc['Товары']) {
+            if ($r['Отменено']) { continue }
+            if ($r['ВариантОбеспечения'] -eq 'Отгрузить') { $ready++ }
+            if ($r['ВариантОбеспечения'] -eq 'КОбеспечению') { $waiting++ }
+        }
+        return @(('changed=' + $changed), ('ready_lines=' + $ready), ('waiting_lines=' + $waiting), ('document_key=' + $key))
+    }
+    if ($changed -eq 0) { return @('changed=0', ('document_key=' + $key)) }
+    # Read again after the balance requests; never overwrite an accountant's concurrent edit.
+    $current = Read-SupplyDocument $url
+    if ($current['doc']['DataVersion'] -ne $before['doc']['DataVersion'] -or $current['etag'] -ne $before['etag']) { throw 'Заказ изменён в 1С во время проверки: обеспечение не записано' }
+    $snapshot = @{ phase = 'pending'; key = $key; rows = $json.DeserializeObject($original) }
+    [IO.File]::WriteAllText($journal, $json.Serialize($snapshot), $Utf8)
+    Write-SupplyRows $url $doc['Товары'] $before['etag']
+    $written = Read-SupplyDocument $url
+    try {
+        Post-SupplyDocument $url
+    } catch {
+        $failure = [string]$_
+        $latest = Read-SupplyDocument $url
+        if ($latest['doc']['DataVersion'] -ne $written['doc']['DataVersion']) { throw ($failure + '; заказ изменён после записи — автоматический откат остановлен, требуется проверка в 1С') }
+        Write-SupplyRows $url $snapshot['rows'] $latest['etag']
+        Post-SupplyDocument $url
+        $snapshot['phase'] = 'restored'
+        [IO.File]::WriteAllText($journal, $json.Serialize($snapshot), $Utf8)
+        throw ($failure + '; исходные строки восстановлены, ошибка сохранена в задаче')
+    }
+    $verified = Read-SupplyDocument $url
+    if (-not $verified['doc']['Posted'] -or $json.Serialize($verified['doc']['Товары']) -ne $json.Serialize($doc['Товары'])) { throw '1С не подтвердила записанное обеспечение: требуется проверка документа' }
+    [IO.File]::WriteAllText($journal, $json.Serialize(@{ phase = 'done'; changed = $changed }), $Utf8)
+    return @(('changed=' + $changed), ('document_key=' + $key))
 }
 
 if (-not (Test-Path $DoneDir)) { [void](New-Item -ItemType Directory -Path $DoneDir) }
@@ -247,6 +445,7 @@ for ($round = 0; $round -lt 20; $round++) {
             'odata_read' { $data = Do-ODataRead $id $lines }
             'doc_status' { $data = Do-ODataRead $id $lines }
             'onec_order' { $data = Do-Create $lines 'Document_ЗаказКлиента' }
+            'onec_order_supply' { $data = Do-OrderSupply $id $lines }
             'onec_item' { $data = Do-Create $lines 'Catalog_Номенклатура' }
             'onec_supplier_order' { $data = Do-Create $lines 'Document_ЗаказПоставщику' }
             default { throw ('Агент версии ' + $AgentVersion + ' не умеет задачи «' + $type + '»: обновите agent.ps1 с сайта') }
