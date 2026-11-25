@@ -163,7 +163,10 @@ function Invoke-Curl([string]$url, [string]$method, [string[]]$headers, [string]
     $script:lastHeaders = $headers; $script:lastMethod = $method; $script:lastUrl = $url
     if ($responseHeaders) { [IO.File]::WriteAllText($responseHeaders, "HTTP/1.1 200 OK`r`nETag: `"actual-version`"`r`n", $Utf8) }
     if ($method -eq 'POST') {
-        if (-not $bodyFile) { return '200' }
+        if (-not $bodyFile) {
+            if ($headers -notcontains 'Content-Length: 0') { return '411' }
+            return '200'
+        }
         $script:postedBody = $json.DeserializeObject((Read-Answer $bodyFile))
         [IO.File]::WriteAllText($outFile, $json.Serialize(@{ Ref_Key = $key; Number = 'TEST-1C' }), $Utf8)
         return '201'
@@ -191,6 +194,7 @@ Assert-Fails { Write-SupplyRows (Supply-DocumentUrl $key) @((Row 2)) '' } 'ве�
 Post-SupplyDocument (Supply-DocumentUrl $key)
 Assert-Equal $true ($script:lastUrl.EndsWith('/Post?PostingModeOperational=false')) '1C posting mode is a query parameter'
 Assert-Equal $false ($script:lastHeaders -contains '1C_OData-DataLoadMode: true') 'normal posting always performs business validation'
+Assert-Equal $true ($script:lastHeaders -contains 'Content-Length: 0') 'empty POST is accepted by the 1C server HTTP.sys'
 $d = Doc @((Row 2), (Row 2))
 $payload = [Convert]::ToBase64String($Utf8.GetBytes($json.Serialize($d)))
 [void](Do-Create @('supply|live', ('body|' + $payload)) 'Document_ЗаказКлиента')

@@ -53,7 +53,7 @@ class OneCOrderSupplyTest extends TestCase
 
     public function test_only_open_posted_orders_are_queued_once_and_failures_stop_automatic_retry(): void
     {
-        $this->agent('14');
+        $this->agent('15');
         $open = $this->order();
         $this->order(['status' => 'delivered']);
         $this->order(['onec_doc_status' => 'Закрыт']);
@@ -71,7 +71,7 @@ class OneCOrderSupplyTest extends TestCase
 
     public function test_preview_does_not_change_customer_status_or_send_notifications(): void
     {
-        $this->agent('14');
+        $this->agent('15');
         $order = $this->order();
         $handler = app(OrderSupplyTaskHandler::class);
         $this->assertSame(1, $handler->enqueueOpen(20, true));
@@ -86,7 +86,7 @@ class OneCOrderSupplyTest extends TestCase
 
     public function test_wrong_order_result_is_saved_as_failure_and_not_retried(): void
     {
-        $this->agent('14');
+        $this->agent('15');
         $this->order();
         app(OrderSupplyTaskHandler::class)->enqueueOpen();
         $task = OneCAgentTask::where('type', OrderSupplyTaskHandler::TYPE)->firstOrFail();
