@@ -100,6 +100,23 @@
         </div>
     </section>
 
+    @if ($zordOffers)
+        <section class="container sauna-offers" aria-labelledby="zord-heading">
+            <h2 id="zord-heading" class="h4 mb-3">Какой газ определяют сигнализаторы ЗОРД</h2>
+            <div class="zord-offers">
+                @foreach ($zordOffers as ['model' => $model, 'gases' => $gases, 'product' => $offer])
+                    <a class="zord-offers__card sauna-offers__group" href="{{ url('/'.$offer->category->slug.'/'.$offer->slug) }}">
+                        <img src="{{ $offer->image_url }}" width="76" height="76" alt="" loading="lazy">
+                        <h3 class="h6">{{ $model }}</h3>
+                        <p>{{ $gases }}</p>
+                        <strong>{{ $offer->hasVerifiedPublicPrice() ? number_format($offer->price, 2, ',', ' ').' BYN' : 'Цену уточняйте' }}</strong>
+                        <span class="sauna-offers__stock">{{ $offer->publicAvailabilityLabel() }}</span>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     @if ($bufferSections)
         @include('partials.stove-offer-sections', ['sections' => $bufferSections, 'groupPrefix' => 'buffer'])
     @endif

@@ -1027,6 +1027,22 @@ class CatalogController extends Controller
                     ->take(2)->collect();
             }
         }
+        $zordOffers = [];
+        if ($category->slug === 'signalizatory-zagazovannosti' && ! request()->anyFilled([
+            'brand', 'subcategory', 'attr', 'price_min', 'price_max', 'in_stock', 'sort', 'q', 'page',
+        ])) {
+            $models = [
+                'PS-011.094' => ['ЗОРД УГС-02', 'Угарный газ (CO) и горючие газы'],
+                'PS-008.168' => ['ЗОРД УГС-03', 'Природный и сжиженный газ'],
+            ];
+            $offers = (clone $query)->reorder()->whereIn('products.sku', array_keys($models))->get()->keyBy('sku');
+            foreach ($models as $sku => [$model, $gases]) {
+                if ($offers->has($sku)) {
+                    $zordOffers[] = ['model' => $model, 'gases' => $gases, 'product' => $offers[$sku]];
+                }
+            }
+        }
+
         $bufferSections = [];
         if ($category->slug === WaterHeaterCatalog::BUFFER && $specificationLanding === null
             && ! request()->anyFilled(['brand', 'subcategory', 'heater', 'attr', 'price_min', 'price_max', 'in_stock', 'sort', 'q', 'page'])) {
@@ -1819,7 +1835,7 @@ class CatalogController extends Controller
         }
 
         return view('pages.catalog', compact(
-            'saunaSections', 'heatingSections', 'bufferSections',
+            'saunaSections', 'heatingSections', 'bufferSections', 'zordOffers',
             'isChimneySection',
             'ecokaminPromoHits',
             'ecokaminPromoMaxDiscount',
