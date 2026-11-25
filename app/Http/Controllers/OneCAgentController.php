@@ -44,7 +44,7 @@ class OneCAgentController extends Controller
         // A task waits for the agent version that can do it: customer orders from 8 (drafts), items from 5, supplier orders from 6.
         $version = (int) $request->header('X-Kotlov-Agent', '1');
         $tooNew = array_merge($version < 8 ? [OrderTaskHandler::TYPE] : [], $version < 5 ? [ItemTaskHandler::TYPE] : [], $version < 6 ? [SupplierOrderTaskHandler::TYPE] : []);
-        if ($version < 13) {
+        if ($version < 14) {
             $tooNew[] = OrderSupplyTaskHandler::TYPE;
         }
         $types = $tooNew !== [] ? array_values(array_diff(array_keys($this->tasks->types()), $tooNew)) : null;

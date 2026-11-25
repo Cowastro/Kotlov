@@ -186,9 +186,11 @@ $script:missingVersion = $false
 Write-SupplyRows (Supply-DocumentUrl $key) @((Row 2)) $http['etag']
 Assert-Equal 'PATCH' $script:lastMethod 'only the goods table is patched'
 Assert-Equal $true ($script:lastHeaders -contains 'If-Match: v1') 'DataVersion sent as If-Match to 1C'
+Assert-Equal $true ($script:lastHeaders -contains '1C_OData-DataLoadMode: true') 'table staged in the supported exchange write mode'
 Assert-Fails { Write-SupplyRows (Supply-DocumentUrl $key) @((Row 2)) '' } 'версию документа'
 Post-SupplyDocument (Supply-DocumentUrl $key)
 Assert-Equal $true ($script:lastUrl.EndsWith('/Post?PostingModeOperational=false')) '1C posting mode is a query parameter'
+Assert-Equal $false ($script:lastHeaders -contains '1C_OData-DataLoadMode: true') 'normal posting always performs business validation'
 $d = Doc @((Row 2), (Row 2))
 $payload = [Convert]::ToBase64String($Utf8.GetBytes($json.Serialize($d)))
 [void](Do-Create @('supply|live', ('body|' + $payload)) 'Document_ЗаказКлиента')
