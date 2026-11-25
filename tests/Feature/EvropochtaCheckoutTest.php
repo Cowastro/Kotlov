@@ -382,6 +382,27 @@ class EvropochtaCheckoutTest extends TestCase
         ];
     }
 
+    public function test_zord_card_estimates_shipping_without_a_cart_or_an_order(): void
+    {
+        $this->mockCarrier();
+        $product = $this->product();
+        $product->update(['sku' => 'PS-011.094', 'in_stock' => true]);
+        (require database_path('migrations/2026_11_25_234000_update_zord_ugs_02_headings.php'))->up();
+        $this->get('/parcel-test/parcel-part-test')->assertOk()
+            ->assertSee('ЗОРД УГС-02 — сигнализатор угарного и горючих газов')
+            ->assertSee('<title>ЗОРД УГС-02 — купить сигнализатор угарного и горючих газов | KOTLOV</title>', false)
+            ->assertSee('Рассчитать Европочту до отделения')
+            ->assertSee('Оплата при получении');
+        $url = route('product.delivery-estimate');
+        $this->getJson($url)->assertOk()->assertJsonStructure(['branches' => ['40930010']]);
+        $this->getJson($url.'?branch=40930010')->assertOk()->assertJsonPath('price', 8)
+            ->assertJsonPath('address', 'г. Лида, Красноармейская, 63, №23');
+        $product->update(['shipping_parcel' => null]);
+        $this->getJson($url.'?branch=40930010')->assertUnprocessable()->assertJsonStructure(['message']);
+        $this->assertDatabaseCount('orders', 0);
+        Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/create'));
+    }
+
     private function mockCarrier(float $carrierPrice = 6.34): void
     {
         config([
