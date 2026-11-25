@@ -547,6 +547,54 @@
         max-width: 12rem;
     }
 
+    .products-workspace .fi-ta-cell-suppliers-list .fi-ta-text-description,
+    .products-workspace .fi-ta-cell-operational-status .fi-ta-text-description {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.15rem;
+        max-width: 100%;
+    }
+
+    .products-workspace .products-supplier-contacts {
+        display: grid;
+        gap: .5rem;
+        width: 100%;
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .products-workspace .products-supplier-contact,
+    .products-workspace .products-supplier-contact-name {
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .products-workspace .products-supplier-contact-links {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .375rem;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .products-workspace .products-supplier-contact-links > span {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .products-workspace .products-supplier-contact-links a[href^="tel:"] {
+        white-space: nowrap;
+    }
+
+    .products-workspace .fi-ta-cell-operational-status,
+    .products-workspace .fi-ta-header-cell-operational-status {
+        min-width: 14rem;
+        max-width: 20rem;
+    }
+
     .fi-resource-contact-requests.fi-resource-list-records-page .fi-ta-header-cell {
         padding-block: .5rem;
     }

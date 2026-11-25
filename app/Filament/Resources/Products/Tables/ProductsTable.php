@@ -248,6 +248,7 @@ class ProductsTable
 
                 TextColumn::make('suppliers_list')
                     ->label('Поставщик')
+                    ->disabledClick()
                     ->getStateUsing(fn ($record): string => self::supplierNames($record))
                     ->description(fn ($record): ?HtmlString => self::supplierContacts($record))
                     ->limit(30)
@@ -1321,12 +1322,14 @@ class ProductsTable
                     e((string) $record->getKey()),
                     e($email),
                 ) : null,
-            ])->filter()->implode(' · ');
+            ])->filter()->implode('');
 
-            return ($showNames ? '<span class="text-gray-500">'.e($supplier->name).':</span> ' : '').$links;
-        })->filter()->implode('<br>');
+            return '<span class="products-supplier-contact">'
+                .($showNames ? '<span class="products-supplier-contact-name text-gray-500">'.e($supplier->name).':</span>' : '')
+                .'<span class="products-supplier-contact-links">'.$links.'</span></span>';
+        })->filter()->implode('');
 
-        return $rows !== '' ? new HtmlString($rows) : null;
+        return $rows !== '' ? new HtmlString('<span class="products-supplier-contacts">'.$rows.'</span>') : null;
     }
 
     /** @return Collection<int, Supplier> */
