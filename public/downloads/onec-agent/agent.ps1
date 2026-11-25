@@ -1,4 +1,4 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 13: PowerShell 2 JSON supply support.
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 14: staged supply exchange with normal posting.
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
@@ -8,7 +8,7 @@
 param([switch]$Check)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '13'
+$AgentVersion = '14'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -389,7 +389,10 @@ function Read-SupplyDocument([string]$url) {
 function Write-SupplyRows([string]$url, $rows, [string]$etag) {
     if (-not $etag -or $etag -eq '*') { throw '1С не вернула версию документа: запись обеспечения остановлена' }
     [IO.File]::WriteAllText($Body, (New-SupplyJson).Serialize(@{ 'Товары' = $rows }), $Utf8)
-    $code = Invoke-Curl ($url + '?$format=json') 'PATCH' @('Content-Type: application/json; charset=utf-8', 'Accept: application/json', ('If-Match: ' + $etag)) $ODataUser $Body @() $Out
+    # This publication refuses ordinary writes of posted customer orders in ПриЗаписи (also why creation needs
+    # DataLoadMode). Stage only the goods table as exchange data, then ALWAYS run normal Post below, without this
+    # header. Posting validates business rules and updates registers; the original rows are restored if it fails.
+    $code = Invoke-Curl ($url + '?$format=json') 'PATCH' @('Content-Type: application/json; charset=utf-8', 'Accept: application/json', '1C_OData-DataLoadMode: true', ('If-Match: ' + $etag)) $ODataUser $Body @() $Out
     if ($code -ne '200' -and $code -ne '204') { throw ('Не записано обеспечение 1С: ' + $code + ' ' + (Read-Answer $Out)) }
 }
 
