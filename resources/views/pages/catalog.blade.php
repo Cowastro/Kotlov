@@ -102,10 +102,14 @@
 
     @include('partials.catalog-city-storefront')
 
+    @if ($heatingSections)
+        @include('partials.stove-offer-sections', ['sections' => $heatingSections, 'groupPrefix' => 'heating', 'emptyMessage' => 'Сейчас нет моделей с подтверждённой ценой и наличием.'])
+    @endif
+
     @if (in_array($category->slug, ['vodosnabzhenie', 'promyshlennye-nasosy'], true))
         @include('partials.pump-task-navigation')
     @elseif ($saunaSections)
-        @include('partials.sauna-stove-sections')
+        @include('partials.stove-offer-sections', ['sections' => $saunaSections, 'groupPrefix' => 'sauna'])
     @elseif ($isBoilerHub)
         @include('partials.boiler-catalog-navigation')
     @elseif ($isWaterHeaterHub)
@@ -617,7 +621,7 @@
                         @endif
 
                         {{-- Сетка товаров --}}
-                        <div class="wrapper-shop tf-grid-layout tf-col-2 md-col-3" id="gridLayout">
+                        <div class="wrapper-shop tf-grid-layout tf-col-2 {{ $category->slug === 'pechi-kaminy' ? 'md-col-4' : 'md-col-3' }}" id="gridLayout">
                             @forelse ($products as $product)
                                 @include('partials.product-card', ['product' => $product, 'catalogUnified' => true, 'showCatalogFacts' => !empty($fireplaceSpecsByProduct), 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? []])
                             @empty
@@ -801,7 +805,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const switches = document.querySelectorAll('.tf-view-layout-switch');
     const gridLayout = document.getElementById('gridLayout');
     const allowedLayouts = ['list', 'tf-col-2', 'tf-col-3', 'tf-col-4'];
-    let savedLayout = 'tf-col-3';
+    let savedLayout = @js($category->slug === 'pechi-kaminy' ? 'tf-col-4' : 'tf-col-3');
     try { savedLayout = localStorage.getItem('catalog_layout') || savedLayout; } catch (_) {}
     applyLayout(savedLayout);
 
@@ -828,7 +832,7 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.classList.toggle('active', active);
             btn.setAttribute('aria-pressed', String(active));
         });
-        gridLayout.classList.remove('tf-col-2', 'tf-col-3', 'tf-col-4', 'md-col-3');
+        gridLayout.classList.remove('tf-col-2', 'tf-col-3', 'tf-col-4', 'md-col-3', 'md-col-4');
         gridLayout.classList.toggle('catalog-products--list', isList);
         if (!isList) gridLayout.classList.add(layout);
         gridLayout.querySelectorAll(':scope > .card-product').forEach(function (card) {
