@@ -5,31 +5,34 @@ namespace App\Filament\Resources\Products\Tables;
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
+use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Filament\Resources\Products\Actions\CreateCommercialDocumentAction;
 use App\Filament\Resources\Products\Actions\ManualPricingAction;
+use App\Filament\Resources\Products\Actions\ProductOneCItemAction;
 use App\Filament\Resources\Products\Actions\RequestSupplierReserveAction;
 use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\RunProductCatalogAiReview;
 use App\Jobs\RunProductSourceEnrichment;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\IntegrationProduct;
 use App\Models\MarketResearchReport;
-use App\Models\Product;
-use App\Services\Integrations\OneCBridge\OneCStock;
-use App\Services\Integrations\OneCBridge\OneCItemCreator;
-use App\Services\Integrations\OneCBridge\OneCItemCosts;
 use App\Models\OneCItem;
-use App\Filament\Resources\Products\Actions\ProductOneCItemAction;
-use App\Filament\Resources\OneCItems\OneCItemResource;
+use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
+use App\Services\AdminProductSearch;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bProductPublicationManager;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
+use App\Services\Integrations\OneCBridge\OneCItemCosts;
+use App\Services\Integrations\OneCBridge\OneCItemCreator;
+use App\Services\Integrations\OneCBridge\OneCStock;
 use App\Services\Market\MarketPriceIndicator;
 use App\Services\Market\MarketWebResearchService;
 use App\Services\Pricing\B2bBrandRetailPricing;
+use App\Services\StorefrontProductSearch;
 use App\Support\AdminPhoneLinks;
 use Carbon\CarbonInterface;
 use Filament\Actions\Action;
@@ -62,8 +65,11 @@ class ProductsTable
     public static function configure(Table $table): Table
     {
         self::$onecLinks = [];
+        self::$onecItems = [];
 
         return $table
+            ->searchUsing(fn (Builder $query, string $search): Builder => app(AdminProductSearch::class)->apply($query, $search))
+            ->searchPlaceholder('Название, артикул, код 1С')
             ->extraAttributes(['class' => 'products-workspace'])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('is_archived', false))
             ->columns([
@@ -76,7 +82,7 @@ class ProductsTable
 
                 TextColumn::make('name')
                     ->label('Товар')
-                    ->searchable(query: fn (Builder $query, string $search): Builder => app(\App\Services\StorefrontProductSearch::class)->applyForResults($query, $search, true))
+                    ->searchable(query: fn (Builder $query, string $search): Builder => app(StorefrontProductSearch::class)->applyForResults($query, $search, true))
                     ->sortable()
                     ->weight('bold')
                     ->wrap()
@@ -1502,12 +1508,17 @@ class ProductsTable
             ->sortBy(fn (CarbonInterface $timestamp): int => $timestamp->getTimestamp())
             ->last();
     }
-    /** @var array<int, \App\Models\IntegrationProduct|false> the 1C link of each card on the page */
+
+    /** @var array<int, IntegrationProduct|false> the 1C link of each card on the page */
     private static array $onecLinks = [];
 
-    private static function onecLink(Product $record): ?\App\Models\IntegrationProduct
+    private static array $onecItems = [];
+
+    private static function onecLink(Product $record): ?IntegrationProduct
     {
-        self::$onecLinks[$record->id] ??= app(OneCItemCreator::class)->linked($record) ?? false;
+        self::$onecLinks[$record->id] ??= ($record->relationLoaded('integrationProducts')
+            ? $record->integrationProducts->first(fn ($item): bool => $item->source?->code === 'onec' && $item->match_status !== 'ignored')
+            : app(OneCItemCreator::class)->linked($record)) ?? false;
 
         return self::$onecLinks[$record->id] ?: null;
     }
@@ -1515,10 +1526,17 @@ class ProductsTable
     /** The 1C item of the card (stock and cost are kept on it), by the 1C link of the card. */
     private static function onecItem(Product $record): ?OneCItem
     {
+        if (array_key_exists($record->id, self::$onecItems)) {
+            return self::$onecItems[$record->id] ?: null;
+        }
         $link = self::onecLink($record);
         $key = $link ? strtolower(explode('#', (string) $link->external_id)[0]) : null;
 
-        return $key ? OneCItem::query()->where('ref_key', $key)->first() : null;
+        $cached = $record->relationLoaded('oneCItems') ? $record->oneCItems : collect();
+        $item = $key ? ($cached->firstWhere('ref_key', $key) ?? OneCItem::query()->where('ref_key', $key)->first()) : $cached->first();
+        self::$onecItems[$record->id] = $item ?? false;
+
+        return $item;
     }
 
     /** «своб. 1 · себест. 70,80 · розн. 105» */
