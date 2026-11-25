@@ -98,7 +98,8 @@ class OneCOrderExportTest extends TestCase
             'НомерПоДаннымКлиента' => '', 'ЖелаемаяДатаОтгрузки' => '2026-11-21T00:00:00', 'ДатаОтгрузки' => '2026-11-21T00:00:00', 'ИдентификаторПлатежа' => 'ЗК2611МПУТ0007560001', 'Назначение_Key' => '36a5fee6-0000-0000-0000-000000000001', 'МаксимальныйКодСтроки' => 2, 'АдресДоставкиПеревозчика' => 'склад перевозчика', 'ДатаСогласования' => '2026-11-20T00:00:00', 'СуммаДокумента' => 440.99,
             'Сделка_Key' => '00000000-0000-0000-0000-000000000000', 'Автор_Key' => 'eeeeeeee-0000-0000-0000-000000000001',
             'Товары' => [['LineNumber' => '1', 'Номенклатура_Key' => 'ffffffff-0000-0000-0000-000000000001', 'Количество' => 1, 'Цена' => 24.99,
-                'СтавкаНДС_Key' => 'dd2c0701-8b4a-11ed-a689-1c1b0d1de7c2', 'ВариантОбеспечения' => 'Отгрузить', 'КодСтроки' => 1, 'ДатаОтгрузки' => '2026-11-21T00:00:00', 'ИдентификаторСтроки' => 'x']],
+                'СтавкаНДС_Key' => 'dd2c0701-8b4a-11ed-a689-1c1b0d1de7c2', 'ВариантОбеспечения' => 'Отгрузить', 'КодСтроки' => 1, 'ДатаОтгрузки' => '2026-11-21T00:00:00', 'ИдентификаторСтроки' => 'x',
+                'СуммаРучнойСкидки' => 0, 'ПроцентРучнойСкидки' => 0]],
             'ЭтапыГрафикаОплаты' => [['LineNumber' => '1', 'ВариантОплаты' => 'ПредоплатаДоОтгрузки', 'ДатаПлатежа' => '2026-11-20T00:00:00',
                 'ПроцентПлатежа' => 100, 'СуммаПлатежа' => 440.99]],
             'Товары@navigationLinkUrl' => 'x',
@@ -234,6 +235,96 @@ class OneCOrderExportTest extends TestCase
         $task = OneCAgentTask::query()->where('type', 'onec_order')->sole();
         $this->assertCount(2, $task->payload['body']['Товары']);
         $this->assertSame($plate->id, $free->fresh()->product_id);
+    }
+
+    public function test_delivery_is_included_in_goods_prices_and_the_payment_total_once(): void
+    {
+        $this->syncReferences();
+        $profile = app(OneCOrderProfiles::class)->fromTemplate(app(OneCReferences::class)->templates()[0], 'Delivery retail', OneCOrderProfile::RETAIL);
+        $order = $this->order(['subtotal' => 69.90, 'delivery_price' => 8, 'total' => 77.90]);
+        $order->items()->update(['quantity' => 1, 'price' => 69.90, 'total' => 69.90]);
+        $order = $order->fresh();
+        $export = app(OneCOrderExport::class);
+        $body = $export->body($order, $profile, $export->defaults($order));
+        $this->assertEquals(77.90, $body['Товары'][0]['Цена']);
+        $this->assertEquals(77.90, $body['Товары'][0]['СуммаСНДС']);
+        $this->assertEquals(77.90, $body['СуммаДокумента']);
+        $this->assertEquals(77.90, $body['ЭтапыГрафикаОплаты'][0]['СуммаПлатежа']);
+        $this->assertSame(self::ITEM, $body['Товары'][0]['Номенклатура_Key']);
+        $this->assertEquals(69.90, $order->items->first()->price);
+        $this->assertEquals(8, $order->delivery_price);
+        foreach (range(1, OneCOrderExport::MAX_VARIANT) as $variant) {
+            $simplified = $export->body($order, $profile, $export->defaults($order), $variant);
+            $this->assertEquals(77.90, $simplified['СуммаДокумента']);
+            $this->assertEquals(77.90, $simplified['Товары'][0]['СуммаСНДС']);
+        }
+    }
+
+    public function test_delivery_allocation_keeps_kopecks_across_multiple_goods(): void
+    {
+        $this->syncReferences();
+        $profile = app(OneCOrderProfiles::class)->fromTemplate(app(OneCReferences::class)->templates()[0], 'Delivery multi', OneCOrderProfile::RETAIL);
+        $order = $this->order(['subtotal' => 99.99, 'delivery_price' => 8, 'total' => 107.99]);
+        $order->items()->update(['quantity' => 1, 'price' => 33.33, 'total' => 33.33]);
+        foreach ([2, 3] as $n) {
+            $copy = $order->items()->first()->replicate();
+            $copy->product_name = 'Line '.$n;
+            $copy->save();
+        }
+        $order = $order->fresh();
+        $export = app(OneCOrderExport::class);
+        $body = $export->body($order, $profile, $export->defaults($order));
+        $this->assertEquals([36, 35.99, 36], array_column($body['Товары'], 'СуммаСНДС'));
+        $this->assertEquals(107.99, $body['СуммаДокумента']);
+        $this->assertSame(10799, array_sum(array_map(fn (array $row): int => (int) round($row['СуммаСНДС'] * 100), $body['Товары'])));
+        $this->assertEquals([1, 1, 1], array_column($body['Товары'], 'Количество'));
+    }
+
+    public function test_delivery_and_order_discount_keep_the_agreed_total_with_net_1c_prices(): void
+    {
+        $this->syncReferences();
+        $profile = app(OneCOrderProfiles::class)->fromTemplate(app(OneCReferences::class)->templates()[0], 'Delivery net', OneCOrderProfile::RETAIL);
+        $profile->update(['header' => array_replace($profile->header, ['ЦенаВключаетНДС' => false])]);
+        $order = $this->order(['delivery_price' => 8, 'discount' => 4.98, 'total' => 53]);
+        $export = app(OneCOrderExport::class);
+        $body = $export->body($order, $profile->fresh(), $export->defaults($order, $profile));
+        $row = $body['Товары'][0];
+        $this->assertEquals(53, $body['СуммаДокумента']);
+        $this->assertEquals(53, $row['СуммаСНДС']);
+        $this->assertEquals(53, $row['Сумма'] + $row['СуммаНДС']);
+        $this->assertEquals(53, $body['ЭтапыГрафикаОплаты'][0]['СуммаПлатежа']);
+        $this->assertEquals(2, $row['Количество']);
+    }
+
+    public function test_delivery_export_rejects_an_inconsistent_customer_total(): void
+    {
+        $this->syncReferences();
+        $profile = app(OneCOrderProfiles::class)->fromTemplate(app(OneCReferences::class)->templates()[0], 'Delivery invalid', OneCOrderProfile::RETAIL);
+        $order = $this->order(['delivery_price' => 8]);
+        $export = app(OneCOrderExport::class);
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('не совпадают с итогом');
+        $export->body($order, $profile, $export->defaults($order));
+    }
+
+    public function test_delivery_rounding_keeps_unit_price_quantity_and_line_total_consistent(): void
+    {
+        $this->syncReferences();
+        $profile = app(OneCOrderProfiles::class)->fromTemplate(app(OneCReferences::class)->templates()[0], 'Delivery quantity', OneCOrderProfile::RETAIL);
+        $order = $this->order(['subtotal' => 325, 'delivery_price' => 10, 'total' => 335]);
+        $order->items()->update(['quantity' => 130, 'price' => 2.50, 'total' => 325]);
+        $order = $order->fresh();
+        $export = app(OneCOrderExport::class);
+        foreach (range(0, OneCOrderExport::MAX_VARIANT) as $variant) {
+            $body = $export->body($order, $profile, $export->defaults($order), $variant);
+            $row = $body['Товары'][0];
+            $this->assertEquals(130, $row['Количество']);
+            $this->assertEquals(2.58, $row['Цена']);
+            $this->assertEquals(0.40, $row['СуммаРучнойСкидки']);
+            $this->assertSame(33500, (int) round(($row['Цена'] * $row['Количество'] - $row['СуммаРучнойСкидки']) * 100));
+            $this->assertEquals(335, $row['СуммаСНДС']);
+            $this->assertEquals(335, $body['СуммаДокумента']);
+        }
     }
 
     public function test_a_scheme_is_made_from_a_1c_order_and_edited_in_the_admin(): void
