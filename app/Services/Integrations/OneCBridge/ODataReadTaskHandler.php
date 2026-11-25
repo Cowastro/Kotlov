@@ -91,6 +91,9 @@ class ODataReadTaskHandler implements OneCAgentTaskHandler
         if (! $result['ok']) {
             return null;
         }
+        if (data_get($task->payload, 'create_group')) {
+            return app(OneCGroupCreator::class)->afterRead($task);
+        }
         if (data_get($task->payload, 'nomenclature')) {
             return app(OneCNomenclature::class)->import($task);
         }
