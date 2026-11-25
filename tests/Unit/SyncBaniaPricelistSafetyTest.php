@@ -9,6 +9,43 @@ use ReflectionProperty;
 
 class SyncBaniaPricelistSafetyTest extends TestCase
 {
+    public function test_normalized_and_original_article_do_not_duplicate_the_same_supplier_row(): void
+    {
+        $offer = (object) ['id' => 4507, 'supplier_article' => 'DW01125', 'supplier_article_normalized' => 'DW01125'];
+        $indexes = $this->invoke('buildIndexes', [$offer]);
+        self::assertCount(1, $indexes['article']['DW01125']);
+        $other = clone $offer;
+        $other->id = 4508;
+        self::assertCount(2, $this->invoke('buildIndexes', [$offer, $other])['article']['DW01125']);
+    }
+
+    public function test_legacy_door_title_uses_verified_article_history_without_weakening_model_guard(): void
+    {
+        $name = 'Дверь для сауны DoorWood "Теплая ночь" 190х70 (бронза матовая, коробка листва)';
+        $candidate = (object) ['product_name' => 'Дверь DoorWood ТЕПЛАЯ НОЧЬ бронза матоваря 190 х 70',
+            'supplier_name' => '', 'brand_name' => 'DoorWood', 'raw' => json_encode(['google_price_list' => ['name' => $name, 'article' => 'DW01125']])];
+        $match = $this->invoke('matchRow', $this->row($name, 'DW01125'), ['article' => ['DW01125' => [$candidate]]], [$candidate]);
+        self::assertSame('article', $match['match_type']);
+        $candidate->product_name = 'Дверь DoorWood Теплый день бронза 180 х 70';
+        $match = $this->invoke('matchRow', $this->row($name, 'DW01125'), ['article' => ['DW01125' => [$candidate]]], [$candidate]);
+        self::assertSame('manual_review', $match['action']);
+    }
+
+    public function test_preorder_and_unknown_text_do_not_count_as_available_and_low_stock_is_not_a_piece_count(): void
+    {
+        self::assertFalse($this->invoke('isAvailableStock', $this->invoke('stockStatus', 'Под заказ')));
+        self::assertFalse($this->invoke('isAvailableStock', $this->invoke('stockStatus', 'Уточняйте')));
+        self::assertSame('low_stock', $this->invoke('stockStatus', 'Товар заканчивается'));
+        self::assertTrue($this->invoke('isAvailableStock', $this->invoke('stockStatus', 'В наличии')));
+    }
+
+    public function test_door_dimensions_cm_and_mm_are_compatible_but_different_sizes_still_conflict(): void
+    {
+        $card = (object) ['product_name' => 'ДВЕРЬ "БРОНЗА" 1900*700, 6ММ, 2 ПЕТЛИ', 'brand_name' => 'DoorWood'];
+        self::assertTrue($this->invoke('retailRowFitsCard', $card, ['name' => 'Дверь DoorWood Бронза 190х70 6мм 2 петли МАГНИТ (коробка хвоя)']));
+        self::assertFalse($this->invoke('retailRowFitsCard', $card, ['name' => 'Дверь DoorWood Бронза 180х70 6мм 2 петли МАГНИТ (коробка хвоя)']));
+    }
+
     public function test_exact_article_is_rejected_when_catalogue_variant_conflicts(): void
     {
         $candidate = (object) [

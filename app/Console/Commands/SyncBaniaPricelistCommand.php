@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Models\SupplierProduct;
 use App\Models\SupplierReviewDecision;
+use App\Services\Integrations\BaniaOfferFreshness;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -120,6 +122,10 @@ class SyncBaniaPricelistCommand extends Command
     /** @var array<string, true> */
     private array $duplicatePriceArticles = [];
 
+    private array $normalizedNames = [];
+
+    private array $modelIdentities = [];
+
     /** Known catalogue titles whose supplier wording omits a material token. */
     private const ARTICLE_OVERRIDES_BY_SKU = [
         'PS-003.824' => '34000',
@@ -164,6 +170,11 @@ class SyncBaniaPricelistCommand extends Command
             return $this->unlinkMismatched((int) $supplier->id, array_map('intval', (array) $this->option('unlink-mismatched')), ! $dryRun);
         }
 
+        if (! $dryRun && ! $limit && ! $this->option('relink-own-model') && ! $this->option('suggest-retail')) {
+            $held = app(BaniaOfferFreshness::class)->quarantine((int) $supplier->id);
+            $this->line('BANIA stale offers requiring confirmation: '.$held);
+        }
+
         try {
             $priceFile = $this->resolvePriceFile();
         } catch (\Throwable $e) {
@@ -180,6 +191,9 @@ class SyncBaniaPricelistCommand extends Command
 
         try {
             $rows = $this->readPriceRows($priceFile);
+            if ($rows === []) {
+                throw new \RuntimeException('Wholesale price list contains no usable rows.');
+            }
         } catch (\Throwable $e) {
             $this->error('Failed to read price list: '.$e->getMessage());
 
@@ -193,9 +207,17 @@ class SyncBaniaPricelistCommand extends Command
                 $retailRows = $this->readRetailRows($retailFile);
                 $retailIndexes = $this->buildRetailIndexes($retailRows);
                 $this->info('BANIA retail price rows loaded: '.count($retailRows));
+                if ($syncRetailPrices && $retailRows === []) {
+                    throw new \RuntimeException('Retail price list contains no usable rows.');
+                }
+            } elseif ($syncRetailPrices) {
+                throw new \RuntimeException('Retail price file is missing.');
             }
         } catch (\Throwable $e) {
             $this->warn('Retail price list was not loaded: '.$e->getMessage());
+            if ($syncRetailPrices) {
+                return self::FAILURE;
+            }
         }
 
         if ($this->option('relink-own-model')) {
@@ -379,6 +401,15 @@ class SyncBaniaPricelistCommand extends Command
                 }
                 if (! $changed) {
                     if (! $syncRetailPrices || ! $retailChanged) {
+                        if (! $dryRun) {
+                            $this->updateSupplierProduct($supplierProduct, $row, $newInStock, $now, $repairArticle);
+                            if ($syncRetailPrices && $retailMatch && ! $suspiciousRetailJump && $this->retailRowFitsCard($supplierProduct, $retailMatch)) {
+                                $this->updateProductRetailPrice($supplierProduct, $retailMatch, $now);
+                            }
+                            if ($supplierProduct->product_id) {
+                                $this->refreshProductAvailability((int) $supplierProduct->product_id, $now);
+                            }
+                        }
                         $stats['unchanged']++;
                         if (($retailMatch['price'] ?? null) !== null) {
                             $stats['retail_price_suggested']++;
@@ -392,7 +423,8 @@ class SyncBaniaPricelistCommand extends Command
                 }
 
                 if (! $dryRun) {
-                    if ($changed) {
+                    // A successful unchanged observation is a fresh stock check too.
+                    if ($changed || $syncRetailPrices) {
                         $this->updateSupplierProduct($supplierProduct, $row, $newInStock, $now, $repairArticle);
                         if ($repairArticle) {
                             $stats['supplier_article_repaired']++;
@@ -458,6 +490,10 @@ class SyncBaniaPricelistCommand extends Command
                 }
 
                 if (! $retailChanged && ! $repairArticle) {
+                    if (! $dryRun) {
+                        $this->updateProductRetailPrice($supplierProduct, $retailMatch, $now);
+                    }
+
                     continue;
                 }
 
@@ -686,17 +722,7 @@ class SyncBaniaPricelistCommand extends Command
 
             return $path;
         } catch (\Throwable $e) {
-            if (file_exists($path)) {
-                try {
-                    $this->assertReadableSpreadsheet($path);
-                    $this->warn($label.' download failed; using previous cached file: '.$path);
-
-                    return $path;
-                } catch (\Throwable) {
-                    // Cached file is broken too; report the original download error.
-                }
-            }
-
+            // A previous cache is useful for an explicit audit (--price-file), never proof of today's stock.
             throw $e;
         }
     }
@@ -937,11 +963,11 @@ class SyncBaniaPricelistCommand extends Command
                 if ($norm === '') {
                     continue;
                 }
-                $byArticle[$norm][] = $supplierProduct;
+                $byArticle[$norm][(int) $supplierProduct->id] = $supplierProduct;
             }
         }
 
-        return ['article' => $byArticle];
+        return ['article' => array_map('array_values', $byArticle)];
     }
 
     private function matchRow(array $row, array $indexes, array $supplierProducts): array
@@ -1055,8 +1081,18 @@ class SyncBaniaPricelistCommand extends Command
             $candidateName = trim((string) ($supplierProduct->supplier_name ?? ''));
         }
 
-        return $this->modelIdentity((string) ($row['name'] ?? '')) !== ''
-            && $this->modelIdentity((string) ($row['name'] ?? '')) === $this->modelIdentity($candidateName);
+        if ($this->modelIdentity((string) ($row['name'] ?? '')) !== ''
+            && $this->modelIdentity((string) ($row['name'] ?? '')) === $this->modelIdentity($candidateName)) {
+            return true;
+        }
+        // Legacy cards often omit the frame material or have a title typo. A prior exact supplier
+        // article AND full price-list identity may confirm them; the model conflict guard still applies.
+        $previous = data_get(json_decode((string) ($supplierProduct->raw ?? ''), true), 'google_price_list', []);
+
+        return $this->normalizeArticle((string) ($previous['article'] ?? '')) !== ''
+            && $this->normalizeArticle((string) ($previous['article'] ?? '')) === (string) ($row['norm_article'] ?? '')
+            && $this->modelIdentity((string) ($previous['name'] ?? '')) === $this->modelIdentity((string) ($row['name'] ?? ''))
+            && $this->retailRowFitsCard($supplierProduct, $row);
     }
 
     /**
@@ -1101,6 +1137,14 @@ class SyncBaniaPricelistCommand extends Command
         $row = trim((string) ($retailMatch['name'] ?? ''));
         if ($card === '' || $row === '') {
             return true;
+        }
+        if (str_contains(mb_strtolower($card), 'двер') && str_contains(mb_strtolower($row), 'двер')) {
+            // Legacy door titles use millimetres while the same factory article in the price list uses centimetres.
+            $dimensions = fn (string $name): string => preg_replace_callback('/(\d{3,4})\s*[xх×*]\s*(\d{2,4})/ui',
+                fn (array $m): string => (int) $m[1] >= 1000 && (int) $m[2] >= 100 && (int) $m[1] % 10 === 0 && (int) $m[2] % 10 === 0
+                    ? ((int) $m[1] / 10).'x'.((int) $m[2] / 10) : $m[0], $name) ?? $name;
+            $card = $dimensions($card);
+            $row = $dimensions($row);
         }
         [$cardWords, $cardNumbers] = $this->modelTokens($card, (string) ($supplierProduct->brand_name ?? ''));
         [$rowWords, $rowNumbers] = $this->modelTokens($row, (string) ($supplierProduct->brand_name ?? ''));
@@ -1251,7 +1295,7 @@ class SyncBaniaPricelistCommand extends Command
 
     private function createRetailOnlyRow(int $supplierId, object $product, array $retail): void
     {
-        \App\Models\SupplierProduct::query()->updateOrCreate([
+        SupplierProduct::query()->updateOrCreate([
             'supplier_id' => $supplierId,
             'supplier_article_normalized' => (string) $retail['norm_article'],
         ], [
@@ -1291,6 +1335,10 @@ class SyncBaniaPricelistCommand extends Command
 
     private function modelIdentity(string $value): string
     {
+        $original = $value;
+        if (array_key_exists($original, $this->modelIdentities)) {
+            return $this->modelIdentities[$original];
+        }
         $value = $this->normalizeName($value);
         $value = preg_replace(
             '/\b(везувий|чугунная|чугунный|чугунное|стальная|стальной|стальное|отопительная|отопительный|отопительное)\b/u',
@@ -1303,7 +1351,7 @@ class SyncBaniaPricelistCommand extends Command
         $value = preg_replace('/(?<=\d)c(?=\s|$)/u', 'с', $value) ?? $value;
         $value = preg_replace('/\s+/u', '', $value) ?? $value;
 
-        return trim($value);
+        return $this->modelIdentities[$original] = trim($value);
     }
 
     private function matchRetailForPriceRow(array $row, array $indexes, ?object $supplierProduct = null): ?array
@@ -1521,6 +1569,7 @@ class SyncBaniaPricelistCommand extends Command
             'price' => $retailMatch['price'],
             'updated_at' => $now,
         ]);
+        app(BaniaOfferFreshness::class)->confirmRetail((int) $supplierProduct->id);
     }
 
     private function retailPriceAction(?object $supplierProduct, ?array $retailMatch): string
@@ -1694,8 +1743,8 @@ class SyncBaniaPricelistCommand extends Command
             'currency_rate' => 1,
             'price_byn' => $row['price'],
             'in_stock' => $inStock,
-            'stock_quantity' => $inStock ? 1 : 0,
-            'stock_status' => $row['stock_status'],
+            'stock_quantity' => $inStock ? null : 0,
+            'stock_status' => $inStock ? 'available_without_quantity' : $row['stock_status'],
             'stock_text' => $row['stock_text'] !== '' ? $row['stock_text'] : null,
             'raw' => json_encode($raw, JSON_UNESCAPED_UNICODE),
             'last_stock_synced_at' => $now,
@@ -1727,7 +1776,8 @@ class SyncBaniaPricelistCommand extends Command
             return true;
         }
 
-        return (string) $supplierProduct->stock_status !== $row['stock_status'];
+        return (string) $supplierProduct->stock_status !== ($newInStock ? 'available_without_quantity' : $row['stock_status'])
+            || ($newInStock ? $supplierProduct->stock_quantity !== null : (int) $supplierProduct->stock_quantity !== 0);
     }
 
     private function supplierArticleDiffers(object $supplierProduct, array $row): bool
@@ -1772,6 +1822,13 @@ class SyncBaniaPricelistCommand extends Command
             'availability_status' => $inStock ? Product::AVAILABILITY_IN_STOCK : Product::AVAILABILITY_CHECK,
             'updated_at' => $now,
         ]);
+        // The BANIA workbooks contain presence, not piece counts. Do not retain a fabricated card summary.
+        $hasOtherOffer = DB::table('supplier_products as sp')->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
+            ->where('sp.product_id', $productId)->where('s.code', '!=', self::SUPPLIER_CODE)->where('s.is_active', true)->exists();
+        $hasIntegration = DB::table('integration_products')->where('product_id', $productId)->where('match_status', 'matched')->exists();
+        if (! $hasOtherOffer && ! $hasIntegration) {
+            DB::table('products')->where('id', $productId)->where('manual_stock_management', false)->update(['stock_qty' => null]);
+        }
     }
 
     private function archiveProductIfOnlyBania(int $productId, int $baniaSupplierProductId, $now): bool
@@ -2086,16 +2143,16 @@ class SyncBaniaPricelistCommand extends Command
             return 'preorder';
         }
 
-        if (str_contains($normalized, 'мало')) {
+        if (str_contains($normalized, 'мало') || str_contains($normalized, 'заканч')) {
             return 'low_stock';
         }
 
-        return 'in_stock';
+        return str_contains($normalized, 'в наличии') ? 'in_stock' : 'unknown';
     }
 
     private function isAvailableStock(string $status): bool
     {
-        return in_array($status, ['in_stock', 'low_stock', 'preorder'], true);
+        return in_array($status, ['in_stock', 'low_stock'], true);
     }
 
     private function parseMoney(string $value): ?float
@@ -2175,12 +2232,16 @@ class SyncBaniaPricelistCommand extends Command
 
     private function normalizeName(string $value): string
     {
+        $original = $value;
+        if (array_key_exists($original, $this->normalizedNames)) {
+            return $this->normalizedNames[$original];
+        }
         $value = $this->normalizeText($value);
         $value = preg_replace('/\b(печь|для|бани|банная|электрокаменка|каменка|электрическая|дровяная|пб)\b/u', ' ', $value) ?? $value;
         $value = preg_replace('/[^0-9a-zа-яё]+/u', ' ', $value) ?? $value;
         $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
 
-        return trim($value);
+        return $this->normalizedNames[$original] = trim($value);
     }
 
     private function isProductionBrand(string $brand): bool
