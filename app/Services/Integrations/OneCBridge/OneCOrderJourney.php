@@ -88,7 +88,7 @@ class OneCOrderJourney
                 ? ['name' => 'заказ поставщику '.$g['record']->onec_order_number, 'posted' => (bool) $g['record']->onec_posted, 'checked' => $g['record']->onec_checked_at] : null))
             ->filter()->values();
         $unposted = $documents->reject(fn (array $d): bool => $d['posted']);
-        $steps[] = ['title' => 'Проведено в 1С', 'state' => $documents->isEmpty() ? self::LATER : ($unposted->isEmpty() ? self::DONE : self::WAIT),
+        $steps[] = ['title' => 'Проведено в 1С', 'state' => $documents->isEmpty() ? self::LATER : ($unposted->isEmpty() ? self::DONE : self::TODO),
             'detail' => $documents->isEmpty() ? 'документов ещё нет'
                 : $documents->map(fn (array $d): string => $d['name'].' — '.($d['posted'] ? 'проведён' : 'не проведён'))->implode('; '),
             'hint' => $unposted->isNotEmpty() ? 'Проведите в 1С: '.$unposted->pluck('name')->implode(', ').'. Сайт сверяет каждые 30 минут.' : null];
@@ -105,6 +105,9 @@ class OneCOrderJourney
     /** The first thing to do, or null when nothing waits for the manager. */
     public function next(Order $order): ?string
     {
+        if (OneCPostingReminder::needed($order)) {
+            return 'Откройте заказ '.($order->onec_order_number ?: $order->number).' в 1С, проверьте товары, действия строк и доставку и проведите его. Затем нажмите «Проверить проведение» в кнопке «Провести в 1С». Обеспечение и отгрузку дальше ведут в 1С.';
+        }
         foreach ($this->steps($order) as $step) {
             if ($step['hint'] && in_array($step['state'], [self::TODO, self::WAIT], true)) {
                 return $step['hint'];

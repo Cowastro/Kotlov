@@ -7,13 +7,16 @@ use App\Filament\Resources\OneCOrderProfiles\OneCOrderProfileResource;
 use App\Models\OneCAgentTask;
 use App\Models\OneCOrderProfile;
 use App\Models\Order;
+use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCBridge\OneCItemCreator;
 use App\Services\Integrations\OneCBridge\OneCOrderExport;
 use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
+use App\Services\Integrations\OneCBridge\OneCPostingReminder;
 use App\Services\Integrations\OneCBridge\OneCReferences;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
+use App\Services\Orders\OrderDeliveryPreparation;
 use DomainException;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
@@ -62,13 +65,13 @@ class OneCOrderExportAction
             ->icon(fn (Order $record): string => self::exported($record) ? 'heroicon-o-check-badge' : 'heroicon-o-arrow-up-tray')
             ->color(fn (Order $record): string => match (true) {
                 $nested => 'gray',
-                self::exported($record) => $record->onec_posted ? 'success' : 'info',
+                self::exported($record) => $record->onec_posted ? 'success' : 'warning',
                 self::lastTask($record)?->status === OneCAgentTask::FAILED => 'danger',
                 default => 'primary',
             })
             ->visible(fn (Order $record): bool => self::canManage()
                 && (self::exported($record) || self::waiting($record)
-                    || app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($record) === null)
+                    || app(OrderDeliveryPreparation::class)->blocker($record) === null)
                 && ($nested || ! self::foundShown($record)))
             ->modalHeading(fn (Order $record): string => self::exported($record) ? 'Заказ в 1С' : 'Создать заказ клиента в 1С')
             ->modalDescription(fn (Order $record): HtmlString => self::state($record))
@@ -82,7 +85,7 @@ class OneCOrderExportAction
             ->action(function (Order $record, array $data, Action $action) use ($nested): void {
                 $export = app(OneCOrderExport::class);
                 try {
-                    if (! self::exported($record) && ($reason = app(\App\Services\Orders\OrderDeliveryPreparation::class)->blocker($record->fresh()))) {
+                    if (! self::exported($record) && ($reason = app(OrderDeliveryPreparation::class)->blocker($record->fresh()))) {
                         throw new DomainException($reason);
                     }
                     foreach ((array) ($data['links'] ?? []) as $itemId => $integrationProductId) {
@@ -149,6 +152,7 @@ class OneCOrderExportAction
     private static function label(Order $order): string
     {
         return match (true) {
+            OneCPostingReminder::needed($order) => 'Провести в 1С: '.($order->onec_order_number ?: 'заказ создан'),
             self::exported($order) => '1С: '.($order->onec_order_number ?: 'заказ создан').($order->onec_posted ? ' · проведён' : ''),
             self::waiting($order) => 'Ждёт агента 1С',
             self::lastTask($order)?->status === OneCAgentTask::FAILED => 'В 1С: ошибка, повторить',
@@ -160,7 +164,20 @@ class OneCOrderExportAction
     private static function footer(Order $order): array
     {
         if (self::exported($order)) {
-            return $order->onec_profile_id ? [] : [
+            $actions = [
+                Action::make('onecCheckPosting')->label('Проверить проведение')->icon('heroicon-o-arrow-path')->color('warning')
+                    ->action(function (Order $record, Action $action): void {
+                        $task = app(DocumentStatusTaskHandler::class)->enqueueOrderCheck($record->fresh(), auth()->user());
+                        Notification::make()->info()->title($task ? 'Проверка проведения поставлена в очередь' : 'Проверка уже в очереди или нет документов для проверки')
+                            ->body('Агент прочитает результат из 1С. Сайт не проводит документ; после проверки обновите страницу заказа.')->send();
+                        $action->cancelParentActions();
+                    }),
+            ];
+            if ($order->onec_profile_id) {
+                return $actions;
+            }
+
+            return array_merge($actions, [
                 Action::make('onecUnlink')->label('Отвязать')->color('danger')->link()
                     ->requiresConfirmation()
                     ->modalHeading('Снять связь с заказом 1С '.$order->onec_order_number.'?')
@@ -174,7 +191,7 @@ class OneCOrderExportAction
                             Notification::make()->danger()->title('Связь не снята')->body($e->getMessage())->send();
                         }
                     }),
-            ];
+            ]);
         }
 
         return self::waiting($order) ? [] : [OneCOrderLinkAction::make('onecLinkManual', nested: true)];
@@ -185,7 +202,10 @@ class OneCOrderExportAction
         $task = self::lastTask($order);
         $link = $task ? ' <a href="'.e(OneCAgentTaskResource::getUrl('view', ['record' => $task])).'" style="text-decoration:underline">задача №'.$task->id.'</a>' : '';
         if (self::exported($order)) {
-            return new HtmlString(self::card($order).'<div style="margin-top:8px;color:#6b7280">'
+            $hint = OneCPostingReminder::needed($order)
+                ? '<p><b>Требуется действие сотрудника:</b> откройте этот заказ в 1С, проверьте товары, действия строк и доставку, затем нажмите «Провести». После этого нажмите здесь «Проверить проведение». Сайт сам документ не проводит.</p>' : '';
+
+            return new HtmlString(self::card($order).$hint.'<div style="margin-top:8px;color:#6b7280">'
                 .($order->onec_profile_id ? 'Создан с сайта по схеме «'.e((string) OneCOrderProfile::query()->whereKey($order->onec_profile_id)->value('name')).'».'.$link
                     : 'Связан с заказом, заведённым в 1С вручную.')
                 .' Статус и «проведён» сайт сверяет с 1С каждые 30 минут. Дальше заказ ведут в 1С.</div>');

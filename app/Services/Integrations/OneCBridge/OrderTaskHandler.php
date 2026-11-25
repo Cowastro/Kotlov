@@ -70,6 +70,7 @@ class OrderTaskHandler implements OneCAgentTaskHandler
             'onec_doc_status' => data_get($task->payload, 'body.Статус'), 'onec_posted' => false, 'onec_deleted' => false,
             'onec_match_guid' => null, 'onec_match_number' => null, 'onec_match_reasons' => null,
         ])->save();
+        app(OneCPostingReminder::class)->sync($order);
         $order->managerComments()->create([
             'user_id' => $task->created_by,
             'author_name' => 'Мост 1С',

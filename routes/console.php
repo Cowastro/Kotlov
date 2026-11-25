@@ -1,34 +1,46 @@
 <?php
 
-\Illuminate\Support\Facades\Schedule::command('shipping:sync-evropochta-status')
+Schedule::command('shipping:sync-evropochta-status')
     ->everyFiveMinutes()->withoutOverlapping(5)->runInBackground();
 
-\Illuminate\Support\Facades\Schedule::command('shipping:sync-vamexpress')
+Schedule::command('shipping:sync-vamexpress')
     ->everyMinute()
-    ->when(fn () => app(\App\Services\Shipping\VamExpressSettings::class)->due())
+    ->when(fn () => app(VamExpressSettings::class)->due())
     ->withoutOverlapping(10)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/vamexpress-sync.log'));
 
-\Illuminate\Support\Facades\Schedule::command('supplier:sync-euroterm --apply --scheduled')
+Schedule::command('supplier:sync-euroterm --apply --scheduled')
     ->everyFiveMinutes()
-    ->when(fn () => app(\App\Services\Suppliers\EurotermPortalCredentials::class)->due())
+    ->when(fn () => app(EurotermPortalCredentials::class)->due())
     ->withoutOverlapping(15)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/euroterm-sync.log'));
 
 // tools.by allows at most 10 exports/hour. One full CSV per hour, with a private cache and request spacing.
-\Illuminate\Support\Facades\Schedule::command('supplier:sync-td-komplekt --apply --create-new')
+Schedule::command('supplier:sync-td-komplekt --apply --create-new')
     ->hourlyAt(30)
-    ->when(fn () => \Illuminate\Support\Facades\Storage::disk('local')->exists(\App\Services\Suppliers\TdKomplektFeed::DIRECTORY.'/config.json')
-        && \App\Models\SupplierSync::where('key','td_komplekt_csv')->where('is_active',true)->exists())
+    ->when(fn () => Storage::disk('local')->exists(TdKomplektFeed::DIRECTORY.'/config.json')
+        && SupplierSync::where('key', 'td_komplekt_csv')->where('is_active', true)->exists())
     ->withoutOverlapping(45)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/td-komplekt-sync.log'));
 
+use App\Models\B2bClient;
+use App\Models\PartnerProgramLevel;
+use App\Models\SupplierSync;
+use App\Services\B2bOrders\StaffSelectionReservation;
+use App\Services\Integrations\OneCBridge\OneCPostingReminder;
+use App\Services\Orders\OrderDealControlNotifier;
+use App\Services\Orders\OrderStatusSmsNotifier;
+use App\Services\PartnerLevelEvaluator;
+use App\Services\Shipping\VamExpressSettings;
+use App\Services\Suppliers\EurotermPortalCredentials;
+use App\Services\Suppliers\TdKomplektFeed;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
 
 Schedule::command('b2b:process-specification-ocr --limit=2')
     ->everyMinute()
@@ -597,33 +609,39 @@ Schedule::command('catalog:sync-boiler-range-filters --apply --sample=0')
     ->appendOutputTo(storage_path('logs/boiler-range-filters.log'));
 
 Artisan::command('partners:evaluate-levels', function (): void {
-    if (! \App\Models\PartnerProgramLevel::query()->where('is_active', true)->exists()) {
+    if (! PartnerProgramLevel::query()->where('is_active', true)->exists()) {
         return;
     }
 
-    $evaluator = app(\App\Services\PartnerLevelEvaluator::class);
-    \App\Models\B2bClient::query()->where('status', 'approved')
+    $evaluator = app(PartnerLevelEvaluator::class);
+    B2bClient::query()->where('status', 'approved')
         ->eachById(fn ($client) => $evaluator->evaluate($client));
 })->purpose('Recalculate B2B partner levels');
 
 Schedule::command('partners:evaluate-levels')->hourly()->withoutOverlapping();
 
-Artisan::command('orders:notify-control', function (\App\Services\Orders\OrderDealControlNotifier $notifier): void {
+Artisan::command('orders:notify-control', function (OrderDealControlNotifier $notifier): void {
     $this->info('Заказов с напоминанием: '.$notifier->notify());
 })->purpose('Remind responsible managers about due order follow-ups');
 
 Schedule::command('orders:notify-control')->everyFiveMinutes()->withoutOverlapping();
 
+Artisan::command('orders:remind-onec-posting', function (OneCPostingReminder $reminders): void {
+    $this->info('Заказов, требующих проведения в 1С: '.$reminders->syncOpen());
+})->purpose('Maintain deduplicated internal reminders to post customer orders in 1C');
+
+Schedule::command('orders:remind-onec-posting')->everyThirtyMinutes()->withoutOverlapping();
+
 Schedule::command('requests:check-arrivals')->everyFiveMinutes()->withoutOverlapping(10)
     ->appendOutputTo(storage_path('logs/request-arrivals.log'));
 
-Artisan::command('b2b:expire-reservations', function (\App\Services\B2bOrders\StaffSelectionReservation $reservations): void {
+Artisan::command('b2b:expire-reservations', function (StaffSelectionReservation $reservations): void {
     $this->info('Снято истёкших резервов: '.$reservations->expire());
 })->purpose('Release expired internal B2B reservations');
 
 Schedule::command('b2b:expire-reservations')->everyFiveMinutes()->withoutOverlapping(10);
 
-Artisan::command('orders:send-status-sms', function (\App\Services\Orders\OrderStatusSmsNotifier $notifier): void {
+Artisan::command('orders:send-status-sms', function (OrderStatusSmsNotifier $notifier): void {
     $this->info('СМС о заказах принято SMS.BY: '.$notifier->sendPending());
 })->purpose('Send order status SMS to customers');
 
