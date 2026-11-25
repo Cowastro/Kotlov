@@ -766,6 +766,22 @@ class CatalogController extends Controller
             }
         }
 
+        $detectorFacts = $category->slug === 'signalizatory-zagazovannosti' ? [
+            'PS-011.094' => 'Угарный газ (CO) и горючие газы',
+            'PS-008.168' => 'Природный и сжиженный газ',
+            'KOTLOV-004901' => 'Дым и угарный газ (CO)',
+            'KOTLOV-004900' => 'Угарный газ (CO) и метан',
+            'PS-008.160' => 'Угарный газ (CO)',
+            'KOTLOV-004899' => 'Угарный газ (CO)',
+        ] : [];
+        if ($detectorFacts && blank(request('sort'))) {
+            $cases = [];
+            foreach (array_keys($detectorFacts) as $rank => $sku) {
+                $cases[] = 'WHEN ? THEN '.$rank;
+            }
+            $query->orderByRaw('CASE products.sku '.implode(' ', $cases).' ELSE '.count($cases).' END', array_keys($detectorFacts));
+        }
+
         // Promoted products (SpotlightProducts) open the section in the default order.
         if (blank(request('sort'))) {
             $query->prioritizeSpotlight();
@@ -1027,22 +1043,6 @@ class CatalogController extends Controller
                     ->take(2)->collect();
             }
         }
-        $zordOffers = [];
-        if ($category->slug === 'signalizatory-zagazovannosti' && ! request()->anyFilled([
-            'brand', 'subcategory', 'attr', 'price_min', 'price_max', 'in_stock', 'sort', 'q', 'page',
-        ])) {
-            $models = [
-                'PS-011.094' => ['ЗОРД УГС-02', 'Угарный газ (CO) и горючие газы'],
-                'PS-008.168' => ['ЗОРД УГС-03', 'Природный и сжиженный газ'],
-            ];
-            $offers = (clone $query)->reorder()->whereIn('products.sku', array_keys($models))->get()->keyBy('sku');
-            foreach ($models as $sku => [$model, $gases]) {
-                if ($offers->has($sku)) {
-                    $zordOffers[] = ['model' => $model, 'gases' => $gases, 'product' => $offers[$sku]];
-                }
-            }
-        }
-
         $bufferSections = [];
         if ($category->slug === WaterHeaterCatalog::BUFFER && $specificationLanding === null
             && ! request()->anyFilled(['brand', 'subcategory', 'heater', 'attr', 'price_min', 'price_max', 'in_stock', 'sort', 'q', 'page'])) {
@@ -1835,7 +1835,7 @@ class CatalogController extends Controller
         }
 
         return view('pages.catalog', compact(
-            'saunaSections', 'heatingSections', 'bufferSections', 'zordOffers',
+            'saunaSections', 'heatingSections', 'bufferSections', 'detectorFacts',
             'isChimneySection',
             'ecokaminPromoHits',
             'ecokaminPromoMaxDiscount',

@@ -19,6 +19,10 @@ class ZordComparisonTest extends TestCase
         $models = [
             ['PS-008.168', 'ЗОРД УГС-03', 'signalizator-zagazovannosti-zord-ugs-03', 89.42, 1],
             ['PS-011.094', 'ЗОРД УГС-02', 'signalizator-zagazovannosti', 85, 8],
+            ['KOTLOV-004901', 'GKB CO777', 'gkb-co777', 67.20, 9],
+            ['KOTLOV-004900', 'GKB CO888', 'gkb-co888', 84, 7],
+            ['PS-008.160', 'ЗОРД УГС-01', 'zord-ugs-01', 40, 7],
+            ['KOTLOV-004899', 'GKB CO999', 'gkb-co999', 44.40, 10],
         ];
         foreach ($models as [$sku, $name, $slug, $price, $stock]) {
             $product = Product::create(['category_id' => $category->id, 'sku' => $sku, 'name' => $name, 'slug' => $slug,
@@ -29,13 +33,14 @@ class ZordComparisonTest extends TestCase
 
         $url = 'https://kotlov.by/'.$category->slug;
         $page = $this->get($url)->assertOk();
-        $page->assertSeeInOrder(['id="zord-heading"', 'href="'.$url.'/signalizator-zagazovannosti"', 'ЗОРД УГС-02',
-            'Угарный газ (CO) и горючие газы', '85,00 BYN', 'В наличии: 8 шт.',
-            'href="'.$url.'/signalizator-zagazovannosti-zord-ugs-03"', 'ЗОРД УГС-03',
-            'Природный и сжиженный газ', '89,42 BYN', 'В наличии: 1 шт.'], false);
+        $page->assertDontSee('id="zord-heading"', false)
+            ->assertSeeInOrder(['id="gridLayout"', 'Угарный газ (CO) и горючие газы', '85.00 BYN',
+                'Природный и сжиженный газ', '89.42 BYN', 'GKB CO777', 'Дым и угарный газ (CO)',
+                'GKB CO888', 'Угарный газ (CO) и метан', 'ЗОРД УГС-01', 'GKB CO999'], false)
+            ->assertSee('В наличии: 8 шт.')->assertSee('В наличии: 1 шт.');
         foreach ($models as [$sku, $name, $slug]) {
             $this->get($url.'/'.$slug)->assertOk()->assertSee($sku)->assertSee($name);
         }
-        $this->get($url.'?price_max=86')->assertOk()->assertDontSee('id="zord-heading"', false);
+        $this->get($url.'?sort=price_asc')->assertOk()->assertSeeInOrder(['id="gridLayout"', 'ЗОРД УГС-01', 'GKB CO999', 'GKB CO777'], false);
     }
 }
