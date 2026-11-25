@@ -31,7 +31,7 @@ return [
     // «Мост 1С»: the agent on the 1C server (public/downloads/onec-agent/agent.ps1) and the kinds of tasks it does.
     'agent' => [
         // The current agent.ps1; the panel asks to update an agent that reports an older one.
-        'version' => '12',
+        'version' => '13',
         'handlers' => [
             'price_batch' => PriceBatchTaskHandler::class,
             'odata_read' => ODataReadTaskHandler::class,
