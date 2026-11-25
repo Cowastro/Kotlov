@@ -189,6 +189,7 @@ class OneCOrderMatcher
         });
         app(OneCOrderStages::class)->apply($order);
         $this->linkItemsFrom($order->fresh(), strtolower($refKey), $user);
+        app(OneCPostingReminder::class)->sync($order->fresh());
     }
 
     /** A wrong link is undone; an order the site created in 1C stays (it would be sent a second time). */
@@ -208,6 +209,7 @@ class OneCOrderMatcher
             $order->managerComments()->create(['user_id' => $user?->id, 'author_name' => 'Мост 1С',
                 'body' => 'Связь с заказом 1С '.$number.' снята.']);
         });
+        app(OneCPostingReminder::class)->sync($order->fresh());
     }
 
     /** Site orders linked with 1C orders entered by hand: their lines get the 1C items of those orders. @return int lines linked */

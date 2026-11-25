@@ -34,6 +34,23 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         return 'Статусы документов';
     }
 
+    /** Explicit employee check must also work for an older linked document. Read only. */
+    public function enqueueOrderCheck(Order $order, ?User $user): ?OneCAgentTask
+    {
+        if (blank($order->onec_order_guid) || $order->onec_deleted) {
+            return null;
+        }
+        try {
+            return $this->tasks->enqueue(self::TYPE, null, 'Проверить проведение '.$order->onec_order_number, $user, [
+                'queries' => ['orders_1' => ODataReadTaskHandler::path('Document_ЗаказКлиента', [
+                    '$filter' => "Ref_Key eq guid'".$order->onec_order_guid."'",
+                ])],
+            ]);
+        } catch (DomainException) {
+            return null;
+        }
+    }
+
     /** Null when nothing waits for the accountant or a check is already queued. */
     public function enqueueCheck(?User $user): ?OneCAgentTask
     {
@@ -162,6 +179,7 @@ class DocumentStatusTaskHandler implements OneCAgentTaskHandler
         $moved += $byState;
         foreach ($checkedOrders as $key => $order) {
             $moved += app(OneCOrderStages::class)->apply($order, in_array($key, $cancelledKeys, true)) ? 1 : 0;
+            app(OneCPostingReminder::class)->sync($order->fresh());
         }
 
         return 'Проверено '.$checked.', проведено '.$posted.($moved ? ', этапов заказов обновлено: '.$moved : '').($paid ? ', оплачено по 1С: '.$paid : '');

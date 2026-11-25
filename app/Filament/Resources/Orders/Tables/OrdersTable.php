@@ -164,7 +164,7 @@ class OrdersTable
                         default => '—',
                     })
                     ->color(fn (Order $record): string => match (true) {
-                        filled($record->onec_order_guid) && ! $record->onec_deleted => $record->onec_posted ? 'success' : 'info',
+                        filled($record->onec_order_guid) && ! $record->onec_deleted => $record->onec_posted ? 'success' : 'warning',
                         filled($record->onec_match_number) => 'warning',
                         default => 'gray',
                     })
@@ -176,7 +176,7 @@ class OrdersTable
                     })
                     ->description(fn (Order $record): ?string => filled($record->onec_order_guid) && ! $record->onec_deleted
                         // as 1C lists it: its state and the payment
-                        ? collect([$record->onec_posted ? null : 'не проведён',
+                        ? collect([$record->onec_posted ? null : 'Нужно провести в 1С',
                             OneCOrderStates::label($record->onec_state) ?? ($record->onec_doc_status ? (OneCOrderProfiles::STATUSES[$record->onec_doc_status] ?? $record->onec_doc_status) : null),
                             OneCOrderStates::paymentLabel($record->onec_paid_percent === null ? null : (float) $record->onec_paid_percent)])->filter()->implode(' · ')
                         : null)
