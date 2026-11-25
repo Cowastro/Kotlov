@@ -23,6 +23,9 @@ class OrderTaskHandler implements OneCAgentTaskHandler
     public function lines(OneCAgentTask $task): array
     {
         $lines = ['order|'.$task->subject_id];
+        if (data_get($task->payload, 'live_supply')) {
+            $lines[] = 'supply|live';
+        }
         if ($find = data_get($task->payload, 'find')) {
             $lines[] = 'find|'.$find;
         }

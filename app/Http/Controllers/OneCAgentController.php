@@ -9,6 +9,7 @@ use App\Services\Integrations\OneCBridge\ItemTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
+use App\Services\Integrations\OneCBridge\OrderSupplyTaskHandler;
 use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 use App\Services\Integrations\OneCBridge\SupplierOrderTaskHandler;
 use App\Services\Integrations\OneCPriceBatches;
@@ -43,8 +44,11 @@ class OneCAgentController extends Controller
         // A task waits for the agent version that can do it: customer orders from 8 (drafts), items from 5, supplier orders from 6.
         $version = (int) $request->header('X-Kotlov-Agent', '1');
         $tooNew = array_merge($version < 8 ? [OrderTaskHandler::TYPE] : [], $version < 5 ? [ItemTaskHandler::TYPE] : [], $version < 6 ? [SupplierOrderTaskHandler::TYPE] : []);
+        if ($version < 11) {
+            $tooNew[] = OrderSupplyTaskHandler::TYPE;
+        }
         $types = $tooNew !== [] ? array_values(array_diff(array_keys($this->tasks->types()), $tooNew)) : null;
-        $task = $this->tasks->claimNext($types);
+        $task = $this->tasks->claimNext($types, $version);
         if (! $task) {
             return $this->text("none\n");
         }

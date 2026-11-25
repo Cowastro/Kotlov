@@ -297,13 +297,9 @@ class OneCOrderExport
     /** «Действия» of a line: ship from stock, or provide (order from a supplier, reserve when it comes). */
     public const SHIP = 'Отгрузить';
 
-    public const PROVIDE = 'Требуется';
+    public const PROVIDE = 'КОбеспечению';
 
-    /**
-     * Every line goes «Резервировать по мере поступления» (its name in this 1C, read from its orders): what is free is
-     * reserved now, the rest when it comes — it always posts. «Отгрузить» stops the posting when the goods are held for
-     * another order.
-     */
+    /** Legacy action, still recognised by agent 11 when reviewing previously exported orders. */
     public const RESERVE = 'РезервироватьПоМереПоступления';
 
     private const SERVICE_FIELDS = ['СкидкиРассчитаны', 'Согласован', 'СуммаАвансаДоОбеспечения', 'СуммаПредоплатыДоОтгрузки', 'ДатаСогласования',
@@ -390,9 +386,9 @@ class OneCOrderExport
                 'СуммаСНДС' => $gross,
                 'Склад_Key' => $doc['Склад_Key'] ?? OneCReferences::ZERO,
             ]);
-            // Every line «Резервировать по мере поступления»: «Отгрузить» stops the posting when the goods are held for
-            // another order (in stock, but reserved), and the order went to 1C as a draft.
-            $row['ВариантОбеспечения'] = self::RESERVE;
+            // A safe initial value. Agent 11 checks the actual warehouse, characteristic and other orders' holds
+            // immediately before creating the document, then sets covered lines to «Отгрузить».
+            $row['ВариантОбеспечения'] = self::PROVIDE;
             foreach (['КодСтроки' => $n, 'КлючСвязи' => $n, 'ИдентификаторСтроки' => (string) Str::uuid(), 'ДатаОтгрузки' => $ship] as $key => $value) {
                 if (in_array($key, $rowKeys, true)) {
                     $row[$key] = $value;
@@ -477,7 +473,7 @@ class OneCOrderExport
 
             return $this->tasks->enqueue(OrderTaskHandler::TYPE, $order, 'Заказ №'.$order->number.' → 1С ('.$profile->name.')', $user,
                 ['profile_id' => $profile->id, 'body' => $body, 'find' => $find, 'form' => $form, 'variant' => (int) ($profile->meta['variant'] ?? 0),
-                    'load' => (bool) ($profile->meta['load_mode'] ?? false)]);
+                    'load' => (bool) ($profile->meta['load_mode'] ?? false), 'live_supply' => true]);
         });
     }
 

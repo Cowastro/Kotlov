@@ -4,12 +4,15 @@ use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\ItemTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
+use App\Services\Integrations\OneCBridge\OrderSupplyTaskHandler;
 use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 use App\Services\Integrations\OneCBridge\SupplierOrderTaskHandler;
 
 return [
     // Until order exchange is commissioned, CRM workflow must not depend on 1C mapping.
     'order_queue_enabled' => (bool) env('ONEC_ORDER_QUEUE_ENABLED', false),
+    // Enabled after agent 11's read-only preview is verified against the live 1C publication.
+    'supply_sync_enabled' => (bool) env('ONEC_SUPPLY_SYNC_ENABLED', false),
 
     'exchange' => [
         'username' => env('ONEC_EXCHANGE_USER'),
@@ -28,12 +31,13 @@ return [
     // «Мост 1С»: the agent on the 1C server (public/downloads/onec-agent/agent.ps1) and the kinds of tasks it does.
     'agent' => [
         // The current agent.ps1; the panel asks to update an agent that reports an older one.
-        'version' => '8',
+        'version' => '11',
         'handlers' => [
             'price_batch' => PriceBatchTaskHandler::class,
             'odata_read' => ODataReadTaskHandler::class,
             'doc_status' => DocumentStatusTaskHandler::class,
             'onec_order' => OrderTaskHandler::class,
+            'onec_order_supply' => OrderSupplyTaskHandler::class,
             'onec_item' => ItemTaskHandler::class,
             'onec_supplier_order' => SupplierOrderTaskHandler::class,
         ],

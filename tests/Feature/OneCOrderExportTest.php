@@ -71,7 +71,7 @@ class OneCOrderExportTest extends TestCase
         [, $this->key] = OneCAgentToken::issue('test', $this->admin->id);
     }
 
-    private function agent(string $version = '8'): static
+    private function agent(string $version = '11'): static
     {
         return $this->withHeaders(['Authorization' => 'Bearer '.$this->key, 'X-Kotlov-Agent' => $version]);
     }
@@ -175,12 +175,12 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame(self::ITEM, $body['Товары'][0]['Номенклатура_Key']);
         $this->assertSame(24.99, $body['Товары'][0]['Цена']);
         $this->assertSame(8.33, $body['Товары'][0]['СуммаНДС']);
-        // Always «Резервировать по мере поступления», even when the scheme says «Отгрузить» and 1C has it: goods held for
-        // another order stop the posting of «Отгрузить». Short of stock — the same.
-        $this->assertSame('РезервироватьПоМереПоступления', $body['Товары'][0]['ВариантОбеспечения']);
+        // Only the agent's live warehouse/characteristic check can promote a line to «Отгрузить».
+        $this->assertTrue($task->payload['live_supply']);
+        $this->assertSame('КОбеспечению', $body['Товары'][0]['ВариантОбеспечения']);
         $more = $this->order(['number' => 'K-1003']);
         $more->items()->update(['quantity' => 3, 'total' => 74.97]);
-        $this->assertSame('РезервироватьПоМереПоступления', $export->body($more->fresh(), $profile, $export->defaults($more->fresh()))['Товары'][0]['ВариантОбеспечения']);
+        $this->assertSame('КОбеспечению', $export->body($more->fresh(), $profile, $export->defaults($more->fresh()))['Товары'][0]['ВариантОбеспечения']);
         // No planned delivery: tomorrow, in the header and on the line.
         $tomorrow = now('Europe/Minsk')->addDay()->format('Y-m-d').'T00:00:00';
         $this->assertSame($tomorrow, $body['ЖелаемаяДатаОтгрузки']);
@@ -190,11 +190,13 @@ class OneCOrderExportTest extends TestCase
 
         // An old agent cannot create orders: the order waits for agent 4.
         $this->agent('3')->get('/1c/agent/tasks/next')->assertOk()->assertSee('none');
+        $this->agent('10')->get('/1c/agent/tasks/next')->assertOk()->assertSee('none');
         $lines = explode("\n", trim($this->agent()->get('/1c/agent/tasks/next')->assertOk()->getContent()));
         $this->assertSame('task|'.$task->id.'|onec_order', $lines[0]);
-        $this->assertStringStartsWith('find|Document_', $lines[2]);
-        $this->assertMatchesRegularExpression('/^[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$/', substr($lines[2], 5));
-        $this->assertEquals($body, json_decode(base64_decode(substr($lines[3], 5)), true));
+        $this->assertContains('supply|live', $lines);
+        $this->assertStringStartsWith('find|Document_', $lines[3]);
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9%_.~-]+\?[A-Za-z0-9%_.~$=&-]+$/', substr($lines[3], 5));
+        $this->assertEquals($body, json_decode(base64_decode(substr($lines[4], 5)), true));
 
         $this->agent()->post('/1c/agent/tasks/'.$task->id.'/result', ['ok' => '1', 'document_number' => 'МПУТ-000800',
             'document_key' => 'DDDDDDDD-0000-0000-0000-000000000800', 'existed' => '0'])->assertOk();

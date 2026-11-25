@@ -60,12 +60,14 @@ class OneCAgentTasks
     }
 
     /** @param list<string>|null $types only these types (an old agent knows prices only) */
-    public function claimNext(?array $types = null): ?OneCAgentTask
+    public function claimNext(?array $types = null, ?int $agentVersion = null): ?OneCAgentTask
     {
-        $task = DB::transaction(function () use ($types): ?OneCAgentTask {
+        $task = DB::transaction(function () use ($types, $agentVersion): ?OneCAgentTask {
             $this->giveUpStale();
             $task = OneCAgentTask::query()
                 ->when($types !== null, fn ($q) => $q->whereIn('type', $types))
+                ->when($agentVersion !== null && $agentVersion < 11, fn ($q) => $q->where(fn ($q) => $q
+                    ->where('type', '!=', OrderTaskHandler::TYPE)->orWhereNull('payload->live_supply')->orWhere('payload->live_supply', false)))
                 ->where(fn ($q) => $q->where('status', OneCAgentTask::QUEUED)
                     ->orWhere(fn ($q) => $q->where('status', OneCAgentTask::SENDING)->where('picked_at', '<', now()->subMinutes(self::STALE_MINUTES))))
                 ->orderBy('id')->lockForUpdate()->first();
@@ -96,7 +98,7 @@ class OneCAgentTasks
             try {
                 $summary = $this->handler($task->type)->finished($task, ['ok' => $ok, 'error' => $error, 'data' => $data]);
             } catch (DomainException $exception) {
-                if (! data_get($task->payload, 'create_group')) {
+                if (! data_get($task->payload, 'create_group') && $task->type !== OrderSupplyTaskHandler::TYPE) {
                     throw $exception;
                 }
                 $ok = false;
