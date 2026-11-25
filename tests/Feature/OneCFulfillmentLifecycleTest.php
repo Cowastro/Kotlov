@@ -79,6 +79,45 @@ class OneCFulfillmentLifecycleTest extends TestCase
         $this->assertStringNotContainsString('Ожидаем поступление', $html);
     }
 
+    public function test_closed_pickup_is_received_and_repeated_sync_does_not_notify_again(): void
+    {
+        $order = $this->order(['delivery_type' => 'pickup', 'status' => 'shipped',
+            'deal_control_at' => now()->subDay()]);
+        $this->state($order, 'Закрыт');
+        $this->state($order, 'Закрыт');
+        $this->assertSame('delivered', $order->status);
+        $this->assertSame('Получен', $order->customerStatusLabel());
+        $this->assertSame('completed', $order->effectiveDealStage());
+        $this->assertFalse($order->dealIsActive());
+        $this->assertSame('Работа завершена', $order->dealControlLabel());
+        $this->assertFalse(Order::query()->dealControl('overdue')->whereKey($order)->exists());
+        $this->actingAs($order->user)->get(route('account.orders.show', $order))->assertOk()->assertSeeText('Получен');
+        Mail::assertQueuedCount(1);
+        $this->assertDatabaseCount('order_stage_email_claims', 1);
+        $this->assertSame(1, $order->statusHistory()->count());
+    }
+
+    public function test_closed_pickup_document_completes_even_before_register_catches_up(): void
+    {
+        $order = $this->order(['delivery_type' => 'pickup', 'status' => 'shipped',
+            'onec_doc_status' => 'Закрыт', 'onec_state' => 'ГотовКОтгрузке']);
+        $this->assertSame('delivered', app(OneCOrderStages::class)->apply($order));
+        $this->assertSame('delivered', $order->fresh()->status);
+    }
+
+    public function test_ready_to_close_pickup_is_not_received_and_cancelled_lines_do_not_complete(): void
+    {
+        $order = $this->order(['delivery_type' => 'pickup', 'status' => 'shipped']);
+        $this->state($order, 'ГотовКЗакрытию');
+        $this->assertSame('shipped', $order->status);
+        $order->forceFill(['onec_doc_status' => 'Закрыт'])->save();
+        $this->assertNull(app(OneCOrderStages::class)->apply($order, true));
+        $this->assertSame('shipped', $order->fresh()->status);
+        $order->forceFill(['onec_posted' => false])->save();
+        $this->assertNull(app(OneCOrderStages::class)->apply($order));
+        Mail::assertNothingQueued();
+    }
+
     public function test_late_register_response_cannot_restore_old_waiting_or_queue_mail_again(): void
     {
         $order = $this->order();
