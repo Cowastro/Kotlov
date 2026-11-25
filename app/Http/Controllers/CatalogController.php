@@ -1027,6 +1027,27 @@ class CatalogController extends Controller
                     ->take(2)->collect();
             }
         }
+        $bufferSections = [];
+        if ($category->slug === WaterHeaterCatalog::BUFFER && $specificationLanding === null
+            && ! request()->anyFilled(['brand', 'subcategory', 'heater', 'attr', 'price_min', 'price_max', 'in_stock', 'sort', 'q', 'page'])) {
+            $groups = [
+                'Буферные ёмкости на 500 л' => [
+                    'galmet-bufor-sg-500',
+                    'bufernaia-emkost-aquastic-aq-pt-500-erp',
+                    'bufernaya-emkost-s-tank-et-500',
+                ],
+                'Буферные ёмкости на 300 л' => ['bufernaia-emkost-galmet-bufor-sgb-300-skay-fl-seryi-70-300000'],
+            ];
+            $offers = (clone $query)->reorder()->whereIn('products.slug', array_merge(...array_values($groups)))
+                ->get()->keyBy('slug');
+            foreach ($groups as $title => $slugs) {
+                $selected = collect($slugs)->map(fn (string $slug) => $offers->get($slug))->filter();
+                if ($selected->isNotEmpty()) {
+                    $bufferSections[$title] = $selected;
+                }
+            }
+        }
+
         $saunaSections = [];
         if ($category->slug === 'pechi-dlya-bani' && ! request()->anyFilled(['subcategory', 'page', 'brand', 'attr', 'price_min', 'price_max', 'sort', 'q'])) {
             foreach (['Дровяные печи' => SaunaStoveFilterNormalizer::WOOD_CATEGORIES, 'Электрокаменки' => ['elektrokamenki']] as $title => $slugs) {
@@ -1192,7 +1213,9 @@ class CatalogController extends Controller
         $robots = null;
         if ($specificationName !== null) {
             $specificationCity = request()->getHost() === config('app.base_domain', 'kotlov.by') ? 'в Минске' : $cityIn;
-            $specificationHeading = $specificationName.' '.$specificationCity;
+            $headingName = $category->slug === WaterHeaterCatalog::BUFFER && $specificationLanding === null
+                ? 'Буферные ёмкости для отопления' : $specificationName;
+            $specificationHeading = $headingName.' '.$specificationCity;
             $title = $specificationLanding === null
                 ? $seo->categoryTitle($category->slug, $specificationName, $specificationCity, null)
                 : $seo->title(null, $specificationName.' — купить '.$specificationCity.' | KOTLOV');
@@ -1796,7 +1819,7 @@ class CatalogController extends Controller
         }
 
         return view('pages.catalog', compact(
-            'saunaSections', 'heatingSections',
+            'saunaSections', 'heatingSections', 'bufferSections',
             'isChimneySection',
             'ecokaminPromoHits',
             'ecokaminPromoMaxDiscount',

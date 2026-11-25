@@ -100,6 +100,10 @@
         </div>
     </section>
 
+    @if ($bufferSections)
+        @include('partials.stove-offer-sections', ['sections' => $bufferSections, 'groupPrefix' => 'buffer'])
+    @endif
+
     @include('partials.catalog-city-storefront')
 
     @if ($heatingSections)

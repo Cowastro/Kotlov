@@ -1,4 +1,4 @@
-<div class="container sauna-offers">
+<div class="container sauna-offers{{ $groupPrefix === 'buffer' ? ' buffer-offers' : '' }}">
     <div class="sauna-offers__groups">
         @foreach ($sections as $title => $offers)
             <section class="sauna-offers__group" aria-labelledby="{{ $groupPrefix }}-group-{{ $loop->index }}">
