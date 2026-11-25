@@ -65,6 +65,80 @@ Assert-Equal 0 (Set-SupplyFromBalances $d '' $true @($s) @()) 'other characteris
 $s = Stock 10; $s['Назначение_Key'] = $other
 Assert-Equal 0 (Set-SupplyFromBalances $d '' $true @($s) @()) 'segregated stock not borrowed'
 
+# Customer-order rows expose segregation as Обособленно; they need not carry Назначение_Key themselves.
+$segregated = Row 2 'РезервироватьПоМереПоступления'; $segregated['Обособленно'] = $true
+$d = Doc @($segregated, (Row 2))
+Assert-Equal 1 (Set-SupplyFromBalances $d $key $false @((Stock 2)) @()) 'segregated waiting row does not borrow ordinary stock'
+Assert-Equal 'РезервироватьПоМереПоступления' $segregated['ВариантОбеспечения'] 'segregated decision is preserved'
+Assert-Equal 'Отгрузить' $d['Товары'][1]['ВариантОбеспечения'] 'ordinary stock remains available to ordinary row'
+$segregated = Row 2 'Отгрузить'; $segregated['Обособленно'] = $true
+$d = Doc @($segregated, (Row 2))
+Assert-Equal 1 (Set-SupplyFromBalances $d $key $false @((Stock 2)) @()) 'segregated dispatch does not consume an ordinary-stock budget'
+Assert-Equal 'Отгрузить' $segregated['ВариантОбеспечения'] 'existing segregated dispatch is preserved'
+
+# Native diagnostics execute normal posting in a transaction that is always rolled back. No COM/1C is contacted.
+function Native-Mock {
+    $script:nativeActive = $false; $script:nativeWrites = 0; $script:nativeRollbacks = 0
+    $script:nativeFail = $false; $script:nativeRollbackFail = $false; $script:nativeClosed = $false
+    $c = New-Object PSObject -Property @{
+        'РежимЗаписиДокумента' = @{ 'Проведение' = 'post' }
+        'РежимПроведенияДокумента' = @{ 'Неоперативный' = 'nonoperational' }
+    }
+    $c | Add-Member ScriptMethod XMLString { param($value) if ($script:nativeClosed) { return 'Закрыт' }; return 'КОбеспечению' }
+    $c | Add-Member ScriptMethod BeginTransaction { $script:nativeActive = $true }
+    $c | Add-Member ScriptMethod TransactionActive { return $script:nativeActive }
+    $c | Add-Member ScriptMethod RollbackTransaction { $script:nativeRollbacks++; if ($script:nativeRollbackFail) { throw 'rollback error' }; $script:nativeActive = $false }
+    $c | Add-Member ScriptMethod GetUserMessages {
+        $a = New-Object PSObject
+        $a | Add-Member ScriptMethod Count { return 1 }
+        $a | Add-Member ScriptMethod Get { param($i) return (New-Object PSObject -Property @{ Text = 'native validation detail' }) }
+        return $a
+    }
+    $d = New-Object PSObject -Property @{ 'Номер' = 'TEST-1C'; 'СуммаДокумента' = [decimal]296; 'Проведен' = $true; 'ПометкаУдаления' = $false; 'Статус' = 'open'; 'ОбменДанными' = (New-Object PSObject -Property @{ 'Загрузка' = $true }) }
+    $d | Add-Member ScriptMethod Записать {
+        param($writeMode, $postingMode)
+        $script:nativeWrites++
+        if ($this.ОбменДанными.Загрузка) { throw 'business validation bypassed' }
+        if ($script:nativeFail) { throw 'native posting error' }
+    }
+    return @{ connection = $c; doc = $d }
+}
+$m = Native-Mock
+$r = Invoke-NativePostingProbe $m.connection $m.doc 'TEST-1C' 296
+Assert-Equal $true $r['posting_validated'] 'native probe runs normal posting'
+Assert-Equal $true $r['rolled_back'] 'successful probe is rolled back'
+Assert-Equal 1 $script:nativeWrites 'one native validation attempt'
+Assert-Equal 1 $script:nativeRollbacks 'successful posting never commits'
+Assert-Equal $false $script:nativeActive 'probe leaves no transaction open'
+$m = Native-Mock; $script:nativeFail = $true
+$r = Invoke-NativePostingProbe $m.connection $m.doc 'TEST-1C' 296
+Assert-Equal $false $r['posting_validated'] 'native rejection is not success'
+Assert-Equal $true $r['rolled_back'] 'failed native posting is rolled back'
+Assert-Equal $true ($r['error'] -like '*native posting error*') 'native error is preserved'
+Assert-Equal 'native validation detail' $r['messages'][0] '1C user messages are preserved'
+$m = Native-Mock
+$r = Invoke-NativePostingProbe $m.connection $m.doc 'TEST-1C' 295
+Assert-Equal 0 $script:nativeWrites 'wrong total prevents posting'
+$m = Native-Mock; $script:nativeClosed = $true
+$r = Invoke-NativePostingProbe $m.connection $m.doc 'TEST-1C' 296
+Assert-Equal 0 $script:nativeWrites 'closed native order is never posted'
+$m = Native-Mock; $script:nativeRollbackFail = $true
+$r = Invoke-NativePostingProbe $m.connection $m.doc 'TEST-1C' 296
+Assert-Equal $false $r['rolled_back'] 'rollback failure is never reported as safe'
+Assert-Equal $true ($r['error'] -like '*rollback error*') 'rollback error is retained'
+
+$nativeFixture = Join-Path $repo ('storage/app/native-probe-test-' + [guid]::NewGuid().ToString('N'))
+[void](New-Item -ItemType Directory -Path (Join-Path $nativeFixture 'ut_odata') -Force)
+$nativeIis = Join-Path $nativeFixture 'applicationHost.config'
+$nativeVrd = Join-Path $nativeFixture 'ut_odata/default.vrd'
+$fixtureUtf8 = New-Object Text.UTF8Encoding($false)
+[IO.File]::WriteAllText($nativeIis, ('<configuration><system.applicationHost><sites><site><application path="/"><virtualDirectory path="/" physicalPath="' + [Security.SecurityElement]::Escape($nativeFixture) + '"/></application></site></sites></system.applicationHost></configuration>'), $fixtureUtf8)
+[IO.File]::WriteAllText($nativeVrd, '<point ib="Srvr=&quot;test-server&quot;;Ref=&quot;test-infobase&quot;;"/>', $fixtureUtf8)
+Assert-Equal 'Srvr="test-server";Ref="test-infobase";' (Find-NativeInfobase 'http://127.0.0.1/ut_odata/odata/standard.odata/' $nativeIis) 'native probe uses the exact IIS publication mapping'
+Assert-Fails { Find-NativeInfobase 'https://other-host/ut_odata/odata/standard.odata/' $nativeIis } 'локальная публикация'
+[IO.File]::WriteAllText($nativeVrd, '<point ib="Srvr=&quot;test-server&quot;;Ref=&quot;test-infobase&quot;;Usr=&quot;other&quot;;"/>', $fixtureUtf8)
+Assert-Fails { Find-NativeInfobase 'http://127.0.0.1/ut_odata/odata/standard.odata/' $nativeIis } 'строка базы'
+
 $cancelled = Row 2 'РезервироватьПоМереПоступления'; $cancelled['Отменено'] = $true
 $d = Doc @($cancelled, (Row 2 'НеОбеспечивать'), (Row 2 'Отгрузить'), (Row 2))
 Assert-Equal 0 (Set-SupplyFromBalances $d $key $false @((Stock 3)) @()) 'manual and cancelled actions retained; dispatch consumes budget'

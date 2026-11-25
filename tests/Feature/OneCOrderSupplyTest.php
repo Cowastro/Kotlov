@@ -6,6 +6,7 @@ use App\Models\OneCAgentTask;
 use App\Models\OneCAgentToken;
 use App\Models\Order;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OrderSupplyTaskHandler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -53,7 +54,7 @@ class OneCOrderSupplyTest extends TestCase
 
     public function test_only_open_posted_orders_are_queued_once_and_failures_stop_automatic_retry(): void
     {
-        $this->agent('16');
+        $this->agent('17');
         $open = $this->order();
         $this->order(['status' => 'delivered']);
         $this->order(['onec_doc_status' => 'Закрыт']);
@@ -69,25 +70,25 @@ class OneCOrderSupplyTest extends TestCase
         Mail::assertNothingQueued();
     }
 
-    public function test_agent_without_recovery_diagnostics_cannot_take_supply_writes(): void
+    public function test_agent_without_native_probe_and_segregated_guard_cannot_take_supply_writes(): void
     {
-        $plain = $this->agent('15');
+        $plain = $this->agent('16');
         $order = $this->order();
         $handler = app(OrderSupplyTaskHandler::class);
         $this->assertSame(0, $handler->enqueueOpen());
         $write = app(OneCAgentTasks::class)->enqueue($handler::TYPE, $order, 'Supply', null,
             ['key' => $order->onec_order_guid, 'number' => $order->onec_order_number, 'preview' => false]);
         $read = app(OneCAgentTasks::class)->enqueue('odata_read', null, 'Read', null, ['queries' => []]);
-        $this->withHeaders(['Authorization' => 'Bearer '.$plain, 'X-Kotlov-Agent' => '15'])
+        $this->withHeaders(['Authorization' => 'Bearer '.$plain, 'X-Kotlov-Agent' => '16'])
             ->get('/1c/agent/tasks/next')->assertOk()->assertSee('task|'.$read->id.'|odata_read');
         $this->assertSame(OneCAgentTask::QUEUED, $write->fresh()->status);
-        $this->withHeaders(['Authorization' => 'Bearer '.$plain, 'X-Kotlov-Agent' => '16'])
+        $this->withHeaders(['Authorization' => 'Bearer '.$plain, 'X-Kotlov-Agent' => '17'])
             ->get('/1c/agent/tasks/next')->assertOk()->assertSee('task|'.$write->id.'|'.$handler::TYPE);
     }
 
     public function test_preview_does_not_change_customer_status_or_send_notifications(): void
     {
-        $this->agent('16');
+        $this->agent('17');
         $order = $this->order();
         $handler = app(OrderSupplyTaskHandler::class);
         $this->assertSame(1, $handler->enqueueOpen(20, true));
@@ -102,7 +103,7 @@ class OneCOrderSupplyTest extends TestCase
 
     public function test_successful_preview_never_unblocks_an_unreviewed_failed_write(): void
     {
-        $this->agent('16');
+        $this->agent('17');
         $order = $this->order();
         $handler = app(OrderSupplyTaskHandler::class);
         $this->assertSame(1, $handler->enqueueOpen());
@@ -123,7 +124,7 @@ class OneCOrderSupplyTest extends TestCase
 
     public function test_wrong_order_result_is_saved_as_failure_and_not_retried(): void
     {
-        $this->agent('16');
+        $this->agent('17');
         $this->order();
         app(OrderSupplyTaskHandler::class)->enqueueOpen();
         $task = OneCAgentTask::where('type', OrderSupplyTaskHandler::TYPE)->firstOrFail();
@@ -132,6 +133,34 @@ class OneCOrderSupplyTest extends TestCase
         $this->assertSame('failed', $result->status);
         $this->assertStringContainsString('другой заказ', $result->error);
         $this->assertSame(0, app(OrderSupplyTaskHandler::class)->enqueueOpen());
+        Mail::assertNothingQueued();
+    }
+
+    public function test_native_probe_requires_a_private_report_with_successful_rollback(): void
+    {
+        Mail::fake();
+        $handler = app(OrderSupplyTaskHandler::class);
+        $queue = app(OneCAgentTasks::class);
+        $payload = ['key' => 'aaaaaaaa-0000-0000-0000-000000000001', 'number' => 'TEST-PROBE',
+            'expected_total' => 296, 'preview' => true, 'diagnose_posting' => true, 'queries' => ['native_probe' => 'native-com']];
+        $task = $queue->enqueue($handler::TYPE, null, 'Native probe', null, $payload);
+        $task->update(['status' => OneCAgentTask::SENDING]);
+        $this->assertContains('probe|1', $handler->lines($task));
+        $this->assertContains('expected_total|296.00', $handler->lines($task));
+        $report = ['document_key' => $payload['key'], 'number' => 'TEST-PROBE', 'expected_total' => '296.00',
+            'posting_validated' => true, 'rolled_back' => false];
+        app(ODataReadTaskHandler::class)->storePart($task, 'native_probe', 200, json_encode($report));
+        $failed = $queue->finish($task, ['ok' => true, 'data' => []]);
+        $this->assertSame(OneCAgentTask::FAILED, $failed->status);
+        $this->assertStringContainsString('отката', $failed->error);
+
+        $task = $queue->enqueue($handler::TYPE, null, 'Native probe verified', null, $payload);
+        $task->update(['status' => OneCAgentTask::SENDING]);
+        $report['rolled_back'] = true;
+        app(ODataReadTaskHandler::class)->storePart($task, 'native_probe', 200, json_encode($report));
+        $done = $queue->finish($task, ['ok' => true, 'data' => []]);
+        $this->assertSame(OneCAgentTask::DONE, $done->status);
+        $this->assertStringContainsString('изменения не сохранены', $done->summary);
         Mail::assertNothingQueued();
     }
 }
