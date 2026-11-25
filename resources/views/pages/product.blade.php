@@ -940,7 +940,19 @@
                           ->unique(fn($s) => mb_strtolower(trim($s['key'])))
                           ->values()
                     : collect();
+                $xoMountGroup = null;
+                if (preg_match('/^pelletnaya-gorelka-kotlov-xo-ceramic-pro-([1-9][0-9]*)-kvt$/D', $product->slug ?? '', $xoModel)) {
+                    $xoMountGroup = match ($xoModel[1]) {
+                        '200', '250' => '200-250',
+                        '300', '400' => '300-400',
+                        '500', '600' => '500-600',
+                        '700', '800' => '700-800',
+                        '150', '1000', '1200', '1500' => $xoModel[1],
+                        default => null,
+                    };
+                }
                 $hasSpecs = $fireplaceSpecs !== null ? $fireplaceSpecs !== [] : $attributeValues->isNotEmpty() || $rawSpecs->isNotEmpty();
+                $hasSpecs = $hasSpecs || $xoMountGroup !== null || $isXoCeramicPro100;
             @endphp
             <ul class="tab-btn-wrap-v1" role="tablist">
                 <li class="nav-tab-item" role="presentation">
@@ -1056,6 +1068,20 @@
                                     </figure>
                                     <a href="{{ asset('img/products/xo-ceramic-pro-100-mount-ru.svg') }}">Открыть чертёж в полном размере</a>
                                     · <a href="{{ asset('img/products/xo-ceramic-pro-100-mount.png') }}?v=ru">Габаритный чертёж с видами спереди и сбоку</a>
+                                </section>
+                            @elseif ($xoMountGroup !== null)
+                                @php
+                                    $xoMountUrl = asset("img/products/xo-ceramic-pro-{$xoMountGroup}-mount-ru.png");
+                                @endphp
+                                <section class="mb-4" aria-labelledby="xo-mount-heading">
+                                    <h3 id="xo-mount-heading">Монтажные размеры KOTLOV XO Ceramic PRO {{ $xoModel[1] }} кВт</h3>
+                                    <figure>
+                                        <a href="{{ $xoMountUrl }}">
+                                            <img class="img-fluid" loading="lazy" width="1100" height="960" src="{{ $xoMountUrl }}" alt="Контур выреза и расположение крепёжных отверстий для горелки KOTLOV XO Ceramic PRO {{ $xoModel[1] }} кВт">
+                                        </a>
+                                        <figcaption>Размеры указаны в миллиметрах. Перед разметкой дверцы сверьте исполнение горелки с чертежом.</figcaption>
+                                    </figure>
+                                    <a href="{{ $xoMountUrl }}">Открыть чертёж в полном размере</a>
                                 </section>
                             @endif
                             @if ($manufacturerPump && $pumpDetailDocument)
