@@ -10,7 +10,6 @@
     }
 @endphp
 @if($quickContactBranch && ! $quickContactBranch->isOnlineOnly() && $quickContactCity->slug === 'minsk')
-    {{-- Desktop: the contact card in the corner. Phone: a small round chat button; the card opens on tap. --}}
     <style>
         .regional-store-contact .store-contact-widget{margin:0;border:1px solid #e2e6e9;border-radius:14px;box-shadow:0 6px 24px #18232c20;padding:10px 12px 4px}
         .regional-store-contact .store-contact-widget__link{min-height:40px}
@@ -20,11 +19,13 @@
 
         @media(max-width:767px){
             body:has(.regional-store-contact) #goTop{bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+        }
+        @media {{ request()->is('/') ? 'all' : '(max-width:767px)' }} {
             .regional-store-contact__fab{position:relative;display:flex;align-items:center;justify-content:center;width:52px;height:52px;padding:0;border:0;border-radius:50%;background:#263342;color:#fff;box-shadow:0 8px 22px rgba(24,35,44,.32);cursor:pointer}
             .regional-store-contact__fab svg{width:24px;height:24px}
             .regional-store-contact__fab:after{position:absolute;top:3px;right:3px;width:11px;height:11px;border:2px solid #fff;border-radius:50%;background:#22c55e;content:""}
-            .regional-store-contact__panel{position:absolute;right:0;bottom:62px;width:min(340px,calc(100vw - 24px));opacity:0;transform:translateY(10px) scale(.97);transform-origin:right bottom;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
-            .regional-store-contact.is-open .regional-store-contact__panel{opacity:1;transform:none;pointer-events:auto}
+            .regional-store-contact__panel{position:absolute;right:0;bottom:62px;width:min(340px,calc(100vw - 24px));visibility:hidden;opacity:0;transform:translateY(10px) scale(.97);transform-origin:right bottom;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
+            .regional-store-contact.is-open .regional-store-contact__panel{visibility:visible;opacity:1;transform:none;pointer-events:auto}
             .regional-store-contact.is-open .regional-store-contact__fab{background:#fff;color:#263342}
             .regional-store-contact.is-open .regional-store-contact__fab:after{display:none}
             .regional-store-contact .store-contact-widget{position:relative;padding:14px 14px 6px}
