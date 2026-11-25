@@ -89,10 +89,10 @@ class WholeOrderFulfillmentTest extends TestCase
         $this->assertCount(4, $rows);
         $this->assertSame([1.0, 5.0, 2.0, 1.0], array_map(fn ($r) => (float) $r['Количество'], $rows));
         foreach ($rows as $row) {
-            $this->assertSame(OneCOrderExport::RESERVE, $row['ВариантОбеспечения']);
+            $this->assertSame(OneCOrderExport::PROVIDE, $row['ВариантОбеспечения']);
         }
         foreach (OneCOrderExport::simplify($body, 4)['Товары'] as $row) {
-            $this->assertSame(OneCOrderExport::RESERVE, $row['ВариантОбеспечения']);
+            $this->assertSame(OneCOrderExport::PROVIDE, $row['ВариантОбеспечения']);
         }
         $second = $service->confirm($order->fresh(), $actor, $fingerprint);
         $this->assertFalse($second['notified']);
@@ -142,8 +142,10 @@ class WholeOrderFulfillmentTest extends TestCase
         $writer = app(OneCOrderExport::class);
         $writer->enqueue($order, $writer->defaults($order), $actor);
         $export = OneCAgentTask::where('type', 'onec_order')->sole();
+        $this->assertTrue($export->payload['live_supply']);
+        $this->assertCount(4, $export->payload['body']['Товары']);
         foreach ($export->payload['body']['Товары'] as $row) {
-            $this->assertSame(OneCOrderExport::RESERVE, $row['ВариантОбеспечения']);
+            $this->assertSame(OneCOrderExport::PROVIDE, $row['ВариантОбеспечения']);
         }
         $guid = 'bbbbbbbb-0000-0000-0000-000000000099';
         app(OrderTaskHandler::class)->finished($export, ['ok' => true, 'data' => ['document_key' => $guid, 'document_number' => 'TEST-SUPPLY']]);

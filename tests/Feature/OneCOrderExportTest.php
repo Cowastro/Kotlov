@@ -142,6 +142,12 @@ class OneCOrderExportTest extends TestCase
         return $order->fresh();
     }
 
+    public function test_unplanned_shipping_uses_tomorrow_in_minsk_after_local_midnight(): void
+    {
+        $this->travelTo(new \DateTimeImmutable('2026-11-25T21:15:00Z'));
+        $this->assertSame('2026-11-27T00:00:00', OneCOrderExport::shipDate(new Order));
+    }
+
     public function test_an_order_goes_to_1c_by_the_retail_scheme_made_from_a_real_1c_order(): void
     {
         $this->syncReferences();
@@ -183,11 +189,11 @@ class OneCOrderExportTest extends TestCase
         $more = $this->order(['number' => 'K-1003']);
         $more->items()->update(['quantity' => 3, 'total' => 74.97]);
         $this->assertSame('КОбеспечению', $export->body($more->fresh(), $profile, $export->defaults($more->fresh()))['Товары'][0]['ВариантОбеспечения']);
-        // No planned delivery: tomorrow, in the header and on the line.
-        $tomorrow = now('Europe/Minsk')->addDay()->format('Y-m-d').'T00:00:00';
-        $this->assertSame($tomorrow, $body['ЖелаемаяДатаОтгрузки']);
-        $this->assertSame($tomorrow, $body['ДатаОтгрузки']);
-        $this->assertSame($tomorrow, $body['Товары'][0]['ДатаОтгрузки']);
+        // Delivery preparation has already saved the agreed date on this order.
+        $planned = $order->planned_delivery_date->format('Y-m-d').'T00:00:00';
+        $this->assertSame($planned, $body['ЖелаемаяДатаОтгрузки']);
+        $this->assertSame($planned, $body['ДатаОтгрузки']);
+        $this->assertSame($planned, $body['Товары'][0]['ДатаОтгрузки']);
         $this->assertSame(49.98, $body['ЭтапыГрафикаОплаты'][0]['СуммаПлатежа']);
 
         // An old agent cannot create orders: the order waits for agent 4.
