@@ -68,7 +68,7 @@ class OneCAgentTasks
                 ->when($types !== null, fn ($q) => $q->whereIn('type', $types))
                 ->when($agentVersion !== null && $agentVersion < 11, fn ($q) => $q->where(fn ($q) => $q
                     ->where('type', '!=', OrderTaskHandler::TYPE)->orWhereNull('payload->live_supply')->orWhere('payload->live_supply', false)))
-                ->when($agentVersion !== null && $agentVersion < 18, fn ($q) => $q->where(fn ($q) => $q
+                ->when($agentVersion !== null && $agentVersion < 19, fn ($q) => $q->where(fn ($q) => $q
                     ->where('type', '!=', OrderSupplyTaskHandler::TYPE)->orWhereNull('payload->diagnose_posting')->orWhere('payload->diagnose_posting', false)))
                 ->where(fn ($q) => $q->where('status', OneCAgentTask::QUEUED)
                     ->orWhere(fn ($q) => $q->where('status', OneCAgentTask::SENDING)->where('picked_at', '<', now()->subMinutes(self::STALE_MINUTES))))

@@ -88,15 +88,15 @@ class OneCOrderSupplyTest extends TestCase
 
     public function test_native_diagnostic_waits_for_dispatch_fix_but_ordinary_preview_does_not(): void
     {
-        $this->agent('17');
+        $this->agent('18');
         $tasks = app(OneCAgentTasks::class);
         $probe = $tasks->enqueue('onec_order_supply', null, 'Native diagnostic', null,
             ['diagnose_posting' => true, 'preview' => true]);
         $preview = $tasks->enqueue('onec_order_supply', null, 'Ordinary preview', null,
             ['diagnose_posting' => false, 'preview' => true]);
-        $this->assertSame($preview->id, $tasks->claimNext(['onec_order_supply'], 17)?->id);
+        $this->assertSame($preview->id, $tasks->claimNext(['onec_order_supply'], 18)?->id);
         $this->assertSame(OneCAgentTask::QUEUED, $probe->fresh()->status);
-        $this->assertSame($probe->id, $tasks->claimNext(['onec_order_supply'], 18)?->id);
+        $this->assertSame($probe->id, $tasks->claimNext(['onec_order_supply'], 19)?->id);
     }
 
     public function test_preview_does_not_change_customer_status_or_send_notifications(): void

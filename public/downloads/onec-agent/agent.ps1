@@ -1,4 +1,4 @@
-﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 18: explicit late-bound COM dispatch for rollback-only diagnostics.
+﻿# KOTLOV agent for the 1C server (PowerShell 2.0, curl.exe next to it). Version 19: unwrap legacy PowerShell arguments before native COM dispatch.
 # Takes tasks from kotlov.by one at a time, does them in 1C through the local OData publication and reports back.
 # Task kinds: price_batch — an UNPOSTED «Установка цен номенклатуры»; onec_order — an UNPOSTED «Заказ клиента»;
 # onec_item — a new «Номенклатура» (only when 1C has no item with that article); onec_supplier_order — an UNPOSTED «Заказ поставщику»;
@@ -8,7 +8,7 @@
 param([switch]$Check, [string]$NativeProbe)
 
 $ErrorActionPreference = 'Stop'
-$AgentVersion = '18'
+$AgentVersion = '19'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Curl = Join-Path $Root 'curl\bin\curl.exe'
 $ConfigPath = Join-Path $Root 'agent.config'
@@ -249,10 +249,24 @@ namespace Kotlov {
     // 1C exposes late-bound IDispatch members which PowerShell 2's COM adapter may not discover.
     // Invoke them directly through CLR COM dispatch; this changes no 1C user or business-validation mode.
     public static class NativeCom {
+        private static object Unwrap(object value) {
+            PSObject wrapper = value as PSObject;
+            while (wrapper != null) {
+                value = wrapper.BaseObject;
+                wrapper = value as PSObject;
+            }
+            return value;
+        }
         public static object Call(object value, string name, object[] parameters) {
             PSObject ps = PSObject.AsPSObject(value);
             object target = ps.BaseObject;
-            if (Marshal.IsComObject(target)) return target.GetType().InvokeMember(name, BindingFlags.InvokeMethod, null, target, parameters);
+            if (Marshal.IsComObject(target)) {
+                // PS2 retains PSObject wrappers inside object[]; marshaling those sends IDispatch instead of BSTR/number/1C object.
+                object[] arguments = new object[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++) arguments[i] = Unwrap(parameters[i]);
+                try { return target.GetType().InvokeMember(name, BindingFlags.InvokeMethod, null, target, arguments); }
+                catch (Exception error) { throw new InvalidOperationException("COM method " + name + ": " + error.Message, error); }
+            }
             PSMethodInfo method = ps.Methods[name];
             if (method == null) throw new MissingMethodException(name);
             return method.Invoke(parameters);
@@ -270,7 +284,7 @@ namespace Kotlov {
         public static void Set(object value, string name, object data) {
             PSObject ps = PSObject.AsPSObject(value);
             object target = ps.BaseObject;
-            if (Marshal.IsComObject(target)) { target.GetType().InvokeMember(name, BindingFlags.SetProperty, null, target, new object[] { data }); return; }
+            if (Marshal.IsComObject(target)) { target.GetType().InvokeMember(name, BindingFlags.SetProperty, null, target, new object[] { Unwrap(data) }); return; }
             IDictionary map = target as IDictionary;
             if (map != null) { map[name] = data; return; }
             PSPropertyInfo property = ps.Properties[name];
@@ -617,10 +631,13 @@ function Run-NativeProbeWorker([string]$id) {
         $connector = New-Object -ComObject 'V83.COMConnector'
         $phase = 'connect'
         $connection = [Kotlov.NativeCom]::Call($connector, 'Connect', @($ib + 'Usr="' + $user + '";Pwd="' + $password.Replace('"', '""') + '";'))
-        $phase = 'document'
+        $phase = 'document_uuid'
         $uuid = [Kotlov.NativeCom]::Call($connection, 'NewObject', @('УникальныйИдентификатор', $key))
+        $phase = 'document_manager'
         $manager = [Kotlov.NativeCom]::Get([Kotlov.NativeCom]::Get($connection, 'Документы'), 'ЗаказКлиента')
+        $phase = 'document_reference'
         $reference = [Kotlov.NativeCom]::Call($manager, 'ПолучитьСсылку', @($uuid))
+        $phase = 'document_object'
         $doc = [Kotlov.NativeCom]::Call($reference, 'ПолучитьОбъект', @())
         $phase = 'native_validation'
         $report = Invoke-NativePostingProbe $connection $doc $expected $total
