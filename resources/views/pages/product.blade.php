@@ -340,6 +340,10 @@
                                     </div>
                                 @endif
 
+                                @if ($canBuy && ! $b2bOffer && $product->sku === \App\Http\Controllers\ProductDeliveryEstimateController::SKU && config('services.evropochta.checkout_enabled'))
+                                    @include('partials.product-delivery-estimate')
+                                @endif
+
                                 @include('partials.manager-product-context', ['product' => $product])
 
                                 @if ($b2bOffer && ($showMinskB2bWarehouse || $b2bWarehouseStocks->isNotEmpty()))

@@ -535,6 +535,8 @@ Route::permanentRedirect('/akcii/kotlov-xo-ceramic-pro', '/pelletnye-gorelki/pel
 Route::get('/akcii/kotlov-xo-evo-26', [PromotionController::class, 'xoEvo26'])->name('promotions.xo-evo-26');
 Route::get('/akcii/hotta-ceramik-20-30', [PromotionController::class, 'hottaCeramik'])->name('promotions.hotta-ceramik');
 Route::view('/dostavka', 'pages.dostavka');
+Route::get('/dostavka/evropochta/zord-ugs-02', \App\Http\Controllers\ProductDeliveryEstimateController::class)
+    ->middleware('throttle:30,1')->name('product.delivery-estimate');
 Route::get('/dostavka/evropochta', \App\Http\Controllers\EvropochtaCalculatorController::class)
     ->name('evropochta.calculator');
 Route::post('/dostavka/evropochta', \App\Http\Controllers\EvropochtaCalculatorController::class)
