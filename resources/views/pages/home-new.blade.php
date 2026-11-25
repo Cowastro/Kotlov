@@ -74,11 +74,65 @@
     @media (max-width: 359px) {
         .home-hero .city-home-slide--branded .city-home-slide__actions .tf-btn { padding-inline: 4px; font-size: 11px; white-space: nowrap; }
     }
-    .pellet-clearance-slide{position:relative;width:100%;max-width:100%;height:560px;background:#0d1116;color:#fff;isolation:isolate}.pellet-clearance-slide .sld_image{position:absolute;inset:0}.pellet-clearance-slide .sld_image:before{position:absolute;inset:0;z-index:1;background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(90deg,#000,transparent 78%);content:""}.pellet-clearance-slide .sld_image:after{position:absolute;inset:0;z-index:2;background:radial-gradient(circle at 78% 50%,rgba(239,75,75,.22),rgba(239,75,75,.07) 28%,transparent 52%),radial-gradient(circle at 66% 105%,rgba(255,118,91,.13),transparent 36%),linear-gradient(90deg,rgba(5,9,14,.34),rgba(8,11,16,.04) 46%,rgba(24,12,15,.14));content:""}.pellet-clearance-slide .sld_image img{width:100%;height:100%;object-fit:cover;filter:saturate(.9) contrast(1.06)}.pellet-clearance__layout{position:relative;z-index:3;display:grid;grid-template-columns:minmax(0,.76fr) minmax(620px,1.24fr);gap:clamp(24px,2.4vw,42px);align-items:center;width:100%;height:100%;padding:42px clamp(38px,3.5vw,62px);box-sizing:border-box}.pellet-clearance__layout>*{min-width:0}.pellet-clearance__copy{min-width:0;max-width:650px}.pellet-clearance__eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:15px;padding:7px 11px;border:1px solid rgba(255,116,109,.32);border-radius:999px;background:rgba(239,75,75,.11);box-shadow:0 8px 28px rgba(239,75,75,.08);color:#ff827c;font-size:11px;font-weight:700;letter-spacing:.065em}.pellet-clearance__eyebrow:before{width:18px;height:2px;background:currentColor;content:""}.pellet-clearance__copy h2{max-width:620px;margin:0 0 14px;color:#fff;font-size:clamp(42px,3.35vw,59px);line-height:1.01;letter-spacing:-.045em;text-shadow:0 12px 36px rgba(0,0,0,.24)}.pellet-clearance__copy p{max-width:590px;margin:0 0 20px;color:rgba(255,255,255,.72);font-size:16px;line-height:1.48}.pellet-clearance__facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}.pellet-clearance__facts span{padding:7px 11px;border:1px solid rgba(255,255,255,.15);border-radius:999px;background:rgba(255,255,255,.035);color:rgba(255,255,255,.78);font-size:12px;backdrop-filter:blur(8px)}.pellet-clearance__products{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch;min-width:0;height:370px;padding:19px;border:1px solid rgba(255,255,255,.12);border-radius:30px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 32px 80px rgba(0,0,0,.26);box-sizing:border-box;backdrop-filter:blur(14px)}.pellet-clearance__products:before{position:absolute;z-index:-1;right:5%;bottom:1%;width:82%;height:72%;border-radius:50%;background:rgba(239,75,75,.24);filter:blur(82px);content:""}.pellet-clearance__products:after{position:absolute;top:-22px;right:28px;width:112px;height:112px;border:1px solid rgba(255,115,109,.18);border-radius:50%;box-shadow:0 0 0 22px rgba(255,115,109,.035),0 0 0 44px rgba(255,115,109,.018);content:""}.pellet-clearance__product{position:relative;z-index:1;display:flex;min-width:0;height:332px;padding:44px 10px 64px;overflow:hidden;border:1px solid rgba(255,255,255,.82);border-radius:20px;background:linear-gradient(155deg,#fff 0%,#f0f1f2 100%);box-shadow:0 18px 38px rgba(0,0,0,.25);box-sizing:border-box;transition:transform .25s ease,box-shadow .25s ease}.pellet-clearance__product:hover{transform:translateY(-5px);box-shadow:0 25px 50px rgba(0,0,0,.34)}.pellet-clearance__media{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;overflow:hidden;border-radius:11px;background:#fff}.pellet-clearance__media>img{width:100%;height:100%;object-fit:contain}.pellet-clearance__media--photo>img{object-fit:cover}.pellet-clearance__offer{position:absolute;top:13px;left:13px;z-index:2;padding:7px 10px;border-radius:999px;background:linear-gradient(135deg,#ff615b,#e94343);color:#fff;font-size:11px;font-weight:700;box-shadow:0 8px 20px rgba(239,75,75,.28)}.pellet-clearance__name{position:absolute;right:8px;bottom:10px;left:8px;color:#17191d;font-size:12px;line-height:1.16;text-align:center}.pellet-clearance__name strong{display:block;margin-bottom:4px;font-weight:700}.pellet-clearance__price{display:flex;align-items:center;justify-content:center;gap:5px;color:#e94343;font-size:12px;font-weight:800;white-space:nowrap}.pellet-clearance__price del{color:#969ba1;font-size:10px;font-weight:500}.pellet-clearance__hotta-visual{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(50px,.65fr);gap:6px;width:100%;height:100%}.pellet-clearance__hotta-render{width:100%;height:100%;object-fit:contain}.pellet-clearance__hotta-real{position:relative;display:grid;grid-template-rows:repeat(2,minmax(0,1fr));gap:5px;min-width:0;overflow:hidden;border-radius:9px}.pellet-clearance__hotta-real:after{position:absolute;right:3px;bottom:3px;padding:2px 4px;border-radius:4px;background:rgba(17,19,23,.78);color:#fff;font-size:7px;font-weight:700;letter-spacing:.04em;content:"ФОТО"}.pellet-clearance__hotta-real img{width:100%;height:100%;min-height:0;object-fit:cover}
-    @media(max-width:1439px){.pellet-clearance-slide{height:510px}.pellet-clearance__layout{grid-template-columns:minmax(0,.84fr) minmax(510px,1.16fr);padding:34px 38px}.pellet-clearance__copy h2{font-size:47px}.pellet-clearance__copy p{font-size:14px}.pellet-clearance__products{height:318px;padding:14px;gap:10px}.pellet-clearance__product{height:290px;padding:40px 8px 58px}}
-    @media(max-width:991px){.pellet-clearance-slide{height:500px}.pellet-clearance__layout{grid-template-columns:minmax(0,1fr) minmax(350px,.92fr);gap:20px;padding:30px}.pellet-clearance__eyebrow{font-size:9px}.pellet-clearance__copy h2{font-size:40px}.pellet-clearance__copy p{font-size:14px}.pellet-clearance__products{height:244px;padding:10px;gap:8px;border-radius:22px}.pellet-clearance__product{height:224px;padding:34px 6px 51px;border-radius:15px}.pellet-clearance__offer{top:8px;left:8px;padding:5px 7px;font-size:9px}.pellet-clearance__name{bottom:7px;font-size:10px}.pellet-clearance__price{gap:3px;font-size:9px}.pellet-clearance__price del{font-size:8px}}
-    @media(max-width:767px){.pellet-clearance-slide{width:100%!important;max-width:100%!important;height:550px}.pellet-clearance__layout{display:flex;flex-direction:column;align-items:stretch;width:100%;max-width:100%;gap:16px;padding:27px 22px 30px;overflow:hidden;box-sizing:border-box}.pellet-clearance__copy,.pellet-clearance__products{width:100%;max-width:100%;min-width:0}.pellet-clearance__copy h2,.pellet-clearance__copy p{width:100%;max-width:100%;white-space:normal;overflow-wrap:anywhere}.pellet-clearance__copy h2{font-size:36px}.pellet-clearance__copy p{margin-bottom:16px;font-size:14px}.pellet-clearance__facts{display:none}.pellet-clearance__copy .tf-btn{min-height:43px}.pellet-clearance__products{flex:1;height:auto;min-height:0;padding:9px;gap:7px;border-radius:19px}.pellet-clearance__product{width:100%;height:100%;min-height:145px;padding:31px 5px 45px;border-radius:14px}.pellet-clearance__product:hover{transform:none}.pellet-clearance__offer{top:7px;left:7px;padding:5px 6px;font-size:9px}.pellet-clearance__name{right:4px;bottom:6px;left:4px;font-size:9px;overflow-wrap:anywhere}.pellet-clearance__name strong{margin-bottom:3px}.pellet-clearance__price{font-size:8px}.pellet-clearance__price del{font-size:7px}}
-    @media(max-width:575px){.pellet-clearance-slide{height:485px}.pellet-clearance__layout{gap:11px;padding:19px 14px 23px}.pellet-clearance__eyebrow{margin-bottom:8px;padding:5px 8px;font-size:8px}.pellet-clearance__copy h2{margin-bottom:8px;font-size:28px;line-height:1}.pellet-clearance__copy p{margin-bottom:11px;font-size:12px;line-height:1.35}.pellet-clearance__copy .tf-btn{min-height:38px;padding:8px 14px;font-size:11px}.pellet-clearance__products{padding:7px;gap:6px;border-radius:16px}.pellet-clearance__product{min-height:122px;padding:27px 3px 41px}.pellet-clearance__offer{top:6px;left:5px;font-size:8px}.pellet-clearance__name{font-size:8px}.pellet-clearance__price{font-size:7px}.pellet-clearance__price del{display:none}}
+    .pellet-clearance-slide {
+        --cover-ink: #241b17;
+        --cover-red: #aa301f;
+        display: grid;
+        grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
+        grid-template-rows: auto 1fr auto;
+        gap: 14px clamp(20px, 4vw, 62px);
+        padding: clamp(22px, 3.2vw, 52px);
+        background: #f5eddf;
+        color: var(--cover-ink);
+    }
+    .pellet-cover__mast {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding-bottom: 9px;
+        border-bottom: 2px solid currentColor;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+    }
+    .pellet-cover__mast strong { font-size: 19px; font-weight: 900; letter-spacing: -.045em; }
+    .pellet-cover__mast span { color: var(--cover-red); }
+    .pellet-cover__title {
+        align-self: end;
+        margin: 0;
+        color: inherit;
+        font: 500 clamp(38px, 5.25vw, 92px)/.96 Georgia, serif;
+        letter-spacing: -.055em;
+    }
+    .pellet-cover__title em { display: block; color: var(--cover-red); }
+    .pellet-cover__photo { grid-column: 2; grid-row: 2 / 4; align-self: center; display: block; }
+    .pellet-cover__photo img { display: block; width: 100%; height: auto; max-height: min(39vw, 430px); object-fit: contain; }
+    .pellet-cover__offers { grid-column: 1; display: grid; align-content: start; padding-bottom: 12px; }
+    .pellet-cover__offer {
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        min-height: 48px; padding: 7px 0; border-top: 1px solid #b8a99b;
+        color: var(--cover-ink); font-size: clamp(13px, 1.1vw, 17px); line-height: 1.25;
+    }
+    .pellet-cover__offer small { display: block; color: #69564c; font-size: .88em; }
+    .pellet-cover__offer b { color: var(--cover-red); white-space: nowrap; }
+    .pellet-cover__offer:hover strong, .pellet-cover__all:hover { text-decoration: underline; }
+    .pellet-cover__all { justify-self: start; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; color: var(--cover-ink); font-weight: 700; }
+    .pellet-clearance-slide a:focus-visible { outline: 2px solid #75251a; outline-offset: 2px; }
+    @media (max-width: 767px) {
+        .pellet-clearance-slide {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: auto auto minmax(0, 1fr) auto;
+            gap: 10px; padding: 19px clamp(15px, 4.5vw, 28px) 28px;
+        }
+        .pellet-cover__mast { font-size: 11px; }
+        .pellet-cover__title { font-size: clamp(44px, 11vw, 66px); }
+        .pellet-cover__photo { grid-area: 3 / 1; height: 100%; min-height: 0; display: grid; place-items: center; }
+        .pellet-cover__photo img { max-height: 100%; min-height: 0; width: 100%; }
+        .pellet-cover__offers { padding: 0; }
+        .pellet-cover__offer { font-size: 15px; }
+    }
     .prime-cover{position:relative;width:100%;height:560px;color:#f6efe7;isolation:isolate;background:radial-gradient(ellipse 48% 62% at 72% 64%,rgba(232,104,40,.30),rgba(232,104,40,0) 70%),radial-gradient(ellipse 80% 90% at 70% 100%,rgba(90,40,20,.35),transparent 70%),linear-gradient(115deg,#0a0807 0%,#120d0b 42%,#1b130f 100%)}.prime-cover:after{position:absolute;inset:0;z-index:3;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(214,172,120,.18),inset 0 0 120px rgba(0,0,0,.55);border-radius:inherit;content:""}.prime-cover__word{position:absolute;right:-1%;top:-4%;z-index:0;font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:700;font-size:clamp(150px,19vw,290px);line-height:1;letter-spacing:.02em;color:transparent;-webkit-text-stroke:1px rgba(214,172,120,.16);user-select:none}.prime-cover__art{position:absolute;right:1.5%;bottom:3%;z-index:1;width:auto;height:88%;max-width:54%;object-fit:contain;object-position:right bottom;filter:drop-shadow(0 30px 40px rgba(0,0,0,.45))}.prime-cover__copy{position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;width:42%;height:100%;padding:40px 0 40px clamp(32px,4.6vw,80px);box-sizing:border-box}.prime-cover__mast{display:flex;align-items:center;gap:12px;white-space:nowrap;margin-bottom:22px;color:#d6ac78;font-size:11px;font-weight:600;letter-spacing:.32em;text-transform:uppercase}.prime-cover__mast i{display:block;width:44px;height:1px;background:rgba(214,172,120,.6)}.prime-cover__kicker{margin-bottom:6px;color:rgba(246,239,231,.72);font-size:13px;letter-spacing:.18em;text-transform:uppercase}.prime-cover__title{margin:0 0 10px;font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:700;font-size:clamp(64px,7.4vw,118px);line-height:.92;letter-spacing:.04em;background:linear-gradient(180deg,#fff6e8 0%,#f0cf9f 55%,#c98b4c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}.prime-cover__models{display:flex;flex-wrap:wrap;gap:4px 0;margin-bottom:16px;font-size:14px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}.prime-cover__models a{color:#f6efe7;text-decoration:none}.prime-cover__models a:hover{color:#f0b67a}.prime-cover__models a+a:before{margin:0 10px;color:#d6ac78;content:"·"}.prime-cover p{max-width:470px;margin:0 0 18px;color:rgba(246,239,231,.74);font-size:15px;line-height:1.55}.prime-cover__facts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}.prime-cover__facts span{padding:6px 12px;border:1px solid rgba(214,172,120,.32);border-radius:999px;color:#ecd9c2;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
     @media(max-width:1199px){.prime-cover__copy{width:46%}.prime-cover p{font-size:14px}.prime-cover__art{max-width:50%;height:80%}}
     @media(max-width:991px){.prime-cover{height:500px}.prime-cover__copy{width:50%}.prime-cover p{display:none}.prime-cover__art{max-width:48%;height:70%}}
@@ -229,24 +283,21 @@
                                 </div>
                                 @elseif($banner->image === 'banners/pellet-burner-clearance-desktop.svg')
                                 <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden pellet-clearance-slide" id="pellet-clearance">
-                                    <div class="sld_image" aria-hidden="true">
-                                        <picture>
-                                            <source media="(max-width: 767px)" srcset="{{ asset('storage/' . $banner->image_mobile) }}">
-                                            <img width="1770" height="680" loading="lazy" decoding="async" src="{{ asset('storage/' . $banner->image) }}" alt="">
-                                        </picture>
-                                    </div>
-                                    <div class="pellet-clearance__layout">
-                                        <div class="pellet-clearance__copy">
-                                            <span class="pellet-clearance__eyebrow">{{ $banner->subtitle }}</span>
-                                            <h2>{{ $banner->title }}</h2>
-                                            <p>{{ $banner->description }}</p>
-                                            <div class="pellet-clearance__facts"><span>Wi‑Fi и интернет</span><span>Инженерный подбор</span><span>Гарантия KOTLOV</span></div>
-                                            <a href="{{ $banner->link }}" class="tf-btn btn-white">{{ $banner->button_text }}</a>
-                                        </div>
-                                        <div class="pellet-clearance__products" aria-label="Акционные пеллетные горелки">
-                                            <a href="/akcii/kotlov-xo-evo-26" class="pellet-clearance__product"><span class="pellet-clearance__offer">−20%</span><span class="pellet-clearance__media pellet-clearance__media--photo"><img loading="lazy" src="{{ asset('img/promotions/kotlov-xo-evo-26-stock-cover.jpg') }}" alt="KOTLOV XO EVO 26 кВт"></span><span class="pellet-clearance__name"><strong>XO EVO · 26 кВт</strong><span class="pellet-clearance__price"><del>6 400</del>5 120 BYN</span></span></a>
-                                            <a href="/akcii/hotta-ceramik-20-30" class="pellet-clearance__product"><span class="pellet-clearance__offer">СУПЕРЦЕНА</span><span class="pellet-clearance__media"><span class="pellet-clearance__hotta-visual"><img class="pellet-clearance__hotta-render" loading="lazy" src="{{ asset('img/promotions/hotta-ceramik/hotta-20-1.jpg') }}" alt="Рендер HOTTA Ceramik 20 и 30 кВт"><span class="pellet-clearance__hotta-real"><img loading="lazy" src="{{ asset('img/promotions/hotta-ceramik/hotta-stock-real-side.jpg') }}" alt="Реальная фотография HOTTA Ceramik"><img loading="lazy" src="{{ asset('img/promotions/hotta-ceramik/hotta-stock-real-firebox.jpg') }}" alt="Реальная топка HOTTA Ceramik"></span></span></span><span class="pellet-clearance__name"><strong>HOTTA · 20/30 кВт</strong><span class="pellet-clearance__price">от 4 300 BYN · Wi‑Fi</span></span></a>
-                                        </div>
+                                    <div class="pellet-cover__mast"><strong>KOTLOV</strong><span>Распродажа</span></div>
+                                    <h2 class="pellet-cover__title">Пеллетные <em>горелки</em></h2>
+                                    <a class="pellet-cover__photo" href="/akcii/kotlov-xo-evo-26">
+                                        <img src="{{ asset('img/promotions/xo-evo-editorial.webp') }}" width="1536" height="1024" loading="lazy" alt="Пеллетная горелка KOTLOV XO EVO 26 кВт по акции">
+                                    </a>
+                                    <div class="pellet-cover__offers">
+                                        <a class="pellet-cover__offer" href="/akcii/kotlov-xo-evo-26">
+                                            <span><strong>KOTLOV XO EVO</strong><small>26 кВт · скидка 20%</small></span>
+                                            <b>5 120 BYN</b>
+                                        </a>
+                                        <a class="pellet-cover__offer" href="/akcii/hotta-ceramik-20-30">
+                                            <span><strong>HOTTA Ceramik</strong><small>20 / 30 кВт · Wi-Fi</small></span>
+                                            <b>от 4 300 BYN</b>
+                                        </a>
+                                        <a class="pellet-cover__all" href="{{ $banner->link }}">{{ $banner->button_text }} <span aria-hidden="true">→</span></a>
                                     </div>
                                 </div>
                                 @else
