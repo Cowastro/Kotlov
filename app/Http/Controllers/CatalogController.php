@@ -99,7 +99,7 @@ class CatalogController extends Controller
 
         $isSaunaStoveCatalog = in_array($category->slug, SaunaStoveFilterNormalizer::CATEGORIES, true);
         $saunaPickerSlug = $isSaunaStoveCatalog ? $category->slug : null;
-        // This legacy category has the stove slug but contains sauna accessories.
+        // Existing volume-picker bookmarks lead to the filtered wood-stove catalogue.
         if ($category->slug === 'pechi-dlya-bani') {
             $saunaPickerSlug = Category::active()->whereIn('slug', SaunaStoveFilterNormalizer::WOOD_CATEGORIES)
                 ->pluck('slug')
@@ -1588,19 +1588,13 @@ class CatalogController extends Controller
         }
 
         if ($category->slug === 'bani-i-sauny') {
-            $saunaStoves = $subcategories->first(
-                fn (Category $subcategory) => in_array(
-                    $subcategory->slug,
-                    ['drovyanye-pechi-dlya-bani', 'drovianye-peci-bannye'],
-                    true
-                )
-            );
+            $saunaStoves = $subcategories->firstWhere('slug', 'pechi-dlya-bani');
 
             if ($saunaStoves) {
                 $catalogSpotlight = [
                     'eyebrow' => 'Главный раздел',
                     'title' => 'Печи для бани',
-                    'text' => 'Дровяные и чугунные банные печи для парных разного объёма. Сравните материал, тип каменки и конструкцию топочного канала.',
+                    'text' => 'Дровяные печи и электрокаменки для парных разного объёма. Сравните цены и наличие моделей.',
                     'url' => url('/'.$saunaStoves->slug),
                     'button' => 'Смотреть банные печи',
                 ];

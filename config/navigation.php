@@ -67,13 +67,13 @@ return [
                 'slugs' => ['nagrevatelynye-maty', 'nagrevatelynye-kabeli', 'ik-plenochnyj-pol', 'termoregulyatory-dlya-teplogo-pola']],
         ],
         'bani-i-sauny' => [
-            // Slugs here are historical: «kupeli» is water tanks, «pechi-dlya-bani» is steam room accessories.
+            // The historical «kupeli» slug contains water tanks.
             ['title' => 'Печи и каменки', 'icon' => 'icon-Sparkle', 'description' => 'Дровяные печи, электрокаменки, баки и всё для печи.',
-                'slugs' => ['drovianye-peci-bannye', 'elektrokamenki', 'aksessuary-dlya-bani', 'kupeli']],
+                'slugs' => ['pechi-dlya-bani', 'drovianye-peci-bannye', 'elektrokamenki', 'aksessuary-dlya-bani', 'kupeli']],
             ['title' => 'Двери и окна', 'icon' => 'icon-HouseLine', 'description' => 'Стеклянные двери и окна для парной.',
                 'slugs' => ['dveri-dlya-ban-i-saun', 'okna-dlya-bani-i-sauny']],
             ['title' => 'Парная и отдых', 'icon' => 'icon-Package', 'description' => 'Аксессуары для парной, купели, мангалы и казаны.',
-                'slugs' => ['pechi-dlya-bani', 'kupeli-2', 'mangalyi']],
+                'slugs' => ['aksessuary-dlya-parnoy', 'kupeli-2', 'mangalyi']],
         ],
         'dymohody' => [
             ['title' => 'Системы', 'icon' => 'icon-ArrowFatUp', 'description' => 'Одностенные, утеплённые сэндвич и коаксиальные дымоходы.',
