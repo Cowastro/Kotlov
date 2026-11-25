@@ -21,7 +21,7 @@ class ProductSupplierReserveQuickActionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_supplier_email_opens_internal_reserve_form_from_quick_actions(): void
+    public function test_product_row_reserve_button_opens_the_form_with_the_supplier_email(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $counterparty = CrmCounterparty::query()->create([
@@ -68,8 +68,10 @@ class ProductSupplierReserveQuickActionTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         Livewire::test(ListProducts::class)
+            ->searchTable('RESERVE-001')
+            ->assertCanSeeTableRecords([$product])
             ->assertTableActionVisible('request_supplier_reserve', $product)
-            ->assertSeeHtml("mountTableAction('request_supplier_reserve', '{$product->id}')")
+            ->assertSee('Запросить резерв')
             ->assertDontSeeHtml('mailto:reserve@supplier.test')
             ->mountTableAction('request_supplier_reserve', $product)
             ->assertTableActionDataSet([
