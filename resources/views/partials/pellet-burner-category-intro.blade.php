@@ -14,7 +14,7 @@
             </div>
             <div class="pellet-category-intro__actions">
                 <button type="button" class="tf-btn btn-primary" data-bs-toggle="modal" data-bs-target="#engineeringCalculation">Получить расчёт</button>
-                <a href="/akcii/kotlov-xo-ceramic-pro" class="tf-btn btn-white">Комплекты по акции</a>
+                <a href="/akcii" class="tf-btn btn-white">Комплекты по акции</a>
             </div>
         </div>
         @if ($pelletPowerRanges->isNotEmpty())

@@ -386,9 +386,6 @@
 
                                 <x-spotlight-gift-note :product="$product" />
 
-                                @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt' && $product->is_sale)
-                                    <x-xo-promo-note />
-                                @endif
 
                                 @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140' && $product->is_sale)
                                     <x-xo-evo-promo-note />

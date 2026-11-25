@@ -317,17 +317,12 @@ class BlogController extends Controller
                 [
                     'title' => 'Ceramic PRO 100 кВт',
                     'text' => 'Решение для более мощной коммерческой котельной.',
-                    'url' => '/akcii/kotlov-xo-ceramic-pro',
+                    'url' => '/pelletnye-gorelki/pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt',
                 ],
             ]);
         }
 
         return collect([
-            [
-                'title' => 'Акция −10% на Ceramic PRO 100 кВт',
-                'text' => 'Цена, условия предложения и заявка на инженерный расчёт.',
-                'url' => '/akcii/kotlov-xo-ceramic-pro',
-            ],
             [
                 'title' => 'KOTLOV XO Ceramic PRO 100 кВт',
                 'text' => 'Фотографии, характеристики, комплектация и актуальная цена.',
@@ -341,7 +336,7 @@ class BlogController extends Controller
             [
                 'title' => 'Инженерный подбор и монтаж',
                 'text' => 'Проверим котёл, дымоход, автоматику, шнек и бункер.',
-                'url' => '/akcii/kotlov-xo-ceramic-pro#xo-request',
+                'url' => '/contacts',
             ],
         ]);
     }
