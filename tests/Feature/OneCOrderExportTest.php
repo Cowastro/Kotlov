@@ -492,6 +492,18 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame($retail->id, $export->defaults($this->order(['number' => 'K-1002', 'delivery_type' => 'transport', 'payment_type' => 'online_card']))['profile_id']);
     }
 
+    public function test_order_item_shows_both_receipt_costs_separately_from_the_supplier_snapshot(): void
+    {
+        $item = $this->order()->items()->first();
+        $item->update(['supply_purchase_price' => 208.50]);
+        $line = fn (): string => (string) \App\Filament\Resources\Orders\Schemas\OrderInfolist::onecItemLine($item);
+        $this->assertStringContainsString('Себестоимость 1С за шт.: нет данных', $line());
+        OneCItem::query()->create(['ref_key' => self::ITEM, 'code' => 'УТ-00000001', 'description' => 'Переход Моно',
+            'cost_net' => 147.69, 'cost_gross' => 177.23, 'cost_date' => '2026-11-24', 'cost_doc' => 'П-17']);
+        $this->assertStringContainsString('без НДС 147,69 BYN · с НДС 177,23 BYN', $line());
+        $this->assertStringContainsString('П-17 · 24.11.2026', $line());
+    }
+
     public function test_our_warehouse_line_takes_the_1c_cost_and_the_free_1c_stock(): void
     {
         $sbg = Supplier::query()->updateOrCreate(['code' => 'sanbusinessgroup'], ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true]);

@@ -1457,13 +1457,22 @@ class OrderInfolist
         return [$order->onec_deleted ? 'помечен на удаление' : 'нет', $order->onec_deleted ? 'danger' : 'gray', null];
     }
 
-    /** «1С: УТ-00000123» under the article, or «нет в 1С» while creating / when missing. */
-    /** « · своб. 2 (в нал. 3, резерв 1)» on the selling warehouse, when 1C stock is fresh. */
-    private static function onecStock(?string $key): string
+    private static function onecStockAndCost(?string $key): string
     {
-        $item = $key ? OneCItem::query()->where('ref_key', strtolower($key))->first() : null;
+        $item = $key ? OneCItem::query()->where('ref_key', strtolower(explode('#', $key, 2)[0]))->first() : null;
 
-        return OneCStock::fresh($item) ? ' <span style="color:#64748b" title="Склад: '.e(implode(', ', OneCStock::WAREHOUSES)).'">· '.e(OneCStock::label($item)).'</span>' : '';
+        $stock = OneCStock::fresh($item) ? ' <span style="color:#64748b" title="Склад: '.e(implode(', ', OneCStock::WAREHOUSES)).'">· '.e(OneCStock::label($item)).'</span>' : '';
+        if ($item?->cost_net === null && $item?->cost_gross === null) {
+            return $stock.'<br>Себестоимость 1С за шт.: нет данных';
+        }
+
+        $amount = static fn (?float $value): string => $value === null ? '—' : number_format($value, 2, ',', ' ').' BYN';
+        $source = $item->cost_kind === \App\Services\Integrations\OneCBridge\OneCItemCosts::AVERAGE
+            ? 'Средняя за 3 месяца' : 'Закупка';
+        $details = implode(' · ', array_filter([$source, $item->cost_doc, $item->cost_date?->format('d.m.Y')]));
+
+        return $stock.'<br>Себестоимость 1С за шт.: без НДС '.$amount($item->cost_net)
+            .' · с НДС '.$amount($item->cost_gross).'<br>'.e($details);
     }
 
     public static function onecItemLine(OrderItem $item): ?HtmlString
@@ -1476,7 +1485,7 @@ class OrderInfolist
         if ($linked) {
             return new HtmlString('<a href="'.e(OneCItemResource::getUrl('index', ['tableSearch' => $linked->external_code ?: $linked->name]))
                 .'" style="color:#16a34a;text-decoration:underline" title="Показать в номенклатуре 1С">1С: '.e($linked->external_code ?: 'связан').'</a>'
-                .self::onecStock($linked->external_id));
+                .self::onecStockAndCost($linked->external_id));
         }
         $tasks = app(OneCAgentTasks::class);
         $waiting = $tasks->activeFor($item->product, ItemTaskHandler::TYPE) || $tasks->activeFor($item->product, ODataReadTaskHandler::TYPE);
