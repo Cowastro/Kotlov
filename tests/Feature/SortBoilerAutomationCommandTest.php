@@ -127,6 +127,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $pexElbow = $card('Соединитель латунный угловой GX с наружной резьбой 20х3/4" GIACOMINI', $pex);
         $pexPpsu = $card('Тройник PPSU под н/к 14х2/18х2,5/14х2 арт. 1109260019 (9018.650) KAN', $pex);
         $pexCone = $card('Переходник латунный на евроконус PE-X Ду 20-G 3/4" Рехау', $pex);
+        $sewer = $section('vnutrennyaya-kanalizatsiya');
+        $sewerPipe = $card('Труба ВК 32х1,8х 250мм бел. РТП', $sewer);
+        $sewerTee = $card('Тройник полипропиленовый для внутренней канализации Skolan SKEA Ду 110х58(50)х87° OSTENDORF', $sewer);
+        $sewerElbow = $card('Отвод полипропиленовый для внутренней канализации 58x15° Stilte Plus PRO AQUA', $sewer);
+        $sewerTrap = $card('Трап вертикальный регулируемый Дн 110 (решетка нержавеющая сталь 150х150 мм) арт. TA1712 АНИ Пласт', $sewer);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -316,6 +321,16 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Евроконусы и адаптеры', $value('Тип', $pexCone));
         $this->assertSame('Евроконус', $value('Резьба', $pexCone));
         $this->assertSame('20 мм', $value('Диаметр', $pexCone));
+        $this->assertSame('Трубы', $value('Тип', $sewerPipe));
+        $this->assertSame('32 мм', $value('Диаметр', $sewerPipe));
+        $this->assertSame('250 мм', $value('Длина трубы', $sewerPipe));
+        $this->assertSame('Тройники', $value('Тип', $sewerTee));
+        $this->assertSame('110 мм', $value('Диаметр', $sewerTee));
+        $this->assertNull($value('Длина трубы', $sewerTee));
+        $this->assertSame('Малошумные (Skolan, Stilte)', $value('Малошумные', $sewerTee));
+        $this->assertSame('50 мм', $value('Диаметр', $sewerElbow));
+        $this->assertSame('Трапы и воронки', $value('Тип', $sewerTrap));
+        $this->assertSame('110 мм', $value('Диаметр', $sewerTrap));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
