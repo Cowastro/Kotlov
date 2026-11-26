@@ -255,6 +255,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::SEWER => [
+                'Тип' => [self::SEWER_TYPES, self::SEWER_ORDER],
+                'Диаметр' => [fn (string $title) => self::sewerDiameter($title), array_map(fn (int $mm) => $mm.' мм', self::SEWER_DIAMETERS)],
+                'Длина трубы' => [fn (string $title) => self::sewerPipeLength($title), array_map(fn (int $mm) => $mm.' мм', self::SEWER_LENGTHS)],
+                'Малошумные' => [['/малошум|skolan|stilte/u' => 'Малошумные (Skolan, Stilte)'], ['Малошумные (Skolan, Stilte)']],
+            ],
             self::MANIFOLDS => [
                 'Тип' => [self::MANIFOLD_TYPES, self::MANIFOLD_ORDER],
                 'Число выходов' => [fn (string $title) => self::manifoldOutlets($title), array_map(fn (int $n) => self::outletsLabel($n), range(2, 16))],
@@ -1073,6 +1079,75 @@ final class BoilerAutomationGroups
         }
 
         return $n !== null && $n >= 2 && $n <= 16 ? self::outletsLabel($n) : null;
+    }
+
+    public const SEWER = 'vnutrennyaya-kanalizatsiya';
+
+    /** «Тип» options of «Внутренняя канализация», in filter order. */
+    public const SEWER_ORDER = [
+        'Трубы',
+        'Отводы и колена',
+        'Тройники',
+        'Крестовины',
+        'Переходы и редукции',
+        'Муфты',
+        'Заглушки',
+        'Ревизии',
+        'Трапы и воронки',
+        'Манжеты и уплотнения',
+        'Вентиляция (клапаны, зонты)',
+        'Хомуты и крепёж',
+        'Прочее',
+    ];
+
+    /** Title pattern => «Тип» inside «Внутренняя канализация»; the first match wins. */
+    public const SEWER_TYPES = [
+        '/^(труба|патрубок)/u' => 'Трубы',
+        '/крестовин/u' => 'Крестовины',
+        '/тройник/u' => 'Тройники',
+        '/отвод|колено/u' => 'Отводы и колена',
+        '/переход|редукц/u' => 'Переходы и редукции',
+        '/муфт/u' => 'Муфты',
+        '/заглушк/u' => 'Заглушки',
+        '/ревизи/u' => 'Ревизии',
+        '/трап|воронк/u' => 'Трапы и воронки',
+        '/манжет|кольцо|уплотн/u' => 'Манжеты и уплотнения',
+        '/клапан|зонт|грибок|аэратор/u' => 'Вентиляция (клапаны, зонты)',
+        '/хомут|крепл|опора/u' => 'Хомуты и крепёж',
+        '/./u' => 'Прочее',
+    ];
+
+    /** The sewer pipe sizes, mm. */
+    public const SEWER_DIAMETERS = [32, 40, 50, 75, 90, 100, 110, 125, 160, 200];
+
+    /** The pipe lengths sewer pipes come in, mm. */
+    public const SEWER_LENGTHS = [150, 250, 315, 500, 750, 1000, 1500, 2000, 3000];
+
+    /** The first sewer size of a title («Ду 110х50», «Дн 110», «d32», «110/50х87»); Stilte «58» is the 50 line. */
+    public static function sewerDiameter(string $title): ?string
+    {
+        $title = preg_replace('/(?<![\w])(?:дн|ду|d)\s?(?=\d)/u', ' ', mb_strtolower(trim(html_entity_decode($title))));
+        if (preg_match_all('/(?<![\w.,\/])(\d{2,3})(?=\s*(?:[xх×*\/,]|мм|$|\s|\())/u', $title, $m)) {
+            foreach ($m[1] as $mm) {
+                $mm = ['58' => 50, '78' => 75][$mm] ?? (int) $mm;
+                if (in_array($mm, self::SEWER_DIAMETERS, true)) {
+                    return $mm.' мм';
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** The length of a sewer pipe from «110х2,2х1500» / «32х1,8х 250мм»; fittings get none. */
+    public static function sewerPipeLength(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        if (! str_starts_with($title, 'труба') || ! preg_match('/\d+\s*[xх]\s*\d+(?:[.,]\d+)?\s*[xх]\s*(\d{3,4})/u', $title, $m)) {
+            return null;
+        }
+
+        return in_array((int) $m[1], self::SEWER_LENGTHS, true) ? (int) $m[1].' мм' : null;
     }
 
     public const GAS_HOSES = 'gazovye-shlangi';
