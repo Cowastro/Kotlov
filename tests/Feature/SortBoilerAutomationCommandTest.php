@@ -111,6 +111,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $flangeBall = $card('Кран шаровый фланцевый КШЦФ Ру 16 Ду 125/125 LD', $balls);
         $ppBall = $card('Кран шар. ПП 32 сер. РТП', $balls);
         $peBall = $card('Кран шар. 25 х 3/4" нар. (для ПЭ труб), AV Engineering', $balls);
+        $faucets = $section('smesiteli');
+        $kitchen = $card('Смеситель для кухни (SUS 304) D35, серия ZAR с краном для пит. воды гранит AV Engineering', $faucets);
+        $bath = $card('Смеситель для ванны вентильный (тип I), серия 410 ECONOCE', $faucets);
+        $sink = $card('Смеситель для умывальника (Lt) D35, серия Lotus черный, a-five', $faucets);
+        $aerator = $card('Аэратор для смесителя с НР М24х1/2" MasterProf', $faucets);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -267,6 +272,17 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Под пластиковую или пресс-трубу', $value('Присоединение', $ppBall));
         $this->assertSame('Ду 25 (1")', $value('Диаметр (Ду)', $ppBall));
         $this->assertSame('Ду 20 (3/4")', $value('Диаметр (Ду)', $peBall));
+        $this->assertSame('Для кухни', $value('Назначение', $kitchen));
+        $this->assertSame('Однорычажный', $value('Управление', $kitchen));
+        $this->assertSame('С краном для питьевой воды', $value('Кран для питьевой воды', $kitchen));
+        $this->assertSame('Сатин и нержавеющая сталь', $value('Цвет', $kitchen));
+        $this->assertSame('Для ванны', $value('Назначение', $bath));
+        $this->assertSame('Двухвентильный', $value('Управление', $bath));
+        $this->assertNull($value('Кран для питьевой воды', $bath));
+        $this->assertSame('Для умывальника', $value('Назначение', $sink));
+        $this->assertSame('Чёрный', $value('Цвет', $sink));
+        $this->assertSame('Комплектующие (аэраторы, картриджи, буксы)', $value('Назначение', $aerator));
+        $this->assertNull($value('Управление', $aerator));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')

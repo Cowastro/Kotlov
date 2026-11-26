@@ -248,6 +248,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::FAUCETS => [
+                'Назначение' => [self::FAUCET_USES, self::FAUCET_ORDER],
+                'Управление' => [self::FAUCET_CONTROLS, array_values(array_unique(self::FAUCET_CONTROLS))],
+                'Цвет' => [self::FAUCET_COLORS, array_values(self::FAUCET_COLORS)],
+                'Кран для питьевой воды' => [['/пит\\.? ?вод|питьев/u' => 'С краном для питьевой воды'], ['С краном для питьевой воды']],
+            ],
             self::BALL_VALVES => [
                 'Присоединение' => [self::BALL_JOINTS, array_values(array_unique(self::BALL_JOINTS))],
                 'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
@@ -856,6 +862,51 @@ final class BoilerAutomationGroups
 
         return $dn !== null && in_array($dn, self::BALL_DNS, true) ? self::dnLabel($dn) : null;
     }
+
+    public const FAUCETS = 'smesiteli';
+
+    /** «Назначение» options of «Смесители», in filter order. */
+    public const FAUCET_ORDER = [
+        'Для кухни',
+        'Для умывальника',
+        'Для ванны',
+        'Для душа',
+        'Для биде',
+        'Универсальные (мойка и умывальник)',
+        'Душевые системы и стойки',
+        'Комплектующие (аэраторы, картриджи, буксы)',
+    ];
+
+    /** Title pattern => «Назначение» of a faucet; the first match wins. */
+    public const FAUCET_USES = [
+        '/^(аэратор|картридж|головка|кран-букса|излив|сифон)/u' => 'Комплектующие (аэраторы, картриджи, буксы)',
+        '/душев\w* (систем|стойк|набор)|^(система|стойка|набор) душев|^душевой набор/u' => 'Душевые системы и стойки',
+        '/(мойки|кухни) и умывальник|умывальника и мойки|ванны и умывальник|универсальн/u' => 'Универсальные (мойка и умывальник)',
+        '/для кухни|для мойки/u' => 'Для кухни',
+        '/для умывальник|для раковин/u' => 'Для умывальника',
+        '/для ванн/u' => 'Для ванны',
+        '/для душа/u' => 'Для душа',
+        '/для биде/u' => 'Для биде',
+    ];
+
+    /** Title pattern => «Управление» of a faucet: a lever cartridge (D25/D35/D40) or two valves. */
+    public const FAUCET_CONTROLS = [
+        '/термостат/u' => 'Термостатический',
+        '/сенсорн/u' => 'Сенсорный',
+        '/вентильн|двухвентил|двуручн|2-руч|тип i(?![a-z])/u' => 'Двухвентильный',
+        '/одноручн|однорычаж|1-руч|(?<![a-z])d\s?(25|26|35|40)(?!\d)|моно-смеситель|хирургическ|локтев|uno-/u' => 'Однорычажный',
+    ];
+
+    /** Title pattern => «Цвет» of a faucet; two-tone ones get their first colour. */
+    public const FAUCET_COLORS = [
+        '/хром/u' => 'Хром',
+        '/(?<![а-я])(черн|чёрн)\w*|black/u' => 'Чёрный',
+        '/(?<![а-я])бел(ый|ая|ое)(?![а-я])|white/u' => 'Белый',
+        '/золот|gold/u' => 'Золото',
+        '/бронз/u' => 'Бронза',
+        '/сатин|матов\w* никел|нержав|sus 304/u' => 'Сатин и нержавеющая сталь',
+        '/гранит|графит|сер(ый|ая)(?![а-я])/u' => 'Серый и графит',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
