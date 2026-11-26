@@ -19,6 +19,8 @@ class OneCPurchaseCosts
 
     public const BYN = '11867b41-09b8-11e9-bad6-1c1b0d1de7c2';
 
+    public const RUB = '11867b44-09b8-11e9-bad6-1c1b0d1de7c2';
+
     /** Days of purchases per request: an answer (whole documents with their lines) stays far below 8 MB. */
     private const DAYS_PER_PART = 7;
 
@@ -98,7 +100,7 @@ class OneCPurchaseCosts
     {
         $updated = 0;
         foreach (array_chunk($itemKeys, 200) as $chunk) {
-            $last = DB::table('onec_purchase_lines')->whereIn('item_key', $chunk)->where('currency_key', self::BYN)
+            $last = DB::table('onec_purchase_lines')->whereIn('item_key', $chunk)->whereIn('currency_key', [self::BYN, self::RUB])
                 ->orderBy('doc_date')->orderBy('id')->get()->keyBy('item_key');
             $links = IntegrationProduct::query()->whereHas('source', fn ($q) => $q->where('code', 'onec'))->whereNotNull('product_id')
                 ->where('match_status', 'matched')
@@ -112,6 +114,7 @@ class OneCPurchaseCosts
                 if (! $line) {
                     continue;
                 }
+                $line = HistoricalPurchaseRate::inByn($line);
                 $updated += Product::query()->whereKey($link->product_id)
                     ->where(fn ($q) => $q->whereNull('onec_cost_date')->orWhere('onec_cost_date', '<=', substr((string) $line->doc_date, 0, 10)))
                     ->update(['onec_cost_byn' => round((float) $line->price_net, 2), 'onec_cost_vat_byn' => round((float) $line->price_gross, 2),

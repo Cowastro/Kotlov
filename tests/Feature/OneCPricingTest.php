@@ -40,6 +40,23 @@ class OneCPricingTest extends TestCase
             'price_net' => round($gross / 1.2, 4), 'price_gross' => $gross, 'currency_key' => OneCPurchaseCosts::BYN]);
     }
 
+    public function test_rub_receipts_use_the_official_rate_on_each_receipt_date(): void
+    {
+        foreach ([['2026-10-23', 3.646, 3130.67, 114.14], ['2026-07-27', 3.6866, 686.065, 25.29]] as [$date, $rate, $rub, $expected]) {
+            \Illuminate\Support\Facades\Http::fake([
+                '*ondate='.$date => \Illuminate\Support\Facades\Http::response([
+                    'Date' => $date.'T00:00:00', 'Cur_Abbreviation' => 'RUB', 'Cur_Scale' => 100, 'Cur_OfficialRate' => $rate,
+                ]),
+            ]);
+            $line = (object) ['currency_key' => OneCPurchaseCosts::RUB, 'doc_date' => $date, 'doc_number' => '1',
+                'price_net' => $rub, 'price_gross' => $rub];
+            $cost = OneCItemCosts::cost([$line]);
+            $this->assertSame($expected, $cost['cost_gross']);
+            $this->assertTrue($cost['cost_from_rub']);
+            $this->assertSame($rub, $line->price_gross);
+        }
+    }
+
     public function test_the_cost_is_the_last_purchase_or_the_3_month_average_and_prices_go_by_markup(): void
     {
         foreach ([self::BOILER => 'Котёл тестовый 24', self::PIPE => 'Труба тестовая 100', self::VALVE => 'Кран тестовый'] as $key => $name) {
