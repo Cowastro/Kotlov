@@ -70,6 +70,10 @@ class AdminProductSearchTest extends TestCase
         $this->item->update(['product_id' => null]);
         IntegrationProduct::query()->where('external_id', $this->item->ref_key)->update(['product_id' => null, 'match_status' => 'unmatched']);
         $this->assertSame([], $this->ids('УТ-00009721'));
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        Livewire::actingAs($admin)->test(ListProducts::class)->searchTable('УТ-00009721')
+            ->assertSee('Карточка не привязана')->assertCanNotSeeTableRecords([$this->door, $this->wrong])
+            ->searchTable('УТ-99999999')->assertDontSee('Карточка не привязана');
     }
 
     public function test_cached_direct_link_and_link_without_cached_item_both_work(): void
