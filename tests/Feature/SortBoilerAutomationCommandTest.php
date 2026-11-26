@@ -122,6 +122,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $peSaddle = $card('Седло зажимное с ВР для п/э Ду 25х3/4" VALFEX', $pe);
         $peThreaded = $card('Муфта ПП 1/2" вн.-вн. кор., AV Engineering', $pe);
         $plasticFaucet = $card('Смеситель пластиковый для кухни, AV Engineering', $pe);
+        $pex = $section('fitingi-dlya-trub-pex');
+        $pexTee = $card('Тройник латунный переходной 25х20х25 PRO AQUA', $pex);
+        $pexElbow = $card('Соединитель латунный угловой GX с наружной резьбой 20х3/4" GIACOMINI', $pex);
+        $pexPpsu = $card('Тройник PPSU под н/к 14х2/18х2,5/14х2 арт. 1109260019 (9018.650) KAN', $pex);
+        $pexCone = $card('Переходник латунный на евроконус PE-X Ду 20-G 3/4" Рехау', $pex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -301,6 +306,16 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Резьбовые пластиковые фитинги', $value('Тип', $peThreaded));
         $this->assertNull($value('Диаметр', $peThreaded));
         $this->assertSame($faucets->id, $plasticFaucet->fresh()->category_id);
+        $this->assertSame('Тройники', $value('Тип', $pexTee));
+        $this->assertSame('Латунь', $value('Материал', $pexTee));
+        $this->assertSame('25 мм', $value('Диаметр', $pexTee));
+        $this->assertSame('Угольники и отводы', $value('Тип', $pexElbow));
+        $this->assertSame('Наружная резьба', $value('Резьба', $pexElbow));
+        $this->assertSame('Пластик (PPSU)', $value('Материал', $pexPpsu));
+        $this->assertSame('14 мм', $value('Диаметр', $pexPpsu));
+        $this->assertSame('Евроконусы и адаптеры', $value('Тип', $pexCone));
+        $this->assertSame('Евроконус', $value('Резьба', $pexCone));
+        $this->assertSame('20 мм', $value('Диаметр', $pexCone));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')

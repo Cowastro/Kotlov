@@ -249,6 +249,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::PEX_FITTINGS => [
+                'Тип' => [self::PEX_TYPES, self::PEX_ORDER],
+                'Материал' => [self::PEX_MATERIALS, array_values(self::PEX_MATERIALS)],
+                'Резьба' => [self::PEX_THREADS, array_values(array_unique(self::PEX_THREADS))],
+                'Диаметр' => [fn (string $title) => self::pipeDiameter($title, self::PEX_DIAMETERS), array_map(fn (int $mm) => $mm.' мм', self::PEX_DIAMETERS)],
+            ],
             self::PE_FITTINGS => [
                 'Тип' => [self::PE_TYPES, self::PE_ORDER],
                 'Способ соединения' => [self::PE_JOINTS, array_values(array_unique(self::PE_JOINTS))],
@@ -802,7 +808,7 @@ final class BoilerAutomationGroups
     public static function pipeDiameter(string $title, array $sizes): ?string
     {
         $title = preg_replace('/(?<![\w])(?:d|ду\s?)(?=\d)/u', ' ', mb_strtolower(trim(html_entity_decode($title))));
-        if (preg_match_all('/(?<![\w.,\/])(\d{2,3})(?=\s*(?:[xх×*\/,]|мм|$|\s|\())/u', $title, $m)) {
+        if (preg_match_all('/(?<![\w.,\/])(\d{2,3})(?=\s*(?:[xх×*\/,]|-[a-zа-я]|мм|$|\s|\())/u', $title, $m)) {
             foreach ($m[1] as $mm) {
                 if (in_array((int) $mm, $sizes, true)) {
                     return (int) $mm.' мм';
@@ -960,6 +966,47 @@ final class BoilerAutomationGroups
 
     /** The PE pipe sizes, mm. */
     public const PE_DIAMETERS = [16, 20, 25, 32, 40, 50, 63, 75, 90, 110, 125, 160, 200, 225, 250, 315, 400];
+
+    public const PEX_FITTINGS = 'fitingi-dlya-trub-pex';
+
+    /** «Тип» options of «Фитинги для труб PEX и PERT», in filter order. */
+    public const PEX_ORDER = [
+        'Муфты, соединители и переходники',
+        'Тройники',
+        'Угольники и отводы',
+        'Евроконусы и адаптеры',
+        'Заглушки',
+        'Гильзы, кольца и монтаж',
+        'Прочее',
+    ];
+
+    /** Title pattern => «Тип» inside «Фитинги для труб PEX и PERT»; the first match wins. */
+    public const PEX_TYPES = [
+        '/тройник/u' => 'Тройники',
+        '/гильз|втулк|кольцо|фиксатор|шина|плитка|профиль|кронштейн|гайка для|крюк|лента|планка|пластин|скоба|хомут|дуга|прокладк|розетка cu|зонд/u' => 'Гильзы, кольца и монтаж',
+        '/евроконус|конус/u' => 'Евроконусы и адаптеры',
+        '/заглушк/u' => 'Заглушки',
+        '/угольник|отвод|колено|90°|углов|соединение радиатора|водорозетк/u' => 'Угольники и отводы',
+        '/муфт|соединител|соединение|переход|ниппел|адаптер|фитинг прямой/u' => 'Муфты, соединители и переходники',
+        '/./u' => 'Прочее',
+    ];
+
+    /** Title pattern => «Материал» of a PEX fitting. */
+    public const PEX_MATERIALS = [
+        '/ppsu|пластик/u' => 'Пластик (PPSU)',
+        '/латун|giacoqest|goldfix|(?<![a-z])gx(?![a-z])|рехау|rautitan|rautherm|для труб pex|евроконус|ниппел|водорозетк|переходник прямой|(?<![a-z])far(?![a-z])/u' => 'Латунь',
+    ];
+
+    /** Title pattern => «Резьба» of a PEX fitting; the first match wins. */
+    public const PEX_THREADS = [
+        '/евроконус|конус/u' => 'Евроконус',
+        '/накидн/u' => 'Накидная гайка',
+        '/внутренн|(?<![а-я])вн\.|(?<![а-я])вр(?![а-я])|(?<![a-z])f(?![a-z])/u' => 'Внутренняя резьба',
+        '/наружн|(?<![а-я])нар\.|(?<![а-я])нр(?![а-я])|(?<![a-z])m(?![a-z])/u' => 'Наружная резьба',
+    ];
+
+    /** The PEX/PERT pipe sizes, mm. */
+    public const PEX_DIAMETERS = [14, 16, 17, 18, 20, 25, 32, 40, 50, 63];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
