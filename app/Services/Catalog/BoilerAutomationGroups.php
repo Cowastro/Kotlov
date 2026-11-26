@@ -248,6 +248,9 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::BUFFER_TANKS => [
+                'Тип' => [self::BUFFER_TYPES, array_values(self::BUFFER_TYPES)],
+            ],
             self::AIR_CONDITIONERS => [
                 'Тип' => [self::AC_TYPES, self::AC_ORDER],
                 'Площадь помещения' => [fn (string $title) => self::acArea($title), self::AC_AREAS],
@@ -723,6 +726,15 @@ final class BoilerAutomationGroups
             default => null,
         };
     }
+
+    public const BUFFER_TANKS = 'bufernye-emkosti';
+
+    /** Title pattern => «Тип» inside «Буферные ёмкости»: Drazice NADO holds a DHW tank inside, S-TANK CT stores cold. */
+    public const BUFFER_TYPES = [
+        '/холодоаккумулятор/u' => 'Холодоаккумуляторы',
+        '/(?<![a-z])nado(?![a-z])/u' => 'Со встроенным баком ГВС',
+        '/./u' => 'Буферные ёмкости и теплоаккумуляторы',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
