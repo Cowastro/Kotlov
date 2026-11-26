@@ -4,10 +4,12 @@ namespace App\Services\Orders;
 
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Models\OneCItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductPurchasePriceSource;
 use App\Models\SupplierProduct;
+use App\Services\Integrations\OneCBridge\OneCStock;
 use Illuminate\Support\Collection;
 
 class OrderItemSupplyContextResolver
@@ -35,6 +37,11 @@ class OrderItemSupplyContextResolver
      * @return array<string, mixed>
      */
     public function resolveCurrent(OrderItem $item): array
+    {
+        return $this->withOneCStock($item, $this->resolveCurrentSource($item));
+    }
+
+    private function resolveCurrentSource(OrderItem $item): array
     {
 
         $item->loadMissing([
@@ -508,7 +515,45 @@ class OrderItemSupplyContextResolver
             $check['stock_label'] = 'По загрузке: '.$this->stockQuantity((float) $check['stock_quantity']).' шт. · наличие требует уточнения';
         }
 
-        return $check;
+        return $this->withOneCStock($item, $check);
+    }
+
+    /** Keep the captured purchasing source and price; own availability comes from the exact 1C link. */
+    private function withOneCStock(OrderItem $item, array $context): array
+    {
+        $item->loadMissing('product.integrationProducts.source.supplier');
+        $links = collect($item->product?->integrationProducts)->filter(fn ($link): bool => $link->source?->code === 'onec'
+            && $link->source->is_active && $link->match_status === 'matched');
+        if ($links->isEmpty()) {
+            return $context;
+        }
+        $link = $links->first();
+        // An explicitly chosen external supplier still has its own availability.
+        if (filled($context['supplier_id'] ?? null) && (int) $context['supplier_id'] !== (int) $link->source->supplier_id) {
+            return $context;
+        }
+        if ($links->count() !== 1 || str_contains($link->external_id, '#')) {
+            return array_replace($context, ['stock_source' => 'onec', 'stock_source_label' => '1С',
+                'stock_supplier_id' => $link->source->supplier_id, 'stock_quantity' => null, 'stock_updated_at' => null,
+                'source_updated_at' => null, 'stock_label' => 'Привязка 1С неоднозначна · уточнить', 'is_available' => null]);
+        }
+        $stock = OneCItem::where('ref_key', strtolower($link->external_id))->first();
+        $fresh = OneCStock::fresh($stock);
+        $quantity = $fresh ? OneCStock::free($stock) : ($link->stock_quantity !== null && $link->hasFreshStock() ? (float) $link->stock_quantity : null);
+        $at = $fresh ? $stock->stock_synced_at : $link->stock_confirmed_at;
+        if ($quantity === null) {
+            $at = collect([$stock?->stock_synced_at, $link->stock_confirmed_at])->filter()
+                ->sortByDesc(fn ($value) => $value->getTimestamp())->first();
+        }
+
+        return array_replace($context, [
+            'stock_source' => 'onec', 'stock_source_label' => '1С, склад Основной',
+            'stock_supplier_id' => $link->source->supplier_id,
+            'stock_quantity' => $quantity, 'stock_updated_at' => $at, 'source_updated_at' => $at?->toIso8601String(),
+            'stock_label' => $quantity === null ? 'Остаток 1С устарел · требуется обновление'
+                : ($quantity > 0 ? $this->stockQuantity($quantity).' шт. · 1С, склад Основной' : 'Сейчас нет в наличии · 1С'),
+            'is_available' => $quantity === null ? null : $quantity > 0,
+        ]);
     }
 
     private function stockQuantity(float $quantity): string

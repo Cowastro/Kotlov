@@ -8,8 +8,9 @@ use App\Models\OneCPriceBatch;
 use App\Services\Integrations\OneCBridge\ItemTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
-use App\Services\Integrations\OneCBridge\OrderTaskHandler;
+use App\Services\Integrations\OneCBridge\OneCReadWatchdog;
 use App\Services\Integrations\OneCBridge\OrderSupplyTaskHandler;
+use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 use App\Services\Integrations\OneCBridge\SupplierOrderTaskHandler;
 use App\Services\Integrations\OneCPriceBatches;
@@ -49,6 +50,10 @@ class OneCAgentController extends Controller
         }
         $types = $tooNew !== [] ? array_values(array_diff(array_keys($this->tasks->types()), $tooNew)) : null;
         $task = $this->tasks->claimNext($types, $version);
+        if (! $task && $version >= 11) {
+            app(OneCReadWatchdog::class)->enqueueDue();
+            $task = $this->tasks->claimNext($types, $version);
+        }
         if (! $task) {
             return $this->text("none\n");
         }
