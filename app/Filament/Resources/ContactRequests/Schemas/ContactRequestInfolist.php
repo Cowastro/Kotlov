@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ContactRequests\Schemas;
 
+use App\Filament\Resources\Orders\OrderResource;
 use App\Models\ContactRequest;
 use App\Support\AdminPhoneLinks;
 use Filament\Infolists\Components\TextEntry;
@@ -30,6 +31,10 @@ class ContactRequestInfolist
                     ->compact()
                     ->columns(4)
                     ->schema([
+                        TextEntry::make('order.number')->label('Созданный заказ')
+                            ->visible(fn (ContactRequest $record): bool => filled($record->order_id))
+                            ->url(fn (ContactRequest $record): string => OrderResource::getUrl('view', ['record' => $record->order_id]))
+                            ->color('primary'),
                         TextEntry::make('status')
                             ->label('Статус')
                             ->badge()

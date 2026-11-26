@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\ContactRequests\Pages;
 
 use App\Filament\Resources\ContactRequests\ContactRequestResource;
+use App\Filament\Resources\Orders\Actions\QuickOrderAction;
+use App\Filament\Resources\Orders\OrderResource;
 use App\Models\ContactRequest;
 use App\Models\User;
 use Filament\Actions\Action;
@@ -37,6 +39,12 @@ class ViewContactRequest extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            QuickOrderAction::make($this->record)
+                ->visible(fn (): bool => auth()->user()?->isManager() && ! $this->record->order_id
+                    && ! $this->record->archived_at && $this->record->status !== 'cancelled'),
+            Action::make('openOrder')->label('Открыть заказ')->icon('heroicon-o-shopping-cart')
+                ->visible(fn (): bool => auth()->user()?->isManager() && filled($this->record->order_id))
+                ->url(fn (): string => OrderResource::getUrl('view', ['record' => $this->record->order_id])),
             Action::make('restore')
                 ->label('Вернуть в активные')
                 ->icon('heroicon-o-arrow-uturn-left')
