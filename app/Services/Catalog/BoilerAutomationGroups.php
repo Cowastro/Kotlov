@@ -155,6 +155,49 @@ final class BoilerAutomationGroups
             self::PARTS => [self::PART_GROUPS, self::PART_ORDER],
             self::SENSORS => [self::SENSOR_GROUPS, self::SENSOR_ORDER],
             self::GAUGES => [self::GAUGE_GROUPS, self::GAUGE_ORDER],
+            self::METERS => [self::METER_GROUPS, self::METER_ORDER],
+        ];
+    }
+
+    public const METERS = 'schetchiki-vody-i-tepla';
+
+    /** «Назначение» options of «Счётчики воды и тепла», in filter order. */
+    public const METER_ORDER = [
+        'Счётчики холодной воды',
+        'Счётчики горячей воды',
+        'Универсальные счётчики',
+        'Турбинные счётчики (Вольтмана)',
+        'Монтажные комплекты и вставки',
+        'Радиомодули',
+        'Прочее',
+    ];
+
+    /** Title pattern => «Назначение» inside «Счётчики воды и тепла». */
+    public const METER_GROUPS = [
+        '/вольтмана|турбинн/u' => 'Турбинные счётчики (Вольтмана)',
+        '/^счетчик горяч|^счётчик горяч/u' => 'Счётчики горячей воды',
+        '/^сч[её]тчик универсальн/u' => 'Универсальные счётчики',
+        '/^сч[её]тчик холодн/u' => 'Счётчики холодной воды',
+        '/^(комплект монтажный|вставка ремонтная|узел присоединительный)/u' => 'Монтажные комплекты и вставки',
+        '/радиомодул/u' => 'Радиомодули',
+    ];
+
+    /** The nominal sizes a meter title names, smallest first. */
+    public const DIAMETERS = ['15', '20', '25', '32', '40', '50', '65', '80', '100', '150'];
+
+    /**
+     * Further filters of a section besides «Назначение»: section slug => [filter name => [patterns, option order]].
+     * A card no pattern matches has no value there.
+     */
+    public static function extraFilters(): array
+    {
+        $diameters = [];
+        foreach (self::DIAMETERS as $dn) {
+            $diameters['/(?:ду|dn)\s*'.$dn.'(?!\d)/u'] = 'Ду '.$dn;
+        }
+
+        return [
+            self::METERS => ['Диаметр (Ду)' => [$diameters, array_values($diameters)]],
         ];
     }
 
@@ -166,6 +209,11 @@ final class BoilerAutomationGroups
     public static function group(string $title, array $rules = self::GROUPS): string
     {
         return self::first($rules, $title) ?? 'Прочее';
+    }
+
+    public static function match(string $title, array $rules): ?string
+    {
+        return self::first($rules, $title);
     }
 
     private static function first(array $rules, string $title): ?string
