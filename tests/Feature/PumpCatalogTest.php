@@ -120,6 +120,23 @@ class PumpCatalogTest extends TestCase
         }
     }
 
+    public function test_voltage_comes_from_the_title_when_specs_name_none(): void
+    {
+        $catalog = new PumpCatalog;
+        foreach ([
+            ['Многоступенчатый насос Wellmix CV 15- 2-0-HQCV (3х380В, 2.2кВт, IE3)', '380'],
+            ['WELLMIX Моноблочный насос NBW 80-65-200-22.0/2-380-G-BQQE', '380'],
+            ['Многоступенчатый насос Wellmix CMI 12-15-BQCE (1х220В, 1,5кВт)', '220'],
+            ['IMP PUMPS Многоступенчатый повысительный насос BWJ2-5R 0,55kW 120°C 1x230V', '220'],
+            ['WELLMIX Моноблочный насос NBS 50-32-160_1.1_220_BQCE', '220'],
+        ] as [$name, $option]) {
+            $f = $catalog->productFacts(new Product(['name' => $name, 'specs' => []]), 'konsolnye-i-monoblochnye-nasosy', $catalog->dimensions('konsolnye-i-monoblochnye-nasosy'));
+            $this->assertSame([$option], $f['options']['voltage'] ?? null, $name);
+        }
+        $f = $catalog->productFacts(new Product(['name' => 'PURITY Моноблочный насос PSTC 100-200-220 (N)', 'specs' => []]), 'konsolnye-i-monoblochnye-nasosy', $catalog->dimensions('konsolnye-i-monoblochnye-nasosy'));
+        $this->assertArrayNotHasKey('voltage', $f['options']);
+    }
+
     public function test_legacy_upc_head_outliers_are_not_used_as_real_capacity(): void
     {
         $p = $this->pump('tsirkulyatsionnyie', 'Насос Unipump UPC 32-80 180', ['Максимальный напор, м' => 76]);

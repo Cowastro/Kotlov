@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 
 class PumpCatalog extends SpecificationCatalog
 {
-    protected const FACTS_VERSION = 4;
+    protected const FACTS_VERSION = 5;
     public const ROOT = 'vodosnabzhenie';
 
     public const MANUFACTURER_CATEGORIES = ['skvajinnye-nasosy', 'poverhnostnyie', 'drenajnyie', 'nasosnyie-stantsii'];
@@ -107,6 +107,17 @@ class PumpCatalog extends SpecificationCatalog
             // diameters, casing dimensions and model-name digits are not maxima.
             $number = $this->quantity($text, $name.' '.$unit, $field);
             if ($number !== null) $values[$field][] = $number;
+        }
+        // Without a stated supply the title often names it: «(3х380В, 2.2кВт)», «-380-G-BQQE», «_220_», «1x230V».
+        if ($networks === []) {
+            $title = $this->normalise((string) $product->name);
+            if (preg_match('/(?:3\s*[xх~]\s*)?(?:380|400)\s*[вv](?![a-zа-я])|[-_](?:380|400)(?:[-_]|$)/u', $title, $m)) {
+                $networks[] = '380';
+                $networkLabels[] = $m[0];
+            } elseif (preg_match('/(3\s*[xх~]\s*)?(?:220|230)\s*[вv](?![a-zа-я])|[-_](?:220|230)(?:[-_]|$)/u', $title, $m)) {
+                $networks[] = ($m[1] ?? '') !== '' ? 'three220' : '220';
+                $networkLabels[] = $m[0];
+            }
         }
         $numbers = [];
         foreach ($values as $key => $candidates) {

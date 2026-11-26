@@ -239,6 +239,9 @@ final class BoilerAutomationGroups
                 'Производительность' => [fn (string $title) => self::fanFlow($title), self::FAN_FLOWS],
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
+            ...array_fill_keys(self::POWERED_PUMPS, [
+                'Мощность двигателя' => [fn (string $title) => self::pumpPower($title), self::PUMP_POWERS],
+            ]),
             self::GAS_HOSES => [
                 'Тип' => [self::HOSE_TYPES, array_values(self::HOSE_TYPES)],
                 'Длина' => [self::HOSE_LENGTHS, array_values(self::HOSE_LENGTHS)],
@@ -517,6 +520,44 @@ final class BoilerAutomationGroups
             $kw <= 25 => 'До 25 кВт',
             $kw <= 75 => '26–75 кВт',
             default => '76–150 кВт',
+        };
+    }
+
+    /** Pump sections whose cards carry no specs: the motor power comes from the title. */
+    public const POWERED_PUMPS = ['mnogostupenchatye-nasosy', 'konsolnye-i-monoblochnye-nasosy', 'in-lain-nasosy'];
+
+    /** «Мощность двигателя» options, smallest first. */
+    public const PUMP_POWERS = ['До 1,5 кВт', 'Св. 1,5 до 4 кВт', 'Св. 4 до 11 кВт', 'Св. 11 до 30 кВт', 'Свыше 30 кВт'];
+
+    /**
+     * The motor power band of a pump from its title: «2.2кВт», «3kW», WELLMIX «-22.0/2-380-», «_15T_380_» and
+     * UNIPUMP «FS65-50-125-4.0», PURITY «PSTG 80-160/220» (22 kW). PURITY PVT/PVS and IMP titles name no power.
+     */
+    public static function pumpPower(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        $kw = null;
+        // Pattern => divisor: PURITY «PSTG 80-160/220», «PT 65-400/75» give the power in tenths of a kW.
+        foreach ([
+            '/(\d+(?:[.,]\d+)?)\s*(?:квт|kw)(?![a-zа-я])/u' => 1,
+            '/-\s*(\d+(?:[.,]\d+)?)\/[24]-(?:220|380)-/u' => 1,
+            '/_(\d+(?:[.,]\d+)?)t?_(?:220|380)_/u' => 1,
+            '/\bf[sc]\s*\d+-\d+(?:-\d+)?-(\d+(?:[.,]\d+)?)$/u' => 1,
+            '/^(?=.*purity).*(?<![a-z])(?:pstg|pstc|pz|pt)\s*\d+-\d+\/(\d+)/u' => 10,
+        ] as $pattern => $divisor) {
+            if (preg_match($pattern, $title, $m)) {
+                $kw = (float) str_replace(',', '.', $m[1]) / $divisor;
+                break;
+            }
+        }
+
+        return match (true) {
+            $kw === null || $kw <= 0 => null,
+            $kw <= 1.5 => 'До 1,5 кВт',
+            $kw <= 4 => 'Св. 1,5 до 4 кВт',
+            $kw <= 11 => 'Св. 4 до 11 кВт',
+            $kw <= 30 => 'Св. 11 до 30 кВт',
+            default => 'Свыше 30 кВт',
         };
     }
 

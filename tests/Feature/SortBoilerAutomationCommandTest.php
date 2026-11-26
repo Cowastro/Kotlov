@@ -80,6 +80,13 @@ class SortBoilerAutomationCommandTest extends TestCase
         $methaneAlarm = $card('Сигнализатор загазованности Барьер-CH4', $alarms);
         $cps = $card('Вентилятор наддува СРS-70 (до 70 кВт, 320 м3/час)', $fans);
         $vsk = $card('Вентилятор наддува VSK-160 (к котлам 75-150 кВт)', $fans);
+        $multistage = $section('mnogostupenchatye-nasosy');
+        $monoblock = $section('konsolnye-i-monoblochnye-nasosy');
+        $cv = $card('Многоступенчатый насос Wellmix CV 32-10-2-HQCV (3х380В, 18.5кВт,IE3)', $multistage);
+        $pvt = $card('Вертикальный многоступенчатый насос PURITY PVT 4-10 (N)', $multistage);
+        $nbw = $card('WELLMIX Моноблочный насос NBW 50-32-250- 7.5/2-380-2S-BQQE', $monoblock);
+        $pstg = $card('PURITY Консольно-моноблочный фланцевый насос PSTG 100-250/550 (N)', $monoblock);
+        $fc = $card('UNIPUMP Консольно-моноблочный насос FC32-160-1.5', $monoblock);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -177,6 +184,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertNull($value('Для котла мощностью', $fan));
         $this->assertNull($value('Производительность', $vsk));
         $this->assertSame('76–150 кВт', $value('Для котла мощностью', $vsk));
+        $this->assertSame('Св. 11 до 30 кВт', $value('Мощность двигателя', $cv));
+        $this->assertNull($value('Мощность двигателя', $pvt));
+        $this->assertSame('Св. 4 до 11 кВт', $value('Мощность двигателя', $nbw));
+        $this->assertSame('Свыше 30 кВт', $value('Мощность двигателя', $pstg));
+        $this->assertSame('До 1,5 кВт', $value('Мощность двигателя', $fc));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)
