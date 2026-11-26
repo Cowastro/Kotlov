@@ -12,6 +12,11 @@ class SakovichPelletKits
         'KOTLOV-023095' => ['model' => 'Standart 35 кВт', 'parts' => 'Горелка Praktik и топливный бункер'],
         'KOTLOV-000320' => ['model' => 'Standart 35 кВт', 'parts' => 'Сталь 4 мм · KIPI Rotary 8–36 кВт · бункер 450 л'],
         'KOTLOV-000301' => ['model' => 'Max 50 кВт', 'parts' => 'Сталь 6 мм · KIPI Rotary 10–50 кВт · бункер 700 л'],
+        'KOTLOV-000299' => ['model' => 'Pellet Universal 16 кВт', 'parts' => 'KIPI Rotary · бункер 190 л'],
+        'KOTLOV-000313' => ['model' => 'Pellet Universal 20 кВт', 'parts' => 'KIPI Rotary · бункер 230 л'],
+        'KOTLOV-000316' => ['model' => 'Pellet Universal 26 кВт', 'parts' => 'KIPI Rotary · бункер 300 л'],
+        'KOTLOV-000315' => ['model' => 'Pellet Universal 36 кВт', 'parts' => 'KIPI Rotary · бункер 400 л'],
+        'KOTLOV-000314' => ['model' => 'Pellet Universal 50 кВт', 'parts' => 'KIPI Rotary · бункер 550 л'],
     ];
 
     private const COMPONENTS = [
