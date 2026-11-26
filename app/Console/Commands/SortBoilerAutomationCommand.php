@@ -79,6 +79,8 @@ class SortBoilerAutomationCommand extends Command
             // A card that left the section drops its «Назначение».
             DB::table('product_attribute_values')->where('attribute_id', $attributeId)
                 ->whereNotIn('product_id', DB::table('products')->where('category_id', $sectionId)->select('id'))->delete();
+            // Options of an earlier grouping go: no empty group stays in the filter.
+            DB::table('attribute_options')->where('attribute_id', $attributeId)->whereNotIn('id', array_values($options))->delete();
         }
 
         if ($apply) {

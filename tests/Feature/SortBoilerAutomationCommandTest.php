@@ -47,17 +47,17 @@ class SortBoilerAutomationCommandTest extends TestCase
             ->join('attribute_options', 'attribute_options.id', '=', 'product_attribute_values.option_id')
             ->join('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
             ->where('attributes.name', 'Назначение')->where('product_id', $product->id)->value('attribute_options.name');
-        $this->assertSame('Автоматика для котлов', $group($boiler));
-        $this->assertSame('Автоматика для насосов и клапанов', $group($pump));
+        $this->assertSame('Для твердотопливных котлов', $group($boiler));
+        $this->assertSame('Для насосов', $group($pump));
         $this->assertSame('Комнатные термостаты и программаторы', $group($room));
         $this->assertSame('Регуляторы тяги', $group($draught));
-        $this->assertSame('Автоматика для насосов и клапанов', $group($pumpUnit));
+        $this->assertSame('Для насосов', $group($pumpUnit));
         $this->assertNull($group($head));
         $this->assertSame($burners->id, $kipi->fresh()->category_id);
         $this->assertSame('Пеллетная горелка KIPI ROTARY 15-70 кВт с фланцем', $kipi->fresh()->name);
         $this->assertSame('Бункеры для пеллет', $group($hopper));
         $this->assertSame('Запчасти для газовых котлов', $group($safety));
-        $this->assertSame(['Автоматика для котлов', 'Автоматика для насосов и клапанов', 'Комнатные термостаты и программаторы'], DB::table('attribute_options')
+        $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)
             ->orderBy('attribute_options.sort_order')->limit(3)->pluck('attribute_options.name')->all());
