@@ -5,6 +5,7 @@ use App\Models\PartnerProgramLevel;
 use App\Models\SupplierSync;
 use App\Services\B2bOrders\StaffSelectionReservation;
 use App\Services\Integrations\OneCBridge\OneCPostingReminder;
+use App\Services\Integrations\OneCBridge\OneCReadWindow;
 use App\Services\Orders\OrderDealControlNotifier;
 use App\Services\Orders\OrderStatusSmsNotifier;
 use App\Services\PartnerLevelEvaluator;
@@ -671,43 +672,48 @@ Schedule::command('integration:rematch-source onec')
 
 // «Мост 1С»: the site learns which of the documents the agent created the accountant has posted.
 Schedule::command('onec:check-documents')
-    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
+    ->timezone(OneCReadWindow::TIMEZONE)
     ->everyThirtyMinutes()
-    ->between('07:00', '22:00')
+    ->when(fn (): bool => OneCReadWindow::isOpen())
     ->withoutOverlapping(10);
 
-// «Мост 1С»: the 1C lists for the order form every morning, the orders managers enter in 1C by hand every hour.
+// All automatic 1C reads, including the fallback agent poll, use 09:00–18:00 Minsk daily.
+// Reference and catalog reads start after the office opens; recent orders refresh hourly.
 Schedule::command('onec:sync-references')
-    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
-    ->dailyAt('06:40')
+    ->timezone(OneCReadWindow::TIMEZONE)
+    ->dailyAt('09:05')
+    ->when(fn (): bool => OneCReadWindow::isOpen())
     ->withoutOverlapping(10);
 Schedule::command('onec:sync-references --orders-only --days=3')
-    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
+    ->timezone(OneCReadWindow::TIMEZONE)
     ->hourlyAt(20)
-    ->between('08:00', '21:30')
+    ->when(fn (): bool => OneCReadWindow::isOpen())
     ->withoutOverlapping(10);
 
 // «Мост 1С»: retail and wholesale prices of 1C — the 1C retail price is the price of the site card.
 Schedule::command('onec:sync-prices')
-    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
-    ->cron('15,45 7-21 * * *')
+    ->timezone(OneCReadWindow::TIMEZONE)
+    ->cron('15,45 9-17 * * *')
+    ->when(fn (): bool => OneCReadWindow::isOpen())
     ->withoutOverlapping(10);
 
 // «Мост 1С»: stock and reserve of the selling warehouse, read-only.
 Schedule::command('onec:sync-stock')
-    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
+    ->timezone(OneCReadWindow::TIMEZONE)
     ->everyThirtyMinutes()
-    ->between('07:00', '22:00')
+    ->when(fn (): bool => OneCReadWindow::isOpen())
     ->withoutOverlapping(10);
 
 // «Мост 1С»: the cost of cards after the purchases posted in 1C (the last 10 days, every morning).
 Schedule::command('onec:sync-purchases --days=10')
-    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
-    ->dailyAt('06:50')
+    ->timezone(OneCReadWindow::TIMEZONE)
+    ->dailyAt('09:20')
+    ->when(fn (): bool => OneCReadWindow::isOpen())
     ->withoutOverlapping(10);
 
 // «Мост 1С»: the whole 1C nomenclature (items, groups, links with cards) every morning.
 Schedule::command('onec:sync-items')
-    ->timezone('Europe/Minsk') // the managers' hours, not the server UTC
-    ->dailyAt('06:30')
+    ->timezone(OneCReadWindow::TIMEZONE)
+    ->dailyAt('09:10')
+    ->when(fn (): bool => OneCReadWindow::isOpen())
     ->withoutOverlapping(10);

@@ -10,6 +10,7 @@ use App\Models\OneCReference;
 use App\Models\User;
 use App\Services\Integrations\OneCBridge\OneCReadWatchdog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -49,6 +50,20 @@ class OneCReadWatchdogTest extends TestCase
         $this->travelTo(now()->setTime(23, 0));
         app(OneCReadWatchdog::class)->enqueueDue();
         $this->assertSame($count, OneCAgentTask::count());
+    }
+
+    public function test_fallback_waits_until_nine_and_stops_at_eighteen_minsk_even_on_sunday(): void
+    {
+        $this->ready();
+        $this->travelTo(Carbon::parse('2026-11-29 18:00', 'Europe/Minsk'));
+        app(OneCReadWatchdog::class)->enqueueDue();
+        $this->assertSame(0, OneCAgentTask::count());
+        $this->travelTo(Carbon::parse('2026-11-29 08:59', 'Europe/Minsk'));
+        app(OneCReadWatchdog::class)->enqueueDue();
+        $this->assertSame(0, OneCAgentTask::count());
+        $this->travelTo(Carbon::parse('2026-11-29 09:00', 'Europe/Minsk'));
+        app(OneCReadWatchdog::class)->enqueueDue();
+        $this->assertGreaterThanOrEqual(2, OneCAgentTask::count());
     }
 
     public function test_manager_can_request_a_read_of_stock_from_bridge_page(): void
