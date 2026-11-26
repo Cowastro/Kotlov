@@ -248,6 +248,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::BALL_VALVES => [
+                'Присоединение' => [self::BALL_JOINTS, array_values(array_unique(self::BALL_JOINTS))],
+                'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
+                'Ручка' => [self::BALL_HANDLES, array_values(array_unique(self::BALL_HANDLES))],
+                'Для газа' => [self::BALL_GAS, array_values(self::BALL_GAS)],
+            ],
             self::PP_FITTINGS => [
                 'Тип' => [self::PP_TYPES, array_values(array_unique(self::PP_TYPES))],
                 'Диаметр' => [fn (string $title) => self::pipeDiameter($title, self::PP_DIAMETERS), array_map(fn (int $mm) => $mm.' мм', self::PP_DIAMETERS)],
@@ -792,6 +798,63 @@ final class BoilerAutomationGroups
         }
 
         return null;
+    }
+
+    public const BALL_VALVES = 'sharovye-krany';
+
+    /** Title pattern => «Присоединение» of a ball valve, in filter order; the first match wins. */
+    public const BALL_JOINTS = [
+        '/фланц|ф\/ф|кшцф|кшшс/u' => 'Фланцевое',
+        '/приварк|кшцп|с\/с/u' => 'Под приварку',
+        '/(?<![а-я])пп(?![а-я])|ppr|для пэ|пресс/u' => 'Под пластиковую или пресс-трубу',
+        '/американк|разборн|накидн|гайк|сгон|giacoqest/u' => 'С американкой, гайкой или сгоном',
+        '/нар\.?-нар|нар\.? х [^ ]+ нар|(?<!\/)наружной резьбой(?!.*внутр)|(?<![а-яa-z])(?:нн|рр)(?![а-яa-z])/u' => 'Наружная — наружная резьба',
+        '/нар\.?-вн|вн\.?-нар|внутренней\/наружной|наружной\/внутренней|(?<![а-яa-z])(?:нв|мр)(?![а-яa-z])|муфта-цапка/u' => 'Внутренняя — наружная резьба',
+        '/вн\.?-вн|внутренней резьбой|(?<![а-яa-z])(?:вв|мм)(?![а-яa-z])|муфтов/u' => 'Внутренняя — внутренняя резьба',
+    ];
+
+    /** Title pattern => «Ручка» of a ball valve. */
+    public const BALL_HANDLES = [
+        '/бабочк|(?<![а-я])баб\./u' => 'Бабочка',
+        '/флажок/u' => 'Флажок',
+        '/рычаг|(?<![а-я])рыч\.|ручка(?!-)/u' => 'Рычаг',
+    ];
+
+    /** Title pattern => «Для газа». */
+    public const BALL_GAS = ['/(?<![а-я])газ(?![а-я])/u' => 'Для газа'];
+
+    /** The nominal sizes a ball valve is listed by. */
+    public const BALL_DNS = [10, 15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150, 200];
+
+    public static function dnLabel(int $dn): string
+    {
+        $inch = [10 => '3/8"', 15 => '1/2"', 20 => '3/4"', 25 => '1"', 32 => '1 1/4"', 40 => '1 1/2"', 50 => '2"'][$dn] ?? null;
+
+        return 'Ду '.$dn.($inch ? ' ('.$inch.')' : '');
+    }
+
+    /**
+     * The nominal size of a ball valve: «Ду 25» (the first of «Ду 25/20»), an inch thread («1 1/4"») or the outside
+     * diameter of a PP/PE pipe («ПП 32» = Ду 25).
+     */
+    public static function ballValveDn(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        $dn = null;
+        $pipe = [16 => 10, 18 => 15, 20 => 15, 25 => 20, 32 => 25, 40 => 32, 50 => 40, 63 => 50];
+        if (preg_match('/пресс-соединения ду\s*(\d{2})/u', $title, $m) && isset($pipe[(int) $m[1]])) {
+            $dn = $pipe[(int) $m[1]];
+        } elseif (preg_match('/(?:ду|dn)\s*(\d{2,3})/u', $title, $m)) {
+            $dn = (int) $m[1];
+        } elseif (preg_match('/(?:(?<![а-я])пп(?![а-я])|ppr)\D{0,25}?(?<![\d\/])(16|20|25|32|40|50|63)(?!\d)|(?<![\d\/.,])(16|20|25|32|40|50|63)(?:\s*х[^()]*)?\s*\(для пэ/u', $title, $m)) {
+            $dn = $pipe[(int) ($m[1] !== '' ? $m[1] : $m[2])];
+        } elseif (preg_match('/(?<![\d\/.,])(1 1\/4|1 1\/2|1\/2|3\/4|3\/8|1|2)(?=["″”]|\s*(?:нар|вн|х|x)|\s*$)/u', $title, $m)) {
+            $dn = ['3/8' => 10, '1/2' => 15, '3/4' => 20, '1' => 25, '1 1/4' => 32, '1 1/2' => 40, '2' => 50][$m[1]];
+        } elseif (preg_match('/(?<![\d\/.,])(1\/2|3\/4|3\/8)(?=\s)/u', $title, $m)) {
+            $dn = ['3/8' => 10, '1/2' => 15, '3/4' => 20][$m[1]];
+        }
+
+        return $dn !== null && in_array($dn, self::BALL_DNS, true) ? self::dnLabel($dn) : null;
     }
 
     public const GAS_HOSES = 'gazovye-shlangi';

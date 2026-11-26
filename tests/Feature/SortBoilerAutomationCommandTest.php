@@ -105,6 +105,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $ppElbow = $card('Колено ПП комб. вн. 25х3/4", бел. РТП', $pp);
         $ppBypass = $card('Обвод ПП d25, сер.РТП', $pp);
         $ppPlug = $card('Заглушка резьбовая ПП 1/2" PN25, сер. РТП', $pp);
+        $balls = $section('sharovye-krany');
+        $gasBall = $card('Кран шаровый латунный 11Б27п4 с внутренней/наружной резьбой Ду 32 (газ) ручка-рычаг Цветлит', $balls);
+        $inchBall = $card('Кран шаровый 1" вн.-вн. бабочка PN40, LD', $balls);
+        $flangeBall = $card('Кран шаровый фланцевый КШЦФ Ру 16 Ду 125/125 LD', $balls);
+        $ppBall = $card('Кран шар. ПП 32 сер. РТП', $balls);
+        $peBall = $card('Кран шар. 25 х 3/4" нар. (для ПЭ труб), AV Engineering', $balls);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -248,6 +254,19 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('25 мм', $value('Диаметр', $ppBypass));
         $this->assertSame('Заглушки', $value('Тип', $ppPlug));
         $this->assertNull($value('Диаметр', $ppPlug));
+        $this->assertSame('Внутренняя — наружная резьба', $value('Присоединение', $gasBall));
+        $this->assertSame('Ду 32 (1 1/4")', $value('Диаметр (Ду)', $gasBall));
+        $this->assertSame('Рычаг', $value('Ручка', $gasBall));
+        $this->assertSame('Для газа', $value('Для газа', $gasBall));
+        $this->assertSame('Внутренняя — внутренняя резьба', $value('Присоединение', $inchBall));
+        $this->assertSame('Ду 25 (1")', $value('Диаметр (Ду)', $inchBall));
+        $this->assertSame('Бабочка', $value('Ручка', $inchBall));
+        $this->assertNull($value('Для газа', $inchBall));
+        $this->assertSame('Фланцевое', $value('Присоединение', $flangeBall));
+        $this->assertSame('Ду 125', $value('Диаметр (Ду)', $flangeBall));
+        $this->assertSame('Под пластиковую или пресс-трубу', $value('Присоединение', $ppBall));
+        $this->assertSame('Ду 25 (1")', $value('Диаметр (Ду)', $ppBall));
+        $this->assertSame('Ду 20 (3/4")', $value('Диаметр (Ду)', $peBall));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
