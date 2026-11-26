@@ -26,7 +26,8 @@ final class BoilerAutomationGroups
         '/^датчик протечки|манипулятор шарового крана|модуль съемный управляющий hommyn|кабель соединительный hommyn/u' => 'sistemy-zashchity-ot-protechek',
         '/^клапан [23]-х ходовой|^привод поворотный|^электропривод arm/u' => 'smesitelnye-klapany-i-uzly',
         '/^комплект из двух отопительных контуров/u' => 'komplekty-podklyucheniya',
-        '/панель изолирующая|термостат предохранительный|комплект трехходового крана с датчиком бойлера/u' => 'zapchasti-dlya-kotlov',
+        '/панель изолирующая|термостат предохранительный|комплект трехходового крана с датчиком бойлера|^комплект подключения бойлера к электрическому котлу/u' => 'zapchasti-dlya-kotlov',
+        '/^(термометр|термоманометр)/u' => 'manometry-i-termometry',
         '/^насос-автомат/u' => 'nasosnyie-stantsii',
         '/^(вместе с фланцем|пеллетная горелка kipi rotary)/u' => 'pelletnye-gorelki',
         '/^пульт управления термофор/u' => 'aksessuary-dlya-bani',
@@ -96,12 +97,36 @@ final class BoilerAutomationGroups
         '/baxi|fondital|ferroli|thermex|vaillant|bosch|buderus|navien|ariston|protherm|трехходов|трёхходов|кран подпитки|подающей магистрали/u' => 'Запчасти для газовых котлов',
     ];
 
+    public const SENSORS = 'datchiki';
+
+    /** «Назначение» options of «Датчики», in filter order. */
+    public const SENSOR_ORDER = [
+        'Уличные (наружные) датчики',
+        'Датчики бойлера и ГВС',
+        'Датчики котла и теплоносителя',
+        'Датчики дымовых газов',
+        'Датчики и реле давления',
+        'Термостаты перегрева',
+        'Прочее',
+    ];
+
+    /** Title pattern => «Назначение» inside «Датчики». */
+    public const SENSOR_GROUPS = [
+        '/наружн|уличн|погодн|5227|qac/u' => 'Уличные (наружные) датчики',
+        '/дымов|pt-1000/u' => 'Датчики дымовых газов',
+        '/давлен|датчика?-реле|реле давления/u' => 'Датчики и реле давления',
+        '/перегрев|тк24|термик/u' => 'Термостаты перегрева',
+        '/бойлер|гвс|горячей воды|водонагрев|as1/u' => 'Датчики бойлера и ГВС',
+        '/датчик/u' => 'Датчики котла и теплоносителя',
+    ];
+
     /** Section slug => [patterns, option order] of its «Назначение» filter. */
     public static function filters(): array
     {
         return [
             self::SECTION => [self::GROUPS, self::ORDER],
             self::PARTS => [self::PART_GROUPS, self::PART_ORDER],
+            self::SENSORS => [self::SENSOR_GROUPS, self::SENSOR_ORDER],
         ];
     }
 
