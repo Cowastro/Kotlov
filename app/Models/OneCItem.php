@@ -37,8 +37,7 @@ class OneCItem extends Model
     public static function grossCostLabel(?self $item): string
     {
         $gross = $item?->cost_gross;
-        return 'Себестоимость 1С с НДС за шт.: '.($gross === null ? 'нет данных' : number_format($gross, 2, ',', ' ').' BYN')
-            .($item?->cost_from_rub ? ' · пересчёт из RUB по курсу НБРБ на дату поступления' : '');
+        return 'Себестоимость 1С с НДС за шт.: '.($gross === null ? 'нет данных' : number_format($gross, 2, ',', ' ').' BYN');
     }
 
     public static function fromExchangeKey(?string $key): ?self
