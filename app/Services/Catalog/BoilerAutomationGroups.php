@@ -200,7 +200,7 @@ final class BoilerAutomationGroups
         return [
             self::METERS => ['Диаметр (Ду)' => [$diameters, array_values($diameters)]],
             self::GAS_METERS => [
-                'Серия' => [self::GAS_SERIES, array_values(array_unique(self::GAS_SERIES))],
+                'Серия' => [self::GAS_SERIES, self::GAS_SERIES_ORDER],
                 'Типоразмер' => [self::GAS_SIZES, array_values(self::GAS_SIZES)],
                 'Передача данных' => [self::GAS_DATA, array_values(array_unique(self::GAS_DATA))],
             ],
@@ -208,6 +208,17 @@ final class BoilerAutomationGroups
     }
 
     public const GAS_METERS = 'schetchiki-gaza';
+
+    /** «Серия» options in filter order: the meters by popularity, accessories last. */
+    public const GAS_SERIES_ORDER = [
+        'БелОМО СГД',
+        'БелОМО КАТА',
+        'БелОМО СКАТ',
+        'БелОМО ВЕГА',
+        'БелОМО СГМН',
+        'Другие производители',
+        'Аксессуары',
+    ];
 
     /** Title pattern => «Серия» inside «Счётчики газа»; accessories have their own option. */
     public const GAS_SERIES = [
