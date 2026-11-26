@@ -40,7 +40,7 @@ class WholeOrderFulfillment
             return ['item' => $item, 'route' => $defaults['fulfillment_route'] ?: 'clarifying',
                 'supplier_id' => $defaults['supplier_id'], 'price' => $defaults['purchase_price'],
                 'own_cost_label' => $defaults['fulfillment_route'] === 'own_stock'
-                    ? 'Себестоимость 1С с НДС за шт.: '.(isset($offer['price']) ? number_format($offer['price'], 2, ',', ' ').' BYN' : 'нет данных')
+                    ? ($offer['own_cost_label'] ?? \App\Models\OneCItem::grossCostLabel(null))
                     : null,
                 'available' => $available, 'missing' => $available === null ? null : $item->quantity - $available,
                 'status' => $item->fulfillment_confirmed_at ? $item->fulfillment_availability_status : $status,

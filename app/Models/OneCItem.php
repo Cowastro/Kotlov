@@ -34,6 +34,13 @@ class OneCItem extends Model
         'stock_synced_at' => 'datetime',
     ];
 
+    public static function grossCostLabel(?self $item): string
+    {
+        $gross = $item?->cost_gross;
+        return 'Себестоимость 1С с НДС за шт.: '.($gross === null ? 'нет данных' : number_format($gross, 2, ',', ' ').' BYN')
+            .($item?->cost_from_rub ? ' · пересчёт из RUB по курсу НБРБ на дату поступления' : '');
+    }
+
     public static function fromExchangeKey(?string $key): ?self
     {
         return $key ? self::query()->where('ref_key', strtolower(explode('#', $key, 2)[0]))->first() : null;

@@ -528,6 +528,10 @@ class OneCOrderExportTest extends TestCase
         $plan = app(\App\Services\Orders\WholeOrderFulfillment::class)->preview($item->order);
         $this->assertSame(177.23, $plan[0]['price']);
         $this->assertStringContainsString('177,23 BYN', $plan[0]['own_cost_label']);
+        $this->assertStringNotContainsString('пересчёт', $plan[0]['own_cost_label']);
+        OneCItem::where('ref_key', self::ITEM)->update(['cost_from_rub' => true]);
+        $converted = app(\App\Services\Orders\WholeOrderFulfillment::class)->preview($item->order);
+        $this->assertStringContainsString('177,23 BYN · пересчёт из RUB по курсу НБРБ на дату поступления', $converted[0]['own_cost_label']);
 
         // Filled in by itself after the stock read: «Наш склад» at the 1C cost, not confirmed — the manager confirms.
         $this->assertSame(1, app(OneCOwnStockRouting::class)->fillOpenOrders());
