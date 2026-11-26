@@ -49,6 +49,8 @@ class SortBoilerAutomationCommandTest extends TestCase
         $kata = $card('Счётчик газа БелОМО КАТА – G6 RK – 2 (NB-IoT)', $gas);
         $sgd = $card('Счётчик газа БелОМО СГД-3Т-1-1-G4 (левый), межосевое расстояние 200 мм', $gas);
         $hose = $card('Шланг для газа ADVIXON Г-Ш 1/2"-1/2" (150см)', $gas);
+        $steelHose = $card('Газовый шланг ZURFLEX DN16, гайка/штуцер, 0,6 м', $hoses);
+        $insert = $card('Вставка диэлектрическая 1/2" ш/ш', $hoses);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -100,6 +102,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('G4', $value('Типоразмер', $sgd));
         $this->assertSame('Без дистанционной передачи', $value('Передача данных', $sgd));
         $this->assertSame($hoses->id, $hose->fresh()->category_id);
+        $this->assertSame('Резиновые и полимерные', $value('Тип', $hose));
+        $this->assertSame('1,2–1,5 м', $value('Длина', $hose));
+        $this->assertSame('Металлические (нержавеющая сталь)', $value('Тип', $steelHose));
+        $this->assertSame('До 1 м', $value('Длина', $steelHose));
+        $this->assertSame('Диэлектрические вставки', $value('Тип', $insert));
+        $this->assertNull($value('Длина', $insert));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)

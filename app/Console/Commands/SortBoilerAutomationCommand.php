@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Keeps the boiler automation, parts, sensors, gauges and meters sections searchable: strays leave for their own
+ * Keeps the boiler automation, parts, sensors, gauges, meters and gas hose sections searchable: strays leave for their own
  * sections, blowers go to «Вентиляторы наддува», and every card gets its «Назначение» (and for meters its «Диаметр»)
  * for the filter. Runs daily so new supplier cards are sorted too.
  */

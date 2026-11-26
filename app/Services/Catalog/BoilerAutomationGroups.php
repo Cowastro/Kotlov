@@ -204,6 +204,10 @@ final class BoilerAutomationGroups
                 'Типоразмер' => [self::GAS_SIZES, array_values(self::GAS_SIZES)],
                 'Передача данных' => [self::GAS_DATA, array_values(array_unique(self::GAS_DATA))],
             ],
+            self::GAS_HOSES => [
+                'Тип' => [self::HOSE_TYPES, array_values(self::HOSE_TYPES)],
+                'Длина' => [self::HOSE_LENGTHS, array_values(self::HOSE_LENGTHS)],
+            ],
         ];
     }
 
@@ -244,6 +248,22 @@ final class BoilerAutomationGroups
     public const GAS_DATA = [
         '/nb-iot/u' => 'Дистанционная (NB-IoT)',
         '/^сч[её]тчик газа/u' => 'Без дистанционной передачи',
+    ];
+
+    public const GAS_HOSES = 'gazovye-shlangi';
+
+    /** Title pattern => «Тип» inside «Газовые шланги». */
+    public const HOSE_TYPES = [
+        '/^вставка диэлектрическ/u' => 'Диэлектрические вставки',
+        '/cemflex|zurflex|нерж|сильфон|металл/u' => 'Металлические (нержавеющая сталь)',
+        '/шланг/u' => 'Резиновые и полимерные',
+    ];
+
+    /** Title pattern => «Длина» of a gas hose («1,5 м» or «150см»). */
+    public const HOSE_LENGTHS = [
+        '/(?<![\d,.])(?:0[,.]\d+|1(?:[,.]0)?)\s*м(?![а-я])|(?<![\d,.])\d{2}\s*см/u' => 'До 1 м',
+        '/(?<![\d,.])1[,.][1-9]\s*м(?![а-я])|(?<![\d,.])1[1-9]\d\s*см/u' => '1,2–1,5 м',
+        '/(?<![\d,.])[23](?:[,.]\d)?\s*м(?![а-я])|(?<![\d,.])[23]\d\d\s*см/u' => '2–3 м',
     ];
 
     public static function move(string $title): ?string
