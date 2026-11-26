@@ -3,6 +3,7 @@
 namespace App\Services\Integrations\OneCBridge;
 
 use App\Models\Order;
+use App\Services\Orders\OrderDeliveryPreparation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 
@@ -47,6 +48,7 @@ class OneCOrderJourney
         $exported = filled($order->onec_order_guid) && ! $order->onec_deleted;
         $waiting = $this->tasks->activeFor($order, OrderTaskHandler::TYPE) !== null;
         $found = $exported || $waiting ? null : $this->matcher->found($order);
+        $preparationBlocker = app(OrderDeliveryPreparation::class)->blocker($order);
         $steps[] = match (true) {
             $exported => ['title' => 'Заказ клиента в 1С', 'state' => self::DONE,
                 'detail' => $order->onec_order_number.($order->onec_profile_id ? ' · создан с сайта' : ' · связан с заведённым вручную').self::at($order->onec_exported_at), 'hint' => null],
@@ -54,7 +56,7 @@ class OneCOrderJourney
             $found !== null => ['title' => 'Заказ клиента в 1С', 'state' => self::TODO, 'detail' => 'найден в 1С: '.$found['ref']->description,
                 'hint' => 'Нажмите «Найден в 1С: '.$found['ref']->description.'» и свяжите, если это тот же заказ.'],
             default => ['title' => 'Заказ клиента в 1С', 'state' => $itemsOk ? self::TODO : self::LATER, 'detail' => 'не создан',
-                'hint' => $itemsOk ? 'Нажмите «Создать заказ в 1С».' : null],
+                'hint' => $preparationBlocker ?: ($itemsOk ? 'Нажмите «Создать заказ в 1С».' : null)],
         };
 
         // 3. Supplier orders, when lines are bought from suppliers.
@@ -105,6 +107,10 @@ class OneCOrderJourney
     /** The first thing to do, or null when nothing waits for the manager. */
     public function next(Order $order): ?string
     {
+        if ($order->status === 'processing' && blank($order->onec_order_guid) && ! $this->tasks->activeFor($order, OrderTaskHandler::TYPE)
+            && ($reason = app(OrderDeliveryPreparation::class)->destinationBlocker($order))) {
+            return $reason;
+        }
         if (OneCPostingReminder::needed($order)) {
             return 'Откройте заказ '.($order->onec_order_number ?: $order->number).' в 1С, проверьте товары, действия строк и доставку и проведите его. Затем нажмите «Проверить проведение» в кнопке «Провести в 1С». Обеспечение и отгрузку дальше ведут в 1С.';
         }

@@ -375,7 +375,7 @@ class CheckoutController extends Controller
                 $request->session()->getId(),
             );
 
-            if ($evropochtaQuote === null) {
+            if ($evropochtaQuote === null || blank($evropochtaQuote['city'] ?? null) || blank($evropochtaQuote['address'] ?? null)) {
                 throw ValidationException::withMessages(['evropochta_branch' => 'Тариф устарел. Проверьте новый расчёт перед оформлением.']);
             }
         }

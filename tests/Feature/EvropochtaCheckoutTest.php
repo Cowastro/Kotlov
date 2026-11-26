@@ -21,6 +21,20 @@ class EvropochtaCheckoutTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_website_rejects_evropochta_without_branch_and_confirmed_tariff(): void
+    {
+        Event::fake([NewOrderCreated::class]);
+        $product = $this->product();
+        $this->mockCarrier();
+        $this->withSession($this->cart($product))->withHeader('User-Agent', 'Mozilla/5.0')
+            ->post(route('checkout.store'), [
+                'order_token' => 'missing-branch', 'customer_name' => 'Покупатель', 'customer_phone' => '+375291112233',
+                'delivery_type' => 'evropochta', 'payment_type' => 'evropochta_cod',
+            ])->assertSessionHasErrors(['evropochta_branch', 'evropochta_token']);
+        $this->assertDatabaseCount('orders', 0);
+        Event::assertNotDispatched(NewOrderCreated::class);
+    }
+
     public function test_regional_branch_quote_is_rounded_and_saved_with_the_carrier_cost(): void
     {
         Event::fake([NewOrderCreated::class]);
