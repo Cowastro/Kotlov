@@ -217,7 +217,8 @@ class SyncSantehskladPricelistCommand extends Command
                 $candidates = $byName[$parser->nameKey($row['name'])] ?? [];
             }
             $candidates = collect($candidates)->unique('id')->values();
-            $linkedId = (int) ($existingLinks->get($row['article_key'])?->product_id ?? 0);
+            $existingLink = $existingLinks->get($row['article_key']);
+            $linkedId = (int) ($existingLink?->product_id ?? 0);
             $ranked = $candidates->sortByDesc(fn (Product $product): int => $this->completenessScore($product))->values();
             $product = $linkedId > 0
                 ? ($ranked->firstWhere('id', $linkedId) ?? $ranked->first())
@@ -226,6 +227,7 @@ class SyncSantehskladPricelistCommand extends Command
             $row['candidate_ids'] = $ranked->pluck('id')->map(fn ($id): int => (int) $id)->all();
             $row['match_reason'] = match (true) {
                 ! $product => 'unmatched',
+                $linkedId === (int) $product->id && $existingLink?->match_confidence === 'manual_price_list' => 'manual_price_list',
                 $linkedId > 0 => 'existing_supplier_link',
                 $candidates->count() > 1 => 'exact_identity_ranked_duplicate',
                 str_starts_with($row['identity'], 'accessory_') => 'exact_accessory_name',
