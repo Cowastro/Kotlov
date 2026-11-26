@@ -248,6 +248,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::PP_FITTINGS => [
+                'Тип' => [self::PP_TYPES, array_values(array_unique(self::PP_TYPES))],
+                'Диаметр' => [fn (string $title) => self::pipeDiameter($title, self::PP_DIAMETERS), array_map(fn (int $mm) => $mm.' мм', self::PP_DIAMETERS)],
+                'Соединение' => [self::PP_JOINTS, array_values(array_unique(self::PP_JOINTS))],
+                'Цвет' => [self::PP_COLORS, array_values(self::PP_COLORS)],
+            ],
             self::BUFFER_TANKS => [
                 'Тип' => [self::BUFFER_TYPES, array_values(self::BUFFER_TYPES)],
             ],
@@ -735,6 +741,58 @@ final class BoilerAutomationGroups
         '/(?<![a-z])nado(?![a-z])/u' => 'Со встроенным баком ГВС',
         '/./u' => 'Буферные ёмкости и теплоаккумуляторы',
     ];
+
+    public const PP_FITTINGS = 'fitingi-dlya-polipropilenovykh-trub';
+
+    /** Title pattern => «Тип» inside «Фитинги для полипропиленовых труб», in filter order; the first match wins. */
+    public const PP_TYPES = [
+        '/кран|вентиль|клапан/u' => 'Краны и вентили',
+        '/^(?:п\/п )?тройник|тройной/u' => 'Тройники',
+        '/крестовин/u' => 'Крестовины',
+        '/отвод|колено|угол|уголок/u' => 'Отводы и колена',
+        '/обвод/u' => 'Обводы',
+        '/муфт|американк|ниппел|соединение|евроконус|переход/u' => 'Муфты, американки и переходники',
+        '/заглушк/u' => 'Заглушки',
+        '/компенсатор/u' => 'Компенсаторы',
+        '/фильтр/u' => 'Фильтры',
+        '/фланец|бурт/u' => 'Фланцы и бурты',
+        '/коллектор|узел/u' => 'Коллекторы и узлы',
+        '/седло/u' => 'Сёдла',
+        '/опора|планка|креплен/u' => 'Опоры и крепления',
+        '/./u' => 'Инструмент и прочее',
+    ];
+
+    /** Title pattern => «Соединение» of a PP fitting: union, thread or plain socket weld. */
+    public const PP_JOINTS = [
+        '/американк|разборн|накидн|евроконус/u' => 'Разборное (американка)',
+        '/внутренн|(?<![а-я])вн[.\/-]|(?<![а-я])вр(?![а-я])/u' => 'С внутренней резьбой',
+        '/наружн|(?<![а-я])нар[.\/-]|(?<![а-я])нр(?![а-я])/u' => 'С наружной резьбой',
+        '/^(?!.*(опора|планка|зачистк|кольцо|коллектор|узел|комплект|фланец|бурт))./u' => 'Под сварку',
+    ];
+
+    /** Title pattern => «Цвет» of a PP fitting. */
+    public const PP_COLORS = [
+        '/(?<![а-я])бел(ый|ая|ое|ые|\.|,|\s|$)/u' => 'Белый',
+        '/(?<![а-я])сер(ый|ая|ое|ые|\.|,|\s|$)/u' => 'Серый',
+    ];
+
+    /** The PP pipe sizes, mm. */
+    public const PP_DIAMETERS = [16, 20, 25, 32, 40, 50, 63, 75, 90, 110, 125, 160];
+
+    /** The first pipe size of a fitting title out of $sizes: «25х3/4"», «d25», «Ду 20», «Заглушка 40», «32х20х32». */
+    public static function pipeDiameter(string $title, array $sizes): ?string
+    {
+        $title = preg_replace('/(?<![\w])(?:d|ду\s?)(?=\d)/u', ' ', mb_strtolower(trim(html_entity_decode($title))));
+        if (preg_match_all('/(?<![\w.,\/])(\d{2,3})(?=\s*(?:[xх×*\/,]|мм|$|\s|\())/u', $title, $m)) {
+            foreach ($m[1] as $mm) {
+                if (in_array((int) $mm, $sizes, true)) {
+                    return (int) $mm.' мм';
+                }
+            }
+        }
+
+        return null;
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 

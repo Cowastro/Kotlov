@@ -99,6 +99,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $onOff = $card('Сплит-система Haier HSU-12HFF103/R3-B / HSU-12HUF103/R3', $acs);
         $cassette = $card('Кассетный кондиционер Electrolux EACC-48H/UP3/N3', $acs);
         $acOutdoor = $card('Внешний блок Electrolux EACO/I-28 FMI-4/N8-ERP', $acs);
+        $pp = $section('fitingi-dlya-polipropilenovykh-trub');
+        $ppUnion = $card('Американка ПП нар. 32х1 1/4", бел. BAREON', $pp);
+        $ppTee = $card('Тройник полипропиленовый переходной 40х32х40 серый PRO AQUA', $pp);
+        $ppElbow = $card('Колено ПП комб. вн. 25х3/4", бел. РТП', $pp);
+        $ppBypass = $card('Обвод ПП d25, сер.РТП', $pp);
+        $ppPlug = $card('Заглушка резьбовая ПП 1/2" PN25, сер. РТП', $pp);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -228,6 +234,20 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('On/Off', $value('Компрессор', $cassette));
         $this->assertSame('Наружные блоки мульти-сплит', $value('Тип', $acOutdoor));
         $this->assertNull($value('Площадь помещения', $acOutdoor));
+        $this->assertSame('Муфты, американки и переходники', $value('Тип', $ppUnion));
+        $this->assertSame('32 мм', $value('Диаметр', $ppUnion));
+        $this->assertSame('Разборное (американка)', $value('Соединение', $ppUnion));
+        $this->assertSame('Белый', $value('Цвет', $ppUnion));
+        $this->assertSame('Тройники', $value('Тип', $ppTee));
+        $this->assertSame('40 мм', $value('Диаметр', $ppTee));
+        $this->assertSame('Под сварку', $value('Соединение', $ppTee));
+        $this->assertSame('Серый', $value('Цвет', $ppTee));
+        $this->assertSame('Отводы и колена', $value('Тип', $ppElbow));
+        $this->assertSame('С внутренней резьбой', $value('Соединение', $ppElbow));
+        $this->assertSame('Обводы', $value('Тип', $ppBypass));
+        $this->assertSame('25 мм', $value('Диаметр', $ppBypass));
+        $this->assertSame('Заглушки', $value('Тип', $ppPlug));
+        $this->assertNull($value('Диаметр', $ppPlug));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
