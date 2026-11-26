@@ -488,7 +488,7 @@ class ProductsTable
             ))
             ->recordActions([
                 ProductOneCItemAction::make()->iconButton()->tooltip('Товар в 1С: привязать или создать'),
-                RequestSupplierReserveAction::make()->button()->outlined()->size('sm'),
+                RequestSupplierReserveAction::make()->iconButton()->size('sm')->tooltip('Запросить резерв'),
                 Action::make('publish_offer_card')
                     ->label('Опубликовать')
                     ->icon('heroicon-o-check-badge')
