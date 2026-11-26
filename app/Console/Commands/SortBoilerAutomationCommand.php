@@ -37,8 +37,13 @@ class SortBoilerAutomationCommand extends Command
         foreach ($products as $product) {
             // KIPI ROTARY burners came from the price list named only «вместе с фланцем 15-70 kW».
             if (preg_match('/^вместе с фланцем (\d+-\d+) kw$/ui', trim($product->name), $m)) {
+                $old = trim($product->name);
                 $product->name = 'Пеллетная горелка KIPI ROTARY '.$m[1].' кВт с фланцем';
-                DB::table('products')->where('id', $product->id)->update(['name' => $product->name, 'h1' => $product->name, 'updated_at' => now()]);
+                $meta = DB::table('products')->where('id', $product->id)->first(['meta_title', 'meta_description']);
+                DB::table('products')->where('id', $product->id)->update(['name' => $product->name, 'h1' => $product->name,
+                    'meta_title' => $meta->meta_title === null ? null : str_replace($old, $product->name, $meta->meta_title),
+                    'meta_description' => $meta->meta_description === null ? null : str_replace($old, $product->name, $meta->meta_description),
+                    'updated_at' => now()]);
                 $this->line("rename {$product->id} → {$product->name}");
             }
             $target = Groups::move($product->name);
