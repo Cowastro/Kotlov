@@ -35,8 +35,8 @@ use App\Services\Integrations\OneCBridge\OneCStock;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Orders\OrderDeliveryPreparation;
 use App\Services\Orders\OrderItemAvailabilityChecker;
+use App\Services\Orders\OrderItemAvailabilityDisplay;
 use App\Services\Orders\OrderItemFulfillmentManager;
-use App\Services\Orders\OrderItemSupplyContextResolver;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierReservationMailService;
@@ -57,7 +57,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 
@@ -438,73 +437,10 @@ class OrderInfolist
                                     TextEntry::make('supply_stock_summary')
                                         ->label('Наличие')
                                         ->columnSpan(2)
-                                        ->state(function (OrderItem $record): string {
-                                            if ($record->fulfillment_availability_status) {
-                                                return $record->fulfillmentAvailabilityLabel() ?? 'Решение менеджера зафиксировано';
-                                            }
-
-                                            $snapshot = $record->supplyContext()['stock_label'];
-                                            if (! $record->current_availability_checked_at) {
-                                                $imported = app(OrderItemSupplyContextResolver::class)->resolveCurrent($record);
-                                                if (data_get($imported, 'stock_updated_at')) {
-                                                    return $snapshot.' · по текущей загрузке: '.$imported['stock_label'];
-                                                }
-
-                                                return $snapshot;
-                                            }
-
-                                            $current = (string) ($record->currentAvailabilityForDisplay()['stock_label'] ?? 'Неизвестно');
-                                            $current = preg_replace('/^Сейчас\s+/u', '', $current) ?: $current;
-                                            $current = mb_strtolower(mb_substr($current, 0, 1)).mb_substr($current, 1);
-
-                                            return $snapshot.' · сейчас: '.$current;
-                                        })
-                                        ->helperText(function (OrderItem $record): ?string {
-                                            if ($record->fulfillment_availability_status) {
-                                                $current = $record->current_availability_checked_at
-                                                    ? (string) data_get($record->currentAvailabilityForDisplay(), 'stock_label', 'Неизвестно')
-                                                    : null;
-                                                $sourceUpdatedAt = data_get($record->currentAvailabilityForDisplay(), 'source_updated_at');
-
-                                                return collect([
-                                                    $record->fulfillment_confirmed_at
-                                                        ? 'Подтвердил '.($record->fulfillmentConfirmedBy?->name ?? 'система')
-                                                            .' · '.$record->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
-                                                        : 'Решение менеджера зафиксировано',
-                                                    $current ? 'По актуальной базе: '.$current : null,
-                                                    $record->current_availability_checked_at
-                                                        ? 'проверено '.$record->current_availability_checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
-                                                        : null,
-                                                    $sourceUpdatedAt ? 'данные склада от '.Carbon::parse($sourceUpdatedAt)->timezone('Europe/Minsk')->format('d.m.Y H:i') : null,
-                                                ])->filter()->implode(' · ');
-                                            }
-
-                                            if (! $record->current_availability_checked_at) {
-                                                return 'По данным загрузки; исполнение менеджером ещё не подтверждено. Актуальное наличие ещё не уточняли';
-                                            }
-
-                                            $sourceUpdatedAt = data_get($record->currentAvailabilityForDisplay(), 'source_updated_at');
-                                            $parts = [
-                                                'Сверено с загрузкой '.$record->current_availability_checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i'),
-                                                $record->currentAvailabilityCheckedBy?->name,
-                                                'Исполнение менеджером ещё не подтверждено',
-                                                $sourceUpdatedAt ? 'данные склада от '.Carbon::parse($sourceUpdatedAt)->timezone('Europe/Minsk')->format('d.m.Y H:i') : null,
-                                            ];
-
-                                            return collect($parts)->filter()->implode(' · ');
-                                        })
-                                        ->color(fn (OrderItem $record): string => $record->fulfillment_availability_status
-                                            ? match ($record->fulfillment_availability_status) {
-                                                'available', 'reserved' => 'success',
-                                                'ordered' => 'info',
-                                                'unavailable' => 'danger',
-                                                default => 'gray',
-                                            }
-                                            : match (data_get($record->currentAvailabilityForDisplay(), 'is_available')) {
-                                                true => 'success',
-                                                false => 'danger',
-                                                default => 'warning',
-                                            })
+                                        ->state(fn (OrderItem $record): string => app(OrderItemAvailabilityDisplay::class)->label($record))
+                                        ->helperText(fn (OrderItem $record): string => app(OrderItemAvailabilityDisplay::class)->details($record))
+                                        ->color(fn (OrderItem $record): string => app(OrderItemAvailabilityDisplay::class)->color($record))
+                                        ->tooltip(fn (OrderItem $record): ?string => app(OrderItemAvailabilityDisplay::class)->history($record))
                                         ->weight('bold')
                                         ->suffixAction(
                                             Action::make('refreshCurrentAvailability')

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -9,11 +10,14 @@ use App\Models\OneCItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\User;
 use App\Services\Orders\OrderItemAvailabilityChecker;
+use App\Services\Orders\OrderItemAvailabilityDisplay;
 use App\Services\Orders\OrderItemFulfillmentPicker;
 use App\Services\Orders\OrderItemSupplyContextResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class OrderOneCStockSourceTest extends TestCase
@@ -84,5 +88,47 @@ class OrderOneCStockSourceTest extends TestCase
         $this->assertNull($context['stock_quantity']);
         $this->assertNull($context['is_available']);
         $this->assertStringContainsString('неоднозначна', $context['stock_label']);
+    }
+
+    public function test_order_card_shows_current_stock_as_primary_and_keeps_history_separate(): void
+    {
+        [$item, $stock] = $this->fixture();
+        $item->order->update(['delivery_type' => 'pickup', 'payment_type' => 'cash', 'payment_status' => 'pending']);
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        $page = Livewire::test(ViewOrder::class, ['record' => $item->order_id])
+            ->assertSeeText('Свободно: 1 шт. · 1С, склад Основной')
+            ->assertSeeText('Исполнение менеджером ещё не подтверждено')
+            ->assertDontSeeText('Наличие не было известно · сейчас:');
+        $display = app(OrderItemAvailabilityDisplay::class);
+        $this->assertStringNotContainsString('Наличие не было известно', $display->label($item));
+        $this->assertStringStartsWith('При оформлении заказа:', $display->history($item));
+        $this->assertNull($item->fresh()->fulfillment_confirmed_at);
+        $stock->update(['stock_on_hand' => 0, 'stock_reserved' => 0]);
+        $page->call('$refresh')->assertSeeText('Свободно: 0 шт. · 1С, склад Основной');
+        $this->assertSame('danger', $display->color($item->fresh()));
+    }
+
+    public function test_saved_manager_decision_cannot_override_current_stock_or_its_color(): void
+    {
+        [$item, $stock] = $this->fixture();
+        $item->forceFill(['fulfillment_availability_status' => 'reserved', 'fulfillment_confirmed_at' => now()])->save();
+        $stock->update(['stock_on_hand' => 0, 'stock_reserved' => 0]);
+        $display = app(OrderItemAvailabilityDisplay::class);
+        $this->assertSame('Свободно: 0 шт. · 1С, склад Основной', $display->label($item));
+        $this->assertSame('danger', $display->color($item));
+        $this->assertStringContainsString('Исполнение:', $display->details($item));
+        $this->assertNotNull($item->fresh()->fulfillment_confirmed_at);
+    }
+
+    public function test_stale_stock_and_shortage_are_not_shown_as_ready(): void
+    {
+        [$item, $stock] = $this->fixture();
+        $display = app(OrderItemAvailabilityDisplay::class);
+        $item->update(['quantity' => 2]);
+        $this->assertSame('warning', $display->color($item));
+        $stock->update(['stock_synced_at' => now()->subDay()]);
+        $this->assertStringContainsString('Остаток 1С устарел', $display->label($item));
+        $this->assertSame('warning', $display->color($item));
+        $this->assertStringNotContainsString('99 шт.', $display->label($item));
     }
 }
