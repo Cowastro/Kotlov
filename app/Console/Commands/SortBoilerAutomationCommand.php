@@ -21,6 +21,9 @@ class SortBoilerAutomationCommand extends Command
 
     private int $grouped = 0;
 
+    /** @var array<int, list<int>> section id => its subsection ids */
+    private array $members = [];
+
     /** @var array<string, array<string, int>> */
     private array $counts = [];
 
@@ -33,12 +36,19 @@ class SortBoilerAutomationCommand extends Command
             return self::FAILURE;
         }
         $sources = collect([...array_keys(Groups::filters()), ...array_keys(Groups::extraFilters())])->unique()->map(fn (string $slug) => $sections[$slug] ?? null)->filter()->values()->all();
+        // A section listing its subsections' cards (see Groups::WITH_SUBSECTIONS) fills its filters for them too.
+        $this->members = [];
+        foreach (Groups::WITH_SUBSECTIONS as $slug) {
+            if (isset($sections[$slug])) {
+                $this->members[(int) $sections[$slug]] = DB::table('categories')->where('parent_id', $sections[$slug])->pluck('id')->map(fn ($id) => (int) $id)->all();
+            }
+        }
         $apply = (bool) $this->option('apply');
         $moved = $this->grouped = 0;
         $this->counts = [];
 
         DB::beginTransaction();
-        $products = DB::table('products')->whereIn('category_id', $sources)->orderBy('id')->get(['id', 'name', 'category_id']);
+        $products = DB::table('products')->whereIn('category_id', [...$sources, ...array_merge([], ...array_values($this->members))])->orderBy('id')->get(['id', 'name', 'category_id']);
         foreach ($products as $product) {
             // KIPI ROTARY burners came from the price list named only «вместе с фланцем 15-70 kW».
             if (preg_match('/^вместе с фланцем (\d+-\d+) kw$/ui', trim($product->name), $m)) {
@@ -97,17 +107,17 @@ class SortBoilerAutomationCommand extends Command
      * One select filter of a section: its options in $order, each card of the section on the first matching rule
      * (or «Прочее» when $fallback; otherwise a card no rule knows has no value).
      */
-    private function fill(Collection $products, string $slug, int $sectionId, string $name, array $rules, array $order, int $sort, bool $fallback): void
+    private function fill(Collection $products, string $slug, int $sectionId, string $name, array|\Closure $rules, array $order, int $sort, bool $fallback): void
     {
         $attributeId = $this->filterAttribute($sectionId, $name, $sort);
         $options = [];
-        foreach (array_values(array_unique([...$order, ...array_values($rules)])) as $i => $option) {
+        foreach (array_values(array_unique([...$order, ...(is_array($rules) ? array_values($rules) : [])])) as $i => $option) {
             $options[$option] = DB::table('attribute_options')->where('attribute_id', $attributeId)->where('name', $option)->value('id')
                 ?? DB::table('attribute_options')->insertGetId(['attribute_id' => $attributeId, 'name' => $option, 'sort_order' => $i, 'created_at' => now(), 'updated_at' => now()]);
             DB::table('attribute_options')->where('id', $options[$option])->update(['sort_order' => $i]);
         }
         $valued = [];
-        foreach ($products->where('category_id', $sectionId) as $product) {
+        foreach ($products->whereIn('category_id', [$sectionId, ...($this->members[$sectionId] ?? [])]) as $product) {
             $group = $fallback ? Groups::group($product->name, $rules) : Groups::match($product->name, $rules);
             if ($group === null) {
                 continue;
