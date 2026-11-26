@@ -93,6 +93,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $inoxUnknown = $card('Varmega VM710002828 28x28', $press);
         $slideElbow = $card('Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51418, 32x3/4", аксиальный', $press);
         $copperPlug = $card('Заглушка медная 35 под пайку арт. 109134 VIEGA', $press);
+        $acs = $section('kondicionery');
+        $wallInverter = $card('Сплит-система Electrolux Skandi DC EACS/I-07HSK/N8_V3', $acs);
+        $haier = $card('Кондиционер Haier Quantum AS50HQJ1HRA-B/1U50HQJ1FRA', $acs);
+        $onOff = $card('Сплит-система Haier HSU-12HFF103/R3-B / HSU-12HUF103/R3', $acs);
+        $cassette = $card('Кассетный кондиционер Electrolux EACC-48H/UP3/N3', $acs);
+        $acOutdoor = $card('Внешний блок Electrolux EACO/I-28 FMI-4/N8-ERP', $acs);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -210,6 +216,18 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Заглушки', $value('Тип', $copperPlug));
         $this->assertSame('Медь', $value('Материал', $copperPlug));
         $this->assertSame('35 мм', $value('Диаметр', $copperPlug));
+        $this->assertSame('Настенные сплит-системы', $value('Тип', $wallInverter));
+        $this->assertSame('До 20 м²', $value('Площадь помещения', $wallInverter));
+        $this->assertSame('Инверторный', $value('Компрессор', $wallInverter));
+        $this->assertSame('До 50 м²', $value('Площадь помещения', $haier));
+        $this->assertSame('Инверторный', $value('Компрессор', $haier));
+        $this->assertSame('До 35 м²', $value('Площадь помещения', $onOff));
+        $this->assertSame('On/Off', $value('Компрессор', $onOff));
+        $this->assertSame('Кассетные', $value('Тип', $cassette));
+        $this->assertSame('Свыше 70 м²', $value('Площадь помещения', $cassette));
+        $this->assertSame('On/Off', $value('Компрессор', $cassette));
+        $this->assertSame('Наружные блоки мульти-сплит', $value('Тип', $acOutdoor));
+        $this->assertNull($value('Площадь помещения', $acOutdoor));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
