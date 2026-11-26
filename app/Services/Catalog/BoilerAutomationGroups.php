@@ -28,6 +28,7 @@ final class BoilerAutomationGroups
         '/^комплект из двух отопительных контуров/u' => 'komplekty-podklyucheniya',
         '/панель изолирующая|термостат предохранительный|комплект трехходового крана с датчиком бойлера/u' => 'zapchasti-dlya-kotlov',
         '/^насос-автомат/u' => 'nasosnyie-stantsii',
+        '/^(вместе с фланцем|пеллетная горелка kipi rotary)/u' => 'pelletnye-gorelki',
         '/^пульт управления термофор/u' => 'aksessuary-dlya-bani',
         '/^панель управления thermex|^комплект для подключения бойлера к одноконтурному котлу thermex/u' => 'komplektuyushchie-dlya-vodonagrevateley',
     ];
@@ -63,14 +64,48 @@ final class BoilerAutomationGroups
         '/контроллер|командо|turboset|автоматика|plum|euroster|tech st|плата/u' => 'Автоматика для котлов',
     ];
 
+    public const PARTS = 'zapchasti-dlya-kotlov';
+
+    /** «Назначение» options of «Запчасти для котлов», in filter order. */
+    public const PART_ORDER = [
+        'Бункеры для пеллет',
+        'Шнековые транспортёры',
+        'Запчасти для газовых котлов',
+        'Дымоудаление и конденсат',
+        'Розжиг и горение',
+        'Уплотнители и ручки',
+        'Электрика',
+        'Прочее',
+    ];
+
+    /** Title pattern => «Назначение» inside «Запчасти для котлов». */
+    public const PART_GROUPS = [
+        '/бункер/u' => 'Бункеры для пеллет',
+        '/шнек|транспортер|транспортёр/u' => 'Шнековые транспортёры',
+        '/колпак|стабилизатор тяги|нейтрализац|конденсат/u' => 'Дымоудаление и конденсат',
+        '/свеча|запальник|турбонасадк|горелк/u' => 'Розжиг и горение',
+        '/шнур|уплотн|ручка/u' => 'Уплотнители и ручки',
+        '/выключатель автоматический|^предохранитель\b/u' => 'Электрика',
+        '/baxi|fondital|ferroli|thermex|vaillant|bosch|buderus|navien|ariston|protherm|трехходов|трёхходов|кран подпитки|подающей магистрали/u' => 'Запчасти для газовых котлов',
+    ];
+
+    /** Section slug => [patterns, option order] of its «Назначение» filter. */
+    public static function filters(): array
+    {
+        return [
+            self::SECTION => [self::GROUPS, self::ORDER],
+            self::PARTS => [self::PART_GROUPS, self::PART_ORDER],
+        ];
+    }
+
     public static function move(string $title): ?string
     {
         return self::first(self::MOVES, $title);
     }
 
-    public static function group(string $title): string
+    public static function group(string $title, array $rules = self::GROUPS): string
     {
-        return self::first(self::GROUPS, $title) ?? 'Прочее';
+        return self::first($rules, $title) ?? 'Прочее';
     }
 
     private static function first(array $rules, string $title): ?string

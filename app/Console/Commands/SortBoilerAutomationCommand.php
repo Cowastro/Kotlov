@@ -27,7 +27,7 @@ class SortBoilerAutomationCommand extends Command
             return self::FAILURE;
         }
         $regulators = (int) $sections[Groups::SECTION];
-        $sources = array_filter([$regulators, $sections['zapchasti-dlya-kotlov'] ?? null]);
+        $sources = array_filter([$regulators, $sections[Groups::PARTS] ?? null]);
         $apply = (bool) $this->option('apply');
         $moved = $grouped = 0;
         $counts = [];
@@ -35,6 +35,12 @@ class SortBoilerAutomationCommand extends Command
         DB::beginTransaction();
         $products = DB::table('products')->whereIn('category_id', $sources)->orderBy('id')->get(['id', 'name', 'category_id']);
         foreach ($products as $product) {
+            // KIPI ROTARY burners came from the price list named only «вместе с фланцем 15-70 kW».
+            if (preg_match('/^вместе с фланцем (\d+-\d+) kw$/ui', trim($product->name), $m)) {
+                $product->name = 'Пеллетная горелка KIPI ROTARY '.$m[1].' кВт с фланцем';
+                DB::table('products')->where('id', $product->id)->update(['name' => $product->name, 'h1' => $product->name, 'updated_at' => now()]);
+                $this->line("rename {$product->id} → {$product->name}");
+            }
             $target = Groups::move($product->name);
             $targetId = $target !== null ? ($sections[$target] ?? null) : null;
             if ($targetId && (int) $targetId !== (int) $product->category_id) {
@@ -45,29 +51,35 @@ class SortBoilerAutomationCommand extends Command
             }
         }
 
-        $attributeId = $this->filterAttribute($regulators);
-        $options = [];
-        foreach (array_values(array_unique([...Groups::ORDER, ...array_values(Groups::GROUPS)])) as $i => $name) {
-            $options[$name] = DB::table('attribute_options')->where('attribute_id', $attributeId)->where('name', $name)->value('id')
-                ?? DB::table('attribute_options')->insertGetId(['attribute_id' => $attributeId, 'name' => $name, 'sort_order' => $i, 'created_at' => now(), 'updated_at' => now()]);
-            DB::table('attribute_options')->where('id', $options[$name])->update(['sort_order' => $i]);
-        }
-        foreach ($products->where('category_id', $regulators) as $product) {
-            $group = Groups::group($product->name);
-            $counts[$group] = ($counts[$group] ?? 0) + 1;
-            $current = DB::table('product_attribute_values')->where('product_id', $product->id)->where('attribute_id', $attributeId)->first();
-            if ($current && (int) $current->option_id === (int) $options[$group]) {
+        foreach (Groups::filters() as $slug => [$rules, $order]) {
+            if (! isset($sections[$slug])) {
                 continue;
             }
-            DB::table('product_attribute_values')->updateOrInsert(
-                ['product_id' => $product->id, 'attribute_id' => $attributeId],
-                ['option_id' => $options[$group], 'value' => null, 'created_at' => $current->created_at ?? now(), 'updated_at' => now()],
-            );
-            $grouped++;
+            $sectionId = (int) $sections[$slug];
+            $attributeId = $this->filterAttribute($sectionId);
+            $options = [];
+            foreach (array_values(array_unique([...$order, ...array_values($rules)])) as $i => $name) {
+                $options[$name] = DB::table('attribute_options')->where('attribute_id', $attributeId)->where('name', $name)->value('id')
+                    ?? DB::table('attribute_options')->insertGetId(['attribute_id' => $attributeId, 'name' => $name, 'sort_order' => $i, 'created_at' => now(), 'updated_at' => now()]);
+                DB::table('attribute_options')->where('id', $options[$name])->update(['sort_order' => $i]);
+            }
+            foreach ($products->where('category_id', $sectionId) as $product) {
+                $group = Groups::group($product->name, $rules);
+                $counts[$slug][$group] = ($counts[$slug][$group] ?? 0) + 1;
+                $current = DB::table('product_attribute_values')->where('product_id', $product->id)->where('attribute_id', $attributeId)->first();
+                if ($current && (int) $current->option_id === (int) $options[$group]) {
+                    continue;
+                }
+                DB::table('product_attribute_values')->updateOrInsert(
+                    ['product_id' => $product->id, 'attribute_id' => $attributeId],
+                    ['option_id' => $options[$group], 'value' => null, 'created_at' => $current->created_at ?? now(), 'updated_at' => now()],
+                );
+                $grouped++;
+            }
+            // A card that left the section drops its «Назначение».
+            DB::table('product_attribute_values')->where('attribute_id', $attributeId)
+                ->whereNotIn('product_id', DB::table('products')->where('category_id', $sectionId)->select('id'))->delete();
         }
-        // A card that left «Регуляторы» drops its «Назначение».
-        DB::table('product_attribute_values')->where('attribute_id', $attributeId)
-            ->whereNotIn('product_id', DB::table('products')->where('category_id', $regulators)->select('id'))->delete();
 
         if ($apply) {
             DB::commit();
@@ -80,8 +92,10 @@ class SortBoilerAutomationCommand extends Command
         $this->line('metric.status='.($apply ? 'applied' : 'dry_run'));
         $this->line("metric.boiler_automation.moved={$moved}");
         $this->line("metric.boiler_automation.grouped={$grouped}");
-        foreach ($counts as $group => $count) {
-            $this->line("group {$group}: {$count}");
+        foreach ($counts as $slug => $groups) {
+            foreach ($groups as $group => $count) {
+                $this->line("group {$slug} | {$group}: {$count}");
+            }
         }
 
         return self::SUCCESS;

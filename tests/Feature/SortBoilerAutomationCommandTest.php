@@ -28,12 +28,16 @@ class SortBoilerAutomationCommandTest extends TestCase
         $room = $card('Комнатный термостат SALUS RT310', $regulators);
         $draught = $card('Регулятор тяги ICMA', $parts);
         $pumpUnit = $card('Блок автоматики', $regulators);
+        $burners = $section('pelletnye-gorelki');
+        $kipi = $card('вместе с фланцем 15-70 kW', $parts);
+        $hopper = $card('Бункер для пеллет ATMOS 500 л', $parts);
+        $safety = $card('Термостат предохранительный FONDITAL', $parts);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=3')
+            ->expectsOutputToContain('metric.boiler_automation.moved=4')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -49,8 +53,13 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Регуляторы тяги', $group($draught));
         $this->assertSame('Автоматика для насосов и клапанов', $group($pumpUnit));
         $this->assertNull($group($head));
+        $this->assertSame($burners->id, $kipi->fresh()->category_id);
+        $this->assertSame('Пеллетная горелка KIPI ROTARY 15-70 кВт с фланцем', $kipi->fresh()->name);
+        $this->assertSame('Бункеры для пеллет', $group($hopper));
+        $this->assertSame('Запчасти для газовых котлов', $group($safety));
         $this->assertSame(['Автоматика для котлов', 'Автоматика для насосов и клапанов', 'Комнатные термостаты и программаторы'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
+            ->where('attributes.category_id', $regulators->id)
             ->orderBy('attribute_options.sort_order')->limit(3)->pluck('attribute_options.name')->all());
         $this->assertTrue((bool) DB::table('attributes')->where(['category_id' => $regulators->id, 'name' => 'Назначение'])->value('in_filter'));
 
