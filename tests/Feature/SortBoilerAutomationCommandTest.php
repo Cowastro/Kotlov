@@ -51,12 +51,21 @@ class SortBoilerAutomationCommandTest extends TestCase
         $hose = $card('Шланг для газа ADVIXON Г-Ш 1/2"-1/2" (150см)', $gas);
         $steelHose = $card('Газовый шланг ZURFLEX DN16, гайка/штуцер, 0,6 м', $hoses);
         $insert = $card('Вставка диэлектрическая 1/2" ш/ш', $hoses);
+        $mixing = $section('smesitelnye-klapany-i-uzly');
+        $drainage = $section('drenajnyie');
+        $fecal = $card('Насос погружной «ФЕКАЛЬНИК» 115/5', $mixing);
+        $tsv = $card('Термостатический клапан Regulus TSV3 65°C', $mixing);
+        $barberi = $card('Трехходовой клапан Barberi V07M250 AA', $mixing);
+        $vta = $card('Термостатический смесительный клапан ESBE VTA 321(t35-60*c)', $mixing);
+        $cvlit = $card('Клапан радиаторный термостат. Ду 15 (прямой) Цветлит', $radiator);
+        $kit = $card('Набор термостатический угловой Royal Thermo Design 1/2"М30х1,5 (Черный)', $radiator);
+        $bracket = $card('Кронштейн угловой для радиатора белый', $radiator);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=7')
+            ->expectsOutputToContain('metric.boiler_automation.moved=8')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -108,6 +117,19 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('До 1 м', $value('Длина', $steelHose));
         $this->assertSame('Диэлектрические вставки', $value('Тип', $insert));
         $this->assertNull($value('Длина', $insert));
+        $this->assertSame($drainage->id, $fecal->fresh()->category_id);
+        $this->assertSame($mixing->id, $tsv->fresh()->category_id);
+        $this->assertSame('Термостатические клапаны для котлов (антиконденсат)', $value('Тип', $tsv));
+        $this->assertSame('Трёхходовые клапаны', $value('Тип', $barberi));
+        $this->assertSame('Термостатические смесители (ГВС, тёплый пол)', $value('Тип', $vta));
+        $this->assertSame('Термостатические клапаны', $value('Тип', $cvlit));
+        $this->assertSame('Прямой', $value('Исполнение', $cvlit));
+        $this->assertSame('Комплекты и наборы', $value('Тип', $kit));
+        $this->assertSame('Угловой', $value('Исполнение', $kit));
+        $this->assertSame('Чёрный', $value('Цвет', $kit));
+        $this->assertSame('Кронштейны и крепления', $value('Тип', $bracket));
+        $this->assertNull($value('Исполнение', $bracket));
+        $this->assertSame('Белый', $value('Цвет', $bracket));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)
