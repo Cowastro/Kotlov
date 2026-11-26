@@ -143,11 +143,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Белый', $value('Цвет', $bracket));
         $this->assertSame($pelletParts->id, $grate->fresh()->category_id);
         $this->assertSame('Запчасти и датчики', $value('Тип', $grate));
-        $this->assertNull($value('Мощность', $grate));
+        $this->assertNull($value('Мощность горелки', $grate));
         $this->assertSame('Запчасти и датчики', $value('Тип', $flame));
         $this->assertSame('Пеллетные горелки', $value('Тип', $venma));
-        $this->assertSame('51–100 кВт', $value('Мощность', $venma));
-        $this->assertSame('51–100 кВт', $value('Мощность', $kipi));
+        $this->assertSame('51–100 кВт', $value('Мощность горелки', $venma));
+        $this->assertSame('51–100 кВт', $value('Мощность горелки', $kipi));
         $this->assertSame('Краны с электроприводом', $value('Тип', $leakValve));
         $this->assertSame('1 1/4"', $value('Диаметр', $leakValve));
         $this->assertSame('12 В', $value('Напряжение привода', $leakValve));
