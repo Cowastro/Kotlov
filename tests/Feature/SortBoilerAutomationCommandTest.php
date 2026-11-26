@@ -78,6 +78,8 @@ class SortBoilerAutomationCommandTest extends TestCase
         $coAlarm = $card('Детектор загазованности Счетприбор CО (угарный газ) (ДЗС-2)', $alarms);
         $dualAlarm = $card('Детектор загазованности Счетприбор СН4,СО (два газа) (ДЗС-3)', $alarms);
         $methaneAlarm = $card('Сигнализатор загазованности Барьер-CH4', $alarms);
+        $cps = $card('Вентилятор наддува СРS-70 (до 70 кВт, 320 м3/час)', $fans);
+        $vsk = $card('Вентилятор наддува VSK-160 (к котлам 75-150 кВт)', $fans);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -169,6 +171,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Угарный газ (CO)', $value('Какой газ', $coAlarm));
         $this->assertSame('Комбинированные (CO + природный газ)', $value('Какой газ', $dualAlarm));
         $this->assertSame('Природный газ (метан)', $value('Какой газ', $methaneAlarm));
+        $this->assertSame('251–400 м³/ч', $value('Производительность', $cps));
+        $this->assertSame('26–75 кВт', $value('Для котла мощностью', $cps));
+        $this->assertSame('До 250 м³/ч', $value('Производительность', $fan));
+        $this->assertNull($value('Для котла мощностью', $fan));
+        $this->assertNull($value('Производительность', $vsk));
+        $this->assertSame('76–150 кВт', $value('Для котла мощностью', $vsk));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)

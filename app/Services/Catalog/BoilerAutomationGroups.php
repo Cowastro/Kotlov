@@ -235,6 +235,10 @@ final class BoilerAutomationGroups
             self::GAS_ALARMS => [
                 'Какой газ' => [self::ALARM_GASES, self::ALARM_ORDER],
             ],
+            self::FANS => [
+                'Производительность' => [fn (string $title) => self::fanFlow($title), self::FAN_FLOWS],
+                'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
+            ],
             self::GAS_HOSES => [
                 'Тип' => [self::HOSE_TYPES, array_values(self::HOSE_TYPES)],
                 'Длина' => [self::HOSE_LENGTHS, array_values(self::HOSE_LENGTHS)],
@@ -478,6 +482,43 @@ final class BoilerAutomationGroups
         '/[cс][hн]4|природн|сгг|сжиженн/u' => 'Природный газ (метан)',
         '/(?<![a-zа-я])[cс][oо](?![a-zа-я])|угарн/u' => 'Угарный газ (CO)',
     ];
+
+    /** «Производительность» options of a blower, smallest first. */
+    public const FAN_FLOWS = ['До 250 м³/ч', '251–400 м³/ч', '401–600 м³/ч', 'Свыше 600 м³/ч'];
+
+    /** The airflow band of a blower from «(285 м³/ч)» or «490 м3/час» in its title. */
+    public static function fanFlow(string $title): ?string
+    {
+        if (! preg_match('/(\d+)\s*м(?:³|3)\s*\/\s*ч/u', mb_strtolower($title), $m)) {
+            return null;
+        }
+        $flow = (int) $m[1];
+
+        return match (true) {
+            $flow <= 250 => 'До 250 м³/ч',
+            $flow <= 400 => '251–400 м³/ч',
+            $flow <= 600 => '401–600 м³/ч',
+            default => 'Свыше 600 м³/ч',
+        };
+    }
+
+    /** «Для котла мощностью» options, smallest first. */
+    public const FAN_BOILER_POWERS = ['До 25 кВт', '26–75 кВт', '76–150 кВт'];
+
+    /** The boiler size a blower is for, from «(до 70 кВт» or «(к котлам 25-75 кВт)» (the top of the range). */
+    public static function fanBoilerPower(string $title): ?string
+    {
+        if (! preg_match('/(?:до|котлам)\s*(?:\d+\s*[-–]\s*)?(\d+)\s*квт/u', mb_strtolower($title), $m)) {
+            return null;
+        }
+        $kw = (int) $m[1];
+
+        return match (true) {
+            $kw <= 25 => 'До 25 кВт',
+            $kw <= 75 => '26–75 кВт',
+            default => '76–150 кВт',
+        };
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
