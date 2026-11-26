@@ -248,6 +248,11 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::AIR_CONDITIONERS => [
+                'Тип' => [self::AC_TYPES, self::AC_ORDER],
+                'Площадь помещения' => [fn (string $title) => self::acArea($title), self::AC_AREAS],
+                'Компрессор' => [fn (string $title) => self::acCompressor($title), ['Инверторный', 'On/Off']],
+            ],
             self::PRESS_FITTINGS => [
                 'Тип' => [self::PRESS_TYPES, self::PRESS_ORDER],
                 'Материал' => [self::PRESS_MATERIALS, array_values(array_unique(self::PRESS_MATERIALS))],
@@ -638,6 +643,85 @@ final class BoilerAutomationGroups
         }
 
         return null;
+    }
+
+    public const AIR_CONDITIONERS = 'kondicionery';
+
+    /** «Тип» options of «Кондиционеры», in filter order. */
+    public const AC_ORDER = [
+        'Настенные сплит-системы',
+        'Кассетные',
+        'Канальные',
+        'Напольно-потолочные',
+        'Внутренние блоки мульти-сплит',
+        'Наружные блоки мульти-сплит',
+    ];
+
+    /** Title pattern => «Тип» of an air conditioner; SHUFT SFLC (commercial, form unknown) gets none. */
+    public const AC_TYPES = [
+        '/^внешний блок|\/out$|(?<![a-z])eaco\/i|(?<![a-z])sfmo/u' => 'Наружные блоки мульти-сплит',
+        '/^внутренний блок/u' => 'Внутренние блоки мульти-сплит',
+        '/кассетн|(?<![a-z])eacc-/u' => 'Кассетные',
+        '/канальн|(?<![a-z])eacd-/u' => 'Канальные',
+        '/напольно-потолочн|(?<![a-z])eacu-/u' => 'Напольно-потолочные',
+        '/^(?!shuft sflc)./u' => 'Настенные сплит-системы',
+    ];
+
+    /** «Площадь помещения» options, smallest first (the usual 07/09/12/18/24 classes). */
+    public const AC_AREAS = ['До 20 м²', 'До 25 м²', 'До 35 м²', 'До 50 м²', 'До 70 м²', 'Свыше 70 м²'];
+
+    /**
+     * The room size an indoor unit suits, from its class in the title: BTU thousands (Electrolux «EACS/I-09», SHUFT,
+     * Ballu, Royal Thermo, Toshiba «RAS-B13», Haier «HSU-12», «AS12…») or Haier kW tenths («AS25…» = 2.5 kW).
+     * Outdoor multi-split units serve several rooms and get none.
+     */
+    public static function acArea(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        if (self::match($title, self::AC_TYPES) === 'Наружные блоки мульти-сплит') {
+            return null;
+        }
+        $btu = null;
+        if (preg_match('/(?<![a-z])(?:eacs\/i|eacs|eacc|eacd|eacu|bsgri|rtb|rtsi|sflc_cf?|sftoi|ace|hsu|ras-b?)-?\s?(\d{2})(?!\d)/u', $title, $m)) {
+            $btu = (int) $m[1];
+        } elseif (preg_match('/(?<![a-z])as(\d{2})(?!\d)/u', $title, $m)) {
+            $n = (int) $m[1];
+            $btu = match (true) {
+                in_array($n, [7, 9, 12, 18, 24], true) => $n,
+                $n <= 22 => 7,
+                $n <= 27 => 9,
+                $n <= 36 => 12,
+                $n <= 53 => 18,
+                $n <= 73 => 24,
+                default => 30,
+            };
+        }
+
+        return match (true) {
+            $btu === null || $btu < 5 => null,
+            $btu <= 7 => 'До 20 м²',
+            $btu <= 9 => 'До 25 м²',
+            $btu <= 13 => 'До 35 м²',
+            $btu <= 18 => 'До 50 м²',
+            $btu <= 24 => 'До 70 м²',
+            default => 'Свыше 70 м²',
+        };
+    }
+
+    /**
+     * Inverter or on/off from the title: «on-off», Electrolux without «/I» or «DC» and Haier HSU are on/off; «/I»,
+     * «DC», «Inverter», Haier AS, Ballu BSGRI, Royal Thermo RTSI, SHUFT SFTOI/SFMO and Toshiba KV are inverters.
+     */
+    public static function acCompressor(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+
+        return match (true) {
+            (bool) preg_match('/on-off|on\/off|(?<![a-z])hsu-/u', $title) => 'On/Off',
+            (bool) preg_match('/inverter|инвертор|(?<![a-z])dc(?![a-z])|eacs\/i|eaco\/i|(?<![a-z])as\d{2}|bsgri|rtsi|sftoi|sfmo\/i|ras-b\w*kv/u', $title) => 'Инверторный',
+            (bool) preg_match('/(?<![a-z])eac[scdu]-/u', $title) => 'On/Off',
+            default => null,
+        };
     }
 
     public const GAS_HOSES = 'gazovye-shlangi';
