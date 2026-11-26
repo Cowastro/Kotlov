@@ -58,16 +58,16 @@ class AdminProductSearch
         return 'УТ-'.str_pad($match[1], 8, '0', STR_PAD_LEFT);
     }
 
-    public function isUnlinkedOneCItem(string $search): bool
+    public function unlinkedOneCCode(string $search): ?string
     {
         $code = $this->oneCCode($search);
         if ($code === null) {
-            return false;
+            return null;
         }
 
         $ids = $this->oneCIds([$code, '00'.$code], knownItem: $knownItem);
 
-        return $knownItem && $ids === [];
+        return $knownItem && $ids === [] ? $code : null;
     }
 
     /** Both the nomenclature cache and characteristic-specific integration links are authoritative. */

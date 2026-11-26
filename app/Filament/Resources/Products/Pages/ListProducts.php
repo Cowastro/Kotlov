@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Products\Pages;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\AdminProductSearch;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\FileUpload;
@@ -15,11 +16,18 @@ use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Computed;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ListProducts extends ListRecords
 {
     protected static string $resource = ProductResource::class;
+
+    #[Computed]
+    public function unlinkedOneCCode(): ?string
+    {
+        return app(AdminProductSearch::class)->unlinkedOneCCode((string) $this->getTableSearch());
+    }
 
     public function getDefaultActiveTab(): string|int|null
     {

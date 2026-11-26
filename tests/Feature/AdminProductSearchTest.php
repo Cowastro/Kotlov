@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Products\Pages\ListProducts;
+use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Models\Category;
@@ -73,7 +74,9 @@ class AdminProductSearchTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         Livewire::actingAs($admin)->test(ListProducts::class)->searchTable('УТ-00009721')
             ->assertSee('Карточка не привязана')->assertCanNotSeeTableRecords([$this->door, $this->wrong])
-            ->searchTable('УТ-99999999')->assertDontSee('Карточка не привязана');
+            ->assertSee('Открыть в номенклатуре 1С')
+            ->assertSee('href="'.OneCItemResource::getUrl('index', ['search' => 'УТ-00009721']).'"', false)
+            ->searchTable('УТ-99999999')->assertDontSee('Карточка не привязана')->assertDontSee('Открыть в номенклатуре 1С');
     }
 
     public function test_cached_direct_link_and_link_without_cached_item_both_work(): void
