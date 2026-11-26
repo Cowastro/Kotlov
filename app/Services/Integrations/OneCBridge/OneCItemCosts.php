@@ -22,10 +22,10 @@ class OneCItemCosts
     /** @param list<string>|null $itemKeys null — every item that was ever bought @return int items with a cost */
     public function refresh(?array $itemKeys = null): int
     {
-        $itemKeys ??= DB::table('onec_purchase_lines')->where('currency_key', OneCPurchaseCosts::BYN)->distinct()->pluck('item_key')->all();
+        $itemKeys ??= DB::table('onec_purchase_lines')->whereIn('currency_key', [OneCPurchaseCosts::BYN, OneCPurchaseCosts::RUB])->distinct()->pluck('item_key')->all();
         $n = 0;
         foreach (array_chunk(array_values(array_unique(array_map('strtolower', $itemKeys))), 200) as $chunk) {
-            $lines = DB::table('onec_purchase_lines')->whereIn('item_key', $chunk)->where('currency_key', OneCPurchaseCosts::BYN)
+            $lines = DB::table('onec_purchase_lines')->whereIn('item_key', $chunk)->whereIn('currency_key', [OneCPurchaseCosts::BYN, OneCPurchaseCosts::RUB])
                 ->orderBy('doc_date')->orderBy('id')->get()->groupBy('item_key');
             foreach ($lines as $key => $rows) {
                 $cost = self::cost($rows->all());
@@ -46,7 +46,8 @@ class OneCItemCosts
             return null;
         }
         if ((float) $last->price_gross > 0) {
-            return ['cost_net' => round((float) $last->price_net, 2), 'cost_gross' => round((float) $last->price_gross, 2),
+            $last = HistoricalPurchaseRate::inByn($last);
+            return ['cost_from_rub' => $last->currency_key === OneCPurchaseCosts::RUB, 'cost_net' => round((float) $last->price_net, 2), 'cost_gross' => round((float) $last->price_gross, 2),
                 'cost_date' => substr((string) $last->doc_date, 0, 10), 'cost_doc' => $last->doc_number, 'cost_kind' => self::LAST];
         }
         $since = date('Y-m-d', strtotime(substr((string) $last->doc_date, 0, 10).' -3 months'));
@@ -55,9 +56,11 @@ class OneCItemCosts
         if ($recent === [] || $qty <= 0) {
             return null;
         }
+        $recent = array_map(HistoricalPurchaseRate::inByn(...), $recent);
+        $fromRub = in_array(OneCPurchaseCosts::RUB, array_column($recent, 'currency_key'), true);
         $avg = fn (string $field): float => round(array_sum(array_map(fn (object $r): float => (float) $r->{$field} * (float) $r->quantity, $recent)) / $qty, 2);
 
-        return ['cost_net' => $avg('price_net'), 'cost_gross' => $avg('price_gross'), 'cost_date' => substr((string) $last->doc_date, 0, 10),
+        return ['cost_from_rub' => $fromRub, 'cost_net' => $avg('price_net'), 'cost_gross' => $avg('price_gross'), 'cost_date' => substr((string) $last->doc_date, 0, 10),
             'cost_doc' => null, 'cost_kind' => self::AVERAGE];
     }
 

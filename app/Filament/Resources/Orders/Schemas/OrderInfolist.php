@@ -476,7 +476,7 @@ class OrderInfolist
                                             }
 
                                             $price = match (true) {
-                                                $record->fulfillment_route === 'own_stock' => self::onecCostLabel(self::assignmentPrice($record, 'own_stock')),
+                                                $record->fulfillment_route === 'own_stock' => self::onecCostLabel(self::ownStockItem($record)),
                                                 $record->fulfillment_purchase_price !== null => 'вход '.$byn($record->fulfillment_purchase_price),
                                                 default => 'входная цена не указана',
                                             };
@@ -1466,12 +1466,17 @@ class OrderInfolist
         return [$order->onec_deleted ? 'помечен на удаление' : 'нет', $order->onec_deleted ? 'danger' : 'gray', null];
     }
 
+    private static function ownStockItem(OrderItem $item): ?OneCItem
+    {
+        $linked = $item->product ? app(OneCItemCreator::class)->linked($item->product) : null;
+
+        return OneCItem::fromExchangeKey($linked?->external_id);
+    }
+
     public static function assignmentPrice(OrderItem $item, ?string $route): ?float
     {
         if ($route === 'own_stock') {
-            $linked = $item->product ? app(OneCItemCreator::class)->linked($item->product) : null;
-
-            return OneCItem::fromExchangeKey($linked?->external_id)?->cost_gross;
+            return self::ownStockItem($item)?->cost_gross;
         }
 
         $confirmed = $item->fulfillment_route !== 'own_stock' ? $item->fulfillment_purchase_price : null;
@@ -1479,9 +1484,11 @@ class OrderInfolist
         return $confirmed ?? $item->supply_purchase_price;
     }
 
-    private static function onecCostLabel(?float $gross): string
+    private static function onecCostLabel(?OneCItem $item): string
     {
-        return 'Себестоимость 1С с НДС за шт.: '.($gross === null ? 'нет данных' : number_format($gross, 2, ',', ' ').' BYN');
+        $gross = $item?->cost_gross;
+        return 'Себестоимость 1С с НДС за шт.: '.($gross === null ? 'нет данных' : number_format($gross, 2, ',', ' ').' BYN')
+            .($item?->cost_from_rub ? ' · пересчёт из RUB по курсу НБРБ на дату поступления' : '');
     }
 
     private static function onecStockAndCost(?string $key): string
@@ -1489,7 +1496,7 @@ class OrderInfolist
         $item = OneCItem::fromExchangeKey($key);
 
         $stock = OneCStock::fresh($item) ? ' <span style="color:#64748b" title="Склад: '.e(implode(', ', OneCStock::WAREHOUSES)).'">· '.e(OneCStock::label($item)).'</span>' : '';
-        $label = '<br>'.self::onecCostLabel($item?->cost_gross);
+        $label = '<br>'.self::onecCostLabel($item);
         if ($item?->cost_gross === null) {
             return $stock.$label;
         }
