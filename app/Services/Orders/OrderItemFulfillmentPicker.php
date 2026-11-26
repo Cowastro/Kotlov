@@ -92,6 +92,7 @@ final class OrderItemFulfillmentPicker
             return [$supplier->id => [
                 'label' => $supplier->name,
                 'own' => $isOwn,
+                'own_cost_label' => $isOwn ? OneCItem::grossCostLabel($onecItem) : null,
                 'quantity' => $quantity,
                 'price' => (float) $price > 0 ? (float) $price : null,
                 'source' => $source,
