@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Shipping\Evropochta;
 use App\Services\Shipping\EvropochtaCheckout;
 use App\Services\Shipping\EvropochtaOrderShipment;
+use App\Services\Shipping\EvropochtaRecipient;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -113,6 +114,8 @@ class QuickOrderService
             if ($quote === null || blank($quote['city'] ?? null) || blank($quote['address'] ?? null)) {
                 throw new RuntimeException('Выберите отделение и дождитесь расчёта тарифа Европочты.');
             }
+            $quote['recipient'] = ! empty($data['different_receiver'])
+                ? EvropochtaRecipient::validate((array) ($data['recipient'] ?? [])) : null;
         }
 
         $subtotal = round($lines->sum('total'), 2);

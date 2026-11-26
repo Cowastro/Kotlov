@@ -9,14 +9,17 @@ use App\Services\Shipping\Evropochta;
 use App\Services\Shipping\EvropochtaCheckout;
 use App\Services\Shipping\EvropochtaOrderShipment;
 use App\Services\Shipping\EvropochtaPayment;
-use Filament\Forms\Components\Hidden;
+use App\Services\Shipping\EvropochtaRecipient;
 use App\Services\Shipping\EvropochtaShipmentException;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 use RuntimeException;
@@ -39,12 +42,18 @@ final class EvropochtaOrderActions
             ->fillForm(function (Order $record): array {
                 $quote = $record->evropochta_quote ?? [];
 
-                return ($quote['parcel'] ?? []) + [
+                return ($quote['parcel'] ?? []) + EvropochtaRecipient::defaults($record) + [
+                    'different_receiver' => filled($quote['recipient'] ?? null),
                     'store_id_start' => config('services.evropochta.checkout_origin'),
                     'store_id_finish' => $quote['store_id_finish'] ?? null,
                 ];
             })
-            ->schema(fn (): array => self::parcelFields())
+            ->schema(fn (): array => [
+                ...self::parcelFields(),
+                Toggle::make('different_receiver')->label('Получатель отличается от покупателя')->live(),
+                Section::make('Получатель отправления')->visible(fn (Get $get): bool => (bool) $get('different_receiver'))
+                    ->schema(self::recipientFields()),
+            ])
             ->action(function (Order $record, array $data, Action $action, EvropochtaOrderShipment $shipments): void {
                 try {
                     $quote = $shipments->prepare($record, $data);
@@ -83,6 +92,7 @@ final class EvropochtaOrderActions
             Select::make('store_id_start')->label('Отделение отправления')
                 ->options($branches)->searchable()->required()->placeholder('Город или адрес'),
             Select::make('store_id_finish')->label('Отделение получения')
+                ->helperText('Выберите отделение по городу, улице или номеру. Адрес доставки заполнится из справочника Европочты.')
                 ->options($branches)->searchable()->required()->different('store_id_start')->placeholder('Город или адрес'),
             TextInput::make('weight')->label('Вес в упаковке, кг')->required()->numeric()
                 ->minValue(0.01)->maxValue(50)->step(0.01)->rule('decimal:0,2'),
@@ -108,10 +118,8 @@ final class EvropochtaOrderActions
             ->modalHeading('Оформить Европочту и открыть ярлык')
             ->modalDescription('Проверьте итог для клиента и получателя. Доставку и комиссию Европочты оплачивает наш магазин; дополнительных платежей клиенту нет.')
             ->modalSubmitActionLabel('Оформить и открыть ярлык')
-            ->fillForm(fn (Order $record): array => [
+            ->fillForm(fn (Order $record): array => EvropochtaRecipient::defaults($record) + [
                 'payment_review_signature' => EvropochtaPayment::signature($record->fresh()),
-                'receiver_name' => preg_match('/^\S+$/u', trim((string) $record->customer_name)) ? trim($record->customer_name) : null,
-                'receiver_phone_number' => $record->customer_phone,
                 'label_format' => 'thermal',
                 'notify_receiver' => true,
             ])
@@ -136,12 +144,9 @@ final class EvropochtaOrderActions
                     }),
                 ...self::paymentFields(),
                 TextEntry::make('ep_name_on_order')
-                    ->label('Получатель в заказе')
+                    ->label('Покупатель в заказе')
                     ->state(fn (Order $record): string => $record->customer_name ?: '—'),
-                TextInput::make('receiver_name')->label('Имя получателя')->trim()->required()->minLength(2)->maxLength(100),
-                TextInput::make('receiver_surname')->label('Фамилия получателя')->trim()->required()->minLength(2)->maxLength(100),
-                TextInput::make('receiver_patronymic_name')->label('Отчество, если есть')->trim()->maxLength(100),
-                TextInput::make('receiver_phone_number')->label('Телефон получателя')->inputMode('tel')->trim()->required()->maxLength(30),
+                ...self::recipientFields(),
                 Select::make('label_format')->label('Формат ярлыка')->options(Evropochta::LABEL_FORMATS)->required(),
                 Toggle::make('notify_receiver')
                     ->label('Отправить получателю СМС с трек-номером')
@@ -171,23 +176,35 @@ final class EvropochtaOrderActions
     public static function paymentFields(): array
     {
         return [
-                TextEntry::make('ep_goods')->label('Товары')
-                    ->state(fn (Order $record): string => number_format((float) $record->subtotal, 2, ',', ' ').' BYN'),
-                TextEntry::make('ep_discount')->label('Скидка')
-                    ->state(fn (Order $record): string => number_format((float) $record->discount, 2, ',', ' ').' BYN')
-                    ->visible(fn (Order $record): bool => (float) $record->discount > 0),
-                TextEntry::make('ep_delivery')->label('Доставка — уже включена в итог')
-                    ->state(fn (Order $record): string => number_format((float) $record->delivery_price, 2, ',', ' ').' BYN'),
-                TextEntry::make('ep_total')->label('Общий итог заказа')
-                    ->state(fn (Order $record): string => number_format((float) $record->total, 2, ',', ' ').' BYN')->weight('bold'),
-                TextEntry::make('ep_cod')->label('Клиент платит при получении — одной суммой')
-                    ->state(fn (Order $record): string => number_format(EvropochtaPayment::collect($record), 2, ',', ' ').' BYN')
-                    ->helperText(fn (Order $record): string => $record->payment_status === 'paid'
-                        ? 'Заказ уже оплачен. Повторно деньги с клиента не взыскиваются.'
-                        : 'Наложенный платёж включает товары и доставку с учётом скидки. Доплат Европочте нет.'),
-                TextEntry::make('ep_payers')->label('Услуги Европочты')
-                    ->state('Доставку и комиссию наложенного платежа оплачивает наш магазин.'),
-                Hidden::make('payment_review_signature'),
+            TextEntry::make('ep_goods')->label('Товары')
+                ->state(fn (Order $record): string => number_format((float) $record->subtotal, 2, ',', ' ').' BYN'),
+            TextEntry::make('ep_discount')->label('Скидка')
+                ->state(fn (Order $record): string => number_format((float) $record->discount, 2, ',', ' ').' BYN')
+                ->visible(fn (Order $record): bool => (float) $record->discount > 0),
+            TextEntry::make('ep_delivery')->label('Доставка — уже включена в итог')
+                ->state(fn (Order $record): string => number_format((float) $record->delivery_price, 2, ',', ' ').' BYN'),
+            TextEntry::make('ep_total')->label('Общий итог заказа')
+                ->state(fn (Order $record): string => number_format((float) $record->total, 2, ',', ' ').' BYN')->weight('bold'),
+            TextEntry::make('ep_cod')->label('Клиент платит при получении — одной суммой')
+                ->state(fn (Order $record): string => number_format(EvropochtaPayment::collect($record), 2, ',', ' ').' BYN')
+                ->helperText(fn (Order $record): string => $record->payment_status === 'paid'
+                    ? 'Заказ уже оплачен. Повторно деньги с клиента не взыскиваются.'
+                    : 'Наложенный платёж включает товары и доставку с учётом скидки. Доплат Европочте нет.'),
+            TextEntry::make('ep_payers')->label('Услуги Европочты')
+                ->state('Доставку и комиссию наложенного платежа оплачивает наш магазин.'),
+            Hidden::make('payment_review_signature'),
+        ];
+    }
+
+    public static function recipientFields(string $prefix = ''): array
+    {
+        return [
+            TextInput::make($prefix.'receiver_surname')->label('Фамилия получателя')->trim()->required()->minLength(2)->maxLength(100),
+            TextInput::make($prefix.'receiver_name')->label('Имя получателя')->trim()->required()->minLength(2)->maxLength(100),
+            TextInput::make($prefix.'receiver_patronymic_name')->label('Отчество, если есть')->trim()->maxLength(100),
+            TextInput::make($prefix.'receiver_phone_number')->label('Телефон для связи с получателем')->inputMode('tel')
+                ->helperText('Может совпадать с телефоном покупателя. Покупатель в заказе не меняется.')
+                ->trim()->required()->minLength(7)->maxLength(30)->rule('regex:/^\+?[0-9 ()-]+$/D'),
         ];
     }
 

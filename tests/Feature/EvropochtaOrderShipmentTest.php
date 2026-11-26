@@ -8,6 +8,8 @@ use App\Livewire\EvropochtaOrderStatus;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Shipping\EvropochtaOrderShipment;
+use App\Services\Shipping\EvropochtaPayment;
+use App\Services\Shipping\EvropochtaRecipient;
 use App\Services\Shipping\EvropochtaShipmentException;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,6 +33,54 @@ class EvropochtaOrderShipmentTest extends TestCase
 
         config(['services.evropochta.token' => 'evropochta-test']);
         Http::preventStrayRequests();
+    }
+
+    public function test_recipient_can_differ_from_buyer_and_keep_the_buyers_phone_through_preparation_and_api(): void
+    {
+        $this->signIn();
+        $this->fakePreparationTariff();
+        $order = $this->manualOrder();
+        $order->update(['customer_name' => 'Кирилл', 'customer_phone' => '+375336525724']);
+        $receiver = ['receiver_surname' => 'Петровская', 'receiver_name' => 'Надежда',
+            'receiver_patronymic_name' => 'Ивановна', 'receiver_phone_number' => '+375336525724'];
+        $page = Livewire::test(ViewOrder::class, ['record' => $order->id]);
+        $page->callAction('prepareEvropochtaShipment', $this->parcelInput() + ['different_receiver' => true] + $receiver)
+            ->assertHasNoActionErrors();
+        $order->refresh();
+        $this->assertSame('Кирилл', $order->customer_name);
+        $this->assertSame('+375336525724', $order->customer_phone);
+        $this->assertSame('Надежда', $order->evropochta_quote['recipient']['receiver_name']);
+        // A repeated tariff calculation without a recipient edit must keep the saved contact.
+        app(EvropochtaOrderShipment::class)->prepare($order, $this->parcelInput());
+        $page->call('$refresh')->mountAction('createEvropochtaShipment')
+            ->assertActionDataSet(['receiver_name' => 'Надежда', 'receiver_surname' => 'Петровская',
+                'receiver_patronymic_name' => 'Ивановна', 'receiver_phone_number' => '375336525724']);
+        Http::fake([self::API.'postal/create' => Http::response(['number' => self::TRACK])]);
+        $saved = EvropochtaRecipient::defaults($order->fresh());
+        app(EvropochtaOrderShipment::class)->create($order, $saved + ['notify_receiver' => false]);
+        Http::assertSent(fn (Request $request): bool => $request->url() === self::API.'postal/create'
+            && $request['receiver_name'] === 'Надежда' && $request['receiver_surname'] === 'Петровская'
+            && $request['receiver_phone_number'] === '375336525724');
+        $this->assertSame('Кирилл', $order->fresh()->customer_name);
+        $this->assertSame('Надежда', $order->fresh()->evropochta_quote['recipient']['receiver_name']);
+    }
+
+    public function test_recipient_changed_while_review_is_open_prevents_creation_with_old_confirmation(): void
+    {
+        $order = $this->order();
+        $signature = EvropochtaPayment::signature($order);
+        $quote = $order->evropochta_quote;
+        $quote['recipient'] = ['receiver_name' => 'Надежда', 'receiver_surname' => 'Петровская',
+            'receiver_phone_number' => '375336525724'];
+        $order->update(['evropochta_quote' => $quote]);
+        try {
+            app(EvropochtaOrderShipment::class)->create($order, $this->recipient() + ['payment_review_signature' => $signature]);
+            $this->fail('Changed recipient must require a fresh review.');
+        } catch (EvropochtaShipmentException $exception) {
+            $this->assertStringContainsString('проверьте расчёт заново', $exception->getMessage());
+        }
+        Http::assertNothingSent();
+        $this->assertNull($order->fresh()->evropochta_tracking_number);
     }
 
     public function test_manual_order_preparation_saves_the_quote_and_enables_shipment_creation(): void
@@ -143,7 +193,6 @@ class EvropochtaOrderShipmentTest extends TestCase
         $this->assertSame('117,50 BYN', $preview->getComponent('ep_total')->getState());
         $this->assertSame('0,00 BYN', $preview->getComponent('ep_cod')->getState());
         $this->assertStringContainsString('наш магазин', $preview->getComponent('ep_payers')->getState());
-
 
         $page->setActionData($this->recipient() + ['label_format' => 'thermal'])
             ->callMountedAction()
@@ -466,7 +515,6 @@ class EvropochtaOrderShipmentTest extends TestCase
         }
     }
 
-
     public function test_unpaid_manual_order_collects_one_total_and_cannot_move_carrier_fees_to_the_customer(): void
     {
         $order = $this->order(['payment_type' => 'cash', 'payment_status' => 'pending', 'discount' => 10, 'total' => 107.5]);
@@ -496,13 +544,13 @@ class EvropochtaOrderShipmentTest extends TestCase
     public function test_changed_payment_review_stops_creation_before_any_carrier_request(): void
     {
         $order = $this->order(['payment_type' => 'cash', 'payment_status' => 'pending']);
-        $review = \App\Services\Shipping\EvropochtaPayment::signature($order);
+        $review = EvropochtaPayment::signature($order);
         $order->update(['delivery_price' => 20, 'total' => 120]);
         Http::preventStrayRequests();
         try {
             app(EvropochtaOrderShipment::class)->create($order, $this->recipient() + ['payment_review_signature' => $review]);
             $this->fail('Changed total must be reviewed again.');
-        } catch (\App\Services\Shipping\EvropochtaShipmentException $e) {
+        } catch (EvropochtaShipmentException $e) {
             $this->assertStringContainsString('изменились', $e->getMessage());
         }
         Http::assertNothingSent();

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\OneCOrderProfile;
 use App\Models\Order;
+use App\Models\VamExpressShipment;
 use App\Services\Integrations\OneCBridge\OneCOrderExport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,7 +25,21 @@ class OneCEvropochtaDeliveryMethodTest extends TestCase
         $profile = OneCOrderProfile::create(['name' => 'Розница', 'document' => 'customer', 'customer_mode' => 'retail',
             'is_active' => true, 'is_default' => true, 'header' => ['СпособДоставки' => 'ДоКлиента'], 'row_defaults' => [],
             'meta' => ['keys' => ['СпособДоставки'], 'address' => ['АдресДоставки'], 'info' => ['ДополнительнаяИнформацияПоДоставке']]]);
+
         return [$order, $profile, app(OneCOrderExport::class)];
+    }
+
+    public function test_delivery_info_keeps_buyer_and_separate_recipient_for_one_c(): void
+    {
+        [$order, $profile, $export] = $this->fixture();
+        $quote = $order->evropochta_quote;
+        $quote['recipient'] = ['receiver_name' => 'Надежда', 'receiver_surname' => 'Петровская',
+            'receiver_patronymic_name' => 'Ивановна', 'receiver_phone_number' => '375336525724'];
+        $order->update(['evropochta_quote' => $quote]);
+        $info = $export->defaults($order, $profile)['info'];
+        $this->assertStringContainsString('Клиент: Клиент', $info);
+        $this->assertStringContainsString('Получатель: Петровская Надежда Ивановна', $info);
+        $this->assertStringContainsString('Телефон: 375336525724', $info);
     }
 
     public function test_europochta_defaults_to_our_transport_to_the_carrier_even_for_prepayment(): void
@@ -52,9 +67,13 @@ class OneCEvropochtaDeliveryMethodTest extends TestCase
     {
         [$order, $profile, $export] = $this->fixture();
         $form = $export->defaults($order, $profile);
-        foreach (['info', 'comment'] as $field) $this->assertSame(1, substr_count($form[$field], 'TEST-TRACK-123'));
+        foreach (['info', 'comment'] as $field) {
+            $this->assertSame(1, substr_count($form[$field], 'TEST-TRACK-123'));
+        }
         $body = $export->body($order, $profile, $form);
-        foreach (['ДополнительнаяИнформацияПоДоставке', 'Комментарий'] as $field) $this->assertSame(1, substr_count($body[$field], 'TEST-TRACK-123'));
+        foreach (['ДополнительнаяИнформацияПоДоставке', 'Комментарий'] as $field) {
+            $this->assertSame(1, substr_count($body[$field], 'TEST-TRACK-123'));
+        }
         $body = $export->body($order, $profile, ['comment' => 'Мой комментарий'], 4);
         $this->assertStringContainsString('TEST-TRACK-123', $body['Комментарий']);
         $this->assertSame('ДоКлиента', $body['СпособДоставки']);
@@ -73,7 +92,7 @@ class OneCEvropochtaDeliveryMethodTest extends TestCase
     public function test_vam_and_legacy_linked_transport_use_the_sending_terminal_and_keep_recipient_details(): void
     {
         [$order, $profile, $export] = $this->fixture('vam_express');
-        $shipment = \App\Models\VamExpressShipment::create(['remote_id' => '7bb972d', 'display_id' => '7bb972d']);
+        $shipment = VamExpressShipment::create(['remote_id' => '7bb972d', 'display_id' => '7bb972d']);
         $shipment->forceFill(['order_id' => $order->id])->save();
         $order->update(['payment_type' => 'cash', 'payment_status' => 'pending']);
         foreach (['vam_express', 'transport'] as $method) {
