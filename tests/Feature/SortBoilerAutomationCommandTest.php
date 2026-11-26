@@ -87,6 +87,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $nbw = $card('WELLMIX Моноблочный насос NBW 50-32-250- 7.5/2-380-2S-BQQE', $monoblock);
         $pstg = $card('PURITY Консольно-моноблочный фланцевый насос PSTG 100-250/550 (N)', $monoblock);
         $fc = $card('UNIPUMP Консольно-моноблочный насос FC32-160-1.5', $monoblock);
+        $press = $section('press-fitingi');
+        $bronzeTee = $card('Тройник бронзовый с внутренней резьбой 22х1/2"х22 пресс SANHA', $press);
+        $inoxTee = $card('Varmega VM719181518 18x15x18', $press);
+        $inoxUnknown = $card('Varmega VM710002828 28x28', $press);
+        $slideElbow = $card('Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51418, 32x3/4", аксиальный', $press);
+        $copperPlug = $card('Заглушка медная 35 под пайку арт. 109134 VIEGA', $press);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -190,6 +196,20 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Свыше 30 кВт', $value('Мощность двигателя', $pstg));
         $this->assertSame('До 1,5 кВт', $value('Мощность двигателя', $fc));
         $this->assertSame('380–415 В', $value('Питание', $nbw));
+        $this->assertSame('Тройники', $value('Тип', $bronzeTee));
+        $this->assertSame('Бронза', $value('Материал', $bronzeTee));
+        $this->assertSame('22 мм', $value('Диаметр', $bronzeTee));
+        $this->assertSame('Тройники', $value('Тип', $inoxTee));
+        $this->assertSame('Нержавеющая сталь', $value('Материал', $inoxTee));
+        $this->assertSame('18 мм', $value('Диаметр', $inoxTee));
+        $this->assertNull($value('Тип', $inoxUnknown));
+        $this->assertSame('28 мм', $value('Диаметр', $inoxUnknown));
+        $this->assertSame('Угольники и отводы', $value('Тип', $slideElbow));
+        $this->assertSame('Латунь', $value('Материал', $slideElbow));
+        $this->assertSame('32 мм', $value('Диаметр', $slideElbow));
+        $this->assertSame('Заглушки', $value('Тип', $copperPlug));
+        $this->assertSame('Медь', $value('Материал', $copperPlug));
+        $this->assertSame('35 мм', $value('Диаметр', $copperPlug));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
