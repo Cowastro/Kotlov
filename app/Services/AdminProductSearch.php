@@ -58,11 +58,24 @@ class AdminProductSearch
         return 'УТ-'.str_pad($match[1], 8, '0', STR_PAD_LEFT);
     }
 
+    public function isUnlinkedOneCItem(string $search): bool
+    {
+        $code = $this->oneCCode($search);
+        if ($code === null) {
+            return false;
+        }
+
+        $ids = $this->oneCIds([$code, '00'.$code], knownItem: $knownItem);
+
+        return $knownItem && $ids === [];
+    }
+
     /** Both the nomenclature cache and characteristic-specific integration links are authoritative. */
-    private function oneCIds(array $keys, bool $article = false): array
+    private function oneCIds(array $keys, bool $article = false, ?bool &$knownItem = null): array
     {
         $items = OneCItem::query()->where('is_folder', false)->where('deletion_mark', false)
             ->whereIn($article ? 'article' : 'code', $keys)->limit(300)->get(['ref_key', 'product_id']);
+        $knownItem = $items->isNotEmpty();
         $refs = $items->pluck('ref_key')->all();
         $sourceIds = DB::table('integration_sources')->where('code', 'onec')->pluck('id')->all();
         $ids = $items->pluck('product_id')->filter()->all();
