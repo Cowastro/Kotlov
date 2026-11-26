@@ -3,8 +3,8 @@
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\ItemTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
-use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Integrations\OneCBridge\OrderSupplyTaskHandler;
+use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Integrations\OneCBridge\PriceBatchTaskHandler;
 use App\Services\Integrations\OneCBridge\SupplierOrderTaskHandler;
 
@@ -13,6 +13,8 @@ return [
     'order_queue_enabled' => (bool) env('ONEC_ORDER_QUEUE_ENABLED', false),
     // Enable only after posting and receipt promotion are verified against the live 1C publication.
     'supply_sync_enabled' => (bool) env('ONEC_SUPPLY_SYNC_ENABLED', false),
+    // Read-only recovery when cron stops generating tasks for an otherwise online agent.
+    'read_watchdog_enabled' => (bool) env('ONEC_READ_WATCHDOG_ENABLED', true),
 
     'exchange' => [
         'username' => env('ONEC_EXCHANGE_USER'),

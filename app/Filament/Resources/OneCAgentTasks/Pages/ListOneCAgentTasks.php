@@ -7,15 +7,18 @@ use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Filament\Resources\OneCOrderProfiles\OneCOrderProfileResource;
 use App\Filament\Resources\OneCPriceBatches\OneCPriceBatchResource;
+use App\Models\OneCAgentTask;
 use App\Services\Integrations\OneCBridge\DocumentStatusTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
 use App\Services\Integrations\OneCBridge\OneCReferences;
+use App\Services\Integrations\OneCBridge\OneCStock;
 use App\Services\Integrations\OneCPriceBatches;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Enums\Width;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 
 class ListOneCAgentTasks extends ListRecords
@@ -32,6 +35,10 @@ class ListOneCAgentTasks extends ListRecords
         $h = app(OneCAgentTasks::class)->health();
         $latest = (string) config('onec.agent.version');
         $parts = [];
+        $stockRead = OneCAgentTask::where('payload->stock', true)->where('status', OneCAgentTask::DONE)->latest('finished_at')->value('finished_at');
+        if (! $stockRead || Carbon::parse($stockRead)->lt(now()->subHours(3))) {
+            $parts[] = '<span style="color:#d97706">Остатки 1С не обновлялись более 3 часов. Связь с агентом не подтверждает свежесть данных.</span>';
+        }
         if ($h['seen_at'] === null) {
             $parts[] = '<span style="color:#dc2626">Агент 1С ещё не подключался.</span>';
         } else {
@@ -74,6 +81,16 @@ class ListOneCAgentTasks extends ListRecords
                         Notification::make()->success()->title('Задача №'.$task->id.' в очереди: агент прочитает за 5 минут')->send();
                     } catch (\DomainException $e) {
                         Notification::make()->warning()->title($e->getMessage())->send();
+                    }
+                }),
+            Action::make('syncStock')->label('Обновить остатки 1С')->icon('heroicon-o-arrow-path')->color('gray')
+                ->action(function (): void {
+                    try {
+                        $task = app(OneCStock::class)->enqueue(auth()->user());
+                        Notification::make()->success()->title('Остатки 1С: задача №'.$task->id)
+                            ->body('Агент прочитает остатки и резервы склада «Основной» в ближайший запуск.')->send();
+                    } catch (\DomainException $exception) {
+                        Notification::make()->warning()->title($exception->getMessage())->send();
                     }
                 }),
             Action::make('checkDocuments')

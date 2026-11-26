@@ -24,7 +24,7 @@ class OrderItemAvailabilityChecker
 
         $context = $this->resolver->resolveCurrent($item);
 
-        if ($item->product?->manual_stock_management) {
+        if ($item->product?->manual_stock_management && ($context['stock_source'] ?? null) !== 'onec') {
             $available = $item->product->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK;
             $context['is_available'] = $available;
             $context['stock_quantity'] = $available ? (float) $item->product->stock_qty : 0.0;
@@ -53,6 +53,8 @@ class OrderItemAvailabilityChecker
             'supplier_name' => $context['supplier_name'],
             'supplier_contact' => $context['supplier_contact'],
             'source_label' => $context['source_label'],
+            'stock_source' => $context['stock_source'] ?? null,
+            'stock_source_label' => $context['stock_source_label'] ?? null,
             'stock_quantity' => $context['stock_quantity'],
             'stock_label' => $context['stock_label'],
             'is_available' => $context['is_available'],

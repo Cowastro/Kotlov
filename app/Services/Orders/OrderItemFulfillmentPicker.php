@@ -46,6 +46,8 @@ final class OrderItemFulfillmentPicker
         return $suppliers->mapWithKeys(function (Supplier $supplier) use ($product, $item, $context, $own, $integrations, $legacyOffers, $warehouses): array {
             $integration = collect($integrations->get($supplier->id))
                 ->sortByDesc(fn ($offer): array => [$offer->hasFreshPositiveStock(), (float) $offer->stock_quantity])->first();
+            $integration = collect($integrations->get($supplier->id))->first(fn ($offer): bool => $offer->source?->code === 'onec') ?? $integration;
+            $onecContext = ($context['stock_source'] ?? null) === 'onec' && (int) ($context['stock_supplier_id'] ?? 0) === $supplier->id;
             $legacy = collect($legacyOffers->get($supplier->id))
                 ->sortByDesc(fn ($offer): array => [$offer->hasFreshPositiveStock(), (float) $offer->stock_quantity])->first();
             $warehouse = collect($warehouses->get($supplier->id))->filter(fn ($stock): bool => $stock->hasFreshPositiveStock())
@@ -58,6 +60,7 @@ final class OrderItemFulfillmentPicker
             $onecFree = OneCStock::fresh($onecItem) ? OneCStock::free($onecItem) : null;
             $manual = $own?->id === $supplier->id && $product?->manual_stock_management;
             $quantity = match (true) {
+                $onecContext => $context['stock_quantity'],
                 $manual => $product->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK ? (float) $product->stock_qty : 0.0,
                 $onecFree !== null => $onecFree,
                 $integration?->hasFreshPositiveStock() === true => (float) $integration->stock_quantity,
@@ -72,6 +75,7 @@ final class OrderItemFulfillmentPicker
                 ?? ((int) $context['supplier_id'] === $supplier->id ? $context['wholesale_price'] : null)
                 ?? ((int) $item->supply_supplier_id === $supplier->id ? $item->supply_purchase_price : null);
             $source = match (true) {
+                $onecContext => $context['stock_source_label'],
                 $manual => 'Ручное наличие карточки',
                 $onecFree !== null => '1С, склад '.implode(', ', OneCStock::WAREHOUSES).': '.OneCStock::label($onecItem)
                     .($isOwn && (float) $product?->onec_cost_byn > 0 ? ' · себестоимость 1С' : ''),
