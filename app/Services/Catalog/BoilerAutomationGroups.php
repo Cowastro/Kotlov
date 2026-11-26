@@ -219,11 +219,12 @@ final class BoilerAutomationGroups
             ],
             self::PELLET_BURNERS => [
                 'Тип' => [self::PELLET_TYPES, array_values(array_unique(self::PELLET_TYPES))],
-                'Мощность' => [fn (string $title) => self::pelletPower($title), self::PELLET_POWERS],
+                // Not plain «Мощность»: the catalog hides filters of that name on a parent section.
+                self::PELLET_POWER_FILTER => [fn (string $title) => self::pelletPower($title), self::PELLET_POWERS],
             ],
             self::LEAKS => [
                 'Тип' => [self::LEAK_TYPES, self::LEAK_ORDER],
-                'Диаметр' => [self::LEAK_SIZES, array_values(self::LEAK_SIZES)],
+                'Диаметр' => [self::LEAK_SIZES, ['1/2"', '3/4"', '1"', '1 1/4"', '1 1/2"', '2"']],
                 'Напряжение привода' => [self::LEAK_VOLTAGES, array_values(self::LEAK_VOLTAGES)],
             ],
             self::GAS_HOSES => [
@@ -364,7 +365,9 @@ final class BoilerAutomationGroups
         '/./u' => 'Запчасти и датчики',
     ];
 
-    /** «Мощность» options of a pellet burner, smallest first. */
+    public const PELLET_POWER_FILTER = 'Мощность горелки';
+
+    /** «Мощность горелки» options, smallest first. */
     public const PELLET_POWERS = ['До 25 кВт', '26–50 кВт', '51–100 кВт', '101–300 кВт', 'Свыше 300 кВт'];
 
     /** The power band of a burner from its title (the top of a «15-70 кВт» range); null for anything but a burner. */
