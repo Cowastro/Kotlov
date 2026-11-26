@@ -1,5 +1,21 @@
 <?php
 
+use App\Models\B2bClient;
+use App\Models\PartnerProgramLevel;
+use App\Models\SupplierSync;
+use App\Services\B2bOrders\StaffSelectionReservation;
+use App\Services\Integrations\OneCBridge\OneCPostingReminder;
+use App\Services\Orders\OrderDealControlNotifier;
+use App\Services\Orders\OrderStatusSmsNotifier;
+use App\Services\PartnerLevelEvaluator;
+use App\Services\Shipping\VamExpressSettings;
+use App\Services\Suppliers\EurotermPortalCredentials;
+use App\Services\Suppliers\TdKomplektFeed;
+use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
+
 Schedule::command('shipping:sync-evropochta-status')
     ->everyFiveMinutes()->withoutOverlapping(5)->runInBackground();
 
@@ -25,22 +41,6 @@ Schedule::command('supplier:sync-td-komplekt --apply --create-new')
     ->withoutOverlapping(45)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/td-komplekt-sync.log'));
-
-use App\Models\B2bClient;
-use App\Models\PartnerProgramLevel;
-use App\Models\SupplierSync;
-use App\Services\B2bOrders\StaffSelectionReservation;
-use App\Services\Integrations\OneCBridge\OneCPostingReminder;
-use App\Services\Orders\OrderDealControlNotifier;
-use App\Services\Orders\OrderStatusSmsNotifier;
-use App\Services\PartnerLevelEvaluator;
-use App\Services\Shipping\VamExpressSettings;
-use App\Services\Suppliers\EurotermPortalCredentials;
-use App\Services\Suppliers\TdKomplektFeed;
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Schedule;
-use Illuminate\Support\Facades\Storage;
 
 Schedule::command('b2b:process-specification-ocr --limit=2')
     ->everyMinute()
