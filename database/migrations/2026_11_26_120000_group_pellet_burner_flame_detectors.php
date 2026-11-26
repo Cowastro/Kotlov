@@ -24,7 +24,7 @@ return new class extends Migration
 
             $products = DB::table('products')
                 ->join('categories', 'categories.id', '=', 'products.category_id')
-                ->whereIn('products.sku', ['KOTLOV-034535', 'KOTLOV-023119', 'KOTLOV-022713'])
+                ->whereIn('products.sku', ['KOTLOV-034535', 'KOTLOV-023119', 'KOTLOV-022713', 'KOTLOV-022712', 'KOTLOV-022714'])
                 ->where('products.category_id', '!=', $parts->id)
                 ->get(['products.id', 'products.slug', 'categories.slug as old_category']);
 
