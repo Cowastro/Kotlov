@@ -85,7 +85,7 @@ class ContactRequestCreateOrderTest extends TestCase
         $page->set($base.'.delivery_type', 'evropochta')
             ->set($base.'.different_receiver', true)
             ->assertSet($base.'.recipient.receiver_phone_number', $lead->phone)
-            ->set($base.'.recipient.receiver_surname', 'Петровская')
+            ->set($base.'.recipient.receiver_surname', 'Тестовая')
             ->set($base.'.recipient.receiver_name', 'Надежда')
             ->set($base.'.recipient.receiver_patronymic_name', 'Ивановна')
             ->set($base.'.evropochta_branch', '40930010')->assertSet($base.'.evropochta_price', null)

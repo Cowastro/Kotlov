@@ -40,27 +40,27 @@ class EvropochtaOrderShipmentTest extends TestCase
         $this->signIn();
         $this->fakePreparationTariff();
         $order = $this->manualOrder();
-        $order->update(['customer_name' => 'Кирилл', 'customer_phone' => '+375336525724']);
-        $receiver = ['receiver_surname' => 'Петровская', 'receiver_name' => 'Надежда',
-            'receiver_patronymic_name' => 'Ивановна', 'receiver_phone_number' => '+375336525724'];
+        $order->update(['customer_name' => 'Кирилл', 'customer_phone' => '+375291110000']);
+        $receiver = ['receiver_surname' => 'Тестовая', 'receiver_name' => 'Надежда',
+            'receiver_patronymic_name' => 'Ивановна', 'receiver_phone_number' => '+375291110000'];
         $page = Livewire::test(ViewOrder::class, ['record' => $order->id]);
         $page->callAction('prepareEvropochtaShipment', $this->parcelInput() + ['different_receiver' => true] + $receiver)
             ->assertHasNoActionErrors();
         $order->refresh();
         $this->assertSame('Кирилл', $order->customer_name);
-        $this->assertSame('+375336525724', $order->customer_phone);
+        $this->assertSame('+375291110000', $order->customer_phone);
         $this->assertSame('Надежда', $order->evropochta_quote['recipient']['receiver_name']);
         // A repeated tariff calculation without a recipient edit must keep the saved contact.
         app(EvropochtaOrderShipment::class)->prepare($order, $this->parcelInput());
         $page->call('$refresh')->mountAction('createEvropochtaShipment')
-            ->assertActionDataSet(['receiver_name' => 'Надежда', 'receiver_surname' => 'Петровская',
-                'receiver_patronymic_name' => 'Ивановна', 'receiver_phone_number' => '375336525724']);
+            ->assertActionDataSet(['receiver_name' => 'Надежда', 'receiver_surname' => 'Тестовая',
+                'receiver_patronymic_name' => 'Ивановна', 'receiver_phone_number' => '375291110000']);
         Http::fake([self::API.'postal/create' => Http::response(['number' => self::TRACK])]);
         $saved = EvropochtaRecipient::defaults($order->fresh());
         app(EvropochtaOrderShipment::class)->create($order, $saved + ['notify_receiver' => false]);
         Http::assertSent(fn (Request $request): bool => $request->url() === self::API.'postal/create'
-            && $request['receiver_name'] === 'Надежда' && $request['receiver_surname'] === 'Петровская'
-            && $request['receiver_phone_number'] === '375336525724');
+            && $request['receiver_name'] === 'Надежда' && $request['receiver_surname'] === 'Тестовая'
+            && $request['receiver_phone_number'] === '375291110000');
         $this->assertSame('Кирилл', $order->fresh()->customer_name);
         $this->assertSame('Надежда', $order->fresh()->evropochta_quote['recipient']['receiver_name']);
     }
@@ -70,8 +70,8 @@ class EvropochtaOrderShipmentTest extends TestCase
         $order = $this->order();
         $signature = EvropochtaPayment::signature($order);
         $quote = $order->evropochta_quote;
-        $quote['recipient'] = ['receiver_name' => 'Надежда', 'receiver_surname' => 'Петровская',
-            'receiver_phone_number' => '375336525724'];
+        $quote['recipient'] = ['receiver_name' => 'Надежда', 'receiver_surname' => 'Тестовая',
+            'receiver_phone_number' => '375291110000'];
         $order->update(['evropochta_quote' => $quote]);
         try {
             app(EvropochtaOrderShipment::class)->create($order, $this->recipient() + ['payment_review_signature' => $signature]);

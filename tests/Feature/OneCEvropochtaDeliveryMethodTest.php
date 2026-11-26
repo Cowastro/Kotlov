@@ -33,13 +33,13 @@ class OneCEvropochtaDeliveryMethodTest extends TestCase
     {
         [$order, $profile, $export] = $this->fixture();
         $quote = $order->evropochta_quote;
-        $quote['recipient'] = ['receiver_name' => 'Надежда', 'receiver_surname' => 'Петровская',
-            'receiver_patronymic_name' => 'Ивановна', 'receiver_phone_number' => '375336525724'];
+        $quote['recipient'] = ['receiver_name' => 'Надежда', 'receiver_surname' => 'Тестовая',
+            'receiver_patronymic_name' => 'Ивановна', 'receiver_phone_number' => '375291110000'];
         $order->update(['evropochta_quote' => $quote]);
         $info = $export->defaults($order, $profile)['info'];
         $this->assertStringContainsString('Клиент: Клиент', $info);
-        $this->assertStringContainsString('Получатель: Петровская Надежда Ивановна', $info);
-        $this->assertStringContainsString('Телефон: 375336525724', $info);
+        $this->assertStringContainsString('Получатель: Тестовая Надежда Ивановна', $info);
+        $this->assertStringContainsString('Телефон: 375291110000', $info);
     }
 
     public function test_europochta_defaults_to_our_transport_to_the_carrier_even_for_prepayment(): void
