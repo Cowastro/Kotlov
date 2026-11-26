@@ -475,13 +475,17 @@ class OrderInfolist
                                                 return 'Требует решения: маршрут и входная цена не подтверждены';
                                             }
 
+                                            $price = match (true) {
+                                                $record->fulfillment_route === 'own_stock' => self::onecCostLabel(self::assignmentPrice($record, 'own_stock')),
+                                                $record->fulfillment_purchase_price !== null => 'вход '.$byn($record->fulfillment_purchase_price),
+                                                default => 'входная цена не указана',
+                                            };
+
                                             return collect([
                                                 $record->fulfillmentRouteLabel(),
                                                 $record->fulfillment_supplier_name
                                                     ?: ($record->fulfillment_route === 'own_stock' ? 'Собственный склад' : null),
-                                                $record->fulfillment_purchase_price !== null
-                                                    ? 'вход '.$byn($record->fulfillment_purchase_price)
-                                                    : 'входная цена не указана',
+                                                $price,
                                                 $record->fulfillmentAvailabilityLabel(),
                                                 $record->fulfillment_confirmed_at
                                                     ? 'подтвердил '.($record->fulfillmentConfirmedBy?->name ?? 'система')
@@ -1475,21 +1479,26 @@ class OrderInfolist
         return $confirmed ?? $item->supply_purchase_price;
     }
 
+    private static function onecCostLabel(?float $gross): string
+    {
+        return 'Себестоимость 1С с НДС за шт.: '.($gross === null ? 'нет данных' : number_format($gross, 2, ',', ' ').' BYN');
+    }
+
     private static function onecStockAndCost(?string $key): string
     {
         $item = OneCItem::fromExchangeKey($key);
 
         $stock = OneCStock::fresh($item) ? ' <span style="color:#64748b" title="Склад: '.e(implode(', ', OneCStock::WAREHOUSES)).'">· '.e(OneCStock::label($item)).'</span>' : '';
-        $label = '<br>Себестоимость 1С с НДС за шт.: ';
+        $label = '<br>'.self::onecCostLabel($item?->cost_gross);
         if ($item?->cost_gross === null) {
-            return $stock.$label.'нет данных';
+            return $stock.$label;
         }
 
         $source = $item->cost_kind === \App\Services\Integrations\OneCBridge\OneCItemCosts::AVERAGE
             ? 'Средняя за 3 месяца' : 'Закупка';
         $details = implode(' · ', array_filter([$source, $item->cost_doc, $item->cost_date?->format('d.m.Y')]));
 
-        return $stock.$label.number_format($item->cost_gross, 2, ',', ' ').' BYN<br>'.e($details);
+        return $stock.$label.'<br>'.e($details);
     }
 
     public static function onecItemLine(OrderItem $item): ?HtmlString
