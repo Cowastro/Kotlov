@@ -36,6 +36,12 @@ final class BoilerAutomationGroups
         '/^шланг для газа/u' => 'gazovye-shlangi',
         '/^насос-автомат/u' => 'nasosnyie-stantsii',
         '/^смеситель пластиковый/u' => self::FAUCETS,
+        '/^(косой|т-образный \(прямой\)|[cс]етчатый промывной( поворотный)?|комбинированный промывной) фильтр .*varmega/u' => 'filtry',
+        '/^комнатный термостат \(терморегулятор\) varmega/u' => self::SECTION,
+        '/^переходник varmega vmtf/u' => 'rezbovye-fitingi',
+        '/^труба varmega pe-xa/u' => 'truby-iz-sshitogo-polietilena',
+        '/^монтажный ключ varmega/u' => 'instrumenty-dlya-montazha',
+        '/^(лента демпферная|плита \(мат\)).*varmega/u' => 'vodyanoy-teplyy-pol',
         '/^насос погружной «фекальник»/u' => 'drenajnyie',
         '/^(привод|патрон) тр[её]хходового клапана для котлов.*fondital/u' => self::PARTS,
         '/^(вместе с фланцем|пеллетная горелка kipi rotary)/u' => 'pelletnye-gorelki',
@@ -249,6 +255,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::MANIFOLDS => [
+                'Тип' => [self::MANIFOLD_TYPES, self::MANIFOLD_ORDER],
+                'Число выходов' => [fn (string $title) => self::manifoldOutlets($title), array_map(fn (int $n) => self::outletsLabel($n), range(2, 16))],
+            ],
             self::PEX_FITTINGS => [
                 'Тип' => [self::PEX_TYPES, self::PEX_ORDER],
                 'Материал' => [self::PEX_MATERIALS, array_values(self::PEX_MATERIALS)],
@@ -1007,6 +1017,63 @@ final class BoilerAutomationGroups
 
     /** The PEX/PERT pipe sizes, mm. */
     public const PEX_DIAMETERS = [14, 16, 17, 18, 20, 25, 32, 40, 50, 63];
+
+    public const MANIFOLDS = 'grebenki';
+
+    /** «Тип» options of «Гребенки», in filter order. */
+    public const MANIFOLD_ORDER = [
+        'Коллекторные группы с расходомерами',
+        'Коллекторы и гребёнки',
+        'Насосно-смесительные узлы',
+        'Коллекторные шкафы',
+        'Комплектующие для коллекторов',
+    ];
+
+    /** Title pattern => «Тип» inside «Гребенки»; the first match wins. */
+    public const MANIFOLD_TYPES = [
+        '/^шкаф/u' => 'Коллекторные шкафы',
+        '/насосн|смесительн\w* узел|узел насосно/u' => 'Насосно-смесительные узлы',
+        '/^(кронштейн|комплект кронштейн|заглушк|концевая|расходомер|термовставк|комплект|электротермическ|сервопривод|модульный блок|узел для|элемент|расширительный контур|кран|удлинитель|настенные|т-соединительн|varmega vm1)/u' => 'Комплектующие для коллекторов',
+        '/расходомер|теплого пола|от пола|fbh 63/u' => 'Коллекторные группы с расходомерами',
+        '/гребенк|коллектор/u' => 'Коллекторы и гребёнки',
+    ];
+
+    public static function outletsLabel(int $n): string
+    {
+        return $n.' '.match (true) {
+            $n % 10 === 1 && $n % 100 !== 11 => 'выход',
+            in_array($n % 10, [2, 3, 4], true) && ! in_array($n % 100, [12, 13, 14], true) => 'выхода',
+            default => 'выходов',
+        };
+    }
+
+    /**
+     * The number of outlets (circuits) of a manifold from its title: «на 5 контуров», «7 выходов», «(11 конт.)»,
+     * «- 3» (Varmega), TERMICA «MEX05», Afriso «EF-3», PROFLine «XF 20102-12», Bosch «HKV 3/25/32». Parts get none.
+     */
+    public static function manifoldOutlets(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        if (self::match($title, self::MANIFOLD_TYPES) === 'Комплектующие для коллекторов' || str_starts_with($title, 'шкаф')) {
+            return null;
+        }
+        $n = null;
+        foreach ([
+            '/(\d{1,2})\s*(?:выход|вых\.|контур|конт\.|зон)/u',
+            '/\s-\s?(\d{1,2})$/u',
+            '/mex(\d{2})/u',
+            '/ef-(\d{1,2})/u',
+            '/xf\s?\d{5}-(\d{1,2})/u',
+            '/hkv\s?(\d)\/\d/u',
+        ] as $pattern) {
+            if (preg_match($pattern, $title, $m)) {
+                $n = (int) $m[1];
+                break;
+            }
+        }
+
+        return $n !== null && $n >= 2 && $n <= 16 ? self::outletsLabel($n) : null;
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
