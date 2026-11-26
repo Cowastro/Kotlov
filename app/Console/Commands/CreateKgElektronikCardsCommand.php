@@ -138,7 +138,7 @@ class CreateKgElektronikCardsCommand extends Command
             'supplier_name' => 'KG Elektronik '.$row['model'], 'source_url' => $row['source_url'],
             'price' => $row['cost_byn'], 'currency' => 'BYN', 'currency_rate' => 1, 'price_byn' => $row['cost_byn'],
             'in_stock' => false, 'stock_quantity' => null, 'stock_status' => 'preorder', 'delivery_days' => $days,
-            'stock_text' => 'Под заказ из Польши через ООО «СанБизнесГруп»', 'warehouse_name' => 'ООО «СанБизнесГруп»',
+            'stock_text' => 'Под заказ', 'warehouse_name' => 'ООО «СанБизнесГруп»',
             'match_status' => 'matched', 'match_confidence' => 'manual_price_list',
             'raw' => ['brand' => 'KG Elektronik', 'catalogue' => 'CENNIK 2027', 'price_pln' => $row['price_pln'], 'discount' => 0.3, 'retail_byn' => $row['price']],
             'last_synced_at' => now(),
