@@ -23,7 +23,10 @@ final class BoilerAutomationGroups
         '/^терморегулятор (electrolux|elektrolux) et|^терморегулятор накладной watts/u' => 'termoregulyatory-dlya-teplogo-pola',
         '/^сигнализатор загазованности/u' => 'signalizatory-zagazovannosti',
         '/^(датчик температуры(?!.*hommyn)|датчик уличной|hx 31|hx 52)/u' => 'datchiki',
-        '/^датчик протечки|манипулятор шарового крана|модуль съемный управляющий hommyn|кабель соединительный hommyn/u' => 'sistemy-zashchity-ot-protechek',
+        '/^датчик протечки/u' => 'datchiki-protechki-vody',
+        '/манипулятор шарового крана/u' => 'krany-s-elektroprivodom',
+        '/модуль съемный управляющий hommyn|кабель соединительный hommyn/u' => 'moduli-upravleniya-zashchitoj-ot-protechek',
+        '/^(oxi колосник|колено для соединения патрубка пеллетной горелки|коммутационная плата \(часть блока управления горелкой|контроллер электронный для пеллетной горелки)/u' => 'zapchasti-dlya-pelletnyh-gorelok',
         '/^клапан [23]-х ходовой|^привод поворотный|^электропривод arm/u' => 'smesitelnye-klapany-i-uzly',
         '/^комплект из двух отопительных контуров/u' => 'komplekty-podklyucheniya',
         '/панель изолирующая|термостат предохранительный|комплект трехходового крана с датчиком бойлера|^комплект подключения бойлера к электрическому котлу/u' => 'zapchasti-dlya-kotlov',
@@ -214,6 +217,15 @@ final class BoilerAutomationGroups
             self::MIXING_VALVES => [
                 'Тип' => [self::MIXING_TYPES, self::MIXING_ORDER],
             ],
+            self::PELLET_BURNERS => [
+                'Тип' => [self::PELLET_TYPES, array_values(array_unique(self::PELLET_TYPES))],
+                'Мощность' => [fn (string $title) => self::pelletPower($title), self::PELLET_POWERS],
+            ],
+            self::LEAKS => [
+                'Тип' => [self::LEAK_TYPES, self::LEAK_ORDER],
+                'Диаметр' => [self::LEAK_SIZES, array_values(self::LEAK_SIZES)],
+                'Напряжение привода' => [self::LEAK_VOLTAGES, array_values(self::LEAK_VOLTAGES)],
+            ],
             self::GAS_HOSES => [
                 'Тип' => [self::HOSE_TYPES, array_values(self::HOSE_TYPES)],
                 'Длина' => [self::HOSE_LENGTHS, array_values(self::HOSE_LENGTHS)],
@@ -338,6 +350,81 @@ final class BoilerAutomationGroups
         '/./u' => 'Прочее',
     ];
 
+    /** Sections whose filters also cover the cards of their subsections (the parent page lists them all). */
+    public const WITH_SUBSECTIONS = [self::PELLET_BURNERS, self::LEAKS];
+
+    public const PELLET_BURNERS = 'pelletnye-gorelki';
+
+    /** Title pattern => «Тип» inside «Пеллетные горелки» and its parts subsection; the first match wins. */
+    public const PELLET_TYPES = [
+        '/полный комплект|с подающим устройством/u' => 'Горелки в полном комплекте',
+        '/^(пеллетная горелка|kotlov xo)/u' => 'Пеллетные горелки',
+        '/шнек|шнеков|пневматической подачи/u' => 'Шнеки и системы подачи',
+        '/бункер/u' => 'Бункеры',
+        '/./u' => 'Запчасти и датчики',
+    ];
+
+    /** «Мощность» options of a pellet burner, smallest first. */
+    public const PELLET_POWERS = ['До 25 кВт', '26–50 кВт', '51–100 кВт', '101–300 кВт', 'Свыше 300 кВт'];
+
+    /** The power band of a burner from its title (the top of a «15-70 кВт» range); null for anything but a burner. */
+    public static function pelletPower(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        if (! preg_match('/^(пеллетная горелка|kotlov xo)/u', $title)) {
+            return null;
+        }
+        $kw = match (true) {
+            (bool) preg_match('/(\d+)\s*[-–]\s*(\d+)\s*квт/u', $title, $m) => (int) $m[2],
+            (bool) preg_match('/(\d+)\s*квт/u', $title, $m) => (int) $m[1],
+            (bool) preg_match('/(?:comfort r?|atmos a|g2 - |uni )(\d+)/u', $title, $m) => (int) $m[1],
+            default => null,
+        };
+
+        return match (true) {
+            $kw === null => null,
+            $kw <= 25 => 'До 25 кВт',
+            $kw <= 50 => '26–50 кВт',
+            $kw <= 100 => '51–100 кВт',
+            $kw <= 300 => '101–300 кВт',
+            default => 'Свыше 300 кВт',
+        };
+    }
+
+    public const LEAKS = 'sistemy-zashchity-ot-protechek';
+
+    /** «Тип» options of «Системы защиты от протечек», in filter order. */
+    public const LEAK_ORDER = [
+        'Готовые комплекты и системы',
+        'Краны с электроприводом',
+        'Датчики протечки',
+        'Модули управления и аксессуары',
+    ];
+
+    /** Title pattern => «Тип» inside «Системы защиты от протечек» and its subsections; the first match wins. */
+    public const LEAK_TYPES = [
+        '/^(модуль|кабель|источник бесперебойного)/u' => 'Модули управления и аксессуары',
+        '/^(система|neptun ×|комплект)/u' => 'Готовые комплекты и системы',
+        '/кран|манипулятор/u' => 'Краны с электроприводом',
+        '/датчик/u' => 'Датчики протечки',
+    ];
+
+    /** Title pattern => «Диаметр» (the pipe thread) of a leak protection kit or valve. */
+    public const LEAK_SIZES = [
+        '/(?<![\d\/])1 1\/4(?!\d)/u' => '1 1/4"',
+        '/(?<![\d\/])1 1\/2(?!\d)/u' => '1 1/2"',
+        '/(?<![\d\/])1\/2(?!\d)/u' => '1/2"',
+        '/(?<![\d\/])3\/4(?!\d)/u' => '3/4"',
+        '/\dв 1$/u' => '1"',
+        '/\dв 2$/u' => '2"',
+    ];
+
+    /** Title pattern => «Напряжение привода» of a motorised valve. */
+    public const LEAK_VOLTAGES = [
+        '/(?<!\d)12\s*в/u' => '12 В',
+        '/(?<!\d)2[23]0\s*[вv]/u' => '220–230 В',
+    ];
+
     public const GAS_HOSES = 'gazovye-shlangi';
 
     /** Title pattern => «Тип» inside «Газовые шланги». */
@@ -364,9 +451,10 @@ final class BoilerAutomationGroups
         return self::first($rules, $title) ?? 'Прочее';
     }
 
-    public static function match(string $title, array $rules): ?string
+    /** @param  array<string, string>|\Closure(string): ?string  $rules */
+    public static function match(string $title, array|\Closure $rules): ?string
     {
-        return self::first($rules, $title);
+        return $rules instanceof \Closure ? $rules($title) : self::first($rules, $title);
     }
 
     private static function first(array $rules, string $title): ?string

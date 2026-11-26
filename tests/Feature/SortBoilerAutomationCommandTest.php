@@ -60,12 +60,23 @@ class SortBoilerAutomationCommandTest extends TestCase
         $cvlit = $card('Клапан радиаторный термостат. Ду 15 (прямой) Цветлит', $radiator);
         $kit = $card('Набор термостатический угловой Royal Thermo Design 1/2"М30х1,5 (Черный)', $radiator);
         $bracket = $card('Кронштейн угловой для радиатора белый', $radiator);
+        $child = fn (string $slug, Category $parent) => Category::query()->firstOrCreate(['slug' => $slug], ['name' => $slug, 'parent_id' => $parent->id, 'is_active' => true]);
+        $pelletParts = $child('zapchasti-dlya-pelletnyh-gorelok', $burners);
+        $grate = $card('OXI Колосник верхнего ряда для пеллетной горелки Ceramik+ 75–1000 кВт', $burners);
+        $venma = $card('Пеллетная горелка Venma Comfort R58', $burners);
+        $flame = $card('PLUM OCP-2 Оптический датчик пламени, кабель 0,5 м', $pelletParts);
+        $leaks = $section('sistemy-zashchity-ot-protechek');
+        $leakValves = $child('krany-s-elektroprivodom', $leaks);
+        $leakSensors = $child('datchiki-protechki-vody', $leaks);
+        $leakValve = $card('Кран с электроприводом Neptun PROFI 12В 1 1/4', $leakValves);
+        $leakKit = $card('Система Neptun PROFI Base 3/4', $leaks);
+        $salus = $card('Датчик протечки Salus WLS600', $leaks);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=8')
+            ->expectsOutputToContain('metric.boiler_automation.moved=10')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -130,6 +141,20 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Кронштейны и крепления', $value('Тип', $bracket));
         $this->assertNull($value('Исполнение', $bracket));
         $this->assertSame('Белый', $value('Цвет', $bracket));
+        $this->assertSame($pelletParts->id, $grate->fresh()->category_id);
+        $this->assertSame('Запчасти и датчики', $value('Тип', $grate));
+        $this->assertNull($value('Мощность', $grate));
+        $this->assertSame('Запчасти и датчики', $value('Тип', $flame));
+        $this->assertSame('Пеллетные горелки', $value('Тип', $venma));
+        $this->assertSame('51–100 кВт', $value('Мощность', $venma));
+        $this->assertSame('51–100 кВт', $value('Мощность', $kipi));
+        $this->assertSame('Краны с электроприводом', $value('Тип', $leakValve));
+        $this->assertSame('1 1/4"', $value('Диаметр', $leakValve));
+        $this->assertSame('12 В', $value('Напряжение привода', $leakValve));
+        $this->assertSame('Готовые комплекты и системы', $value('Тип', $leakKit));
+        $this->assertSame('3/4"', $value('Диаметр', $leakKit));
+        $this->assertSame($leakSensors->id, $salus->fresh()->category_id);
+        $this->assertSame('Датчики протечки', $value('Тип', $salus));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)
