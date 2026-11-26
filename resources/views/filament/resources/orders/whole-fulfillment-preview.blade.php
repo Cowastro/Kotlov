@@ -25,6 +25,7 @@
                 </dl>
                 <div>{{ \App\Models\OrderItem::FULFILLMENT_AVAILABILITY_STATUSES[$row['status']] ?? 'Уточняется' }}</div>
                 <div class="whole-plan-source">{{ $row['source'] }}</div>
+                @if($row['own_cost_label']) <div>{{ $row['own_cost_label'] }}</div> @endif
             </article>
         @endforeach
     </div>
@@ -36,7 +37,9 @@
                 <tr style="border-top:1px solid #7775">
                     <td style="padding:10px 8px;max-width:350px">{{ $row['item']->product_name }}<br><small>{{ $row['item']->product_sku }}</small></td>
                     <td>{{ $row['item']->quantity }}</td><td>{{ $row['available'] ?? 'Уточняется' }}</td><td>{{ $row['missing'] ?? 'Уточняется' }}</td>
-                    <td>{{ \App\Models\OrderItem::FULFILLMENT_AVAILABILITY_STATUSES[$row['status']] ?? 'Уточняется' }}<br><small>{{ $row['source'] }}</small></td>
+                    <td>{{ \App\Models\OrderItem::FULFILLMENT_AVAILABILITY_STATUSES[$row['status']] ?? 'Уточняется' }}<br><small>{{ $row['source'] }}</small>
+                        @if($row['own_cost_label']) <div>{{ $row['own_cost_label'] }}</div> @endif
+                    </td>
                 </tr>
             @endforeach
             </tbody>

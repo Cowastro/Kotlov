@@ -34,6 +34,11 @@ class OneCItem extends Model
         'stock_synced_at' => 'datetime',
     ];
 
+    public static function fromExchangeKey(?string $key): ?self
+    {
+        return $key ? self::query()->where('ref_key', strtolower(explode('#', $key, 2)[0]))->first() : null;
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

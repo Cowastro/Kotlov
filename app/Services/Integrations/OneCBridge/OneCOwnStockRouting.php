@@ -62,7 +62,7 @@ class OneCOwnStockRouting
             'fulfillment_supplier_id' => $supplier?->id,
             'fulfillment_supplier_name' => $supplier?->name,
             // the 1C cost only — never the selling price; no cost yet, the manager enters it
-            'fulfillment_purchase_price' => (float) $item->product?->onec_cost_byn > 0 ? (float) $item->product->onec_cost_byn : null,
+            'fulfillment_purchase_price' => $offer['price'],
             'fulfillment_availability_status' => 'available',
             'fulfillment_note' => 'Из 1С: '.$offer['source'],
         ])->save();
