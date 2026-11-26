@@ -47,7 +47,7 @@ class SortBoilerAutomationCommand extends Command
 
         $attributeId = $this->filterAttribute($regulators);
         $options = [];
-        foreach (array_values(array_unique([...array_values(Groups::GROUPS), 'Прочее'])) as $i => $name) {
+        foreach (array_values(array_unique([...Groups::ORDER, ...array_values(Groups::GROUPS)])) as $i => $name) {
             $options[$name] = DB::table('attribute_options')->where('attribute_id', $attributeId)->where('name', $name)->value('id')
                 ?? DB::table('attribute_options')->insertGetId(['attribute_id' => $attributeId, 'name' => $name, 'sort_order' => $i, 'created_at' => now(), 'updated_at' => now()]);
             DB::table('attribute_options')->where('id', $options[$name])->update(['sort_order' => $i]);

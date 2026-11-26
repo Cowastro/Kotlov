@@ -27,6 +27,7 @@ class SortBoilerAutomationCommandTest extends TestCase
         $pump = $card('Контроллер насоса ЦО KG Elektronik CS-07.NEW.WIFI', $regulators);
         $room = $card('Комнатный термостат SALUS RT310', $regulators);
         $draught = $card('Регулятор тяги ICMA', $parts);
+        $pumpUnit = $card('Блок автоматики', $regulators);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -46,7 +47,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Автоматика для насосов и клапанов', $group($pump));
         $this->assertSame('Комнатные термостаты и программаторы', $group($room));
         $this->assertSame('Регуляторы тяги', $group($draught));
+        $this->assertSame('Автоматика для насосов и клапанов', $group($pumpUnit));
         $this->assertNull($group($head));
+        $this->assertSame(['Автоматика для котлов', 'Автоматика для насосов и клапанов', 'Комнатные термостаты и программаторы'], DB::table('attribute_options')
+            ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
+            ->orderBy('attribute_options.sort_order')->limit(3)->pluck('attribute_options.name')->all());
         $this->assertTrue((bool) DB::table('attributes')->where(['category_id' => $regulators->id, 'name' => 'Назначение'])->value('in_filter'));
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
