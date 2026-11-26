@@ -333,6 +333,8 @@
                                     @endif
                                 </div>
 
+                                @includeWhen(str_starts_with($product->name, 'Теплообменник Sakovich Pellet Standart '), 'partials.sakovich-exchanger-price-note')
+
                                 @if ($onlinePrice !== null)
                                     <div class="online-order-price mb-16">
                                         <strong>Онлайн −{{ rtrim(rtrim(number_format($onlineDiscountPercent, 2, '.', ''), '0'), '.') }}%: {{ number_format($onlinePrice, 2, '.', ' ') }} BYN</strong>

@@ -141,6 +141,8 @@
             @endif
         </div>
 
+        @includeWhen(str_starts_with($product->name, 'Теплообменник Sakovich Pellet Standart '), 'partials.sakovich-exchanger-price-note')
+
         @if ($onlinePrice !== null)
             <p class="online-order-card-price mb-6">Онлайн: {{ number_format($onlinePrice, 2, '.', ' ') }} BYN · экономия {{ number_format($onlineSaving, 2, '.', ' ') }} BYN</p>
         @endif
