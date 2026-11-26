@@ -71,6 +71,7 @@ class ProductsTable
             ->searchUsing(fn (Builder $query, string $search): Builder => app(AdminProductSearch::class)->apply($query, $search))
             ->searchPlaceholder('Название, артикул, код 1С')
             ->extraAttributes(['class' => 'products-workspace'])
+            ->stackedOnMobile()
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('is_archived', false))
             ->columns([
                 ImageColumn::make('images')
@@ -86,7 +87,7 @@ class ProductsTable
                     ->sortable()
                     ->weight('bold')
                     ->wrap()
-                    ->width('17.5rem')
+                    ->width('14rem')
                     ->grow(false)
                     ->url(fn (Product $record): string => ProductResource::getUrl(
                         'view',
@@ -126,7 +127,7 @@ class ProductsTable
                     ->url(fn (Product $record): ?string => ($code = self::onecLink($record)?->external_code)
                         ? OneCItemResource::getUrl('index', ['search' => $code]) : null)
                     ->tooltip('Открыть в «Номенклатуре 1С»')
-                    ->width('9rem')
+                    ->width('7rem')
                     ->grow(false)
                     ->toggleable(),
 
@@ -150,6 +151,7 @@ class ProductsTable
 
                 TextColumn::make('supplier_stock')
                     ->label('Остаток поставщика')
+                    ->wrapHeader()
                     ->getStateUsing(fn ($record): string => ($stock = self::supplierStock($record)) === null
                         ? '—'
                         : number_format($stock, 0, ',', ' '))
@@ -253,7 +255,7 @@ class ProductsTable
                     ->description(fn ($record): ?HtmlString => self::supplierContacts($record))
                     ->limit(30)
                     ->lineClamp(1)
-                    ->width('12rem')
+                    ->width('9rem')
                     ->grow(false)
                     ->tooltip(fn ($record): string => self::supplierNames($record))
                     ->searchable(query: fn (Builder $query, string $search) => $query->where(

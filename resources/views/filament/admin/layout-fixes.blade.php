@@ -532,19 +532,21 @@
     .products-workspace .fi-ta-text:not(.fi-inline),
     .products-workspace .fi-ta-icon,
     .products-workspace .fi-ta-image {
-        padding: 0.625rem 0.375rem;
+        padding: 0.375rem 0.25rem;
     }
 
-    .products-workspace .fi-ta-cell-name,
-    .products-workspace .fi-ta-header-cell-name {
-        min-width: 17.5rem;
-        max-width: 17.5rem;
+    /* Allow long codes, badges and descriptions to wrap within the available
+       space before the table starts scrolling. Keep action icons together. */
+    .products-workspace .fi-ta-cell,
+    .products-workspace .fi-ta-header-cell {
+        white-space: normal;
     }
 
-    .products-workspace .fi-ta-cell-suppliers-list,
-    .products-workspace .fi-ta-header-cell-suppliers-list {
-        min-width: 12rem;
-        max-width: 12rem;
+    .products-workspace .fi-ta-text-item,
+    .products-workspace .fi-ta-text-description,
+    .products-workspace .fi-ta-cell .fi-badge {
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     .products-workspace .fi-ta-cell-suppliers-list .fi-ta-text-description,
@@ -591,8 +593,60 @@
 
     .products-workspace .fi-ta-cell-operational-status,
     .products-workspace .fi-ta-header-cell-operational-status {
-        min-width: 14rem;
-        max-width: 20rem;
+        width: 9rem;
+    }
+
+    .products-workspace {
+        container: product-list / inline-size;
+    }
+
+    /* On laptops the sidebar can leave less room than a full table row.
+       Use the same labelled cells, with sorting and bulk selection above. */
+    @media (min-width: 640px) {
+        @container product-list (max-width: 80rem) {
+            .products-workspace .fi-ta-table,
+            .products-workspace .fi-ta-table > thead,
+            .products-workspace .fi-ta-table > tbody {
+                display: block;
+            }
+
+            .products-workspace .fi-ta-table > thead > tr:not(.fi-ta-table-stacked-header-row) {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+
+            .products-workspace .fi-ta-table > thead th:not(.fi-ta-selection-cell):not([aria-sort]) {
+                display: none;
+            }
+
+            .products-workspace .fi-ta-table > thead th[aria-sort] {
+                width: auto !important;
+            }
+
+            .products-workspace .fi-ta-record {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+                gap: .25rem .5rem;
+                padding: .5rem;
+            }
+
+            .products-workspace .fi-ta-record > .fi-ta-cell {
+                width: auto;
+                min-width: 0;
+                padding: 0;
+            }
+
+            .products-workspace .fi-ta-record .fi-ta-cell-label {
+                display: block;
+                font-size: .6875rem;
+                color: var(--gray-500);
+            }
+
+            .products-workspace .fi-ta-record .fi-ta-actions {
+                flex-wrap: wrap;
+            }
+        }
     }
 
     .fi-resource-contact-requests.fi-resource-list-records-page .fi-ta-header-cell {
