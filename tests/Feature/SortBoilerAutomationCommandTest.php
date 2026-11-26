@@ -30,6 +30,7 @@ class SortBoilerAutomationCommandTest extends TestCase
         $pumpUnit = $card('Блок автоматики', $regulators);
         $burners = $section('pelletnye-gorelki');
         $kipi = $card('вместе с фланцем 15-70 kW', $parts);
+        $kipi->forceFill(['meta_title' => 'вместе с фланцем 15-70 kW — купить в %city%'])->save();
         $hopper = $card('Бункер для пеллет ATMOS 500 л', $parts);
         $safety = $card('Термостат предохранительный FONDITAL', $parts);
 
@@ -55,6 +56,7 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertNull($group($head));
         $this->assertSame($burners->id, $kipi->fresh()->category_id);
         $this->assertSame('Пеллетная горелка KIPI ROTARY 15-70 кВт с фланцем', $kipi->fresh()->name);
+        $this->assertSame('Пеллетная горелка KIPI ROTARY 15-70 кВт с фланцем — купить в %city%', $kipi->fresh()->meta_title);
         $this->assertSame('Бункеры для пеллет', $group($hopper));
         $this->assertSame('Запчасти для газовых котлов', $group($safety));
         $this->assertSame(['Автоматика для котлов', 'Автоматика для насосов и клапанов', 'Комнатные термостаты и программаторы'], DB::table('attribute_options')
