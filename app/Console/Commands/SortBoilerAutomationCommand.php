@@ -27,7 +27,7 @@ class SortBoilerAutomationCommand extends Command
             return self::FAILURE;
         }
         $regulators = (int) $sections[Groups::SECTION];
-        $sources = array_filter([$regulators, $sections[Groups::PARTS] ?? null, $sections[Groups::SENSORS] ?? null]);
+        $sources = array_filter([$regulators, $sections[Groups::PARTS] ?? null, $sections[Groups::SENSORS] ?? null, $sections[Groups::GAUGES] ?? null]);
         $apply = (bool) $this->option('apply');
         $moved = $grouped = 0;
         $counts = [];
