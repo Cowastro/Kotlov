@@ -384,10 +384,11 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertSame('own_stock', $schema->getComponent('fulfillment_route')->getState());
         $this->assertSame('available', $schema->getComponent('availability_status')->getState());
         $this->assertNull($schema->getComponent('supplier_id'));
+        $this->assertNull($schema->getComponent('purchase_price')->getState(), 'There is no 1C receipt cost for this item.');
         $page->callMountedAction()->assertHasNoActionErrors();
         $item = $fixture['item']->fresh();
         $this->assertSame($supplier->id, $item->fulfillment_supplier_id);
-        $this->assertSame('96.00', $item->fulfillment_purchase_price);
+        $this->assertNull($item->fulfillment_purchase_price, 'The supplier snapshot cannot replace a missing 1C cost.');
         $this->assertSame('processing', $order->fresh()->status);
         $page->assertSee('оформите отправление и получите трек')
             ->assertActionHidden('advanceWorkflow');

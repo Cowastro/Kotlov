@@ -39,6 +39,9 @@ class WholeOrderFulfillment
 
             return ['item' => $item, 'route' => $defaults['fulfillment_route'] ?: 'clarifying',
                 'supplier_id' => $defaults['supplier_id'], 'price' => $defaults['purchase_price'],
+                'own_cost_label' => $defaults['fulfillment_route'] === 'own_stock'
+                    ? 'Себестоимость 1С с НДС за шт.: '.(isset($offer['price']) ? number_format($offer['price'], 2, ',', ' ').' BYN' : 'нет данных')
+                    : null,
                 'available' => $available, 'missing' => $available === null ? null : $item->quantity - $available,
                 'status' => $item->fulfillment_confirmed_at ? $item->fulfillment_availability_status : $status,
                 'source' => $offer['source'] ?? 'Источник уточняется'];
@@ -67,7 +70,7 @@ class WholeOrderFulfillment
                 if (! $item->fulfillment_confirmed_at) {
                     $supplier = $row['supplier_id'] ? Supplier::where('is_active', true)->find($row['supplier_id']) : null;
                     app(OrderItemFulfillmentManager::class)->confirm($item, $supplier || $row['route'] === 'own_stock' ? $row['route'] : 'clarifying',
-                        $supplier, $actor, 'Принят весь заказ. Резервирование по мере поступления.', $row['price'], $row['status']);
+                        $supplier, $actor, 'Принят весь заказ. Резервирование по мере поступления.', $row['price'], $row['status'], useOwnStockSnapshot: false);
                     $item->forceFill(['fulfillment_available_quantity' => $row['available'],
                         'fulfillment_expected_date' => in_array($row['status'], ['partial', 'awaiting_supply', 'clarifying'], true) ? $expectedDate : null])->save();
                 }

@@ -511,25 +511,28 @@ class OneCOrderExportTest extends TestCase
     {
         $sbg = Supplier::query()->updateOrCreate(['code' => 'sanbusinessgroup'], ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true]);
         $this->source->forceFill(['supplier_id' => $sbg->id])->save();
-        $this->card->forceFill(['onec_cost_byn' => 15.40])->save();
+        $this->card->forceFill(['onec_cost_byn' => 147.69])->save();
         OneCItem::query()->create(['ref_key' => self::ITEM, 'code' => 'УТ-00000001', 'description' => 'Переход Моно', 'product_id' => $this->card->id,
-            'stock_on_hand' => 3, 'stock_reserved' => 1, 'stock_synced_at' => now()]);
+            'stock_on_hand' => 3, 'stock_reserved' => 1, 'stock_synced_at' => now(), 'cost_gross' => 177.23]);
         $item = $this->order()->items()->first();
         $item->order->update(['status' => 'confirmed']);
-        $item->update(['fulfillment_confirmed_at' => null]);
+        $item->update(['fulfillment_confirmed_at' => null, 'fulfillment_purchase_price' => 208.50]);
 
         $picker = app(OrderItemFulfillmentPicker::class);
         $offers = $picker->offers($item);
         $this->assertArrayHasKey($sbg->id, $offers);
-        $this->assertSame([true, 2.0, 15.4], [$offers[$sbg->id]['own'], $offers[$sbg->id]['quantity'], $offers[$sbg->id]['price']]);
+        $this->assertSame([true, 2.0, 177.23], [$offers[$sbg->id]['own'], $offers[$sbg->id]['quantity'], $offers[$sbg->id]['price']]);
         $this->assertStringContainsString('себестоимость 1С', (string) $offers[$sbg->id]['source']);
         $defaults = $picker->defaults($item, $offers);
-        $this->assertSame(['own_stock', 'available', 15.4], [$defaults['fulfillment_route'], $defaults['availability_status'], $defaults['purchase_price']]);
+        $this->assertSame(['own_stock', 'available', 177.23], [$defaults['fulfillment_route'], $defaults['availability_status'], $defaults['purchase_price']]);
+        $plan = app(\App\Services\Orders\WholeOrderFulfillment::class)->preview($item->order);
+        $this->assertSame(177.23, $plan[0]['price']);
+        $this->assertStringContainsString('177,23 BYN', $plan[0]['own_cost_label']);
 
         // Filled in by itself after the stock read: «Наш склад» at the 1C cost, not confirmed — the manager confirms.
         $this->assertSame(1, app(OneCOwnStockRouting::class)->fillOpenOrders());
         $item->refresh();
-        $this->assertSame(['own_stock', 15.4, 'available', null], [$item->fulfillment_route, (float) $item->fulfillment_purchase_price, $item->fulfillment_availability_status, $item->fulfillment_confirmed_at]);
+        $this->assertSame(['own_stock', 177.23, 'available', null], [$item->fulfillment_route, (float) $item->fulfillment_purchase_price, $item->fulfillment_availability_status, $item->fulfillment_confirmed_at]);
         $this->assertSame(0, app(OneCOwnStockRouting::class)->fillOpenOrders(), 'a routed line is never touched again');
     }
 

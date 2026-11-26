@@ -1467,7 +1467,7 @@ class OrderInfolist
         if ($route === 'own_stock') {
             $linked = $item->product ? app(OneCItemCreator::class)->linked($item->product) : null;
 
-            return self::onecItemByKey($linked?->external_id)?->cost_gross;
+            return OneCItem::fromExchangeKey($linked?->external_id)?->cost_gross;
         }
 
         $confirmed = $item->fulfillment_route !== 'own_stock' ? $item->fulfillment_purchase_price : null;
@@ -1475,14 +1475,9 @@ class OrderInfolist
         return $confirmed ?? $item->supply_purchase_price;
     }
 
-    private static function onecItemByKey(?string $key): ?OneCItem
-    {
-        return $key ? OneCItem::query()->where('ref_key', strtolower(explode('#', $key, 2)[0]))->first() : null;
-    }
-
     private static function onecStockAndCost(?string $key): string
     {
-        $item = self::onecItemByKey($key);
+        $item = OneCItem::fromExchangeKey($key);
 
         $stock = OneCStock::fresh($item) ? ' <span style="color:#64748b" title="Склад: '.e(implode(', ', OneCStock::WAREHOUSES)).'">· '.e(OneCStock::label($item)).'</span>' : '';
         $label = '<br>Себестоимость 1С с НДС за шт.: ';

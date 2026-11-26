@@ -948,9 +948,11 @@ class ViewOrder extends ViewRecord
                     }),
                 Select::make('availability_status')->label('Наличие')
                     ->options(OrderItem::FULFILLMENT_AVAILABILITY_STATUSES)->required(),
-                TextInput::make('purchase_price')->label('Входная цена за единицу, BYN')
+                TextInput::make('purchase_price')->label(fn (Get $get): string => $get('fulfillment_route') === 'own_stock'
+                    ? 'Входная цена 1С с НДС за единицу, BYN' : 'Входная цена за единицу, BYN')
+                    ->readOnly(fn (Get $get): bool => $get('fulfillment_route') === 'own_stock')
                     ->numeric()->minValue(0)
-                    ->visible(fn (Get $get): bool => in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true)),
+                    ->visible(fn (Get $get): bool => in_array($get('fulfillment_route'), ['own_stock', 'supplier_purchase', 'direct_supplier'], true)),
                 Textarea::make('note')->label('Комментарий')->rows(2)->maxLength(2000),
             ])
             ->action(function (array $data): void {
@@ -968,12 +970,13 @@ class ViewOrder extends ViewRecord
                     ]);
                 }
                 $supplier = Supplier::query()->where('is_active', true)->findOrFail($supplierId);
-                $purchasePrice = filled($data['purchase_price'] ?? null)
+                $purchasePrice = ! $own && filled($data['purchase_price'] ?? null)
                     ? (float) $data['purchase_price'] : $offers[$supplierId]['price'];
 
                 app(OrderItemFulfillmentManager::class)->confirm(
                     $item, $data['fulfillment_route'], $supplier, auth()->user(),
                     $data['note'] ?? null, $purchasePrice, $data['availability_status'],
+                    useOwnStockSnapshot: false,
                 );
 
                 if ($this->record->status === 'new') {

@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Services\Integrations\OneCBridge\OneCStock;
+use App\Services\Integrations\OneCBridge\OneCItemCreator;
 
 final class OrderItemFulfillmentPicker
 {
@@ -25,7 +26,7 @@ final class OrderItemFulfillmentPicker
                     'label' => $supplier->name,
                     'own' => $supplier->code === 'sanbusinessgroup',
                     'quantity' => null,
-                    'price' => (int) $item->supply_supplier_id === $supplier->id && $item->supply_purchase_price !== null
+                    'price' => $supplier->code !== 'sanbusinessgroup' && (int) $item->supply_supplier_id === $supplier->id && $item->supply_purchase_price !== null
                         ? (float) $item->supply_purchase_price : null,
                     'source' => null,
                 ]])->all();
@@ -55,8 +56,8 @@ final class OrderItemFulfillmentPicker
 
             $isOwn = $supplier->code === 'sanbusinessgroup' || $integration?->source?->code === 'onec';
             // Our warehouse in 1C: what is free there (in stock − reserve of other orders), when 1C stock is read.
-            $onecItem = $integration?->source?->code === 'onec'
-                ? OneCItem::query()->where('ref_key', strtolower((string) $integration->external_id))->first() : null;
+            $linked = $isOwn ? app(OneCItemCreator::class)->linked($product) : null;
+            $onecItem = OneCItem::fromExchangeKey($linked?->external_id);
             $onecFree = OneCStock::fresh($onecItem) ? OneCStock::free($onecItem) : null;
             $manual = $own?->id === $supplier->id && $product?->manual_stock_management;
             $quantity = match (true) {
@@ -69,12 +70,11 @@ final class OrderItemFulfillmentPicker
                 default => null,
             };
             // Our stock costs what 1C paid for it (cost from the posted purchases), not its selling price.
-            $onecCost = $isOwn && (float) $product?->onec_cost_byn > 0 ? (float) $product->onec_cost_byn : null;
-            $price = $onecCost
-                ?? $integration?->normalizedPriceByn()
+            $onecCost = $onecItem?->cost_gross;
+            $price = $isOwn ? $onecCost : ($integration?->normalizedPriceByn()
                 ?? $legacy?->price_byn
                 ?? ((int) $context['supplier_id'] === $supplier->id ? $context['wholesale_price'] : null)
-                ?? ((int) $item->supply_supplier_id === $supplier->id ? $item->supply_purchase_price : null);
+                ?? ((int) $item->supply_supplier_id === $supplier->id ? $item->supply_purchase_price : null));
             $source = match (true) {
                 $onecContext => $context['stock_source_label'],
                 $manual => 'Ручное наличие карточки',
@@ -118,7 +118,8 @@ final class OrderItemFulfillmentPicker
             'supplier_id' => $supplierId,
             'availability_status' => $item->fulfillment_availability_status
                 ?? ($offer !== null && $offer['quantity'] >= $item->quantity ? 'available' : null),
-            'purchase_price' => $item->fulfillment_purchase_price ?? ($offer['price'] ?? null),
+            'purchase_price' => $route === 'own_stock' && ! $item->fulfillment_confirmed_at
+                ? ($offer['price'] ?? null) : ($item->fulfillment_purchase_price ?? ($offer['price'] ?? null)),
             'note' => $item->fulfillment_note,
         ];
     }
