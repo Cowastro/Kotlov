@@ -13,11 +13,11 @@ class SakovichPelletKitPriceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_components_are_selected_by_supplier_article_and_form_two_retail_totals(): void
+    public function test_components_are_selected_by_supplier_article_and_form_retail_totals(): void
     {
         $supplier = Supplier::create(['name' => 'Сантехсклад', 'code' => 'santehsklad']);
         $category = Category::create(['name' => 'Котлы', 'slug' => 'sakovich-test']);
-        $expected = ['KOTLOV-000320' => '12240.00', 'KOTLOV-000301' => '18280.00'];
+        $expected = ['KOTLOV-000320' => '12240.00', 'KOTLOV-000301' => '18280.00', 'KOTLOV-000289' => '29990.00', 'KOTLOV-000318' => '43330.00'];
         foreach ($expected as $sku => $price) {
             Product::create(['category_id' => $category->id, 'name' => $sku, 'slug' => strtolower($sku), 'sku' => $sku, 'price' => 0]);
         }

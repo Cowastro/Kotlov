@@ -88,6 +88,7 @@ class OneCSupplierOrderTest extends TestCase
         ]);
 
 
+        $order->refresh();
         $this->actingAs($admin);
 
         // The order shows what to do next in 1C, and the list finds it among «нужно заказать у поставщика».
