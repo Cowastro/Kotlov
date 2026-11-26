@@ -248,6 +248,11 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::PRESS_FITTINGS => [
+                'Тип' => [self::PRESS_TYPES, self::PRESS_ORDER],
+                'Материал' => [self::PRESS_MATERIALS, array_values(array_unique(self::PRESS_MATERIALS))],
+                'Диаметр' => [fn (string $title) => self::pressDiameter($title), array_map(fn (int $mm) => $mm.' мм', self::PRESS_DIAMETERS)],
+            ],
             self::GAS_HOSES => [
                 'Тип' => [self::HOSE_TYPES, array_values(self::HOSE_TYPES)],
                 'Длина' => [self::HOSE_LENGTHS, array_values(self::HOSE_LENGTHS)],
@@ -573,6 +578,66 @@ final class BoilerAutomationGroups
             $kw <= 30 => 'Св. 11 до 30 кВт',
             default => 'Свыше 30 кВт',
         };
+    }
+
+    public const PRESS_FITTINGS = 'press-fitingi';
+
+    /** «Тип» options of «Пресс-фитинги», in filter order. */
+    public const PRESS_ORDER = [
+        'Муфты, соединители и переходники',
+        'Угольники и отводы',
+        'Тройники',
+        'Крестовины',
+        'Заглушки',
+        'Обводы',
+        'Распределительные узлы',
+        'Трубки для подключения радиатора',
+        'Трубы',
+        'Инструмент, насадки и кольца',
+    ];
+
+    /**
+     * Title pattern => «Тип» inside «Пресс-фитинги»; the first match wins. Varmega Inox Press cards named only by
+     * article («Varmega VM719181518 18x15x18») get a type where the series is known; the rest stay without one.
+     */
+    public const PRESS_TYPES = [
+        '/^(комплектующие и аксессуары|уплотнительное кольцо|кольцо)|насадк|^varmega (vm59[89]|vm79\d)/u' => 'Инструмент, насадки и кольца',
+        '/^трубка|^varmega vm52[56]/u' => 'Трубки для подключения радиатора',
+        '/^varmega vm(700|501)/u' => 'Трубы',
+        '/крестовин|^varmega vm72[45]/u' => 'Крестовины',
+        '/заглушк|^varmega vm722/u' => 'Заглушки',
+        '/тройник|^varmega vm7(18|19|20|21)/u' => 'Тройники',
+        '/обвод|^varmega vm733/u' => 'Обводы',
+        '/узел распределительн/u' => 'Распределительные узлы',
+        '/угольник|отвод|угол|колено/u' => 'Угольники и отводы',
+        '/муфт|соединител|переход|ниппел|резьбовое соединение|^varmega (vm70[15]|217)/u' => 'Муфты, соединители и переходники',
+    ];
+
+    /** Title pattern => «Материал» of a press fitting; Varmega VM700–739 is the Inox Press (stainless) series. */
+    public const PRESS_MATERIALS = [
+        '/нерж|inox|^varmega vm7[0-3]\d/u' => 'Нержавеющая сталь',
+        '/медн|медь/u' => 'Медь',
+        '/бронз/u' => 'Бронза',
+        '/латун|slide-fit/u' => 'Латунь',
+        '/оцинк|стальн|(?<![a-z])steel(?![a-z])/u' => 'Оцинкованная сталь',
+    ];
+
+    /** The pipe sizes a press fitting is listed by, mm. */
+    public const PRESS_DIAMETERS = [12, 14, 15, 16, 18, 20, 22, 25, 26, 28, 32, 35, 40, 42, 50, 54, 63, 64, 66, 76, 88, 108];
+
+    /** The first pipe size of a press fitting title («22х3/4"», «15ax1/2"», «28 под пайку», «16 мм»). */
+    public static function pressDiameter(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        if (preg_match_all('/(?<![\d\w.,\/])(\d{2,3})a?(?=\s*(?:[xх×*]|мм|-\d|\s(?:под|пресс)|$|\s*\())/u', $title, $m)) {
+            foreach ($m[1] as $mm) {
+                if (in_array((int) $mm, self::PRESS_DIAMETERS, true)) {
+                    return (int) $mm.' мм';
+                }
+            }
+        }
+
+        return null;
     }
 
     public const GAS_HOSES = 'gazovye-shlangi';
