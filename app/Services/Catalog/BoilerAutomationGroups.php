@@ -30,6 +30,7 @@ final class BoilerAutomationGroups
         '/^(термометр|термоманометр)/u' => 'manometry-i-termometry',
         '/^крышка датчика импульсов/u' => 'schetchiki-gaza',
         '/^радиомодуль lorawan/u' => 'schetchiki-vody-i-tepla',
+        '/^шланг для газа/u' => 'gazovye-shlangi',
         '/^насос-автомат/u' => 'nasosnyie-stantsii',
         '/^(вместе с фланцем|пеллетная горелка kipi rotary)/u' => 'pelletnye-gorelki',
         '/^пульт управления термофор/u' => 'aksessuary-dlya-bani',
@@ -198,8 +199,41 @@ final class BoilerAutomationGroups
 
         return [
             self::METERS => ['Диаметр (Ду)' => [$diameters, array_values($diameters)]],
+            self::GAS_METERS => [
+                'Серия' => [self::GAS_SERIES, array_values(array_unique(self::GAS_SERIES))],
+                'Типоразмер' => [self::GAS_SIZES, array_values(self::GAS_SIZES)],
+                'Передача данных' => [self::GAS_DATA, array_values(array_unique(self::GAS_DATA))],
+            ],
         ];
     }
+
+    public const GAS_METERS = 'schetchiki-gaza';
+
+    /** Title pattern => «Серия» inside «Счётчики газа»; accessories have their own option. */
+    public const GAS_SERIES = [
+        '/крышка датчика|датчик импульсов/u' => 'Аксессуары',
+        '/вега/u' => 'БелОМО ВЕГА',
+        '/скат/u' => 'БелОМО СКАТ',
+        '/ката/u' => 'БелОМО КАТА',
+        '/сгмн/u' => 'БелОМО СГМН',
+        '/сгд/u' => 'БелОМО СГД',
+        '/^сч[её]тчик газа/u' => 'Другие производители',
+    ];
+
+    /** Title pattern => «Типоразмер» (the G size of a gas meter). */
+    public const GAS_SIZES = [
+        '/g\s*1[,.]6|сгбм-1[,.]6/u' => 'G1,6',
+        '/g\s*2[,.]5/u' => 'G2,5',
+        '/g\s*4(?![\d,.])|сгмб-4(?!\d)/u' => 'G4',
+        '/g\s*6(?![\d,.])/u' => 'G6',
+        '/g\s*10(?![\d,.])/u' => 'G10',
+    ];
+
+    /** Title pattern => «Передача данных» of a gas meter. */
+    public const GAS_DATA = [
+        '/nb-iot/u' => 'Дистанционная (NB-IoT)',
+        '/^сч[её]тчик газа/u' => 'Без дистанционной передачи',
+    ];
 
     public static function move(string $title): ?string
     {

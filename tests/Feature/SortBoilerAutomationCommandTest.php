@@ -44,12 +44,17 @@ class SortBoilerAutomationCommandTest extends TestCase
         $meters = $section('schetchiki-vody-i-tepla');
         $woltman = $card('Счетчик холодной воды Вольтмана турбинный WPD-i Ду 80 с импульсным выходом +датчик', $meters);
         $hot = $card('Счетчик горячей воды ETW-м-N Ду 15 Qn 1.6 с датчиком импульсов БелЦЕННЕР арт. 54405', $meters);
+        $gas = $section('schetchiki-gaza');
+        $hoses = $section('gazovye-shlangi');
+        $kata = $card('Счётчик газа БелОМО КАТА – G6 RK – 2 (NB-IoT)', $gas);
+        $sgd = $card('Счётчик газа БелОМО СГД-3Т-1-1-G4 (левый), межосевое расстояние 200 мм', $gas);
+        $hose = $card('Шланг для газа ADVIXON Г-Ш 1/2"-1/2" (150см)', $gas);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=6')
+            ->expectsOutputToContain('metric.boiler_automation.moved=7')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -80,13 +85,21 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Турбинные счётчики (Вольтмана)', $group($woltman));
         $this->assertSame('Счётчики горячей воды', $group($hot));
         $this->assertSame('Радиомодули', $group($radio));
-        $diameter = fn (Product $product) => DB::table('product_attribute_values')
+        $value = fn (string $filter, Product $product) => DB::table('product_attribute_values')
             ->join('attribute_options', 'attribute_options.id', '=', 'product_attribute_values.option_id')
             ->join('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
-            ->where('attributes.name', 'Диаметр (Ду)')->where('product_id', $product->id)->value('attribute_options.name');
+            ->where('attributes.name', $filter)->where('product_id', $product->id)->value('attribute_options.name');
+        $diameter = fn (Product $product) => $value('Диаметр (Ду)', $product);
         $this->assertSame('Ду 80', $diameter($woltman));
         $this->assertSame('Ду 15', $diameter($hot));
         $this->assertNull($diameter($radio));
+        $this->assertSame('БелОМО КАТА', $value('Серия', $kata));
+        $this->assertSame('G6', $value('Типоразмер', $kata));
+        $this->assertSame('Дистанционная (NB-IoT)', $value('Передача данных', $kata));
+        $this->assertSame('БелОМО СГД', $value('Серия', $sgd));
+        $this->assertSame('G4', $value('Типоразмер', $sgd));
+        $this->assertSame('Без дистанционной передачи', $value('Передача данных', $sgd));
+        $this->assertSame($hoses->id, $hose->fresh()->category_id);
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)

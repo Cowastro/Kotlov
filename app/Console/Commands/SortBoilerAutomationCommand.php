@@ -32,7 +32,7 @@ class SortBoilerAutomationCommand extends Command
 
             return self::FAILURE;
         }
-        $sources = collect(array_keys(Groups::filters()))->map(fn (string $slug) => $sections[$slug] ?? null)->filter()->values()->all();
+        $sources = collect([...array_keys(Groups::filters()), ...array_keys(Groups::extraFilters())])->unique()->map(fn (string $slug) => $sections[$slug] ?? null)->filter()->values()->all();
         $apply = (bool) $this->option('apply');
         $moved = $this->grouped = 0;
         $this->counts = [];
