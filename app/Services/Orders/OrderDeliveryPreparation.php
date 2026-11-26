@@ -40,14 +40,19 @@ class OrderDeliveryPreparation
 
     public function signature(Order $order): string
     {
-        return hash('sha256', json_encode([
+        $data = [
             $order->delivery_type, $order->delivery_region, $order->delivery_city, $order->delivery_address,
             $order->planned_delivery_date?->format('Y-m-d'), $order->customer_name, $order->customer_phone,
             $order->total, $this->reference($order),
-            $order->delivery_type === 'evropochta' ? ($order->evropochta_quote['recipient'] ?? null) : null,
             $order->delivery_type === 'vam_express' ? VamExpressShipment::where('order_id', $order->id)->value('remote_id') : null,
             $order->items()->orderBy('id')->get(['id', 'product_id', 'product_sku', 'quantity', 'price', 'total', 'fulfillment_route', 'fulfillment_supplier_id'])->toArray(),
-        ], JSON_THROW_ON_ERROR));
+        ];
+        // Existing plans without a separate recipient keep their original signature.
+        if ($order->delivery_type === 'evropochta' && filled($order->evropochta_quote['recipient'] ?? null)) {
+            $data[] = $order->evropochta_quote['recipient'];
+        }
+
+        return hash('sha256', json_encode($data, JSON_THROW_ON_ERROR));
     }
 
     public function blocker(Order $order): ?string

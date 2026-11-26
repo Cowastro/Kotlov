@@ -25,6 +25,29 @@ class OrderDeliveryPreparationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_recipient_support_preserves_legacy_plan_signatures_until_recipient_changes(): void
+    {
+        Mail::fake();
+        $order = Order::create(['number' => 'LEGACY-PLAN', 'status' => 'processing', 'customer_name' => 'Клиент',
+            'customer_phone' => '+375291110000', 'delivery_type' => 'pickup', 'payment_type' => 'cash',
+            'payment_status' => 'pending', 'subtotal' => 10, 'total' => 10]);
+        // Stored format before recipient support; deliberately independent of the new signature builder.
+        $legacy = '["pickup",null,null,null,null,"Клиент","+375291110000","10.00",null,null,[]]';
+        $service = app(OrderDeliveryPreparation::class);
+        foreach (['pickup', 'courier', 'evropochta', 'vam_express'] as $method) {
+            $order->update(['delivery_type' => $method]);
+            $snapshot = str_replace('"pickup"', '"'.$method.'"', $legacy);
+            $expected = hash('sha256', json_encode(json_decode($snapshot, true), JSON_THROW_ON_ERROR));
+            $this->assertSame($expected, $service->signature($order));
+        }
+        $order->update(['delivery_type' => 'evropochta']);
+        $original = $service->signature($order);
+        $order->update(['evropochta_quote' => ['recipient' => ['receiver_name' => 'Другой получатель']]]);
+        $this->assertNotSame($original, $service->signature($order));
+        $order->update(['evropochta_quote' => ['recipient' => null]]);
+        $this->assertSame($original, $service->signature($order));
+    }
+
     private function order(string $status = 'processing', string $method = 'pickup'): Order
     {
         Mail::fake();
