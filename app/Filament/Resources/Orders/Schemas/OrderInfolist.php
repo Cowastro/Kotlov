@@ -254,6 +254,8 @@ class OrderInfolist
                                                 ->modalSubmitActionLabel('Подтвердить')
                                                 ->fillForm(function (OrderItem $record): array {
                                                     $recommendedRoute = $record->supplyContext()['status'];
+                                                    $route = $record->fulfillment_route
+                                                        ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase');
                                                     $supplierId = $record->fulfillment_supplier_id
                                                         ?: data_get($record->current_availability, 'supplier_id')
                                                         ?: $record->supply_supplier_id;
@@ -262,10 +264,9 @@ class OrderInfolist
                                                         : null;
 
                                                     return [
-                                                        'fulfillment_route' => $record->fulfillment_route
-                                                            ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase'),
+                                                        'fulfillment_route' => $route,
                                                         'supplier_id' => $supplierId,
-                                                        'purchase_price' => $record->fulfillment_purchase_price ?? $record->supply_purchase_price,
+                                                        'purchase_price' => self::assignmentPrice($record, $route),
                                                         'availability_status' => $record->fulfillment_availability_status,
                                                         'request_reserve_now' => true,
                                                         'reservation_quantity' => $record->quantity,
@@ -278,7 +279,8 @@ class OrderInfolist
                                                         ->label('Как исполняем')
                                                         ->options(OrderItem::FULFILLMENT_ROUTES)
                                                         ->required()
-                                                        ->live(),
+                                                        ->live()
+                                                        ->afterStateUpdated(fn (OrderItem $record, $state, Set $set) => $set('purchase_price', self::assignmentPrice($record, $state))),
                                                     Select::make('supplier_id')
                                                         ->label('Фактический поставщик')
                                                         ->options(fn (): array => Supplier::query()
@@ -308,7 +310,9 @@ class OrderInfolist
                                                         ->options(OrderItem::FULFILLMENT_AVAILABILITY_STATUSES)
                                                         ->required(),
                                                     TextInput::make('purchase_price')
-                                                        ->label('Подтверждённая входная цена за единицу, BYN')
+                                                        ->label(fn (Get $get): string => $get('fulfillment_route') === 'own_stock'
+                                                            ? 'Входная цена с НДС за единицу, BYN'
+                                                            : 'Подтверждённая входная цена за единицу, BYN')
                                                         ->numeric()
                                                         ->minValue(0),
                                                     Checkbox::make('request_reserve_now')
@@ -366,6 +370,7 @@ class OrderInfolist
                                                         $data['note'] ?? null,
                                                         filled($data['purchase_price'] ?? null) ? (float) $data['purchase_price'] : null,
                                                         $data['availability_status'],
+                                                        useOwnStockSnapshot: false,
                                                     );
 
                                                     if ($sendReserve) {
@@ -1457,9 +1462,27 @@ class OrderInfolist
         return [$order->onec_deleted ? 'помечен на удаление' : 'нет', $order->onec_deleted ? 'danger' : 'gray', null];
     }
 
+    public static function assignmentPrice(OrderItem $item, ?string $route): ?float
+    {
+        if ($route === 'own_stock') {
+            $linked = $item->product ? app(OneCItemCreator::class)->linked($item->product) : null;
+
+            return self::onecItemByKey($linked?->external_id)?->cost_gross;
+        }
+
+        $confirmed = $item->fulfillment_route !== 'own_stock' ? $item->fulfillment_purchase_price : null;
+
+        return $confirmed ?? $item->supply_purchase_price;
+    }
+
+    private static function onecItemByKey(?string $key): ?OneCItem
+    {
+        return $key ? OneCItem::query()->where('ref_key', strtolower(explode('#', $key, 2)[0]))->first() : null;
+    }
+
     private static function onecStockAndCost(?string $key): string
     {
-        $item = $key ? OneCItem::query()->where('ref_key', strtolower(explode('#', $key, 2)[0]))->first() : null;
+        $item = self::onecItemByKey($key);
 
         $stock = OneCStock::fresh($item) ? ' <span style="color:#64748b" title="Склад: '.e(implode(', ', OneCStock::WAREHOUSES)).'">· '.e(OneCStock::label($item)).'</span>' : '';
         $label = '<br>Себестоимость 1С с НДС за шт.: ';
