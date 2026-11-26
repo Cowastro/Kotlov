@@ -23,4 +23,14 @@ class BurnitBoilerPowerTest extends TestCase
         $this->assertSame(18.0, (float) app(BoilerSpecifications::class)->numericFact($boiler->fresh()->load('allAttributeValues'), 'power')['value']);
         $this->assertSame([['key' => 'Мощность', 'value' => '24 кВт']], $other->fresh()->specs);
     }
+
+    public function test_a_burn_time_at_full_power_is_not_a_power_spec(): void
+    {
+        $category = Category::query()->firstOrCreate(['slug' => 'kotly-na-pelletah'], ['name' => 'Пеллетные котлы', 'parent_id' => 0, 'is_active' => true]);
+        $boiler = Product::query()->create(['name' => 'Пеллетный котел BURNIT Advant 4G 13', 'slug' => 'pelletnyi-kotel-burnit-advant-4g-13', 'category_id' => $category->id, 'price' => 100, 'is_active' => true, 'specs' => [['key' => 'Время горения на полной мощности', 'value' => '8 часов']]]);
+
+        (require database_path('migrations/2026_11_29_250000_add_burnit_boiler_power_remaining.php'))->up();
+
+        $this->assertSame(13.0, (float) app(BoilerSpecifications::class)->numericFact($boiler->fresh()->load('allAttributeValues'), 'power')['value']);
+    }
 }
