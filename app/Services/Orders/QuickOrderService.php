@@ -3,9 +3,11 @@
 namespace App\Services\Orders;
 
 use App\Events\NewOrderCreated;
+use App\Models\ContactRequest;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Shipping\Evropochta;
 use App\Services\Shipping\EvropochtaCheckout;
 use App\Services\Shipping\EvropochtaOrderShipment;
 use Illuminate\Support\Facades\DB;
@@ -23,13 +25,33 @@ class QuickOrderService
 
     public function __construct(private readonly EvropochtaCheckout $evropochta) {}
 
-    public function assessEvropochta(array $items): array
+    public function assessEvropochta(array $items, array $measurements = []): array
     {
         $cart = collect($items)->filter(fn (array $item): bool => (int) ($item['product_id'] ?? 0) > 0)
             ->map(fn (array $item): array => ['id' => (int) $item['product_id'], 'quantity' => max(1, (int) ($item['quantity'] ?? 1))])
+            ->values()
             ->all();
 
-        return $this->evropochta->assess($cart);
+        $assessment = $this->evropochta->assess($cart);
+        if ($assessment['parcel'] !== null || $measurements === [] || $cart === []
+            || ! config('services.evropochta.checkout_enabled') || ! app(Evropochta::class)->configured()) {
+            return $assessment;
+        }
+        $parcel = ['store_id_start' => config('services.evropochta.checkout_origin')];
+        foreach (['weight', 'length', 'width', 'height'] as $field) {
+            $value = $measurements[$field] ?? null;
+            if (! is_numeric($value) || (float) $value <= 0 || (float) $value > ($field === 'weight' ? 30 : 250)) {
+                return ['parcel' => null, 'message' => 'Укажите фактический вес (до 30 кг) и все размеры посылки в упаковке.'];
+            }
+            $parcel[$field] = (float) $value;
+        }
+        if (Evropochta::isOversize($parcel)) {
+            return ['parcel' => null, 'message' => 'Упаковка превышает допустимые размеры Европочты. Выберите другой способ доставки.'];
+        }
+
+        return ['parcel' => $parcel + ['items' => array_map(fn (array $item): array => [
+            'product_id' => $item['id'], 'quantity' => $item['quantity'],
+        ], $cart)], 'message' => null];
     }
 
     /**
@@ -38,8 +60,14 @@ class QuickOrderService
      *     company_name?:?string, company_unp?:?string, status?:?string, comment?:?string,
      *     evropochta_branch?:?int, evropochta_token?:?string}  $data
      */
-    public function create(array $data, User $manager): Order
+    public function create(array $data, User $manager, ?ContactRequest $contactRequest = null): Order
     {
+        if ($contactRequest) {
+            abort_unless($manager->is_active && $manager->isManager(), 403);
+            if ($existing = ContactRequest::query()->findOrFail($contactRequest->id)->order) {
+                return $existing->load('items');
+            }
+        }
         $items = collect($data['items'] ?? [])
             ->filter(fn (array $item): bool => (int) ($item['product_id'] ?? 0) > 0)
             ->values();
@@ -72,7 +100,7 @@ class QuickOrderService
             if ((int) ($data['evropochta_branch'] ?? 0) < 1) {
                 throw new RuntimeException('Выберите отделение получения Европочты.');
             }
-            ['parcel' => $parcel, 'message' => $message] = $this->assessEvropochta($items->all());
+            ['parcel' => $parcel, 'message' => $message] = $this->assessEvropochta($items->all(), (array) ($data['parcel'] ?? []));
             if ($parcel === null) {
                 throw new RuntimeException($message ?: 'Укажите упаковку и рассчитайте тариф Европочты.');
             }
@@ -96,7 +124,15 @@ class QuickOrderService
         $status = in_array($data['status'] ?? '', self::START_STATUSES, true) ? $data['status'] : 'processing';
         $withCompany = in_array($data['payment_type'], ['invoice', 'bank_transfer'], true);
 
-        $order = DB::transaction(function () use ($data, $manager, $lines, $subtotal, $deliveryPrice, $status, $withCompany, $quote, $usesEvropochta): Order {
+        $created = false;
+        $order = DB::transaction(function () use ($data, $manager, $lines, $subtotal, $deliveryPrice, $status, $withCompany, $quote, $usesEvropochta, $contactRequest, &$created): Order {
+            $lead = $contactRequest ? ContactRequest::query()->lockForUpdate()->findOrFail($contactRequest->id) : null;
+            if ($lead?->order_id) {
+                return $lead->order()->firstOrFail();
+            }
+            if ($lead && ($lead->archived_at || $lead->status === 'cancelled')) {
+                throw new RuntimeException('Сначала верните обращение в работу.');
+            }
             $order = Order::query()->create([
                 'number' => Order::generateNumber(),
                 'status' => $status,
@@ -139,10 +175,20 @@ class QuickOrderService
 
             app(OrderEconomicSnapshotRecorder::class)->capturePlaced($order->load('items'));
 
+            if ($lead) {
+                $lead->forceFill(['order_id' => $order->id, 'status' => 'done', 'next_follow_up_at' => null,
+                    'responsible_user_id' => $lead->responsible_user_id ?: $manager->id])->save();
+                $order->managerComments()->create(['user_id' => $manager->id, 'author_name' => $manager->name,
+                    'body' => 'Создан из обращения №'.$lead->id.'.']);
+            }
+            $created = true;
+
             return $order;
         });
 
-        NewOrderCreated::dispatch($order->load('items'));
+        if ($created) {
+            NewOrderCreated::dispatch($order->load('items'));
+        }
 
         return $order;
     }

@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Orders\Actions;
 
+use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Filament\Resources\Orders\OrderResource;
+use App\Models\ContactRequest;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
@@ -33,17 +35,20 @@ use RuntimeException;
  */
 final class QuickOrderAction
 {
-    public static function make(): Action
+    public static function make(?ContactRequest $contactRequest = null): Action
     {
-        return Action::make('quick_order')
-            ->label('Быстрый заказ')
+        $action = Action::make($contactRequest ? 'createOrder' : 'quick_order')
+            ->label($contactRequest ? 'Создать заказ' : 'Быстрый заказ')
             ->icon('heroicon-o-bolt')
             ->color('primary')
             ->visible(fn (): bool => auth()->user() instanceof User && auth()->user()->isManager())
+            ->authorize(fn (): bool => ! $contactRequest || ContactRequestResource::canEdit($contactRequest))
             ->slideOver()
             ->modalWidth(Width::FourExtraLarge)
-            ->modalHeading('Быстрый заказ')
-            ->modalDescription('Заказ по телефону или в мессенджере: клиент, товары, доставка и оплата. Остальное можно дополнить в карточке заказа.')
+            ->modalHeading($contactRequest ? 'Заказ из обращения №'.$contactRequest->id : 'Быстрый заказ')
+            ->modalDescription($contactRequest
+                ? 'Проверьте клиента и товары, выберите доставку и оплату. Для Европочты выберите отделение и дождитесь расчёта. Если товар не подставился, найдите его в каталоге.'
+                : 'Заказ по телефону или в мессенджере: клиент, товары, доставка и оплата. Остальное можно дополнить в карточке заказа.')
             ->modalSubmitActionLabel('Создать заказ')
             ->form([
                 Section::make('Клиент')->schema([
@@ -102,6 +107,14 @@ final class QuickOrderAction
                             ->visible(self::usesAddress(...)),
                     ]),
                     TextInput::make('delivery_address')->label('Адрес доставки')->visible(self::usesAddress(...)),
+                    Section::make('Упаковка для расчёта Европочты')
+                        ->description('Если размеры не сохранены в карточке товара, измерьте готовую посылку. Эти данные используются только для этого заказа.')
+                        ->visible(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD
+                            && app(QuickOrderService::class)->assessEvropochta((array) $get('items'))['parcel'] === null)
+                        ->columns(4)->schema(array_map(fn (string $field, string $label): TextInput => TextInput::make('parcel.'.$field)
+                        ->label($label)->numeric()->minValue(0.01)->maxValue($field === 'weight' ? 30 : 250)
+                        ->live(onBlur: true)->afterStateUpdated(self::updateEvropochtaQuote(...)),
+                            ['weight', 'length', 'width', 'height'], ['Вес, кг', 'Длина, см', 'Ширина, см', 'Высота, см'])),
                     Select::make('evropochta_branch')->label('Отделение получения')
                         ->options(self::evropochtaBranches(...))->searchable()->live()
                         ->required(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD)
@@ -144,10 +157,10 @@ final class QuickOrderAction
                         2, ',', ' ',
                     ).' BYN'),
             ])
-            ->action(function (array $data, Action $action): void {
+            ->action(function (array $data, Action $action) use ($contactRequest): void {
                 abort_unless(auth()->user() instanceof User && auth()->user()->isManager(), 403);
                 try {
-                    $order = app(QuickOrderService::class)->create($data, auth()->user());
+                    $order = app(QuickOrderService::class)->create($data, auth()->user(), $contactRequest);
                 } catch (RuntimeException $e) {
                     Notification::make()->warning()->title($e->getMessage())->send();
                     $action->halt();
@@ -160,6 +173,23 @@ final class QuickOrderAction
                     ->send();
                 $action->redirect(OrderResource::getUrl('view', ['record' => $order]));
             });
+
+        return $contactRequest ? $action->fillForm(fn (): array => self::fromContactRequest($contactRequest)) : $action;
+    }
+
+    private static function fromContactRequest(ContactRequest $contactRequest): array
+    {
+        $product = $contactRequest->product_id
+            ? Product::query()->active()->notArchived()->find($contactRequest->product_id) : null;
+
+        return [
+            'customer_name' => $contactRequest->name, 'customer_phone' => $contactRequest->phone,
+            'customer_email' => $contactRequest->email, 'delivery_city' => $contactRequest->city,
+            'delivery_type' => null, 'payment_type' => null, 'delivery_price' => 0, 'status' => 'new',
+            'comment' => $contactRequest->message,
+            'items' => [['product_id' => $product?->id, 'quantity' => max(1, (int) $contactRequest->requested_quantity),
+                'price' => $product ? round((float) $product->price, 2) : null]],
+        ];
     }
 
     private static function searchProducts(string $search): array
@@ -218,7 +248,7 @@ final class QuickOrderAction
             return;
         }
 
-        ['parcel' => $parcel, 'message' => $message] = app(QuickOrderService::class)->assessEvropochta((array) $get('items'));
+        ['parcel' => $parcel, 'message' => $message] = app(QuickOrderService::class)->assessEvropochta((array) $get('items'), (array) $get('parcel'));
         $destination = (int) $get('evropochta_branch');
         $checkout = app(EvropochtaCheckout::class);
         $session = session()->getId();
