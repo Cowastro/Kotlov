@@ -601,16 +601,16 @@ final class BoilerAutomationGroups
      * article («Varmega VM719181518 18x15x18») get a type where the series is known; the rest stay without one.
      */
     public const PRESS_TYPES = [
-        '/^(комплектующие и аксессуары|уплотнительное кольцо|кольцо)|насадк|^varmega (vm59[89]|vm79\d)/u' => 'Инструмент, насадки и кольца',
+        '/^(комплектующие и аксессуары|уплотнительное кольцо|кольцо)|насадк|инструмент|гильз|пресс-кольц|^varmega (vm59[89]|vm79\d)/u' => 'Инструмент, насадки и кольца',
         '/^трубка|^varmega vm52[56]/u' => 'Трубки для подключения радиатора',
-        '/^varmega vm(700|501)/u' => 'Трубы',
+        '/^varmega vm(700|501)|^(универсальная )?труба/u' => 'Трубы',
         '/крестовин|^varmega vm72[45]/u' => 'Крестовины',
         '/заглушк|^varmega vm722/u' => 'Заглушки',
         '/тройник|^varmega vm7(18|19|20|21)/u' => 'Тройники',
         '/обвод|^varmega vm733/u' => 'Обводы',
         '/узел распределительн/u' => 'Распределительные узлы',
-        '/угольник|отвод|угол|колено/u' => 'Угольники и отводы',
-        '/муфт|соединител|переход|ниппел|резьбовое соединение|^varmega (vm70[15]|217)/u' => 'Муфты, соединители и переходники',
+        '/угольник|отвод|угол|колено|водорозетк/u' => 'Угольники и отводы',
+        '/муфт|соединител|соединение|переход|ниппел|^varmega (vm70[15]|217)/u' => 'Муфты, соединители и переходники',
     ];
 
     /** Title pattern => «Материал» of a press fitting; Varmega VM700–739 is the Inox Press (stainless) series. */
@@ -629,7 +629,7 @@ final class BoilerAutomationGroups
     public static function pressDiameter(string $title): ?string
     {
         $title = mb_strtolower(trim(html_entity_decode($title)));
-        if (preg_match_all('/(?<![\d\w.,\/])(\d{2,3})a?(?=\s*(?:[xх×*]|мм|-\d|\s(?:под|пресс)|$|\s*\())/u', $title, $m)) {
+        if (preg_match_all('/(?<![\d\w.,\/])(\d{2,3})a?(?=\s*(?:[xх×*\/,]|мм|-\d|\s(?:под|пресс|с\s)|\s[a-z]|$|\s*\())/u', $title, $m)) {
             foreach ($m[1] as $mm) {
                 if (in_array((int) $mm, self::PRESS_DIAMETERS, true)) {
                     return (int) $mm.' мм';
