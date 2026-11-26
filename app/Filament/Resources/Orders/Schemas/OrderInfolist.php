@@ -1462,17 +1462,16 @@ class OrderInfolist
         $item = $key ? OneCItem::query()->where('ref_key', strtolower(explode('#', $key, 2)[0]))->first() : null;
 
         $stock = OneCStock::fresh($item) ? ' <span style="color:#64748b" title="Склад: '.e(implode(', ', OneCStock::WAREHOUSES)).'">· '.e(OneCStock::label($item)).'</span>' : '';
-        if ($item?->cost_net === null && $item?->cost_gross === null) {
-            return $stock.'<br>Себестоимость 1С за шт.: нет данных';
+        $label = '<br>Себестоимость 1С с НДС за шт.: ';
+        if ($item?->cost_gross === null) {
+            return $stock.$label.'нет данных';
         }
 
-        $amount = static fn (?float $value): string => $value === null ? '—' : number_format($value, 2, ',', ' ').' BYN';
         $source = $item->cost_kind === \App\Services\Integrations\OneCBridge\OneCItemCosts::AVERAGE
             ? 'Средняя за 3 месяца' : 'Закупка';
         $details = implode(' · ', array_filter([$source, $item->cost_doc, $item->cost_date?->format('d.m.Y')]));
 
-        return $stock.'<br>Себестоимость 1С за шт.: без НДС '.$amount($item->cost_net)
-            .' · с НДС '.$amount($item->cost_gross).'<br>'.e($details);
+        return $stock.$label.number_format($item->cost_gross, 2, ',', ' ').' BYN<br>'.e($details);
     }
 
     public static function onecItemLine(OrderItem $item): ?HtmlString
