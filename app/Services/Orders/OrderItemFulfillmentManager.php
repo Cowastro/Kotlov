@@ -19,6 +19,7 @@ class OrderItemFulfillmentManager
         ?string $note = null,
         ?float $purchasePrice = null,
         ?string $availabilityStatus = null,
+        bool $useOwnStockSnapshot = true,
     ): OrderItem {
         if (! array_key_exists($route, OrderItem::FULFILLMENT_ROUTES)) {
             throw ValidationException::withMessages([
@@ -38,7 +39,7 @@ class OrderItemFulfillmentManager
             ]);
         }
 
-        return DB::transaction(function () use ($item, $route, $supplier, $user, $note, $purchasePrice, $availabilityStatus): OrderItem {
+        return DB::transaction(function () use ($item, $route, $supplier, $user, $note, $purchasePrice, $availabilityStatus, $useOwnStockSnapshot): OrderItem {
             $item = OrderItem::query()->lockForUpdate()->findOrFail($item->getKey());
             $previousRoute = $item->fulfillment_route;
             $previousSupplierId = $item->fulfillment_supplier_id;
@@ -58,7 +59,7 @@ class OrderItemFulfillmentManager
                 'fulfillment_supplier_name' => $supplier?->name,
                 'fulfillment_supplier_contact' => $supplier?->contact,
                 'fulfillment_purchase_price' => $route === 'own_stock'
-                    ? ($purchasePrice ?? ($item->supply_purchase_price !== null ? (float) $item->supply_purchase_price : null))
+                    ? ($purchasePrice ?? ($useOwnStockSnapshot ? $item->supply_purchase_price : null))
                     : $confirmedPrice,
                 'fulfillment_availability_status' => $availabilityStatus,
                 'fulfillment_confirmed_by' => $user?->id,

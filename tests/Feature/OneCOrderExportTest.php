@@ -502,6 +502,8 @@ class OneCOrderExportTest extends TestCase
             'cost_net' => 147.69, 'cost_gross' => 177.23, 'cost_date' => '2026-11-24', 'cost_doc' => 'П-17']);
         $this->assertStringContainsString('Себестоимость 1С с НДС за шт.: 177,23 BYN', $line());
         $this->assertStringNotContainsString('147,69', $line());
+        $this->assertSame(177.23, \App\Filament\Resources\Orders\Schemas\OrderInfolist::assignmentPrice($item, 'own_stock'));
+        $this->assertSame(208.50, \App\Filament\Resources\Orders\Schemas\OrderInfolist::assignmentPrice($item, 'supplier_purchase'));
         $this->assertStringContainsString('П-17 · 24.11.2026', $line());
     }
 
