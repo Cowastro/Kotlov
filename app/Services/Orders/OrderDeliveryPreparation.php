@@ -5,12 +5,25 @@ namespace App\Services\Orders;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\VamExpressShipment;
+use App\Services\Integrations\OneCBridge\OneCAgentTasks;
+use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class OrderDeliveryPreparation
 {
+    public function destinationBlocker(Order $order): ?string
+    {
+        if ($order->delivery_type === 'evropochta'
+            && (blank($order->delivery_city) || blank($order->delivery_address)
+                || ((int) ($order->evropochta_quote['store_id_finish'] ?? 0) < 1 && ! $this->reference($order)))) {
+            return 'Не выбрано отделение получения Европочты. Нажмите «Оформить Европочту», выберите отделение и рассчитайте тариф — город и адрес заполнятся автоматически.';
+        }
+
+        return null;
+    }
+
     public function reference(Order $order): ?string
     {
         if ($order->delivery_type === 'evropochta') {
@@ -18,8 +31,10 @@ class OrderDeliveryPreparation
         }
         if ($order->delivery_type === 'vam_express') {
             $rows = VamExpressShipment::where('order_id', $order->id)->get();
+
             return $rows->count() === 1 ? ($rows->first()->display_id ?: $rows->first()->remote_id) : null;
         }
+
         return null;
     }
 
@@ -36,8 +51,15 @@ class OrderDeliveryPreparation
 
     public function blocker(Order $order): ?string
     {
-        if ($order->status !== 'processing') return 'Сначала подтвердите заказ и нажмите «Передать в исполнение».';
-        if (! $order->items()->exists() || $order->needsFulfillmentConfirmation()) return 'Сначала подтвердите исполнение всех позиций.';
+        if ($order->status !== 'processing') {
+            return 'Сначала подтвердите заказ и нажмите «Передать в исполнение».';
+        }
+        if ($reason = $this->destinationBlocker($order)) {
+            return $reason;
+        }
+        if (! $order->items()->exists() || $order->needsFulfillmentConfirmation()) {
+            return 'Сначала подтвердите исполнение всех позиций.';
+        }
         if (in_array($order->delivery_type, ['evropochta', 'vam_express'], true) && ! $this->reference($order)) {
             return $order->delivery_type === 'evropochta'
                 ? 'Сначала оформите Европочту: нужен трек-номер.'
@@ -50,6 +72,7 @@ class OrderDeliveryPreparation
         if (! hash_equals((string) ($plan['signature'] ?? ''), $this->signature($order))) {
             return 'Данные заказа или доставки изменились. Подтвердите подготовку доставки заново.';
         }
+
         return null;
     }
 
@@ -66,10 +89,15 @@ class OrderDeliveryPreparation
             if ($locked->status !== 'processing' || ! $locked->items->count() || $locked->needsFulfillmentConfirmation()) {
                 throw new DomainException('Подготовка доставки доступна после подтверждения заказа и передачи в исполнение.');
             }
-            if ($locked->onec_order_guid || app(\App\Services\Integrations\OneCBridge\OneCAgentTasks::class)
-                ->activeFor($locked, \App\Services\Integrations\OneCBridge\OrderTaskHandler::TYPE)) throw new DomainException('Заказ уже передан в 1С. Изменения доставки согласуйте отдельно.');
+            if ($locked->onec_order_guid || app(OneCAgentTasks::class)
+                ->activeFor($locked, OrderTaskHandler::TYPE)) {
+                throw new DomainException('Заказ уже передан в 1С. Изменения доставки согласуйте отдельно.');
+            }
             $locked->fill(['delivery_type' => $data['method'], 'planned_delivery_date' => $data['date']])->save();
             $locked->refresh();
+            if ($reason = $this->destinationBlocker($locked)) {
+                throw new DomainException($reason);
+            }
             if (in_array($locked->delivery_type, ['evropochta', 'vam_express'], true) && ! $this->reference($locked)) {
                 throw new DomainException('Для выбранного перевозчика сначала оформите и привяжите трек / ID отправления.');
             }
@@ -85,6 +113,7 @@ class OrderDeliveryPreparation
     public function summary(Order $order): string
     {
         $plan = $order->delivery_preparation ?? [];
+
         return collect([Order::DELIVERY_TYPES[$order->delivery_type] ?? $order->delivery_type,
             filled($plan['from'] ?? null) ? 'Забрать: '.$plan['from'] : null,
             filled($plan['to'] ?? null) ? 'Передать: '.$plan['to'] : null,

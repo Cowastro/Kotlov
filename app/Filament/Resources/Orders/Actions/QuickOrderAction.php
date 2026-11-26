@@ -104,10 +104,13 @@ final class QuickOrderAction
                     TextInput::make('delivery_address')->label('Адрес доставки')->visible(self::usesAddress(...)),
                     Select::make('evropochta_branch')->label('Отделение получения')
                         ->options(self::evropochtaBranches(...))->searchable()->live()
+                        ->required(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD)
                         ->placeholder('Введите город, улицу или номер отделения')
                         ->visible(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD)
                         ->afterStateUpdated(self::updateEvropochtaQuote(...)),
-                    Hidden::make('evropochta_token'),
+                    Hidden::make('evropochta_token')
+                        ->required(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD)
+                        ->validationMessages(['required' => 'Дождитесь расчёта тарифа Европочты. Если тариф недоступен, проверьте вес и размеры упаковки товара.']),
                     Hidden::make('evropochta_price')->dehydrated(false),
                     Hidden::make('evropochta_note')->dehydrated(false),
                     Placeholder::make('evropochta_tariff')->label('Доставка Европочтой')
@@ -116,8 +119,7 @@ final class QuickOrderAction
                             ? number_format((float) $get('evropochta_price'), 0, ',', ' ').' BYN'
                             : ($get('evropochta_note') ?: 'Выберите отделение, чтобы рассчитать тариф.')),
                     Grid::make(3)->schema([
-                        Select::make('payment_type')->label('Оплата')->options(fn (Get $get): array =>
-                            $get('delivery_type') === EvropochtaCheckout::METHOD
+                        Select::make('payment_type')->label('Оплата')->options(fn (Get $get): array => $get('delivery_type') === EvropochtaCheckout::METHOD
                                 ? array_intersect_key(Order::PAYMENT_TYPES, array_flip([EvropochtaCheckout::COD_PAYMENT, EvropochtaCheckout::PAYMENT]))
                                 : collect(Order::PAYMENT_TYPES)->except(['invoice_deferred', EvropochtaCheckout::COD_PAYMENT])->all()
                         )->default('cash')->required()->live()->native(false),

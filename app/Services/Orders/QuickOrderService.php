@@ -69,17 +69,21 @@ class QuickOrderService
 
         $quote = null;
         if ($usesEvropochta) {
-            $parcel = $this->assessEvropochta($items->all())['parcel'];
-            if ($parcel !== null) {
-                $quote = $this->evropochta->confirmedQuote(
-                    $parcel,
-                    (int) ($data['evropochta_branch'] ?? 0),
-                    is_string($data['evropochta_token'] ?? null) ? $data['evropochta_token'] : '',
-                    session()->getId(),
-                );
-                if ($quote === null) {
-                    throw new RuntimeException('Выберите отделение и дождитесь расчёта тарифа Европочты.');
-                }
+            if ((int) ($data['evropochta_branch'] ?? 0) < 1) {
+                throw new RuntimeException('Выберите отделение получения Европочты.');
+            }
+            ['parcel' => $parcel, 'message' => $message] = $this->assessEvropochta($items->all());
+            if ($parcel === null) {
+                throw new RuntimeException($message ?: 'Укажите упаковку и рассчитайте тариф Европочты.');
+            }
+            $quote = $this->evropochta->confirmedQuote(
+                $parcel,
+                (int) $data['evropochta_branch'],
+                is_string($data['evropochta_token'] ?? null) ? $data['evropochta_token'] : '',
+                session()->getId(),
+            );
+            if ($quote === null || blank($quote['city'] ?? null) || blank($quote['address'] ?? null)) {
+                throw new RuntimeException('Выберите отделение и дождитесь расчёта тарифа Европочты.');
             }
         }
 

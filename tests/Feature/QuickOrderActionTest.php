@@ -23,6 +23,45 @@ class QuickOrderActionTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_evropochta_cannot_skip_branch_or_quote_when_packaging_is_missing(): void
+    {
+        Event::fake([NewOrderCreated::class]);
+        Http::preventStrayRequests();
+        config(['services.evropochta.token' => 'test-token', 'services.evropochta.checkout_enabled' => true]);
+        $product = $this->product('NO-PACKAGING', 250.20);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $data = ['customer_name' => 'Тест', 'customer_phone' => '+375291112233',
+            'delivery_type' => 'evropochta', 'payment_type' => 'evropochta_cod', 'status' => 'processing',
+            'items' => [['product_id' => $product->id, 'quantity' => 1, 'price' => 250.20]]];
+        foreach ([[], ['evropochta_branch' => 40930010, 'evropochta_token' => 'stale-token']] as $extra) {
+            try {
+                app(QuickOrderService::class)->create($data + $extra, $manager);
+                $this->fail('Missing shipping details must not create an order.');
+            } catch (RuntimeException $exception) {
+                $this->assertNotEmpty($exception->getMessage());
+            }
+        }
+        $this->assertDatabaseCount('orders', 0);
+        Event::assertNotDispatched(NewOrderCreated::class);
+        Http::assertNothingSent();
+    }
+
+    public function test_quick_order_form_requires_branch_and_tariff_for_evropochta(): void
+    {
+        Event::fake([NewOrderCreated::class]);
+        config(['services.evropochta.checkout_enabled' => false]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $product = $this->product('NO-BRANCH', 250.20);
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ListOrders::class)->callAction('quick_order', [
+            'customer_name' => 'Тест', 'customer_phone' => '+375291112233',
+            'delivery_type' => 'evropochta', 'payment_type' => 'evropochta_cod', 'status' => 'processing',
+            'items' => [['product_id' => $product->id, 'quantity' => 1, 'price' => 250.20]],
+        ])->assertHasActionErrors(['evropochta_branch' => 'required', 'evropochta_token' => 'required']);
+        $this->assertDatabaseCount('orders', 0);
+    }
+
     private function product(string $sku, float $price): Product
     {
         $category = Category::query()->firstOrCreate(['slug' => 'quick-order-test'], ['name' => 'Быстрый заказ', 'is_active' => true]);
