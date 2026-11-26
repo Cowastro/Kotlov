@@ -22,7 +22,7 @@ class SakovichPelletKits
     public function refresh(Supplier $supplier, ?array $importedArticles = null): void
     {
         $components = $supplier->supplierProducts()->whereIn('supplier_article_normalized', array_merge(...array_values(self::COMPONENTS)))
-            ->get()->keyBy('supplier_article_normalized');
+            ->get()->toBase()->keyBy('supplier_article_normalized');
 
         foreach (self::COMPONENTS as $sku => $articles) {
             $product = Product::where('sku', $sku)->lockForUpdate()->first();
