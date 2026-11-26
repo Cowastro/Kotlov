@@ -83,6 +83,11 @@ class ContactRequestCreateOrderTest extends TestCase
         $page = Livewire::test(ViewContactRequest::class, ['record' => $lead->id])->mountAction('createOrder');
         $base = 'mountedActions.0.data';
         $page->set($base.'.delivery_type', 'evropochta')
+            ->set($base.'.different_receiver', true)
+            ->assertSet($base.'.recipient.receiver_phone_number', $lead->phone)
+            ->set($base.'.recipient.receiver_surname', 'Тестовая')
+            ->set($base.'.recipient.receiver_name', 'Надежда')
+            ->set($base.'.recipient.receiver_patronymic_name', 'Ивановна')
             ->set($base.'.evropochta_branch', '40930010')->assertSet($base.'.evropochta_price', null)
             ->set($base.'.parcel.weight', 2)->set($base.'.parcel.length', 30)
             ->set($base.'.parcel.width', 20)->set($base.'.parcel.height', 15)
@@ -94,6 +99,8 @@ class ContactRequestCreateOrderTest extends TestCase
         $this->assertFalse($lead->fresh()->needs_attention);
         $this->assertSame('Лида', $order->delivery_city);
         $this->assertSame(40930010, $order->evropochta_quote['store_id_finish']);
+        $this->assertSame('Надежда', $order->evropochta_quote['recipient']['receiver_name']);
+        $this->assertSame($lead->name, $order->customer_name);
         $this->assertSame('208.00', $order->total);
         $this->assertNull($order->evropochta_tracking_number);
         $this->assertNull($lead->product->shipping_parcel);

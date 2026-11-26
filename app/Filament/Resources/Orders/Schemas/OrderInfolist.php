@@ -3,9 +3,13 @@
 namespace App\Filament\Resources\Orders\Schemas;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
-use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
+use App\Filament\Resources\OneCItems\OneCItemResource;
+use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
+use App\Filament\Resources\Products\Actions\ProductOneCItemAction;
+use App\Filament\Resources\VamExpress\VamExpressShipmentResource;
+use App\Livewire\EvropochtaOrderStatus;
 use App\Models\IntegrationIssue;
 use App\Models\OneCItem;
 use App\Models\Order;
@@ -14,11 +18,12 @@ use App\Models\OrderEconomicSnapshot;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
+use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\SupplierOrderRequest;
+use App\Models\VamExpressShipment;
 use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
-use App\Filament\Resources\Products\Actions\ProductOneCItemAction;
-use App\Models\Product;
 use App\Services\Integrations\OneCBridge\ItemTaskHandler;
 use App\Services\Integrations\OneCBridge\ODataReadTaskHandler;
 use App\Services\Integrations\OneCBridge\OneCAgentTasks;
@@ -28,12 +33,14 @@ use App\Services\Integrations\OneCBridge\OneCOrderMatcher;
 use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCStock;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
-use App\Models\SupplierOrderRequest;
+use App\Services\Orders\OrderDeliveryPreparation;
 use App\Services\Orders\OrderItemAvailabilityChecker;
 use App\Services\Orders\OrderItemFulfillmentManager;
+use App\Services\Orders\OrderItemSupplyContextResolver;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierReservationMailService;
+use App\Services\Shipping\EvropochtaRecipient;
 use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
@@ -42,16 +49,17 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Components\Group;
-use Filament\Schemas\Components\Livewire;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\ValidationException;
 
 class OrderInfolist
 {
@@ -174,7 +182,7 @@ class OrderInfolist
                                         ->url(fn (OrderItem $record): ?string => $record->publicProductUrl())
                                         ->openUrlInNewTab()
                                         ->suffixActions([
-                                            \App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction::forItem(),
+                                            FindOrderItemAnalogAction::forItem(),
                                             Action::make('openPublicProduct')
                                                 ->label('Открыть товар на сайте')
                                                 ->tooltip('Открыть товар на сайте')
@@ -183,7 +191,7 @@ class OrderInfolist
                                                 ->color('info')
                                                 ->visible(fn (OrderItem $record): bool => $record->publicProductUrl() !== null)
                                                 ->url(fn (OrderItem $record): ?string => $record->publicProductUrl())
-                                                ->openUrlInNewTab()
+                                                ->openUrlInNewTab(),
                                         ]),
 
                                     TextEntry::make('product_sku')
@@ -345,7 +353,7 @@ class OrderInfolist
                                                             ->whereNotIn('status', ['draft', 'cancelled'])
                                                             ->first();
                                                         if ($existing) {
-                                                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                                            throw ValidationException::withMessages([
                                                                 'reservation_recipient' => 'Запрос этому поставщику уже отправляли: '.$existing->number.'.',
                                                             ]);
                                                         }
@@ -437,10 +445,11 @@ class OrderInfolist
 
                                             $snapshot = $record->supplyContext()['stock_label'];
                                             if (! $record->current_availability_checked_at) {
-                                                $imported = app(\App\Services\Orders\OrderItemSupplyContextResolver::class)->resolveCurrent($record);
+                                                $imported = app(OrderItemSupplyContextResolver::class)->resolveCurrent($record);
                                                 if (data_get($imported, 'stock_updated_at')) {
                                                     return $snapshot.' · по текущей загрузке: '.$imported['stock_label'];
                                                 }
+
                                                 return $snapshot;
                                             }
 
@@ -561,47 +570,47 @@ class OrderInfolist
                                                 ->placeholder('Не заполнены')
                                                 ->copyable(),
 
-                                    TextEntry::make('supply_route')
-                                        ->label('Маршрут')
-                                        ->columnSpan(2)
-                                        ->state(fn ($record): string => $record->supplyContext()['route_label'])
-                                        ->badge()
-                                        ->color(fn ($record): string => match ($record->supplyContext()['status']) {
-                                            'own_stock' => 'success',
-                                            'supplier_purchase' => 'warning',
-                                            default => 'danger',
-                                        }),
+                                            TextEntry::make('supply_route')
+                                                ->label('Маршрут')
+                                                ->columnSpan(2)
+                                                ->state(fn ($record): string => $record->supplyContext()['route_label'])
+                                                ->badge()
+                                                ->color(fn ($record): string => match ($record->supplyContext()['status']) {
+                                                    'own_stock' => 'success',
+                                                    'supplier_purchase' => 'warning',
+                                                    default => 'danger',
+                                                }),
 
-                                    TextEntry::make('supply_wholesale_price')
-                                        ->label('Оптовая / закупочная')
-                                        ->columnSpan(2)
-                                        ->state(fn ($record): ?float => $record->supplyContext()['wholesale_price'])
-                                        ->formatStateUsing(fn ($state): string => $state === null ? '—' : $byn($state))
-                                        ->helperText(fn ($record): string => $record->supplyContext()['wholesale_price_label']),
+                                            TextEntry::make('supply_wholesale_price')
+                                                ->label('Оптовая / закупочная')
+                                                ->columnSpan(2)
+                                                ->state(fn ($record): ?float => $record->supplyContext()['wholesale_price'])
+                                                ->formatStateUsing(fn ($state): string => $state === null ? '—' : $byn($state))
+                                                ->helperText(fn ($record): string => $record->supplyContext()['wholesale_price_label']),
 
-                                    TextEntry::make('supply_margin')
-                                        ->label('Расчётная маржа')
-                                        ->columnSpan(2)
-                                        ->state(function ($record) use ($byn): string {
-                                            $context = $record->supplyContext();
-                                            if ($context['margin_total'] === null) {
-                                                return 'Не рассчитана';
-                                            }
+                                            TextEntry::make('supply_margin')
+                                                ->label('Расчётная маржа')
+                                                ->columnSpan(2)
+                                                ->state(function ($record) use ($byn): string {
+                                                    $context = $record->supplyContext();
+                                                    if ($context['margin_total'] === null) {
+                                                        return 'Не рассчитана';
+                                                    }
 
-                                            return $byn($context['margin_total'])
-                                                .($context['margin_percent'] !== null ? ' / '.number_format($context['margin_percent'], 1, '.', ' ').'%' : '');
-                                        })
-                                        ->color(fn ($record): string => match (true) {
-                                            $record->supplyContext()['margin_total'] === null => 'gray',
-                                            $record->supplyContext()['margin_total'] < 0 => 'danger',
-                                            $record->supplyContext()['margin_total'] == 0 => 'warning',
-                                            default => 'success',
-                                        }),
+                                                    return $byn($context['margin_total'])
+                                                        .($context['margin_percent'] !== null ? ' / '.number_format($context['margin_percent'], 1, '.', ' ').'%' : '');
+                                                })
+                                                ->color(fn ($record): string => match (true) {
+                                                    $record->supplyContext()['margin_total'] === null => 'gray',
+                                                    $record->supplyContext()['margin_total'] < 0 => 'danger',
+                                                    $record->supplyContext()['margin_total'] == 0 => 'warning',
+                                                    default => 'success',
+                                                }),
 
-                                    TextEntry::make('fulfillment_note')
-                                        ->label('Комментарий к маршруту')
-                                        ->columnSpanFull()
-                                        ->visible(fn ($record): bool => filled($record->fulfillment_note)),
+                                            TextEntry::make('fulfillment_note')
+                                                ->label('Комментарий к маршруту')
+                                                ->columnSpanFull()
+                                                ->visible(fn ($record): bool => filled($record->fulfillment_note)),
                                         ]),
                                 ]),
                         ]),
@@ -616,10 +625,15 @@ class OrderInfolist
                             TextEntry::make('delivery_type')
                                 ->label('Способ')
                                 ->formatStateUsing(fn (string $state) => Order::DELIVERY_TYPES[$state] ?? $deliveryNames[$state] ?? $state),
+                            TextEntry::make('ep_recipient')->label('Получатель Европочты')
+                                ->state(fn (Order $record): string => EvropochtaRecipient::name($record))
+                                ->helperText(fn (Order $record): ?string => EvropochtaRecipient::phone($record))
+                                ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'
+                                    && filled($record->evropochta_quote['recipient'] ?? null)),
                             TextEntry::make('vam_order_shipment')->label('Заявка ВАМ')
-                                ->getStateUsing(fn (Order $record) => \App\Models\VamExpressShipment::where('order_id', $record->id)->get()->map(fn ($s) => $s->display_id.' · '.$s->carrier_status)->implode('; '))
-                                ->visible(fn (Order $record): bool => \App\Models\VamExpressShipment::where('order_id', $record->id)->exists())
-                                ->url(fn (Order $record): string => \App\Filament\Resources\VamExpress\VamExpressShipmentResource::getUrl('index', ['tableSearch' => $record->number])),
+                                ->getStateUsing(fn (Order $record) => VamExpressShipment::where('order_id', $record->id)->get()->map(fn ($s) => $s->display_id.' · '.$s->carrier_status)->implode('; '))
+                                ->visible(fn (Order $record): bool => VamExpressShipment::where('order_id', $record->id)->exists())
+                                ->url(fn (Order $record): string => VamExpressShipmentResource::getUrl('index', ['tableSearch' => $record->number])),
 
                             TextEntry::make('delivery_price')
                                 ->label('Стоимость')
@@ -661,7 +675,7 @@ class OrderInfolist
                                 ->visible(fn (Order $record): bool => $record->planned_delivery_date !== null),
 
                             TextEntry::make('delivery_prepared_summary')->label('Согласованная передача')
-                                ->state(fn (Order $record): string => app(\App\Services\Orders\OrderDeliveryPreparation::class)->summary($record))
+                                ->state(fn (Order $record): string => app(OrderDeliveryPreparation::class)->summary($record))
                                 ->extraAttributes(['class' => 'whitespace-pre-line'])->columnSpanFull()
                                 ->visible(fn (Order $record): bool => filled($record->delivery_preparation['prepared_at'] ?? null)),
 
@@ -677,7 +691,7 @@ class OrderInfolist
                                 ->copyable()
                                 ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'),
 
-                            Livewire::make(\App\Livewire\EvropochtaOrderStatus::class, fn (Order $record): array => ['orderId' => $record->getKey()])
+                            Livewire::make(EvropochtaOrderStatus::class, fn (Order $record): array => ['orderId' => $record->getKey()])
                                 ->columnSpanFull()
                                 ->visible(fn (Order $record): bool => $record->delivery_type === 'evropochta'
                                     && filled($record->evropochta_tracking_number)),
@@ -1493,18 +1507,18 @@ class OrderInfolist
         if (filled($order->onec_order_guid) && ! $order->onec_deleted) {
             $status = OneCOrderProfiles::STATUSES[$order->onec_doc_status] ?? $order->onec_doc_status;
 
-            return [(string) $order->onec_order_number, $order->onec_posted ? "success" : "info",
-                ($order->onec_posted ? "проведён" : "не проведён").($status ? " · ".mb_strtolower((string) $status) : "")];
+            return [(string) $order->onec_order_number, $order->onec_posted ? 'success' : 'info',
+                ($order->onec_posted ? 'проведён' : 'не проведён').($status ? ' · '.mb_strtolower((string) $status) : '')];
         }
         if (app(OneCAgentTasks::class)->activeFor($order, OrderTaskHandler::TYPE)) {
-            return ["отправляется", "gray", "агент 1С создаст заказ"];
+            return ['отправляется', 'gray', 'агент 1С создаст заказ'];
         }
         $found = app(OneCOrderMatcher::class)->found($order);
         if ($found) {
-            return ["найден: ".$found["ref"]->description, "warning", "проверьте и свяжите"];
+            return ['найден: '.$found['ref']->description, 'warning', 'проверьте и свяжите'];
         }
 
-        return [$order->onec_deleted ? "помечен на удаление" : "нет", $order->onec_deleted ? "danger" : "gray", null];
+        return [$order->onec_deleted ? 'помечен на удаление' : 'нет', $order->onec_deleted ? 'danger' : 'gray', null];
     }
 
     /** «1С: УТ-00000123» under the article, or «нет в 1С» while creating / when missing. */

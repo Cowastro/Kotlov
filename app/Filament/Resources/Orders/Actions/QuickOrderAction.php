@@ -20,6 +20,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -107,6 +108,16 @@ final class QuickOrderAction
                             ->visible(self::usesAddress(...)),
                     ]),
                     TextInput::make('delivery_address')->label('Адрес доставки')->visible(self::usesAddress(...)),
+                    Toggle::make('different_receiver')->label('Получатель Европочты отличается от покупателя')->live()
+                        ->visible(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD)
+                        ->afterStateUpdated(function ($state, Get $get, Set $set): void {
+                            if ($state && blank($get('recipient.receiver_phone_number'))) {
+                                $set('recipient.receiver_phone_number', $get('customer_phone'));
+                            }
+                        }),
+                    Section::make('Получатель отправления')
+                        ->visible(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD && (bool) $get('different_receiver'))
+                        ->schema(EvropochtaOrderActions::recipientFields('recipient.')),
                     Section::make('Упаковка для расчёта Европочты')
                         ->description('Если размеры не сохранены в карточке товара, измерьте готовую посылку. Эти данные используются только для этого заказа.')
                         ->visible(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD
@@ -116,6 +127,7 @@ final class QuickOrderAction
                         ->live(onBlur: true)->afterStateUpdated(self::updateEvropochtaQuote(...)),
                             ['weight', 'length', 'width', 'height'], ['Вес, кг', 'Длина, см', 'Ширина, см', 'Высота, см'])),
                     Select::make('evropochta_branch')->label('Отделение получения')
+                        ->helperText('Выберите отделение по городу, улице или номеру. Город и адрес доставки заполнятся автоматически.')
                         ->options(self::evropochtaBranches(...))->searchable()->live()
                         ->required(fn (Get $get): bool => $get('delivery_type') === EvropochtaCheckout::METHOD)
                         ->placeholder('Введите город, улицу или номер отделения')

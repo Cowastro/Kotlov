@@ -5,7 +5,7 @@ namespace App\Services\Shipping;
 use App\Jobs\SendEvropochtaTrackingSms;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Services\Telephony\PhoneNumber;
+use App\Services\Orders\EvropochtaTrackingSmsJournal;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -18,7 +18,9 @@ final class EvropochtaOrderShipment
 
     public function preparationUnavailableReason(Order $order): ?string
     {
-        if ($order->status !== 'processing') return 'Сначала подтвердите заказ и передайте его в исполнение.';
+        if ($order->status !== 'processing') {
+            return 'Сначала подтвердите заказ и передайте его в исполнение.';
+        }
         if ($order->delivery_type !== EvropochtaCheckout::METHOD
             || in_array($order->status, ['shipped', 'delivered', 'cancelled', 'completed'], true)
             || filled($order->evropochta_tracking_number)) {
@@ -67,7 +69,9 @@ final class EvropochtaOrderShipment
             throw new EvropochtaShipmentException($error->getMessage(), previous: $error);
         }
 
-        return DB::transaction(function () use ($order, $quote, $signature): array {
+        $receiver = ! empty($input['different_receiver']) ? EvropochtaRecipient::validate($input) : null;
+
+        return DB::transaction(function () use ($order, $quote, $signature, $input, $receiver): array {
             $locked = Order::query()->lockForUpdate()->findOrFail($order->getKey());
             if ($reason = $this->preparationUnavailableReason($locked)) {
                 throw new EvropochtaShipmentException($reason);
@@ -86,6 +90,8 @@ final class EvropochtaOrderShipment
             }
 
             $quote['order_item_signature'] = $signature;
+            $quote['recipient'] = array_key_exists('different_receiver', $input)
+                ? $receiver : ($locked->evropochta_quote['recipient'] ?? null);
             if (! $locked->update([
                 'evropochta_quote' => $quote,
                 'delivery_city' => $quote['city'],
@@ -124,7 +130,9 @@ final class EvropochtaOrderShipment
 
     public function unavailableReason(Order $order): ?string
     {
-        if ($order->status !== 'processing' && blank($order->evropochta_tracking_number)) return 'Сначала подтвердите заказ и передайте его в исполнение.';
+        if ($order->status !== 'processing' && blank($order->evropochta_tracking_number)) {
+            return 'Сначала подтвердите заказ и передайте его в исполнение.';
+        }
         if ($order->delivery_type !== EvropochtaCheckout::METHOD || in_array($order->status, ['cancelled', 'delivered'], true)) {
             return 'Этот заказ недоступен для оформления Европочтой.';
         }
@@ -132,7 +140,9 @@ final class EvropochtaOrderShipment
             return 'Ключ API Европочты не настроен.';
         }
 
-        if ($reason = EvropochtaPayment::blocker($order)) return $reason;
+        if ($reason = EvropochtaPayment::blocker($order)) {
+            return $reason;
+        }
 
         $signature = $order->evropochta_quote['order_item_signature'] ?? null;
         if ($signature !== null && $signature !== $this->itemSignature($this->orderItems($order))) {
@@ -176,17 +186,8 @@ final class EvropochtaOrderShipment
                 throw new EvropochtaShipmentException($reason);
             }
 
-            $contact = Validator::make($recipient, [
-                'receiver_name' => ['required', 'string', 'min:2', 'max:100'],
-                'receiver_surname' => ['required', 'string', 'min:2', 'max:100'],
-                'receiver_patronymic_name' => ['nullable', 'string', 'max:100'],
-                'receiver_phone_number' => ['required', 'string', 'max:30', 'regex:/^\+?[0-9 ()-]+$/D'],
-            ])->validate();
-            $rawPhone = $contact['receiver_phone_number'];
-            $phone = PhoneNumber::normalize(PhoneNumber::format($rawPhone) ?? $rawPhone);
-            if (! $phone || ! preg_match('/^\d{7,15}$/D', $phone)) {
-                throw ValidationException::withMessages(['receiver_phone_number' => 'Укажите один номер телефона с кодом страны.']);
-            }
+            $contact = EvropochtaRecipient::validate($recipient);
+            $phone = $contact['receiver_phone_number'];
 
             $quote = $lockedOrder->evropochta_quote;
             $parcel = $quote['parcel'];
@@ -225,10 +226,13 @@ final class EvropochtaOrderShipment
                 ! SendEvropochtaTrackingSms::configured() => 'unavailable',
                 default => 'pending',
             };
-            if ($lockedOrder->payment_status === 'pending') $lockedOrder->payment_type = EvropochtaCheckout::COD_PAYMENT;
+            if ($lockedOrder->payment_status === 'pending') {
+                $lockedOrder->payment_type = EvropochtaCheckout::COD_PAYMENT;
+            }
             $lockedOrder->evropochta_tracking_number = $number;
             $lockedOrder->evropochta_sms_status = $smsStatus;
             // Keep the amounts sent at creation, rather than recomputing them from a later edited order.
+            $quote['recipient'] = $contact;
             $quote['shipment'] = ['number' => $number, 'status' => 'Заявка создана',
                 'payment_amount' => $payload['payment_amount'] ?? 0,
                 'declared_amount' => $payload['declared_amount'] ?? null,
@@ -240,7 +244,7 @@ final class EvropochtaOrderShipment
                 throw new EvropochtaShipmentException('Трек-номер получен, но не сохранён. Повторите действие для восстановления номера.');
             }
 
-            app(\App\Services\Orders\EvropochtaTrackingSmsJournal::class)->sync($lockedOrder);
+            app(EvropochtaTrackingSmsJournal::class)->sync($lockedOrder);
 
             if ($smsStatus === 'pending') {
                 $orderId = (int) $lockedOrder->getKey();
