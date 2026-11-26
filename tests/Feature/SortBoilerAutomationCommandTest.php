@@ -116,12 +116,18 @@ class SortBoilerAutomationCommandTest extends TestCase
         $bath = $card('Смеситель для ванны вентильный (тип I), серия 410 ECONOCE', $faucets);
         $sink = $card('Смеситель для умывальника (Lt) D35, серия Lotus черный, a-five', $faucets);
         $aerator = $card('Аэратор для смесителя с НР М24х1/2" MasterProf', $faucets);
+        $pe = $section('fitingi-dlya-pe-trub');
+        $peCoupling = $card('Муфта соединительная с внутренней резьбой для ПЭ труб 32х1 1/4" UNIDELTA', $pe);
+        $peElbow = $card('Отвод электросварной ПЭ100 SDR11 Ду 160х90°', $pe);
+        $peSaddle = $card('Седло зажимное с ВР для п/э Ду 25х3/4" VALFEX', $pe);
+        $peThreaded = $card('Муфта ПП 1/2" вн.-вн. кор., AV Engineering', $pe);
+        $plasticFaucet = $card('Смеситель пластиковый для кухни, AV Engineering', $pe);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=10')
+            ->expectsOutputToContain('metric.boiler_automation.moved=11')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -283,6 +289,18 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Чёрный', $value('Цвет', $sink));
         $this->assertSame('Комплектующие (аэраторы, картриджи, буксы)', $value('Назначение', $aerator));
         $this->assertNull($value('Управление', $aerator));
+        $this->assertSame('Муфты и переходники', $value('Тип', $peCoupling));
+        $this->assertSame('Компрессионные (обжимные)', $value('Способ соединения', $peCoupling));
+        $this->assertSame('С внутренней резьбой', $value('Резьба', $peCoupling));
+        $this->assertSame('32 мм', $value('Диаметр', $peCoupling));
+        $this->assertSame('Отводы и колена', $value('Тип', $peElbow));
+        $this->assertSame('Электросварные', $value('Способ соединения', $peElbow));
+        $this->assertSame('160 мм', $value('Диаметр', $peElbow));
+        $this->assertSame('Сёдла (врезки)', $value('Тип', $peSaddle));
+        $this->assertSame('С внутренней резьбой', $value('Резьба', $peSaddle));
+        $this->assertSame('Резьбовые пластиковые фитинги', $value('Тип', $peThreaded));
+        $this->assertNull($value('Диаметр', $peThreaded));
+        $this->assertSame($faucets->id, $plasticFaucet->fresh()->category_id);
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')

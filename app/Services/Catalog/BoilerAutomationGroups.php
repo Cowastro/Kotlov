@@ -35,6 +35,7 @@ final class BoilerAutomationGroups
         '/^радиомодуль lorawan/u' => 'schetchiki-vody-i-tepla',
         '/^шланг для газа/u' => 'gazovye-shlangi',
         '/^насос-автомат/u' => 'nasosnyie-stantsii',
+        '/^смеситель пластиковый/u' => self::FAUCETS,
         '/^насос погружной «фекальник»/u' => 'drenajnyie',
         '/^(привод|патрон) тр[её]хходового клапана для котлов.*fondital/u' => self::PARTS,
         '/^(вместе с фланцем|пеллетная горелка kipi rotary)/u' => 'pelletnye-gorelki',
@@ -248,6 +249,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::PE_FITTINGS => [
+                'Тип' => [self::PE_TYPES, self::PE_ORDER],
+                'Способ соединения' => [self::PE_JOINTS, array_values(array_unique(self::PE_JOINTS))],
+                'Резьба' => [self::PE_THREADS, array_values(self::PE_THREADS)],
+                'Диаметр' => [fn (string $title) => self::pipeDiameter($title, self::PE_DIAMETERS), array_map(fn (int $mm) => $mm.' мм', self::PE_DIAMETERS)],
+            ],
             self::FAUCETS => [
                 'Назначение' => [self::FAUCET_USES, self::FAUCET_ORDER],
                 'Управление' => [self::FAUCET_CONTROLS, array_values(array_unique(self::FAUCET_CONTROLS))],
@@ -907,6 +914,52 @@ final class BoilerAutomationGroups
         '/сатин|матов\w* никел|нержав|sus 304/u' => 'Сатин и нержавеющая сталь',
         '/гранит|графит|сер(ый|ая)(?![а-я])/u' => 'Серый и графит',
     ];
+
+    public const PE_FITTINGS = 'fitingi-dlya-pe-trub';
+
+    /** «Тип» options of «Фитинги для ПЭ труб», in filter order. */
+    public const PE_ORDER = [
+        'Муфты и переходники',
+        'Отводы и колена',
+        'Тройники',
+        'Заглушки',
+        'Сёдла (врезки)',
+        'Краны',
+        'Фланцы и втулки под фланец',
+        'Опоры',
+        'Резьбовые пластиковые фитинги',
+    ];
+
+    /** Title pattern => «Тип» inside «Фитинги для ПЭ труб»; the first match wins. */
+    public const PE_TYPES = [
+        '/^кран/u' => 'Краны',
+        '/(?<![а-я])пп(?![а-я]).*кор\.|^врезка пп|^футорка/u' => 'Резьбовые пластиковые фитинги',
+        '/седло/u' => 'Сёдла (врезки)',
+        '/опор/u' => 'Опоры',
+        '/фланец|втулка под фланец/u' => 'Фланцы и втулки под фланец',
+        '/тройник/u' => 'Тройники',
+        '/отвод|колено|угольник/u' => 'Отводы и колена',
+        '/заглушк/u' => 'Заглушки',
+        '/муфт|ниппел|адаптер|соединение|переход/u' => 'Муфты и переходники',
+    ];
+
+    /** Title pattern => «Способ соединения» of a PE fitting: compression is the default for the push-fit brands. */
+    public const PE_JOINTS = [
+        '/электросвар|electrofusion/u' => 'Электросварные',
+        '/литой|сварной|стыков|патрубок|втулка под фланец/u' => 'Под стыковую сварку',
+        '/фланцев|фланец/u' => 'Фланцевые',
+        '/(?<![а-я])пп(?![а-я]).*кор\.|^врезка пп|^футорка/u' => 'Резьбовые',
+        '/пэ \d|для пэ|для п\/э|компрессион|обжимн|unidelta|lammin|valfex|седло/u' => 'Компрессионные (обжимные)',
+    ];
+
+    /** Title pattern => «Резьба» of a PE fitting with a threaded end. */
+    public const PE_THREADS = [
+        '/внутренн|(?<![а-я])вн\.|(?<![а-я])вр(?![а-я])|обойма-внутренн/u' => 'С внутренней резьбой',
+        '/наружн|(?<![а-я])нар\.|(?<![а-я])нр(?![а-я])/u' => 'С наружной резьбой',
+    ];
+
+    /** The PE pipe sizes, mm. */
+    public const PE_DIAMETERS = [16, 20, 25, 32, 40, 50, 63, 75, 90, 110, 125, 160, 200, 225, 250, 315, 400];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
