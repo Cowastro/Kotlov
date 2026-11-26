@@ -189,6 +189,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Св. 4 до 11 кВт', $value('Мощность двигателя', $nbw));
         $this->assertSame('Свыше 30 кВт', $value('Мощность двигателя', $pstg));
         $this->assertSame('До 1,5 кВт', $value('Мощность двигателя', $fc));
+        $this->assertSame('380–415 В', $value('Питание', $nbw));
+        $this->assertNull($value('Питание', $pstg));
+        $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)
