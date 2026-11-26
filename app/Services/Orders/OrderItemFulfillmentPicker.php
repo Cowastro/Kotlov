@@ -69,7 +69,8 @@ final class OrderItemFulfillmentPicker
                 default => null,
             };
             // Our stock costs what 1C paid for it (cost from the posted purchases), not its selling price.
-            $price = ($isOwn && (float) $product?->onec_cost_byn > 0 ? (float) $product->onec_cost_byn : null)
+            $onecCost = $isOwn && (float) $product?->onec_cost_byn > 0 ? (float) $product->onec_cost_byn : null;
+            $price = $onecCost
                 ?? $integration?->normalizedPriceByn()
                 ?? $legacy?->price_byn
                 ?? ((int) $context['supplier_id'] === $supplier->id ? $context['wholesale_price'] : null)
@@ -77,13 +78,16 @@ final class OrderItemFulfillmentPicker
             $source = match (true) {
                 $onecContext => $context['stock_source_label'],
                 $manual => 'Ручное наличие карточки',
-                $onecFree !== null => '1С, склад '.implode(', ', OneCStock::WAREHOUSES).': '.OneCStock::label($onecItem)
-                    .($isOwn && (float) $product?->onec_cost_byn > 0 ? ' · себестоимость 1С' : ''),
+                $onecFree !== null => '1С, склад '.implode(', ', OneCStock::WAREHOUSES).': '.OneCStock::label($onecItem),
                 $integration?->hasFreshPositiveStock() === true => $integration->source->name,
                 $warehouse !== null => $warehouse->warehouse_name,
                 $legacy?->hasFreshPositiveStock() === true => 'Прайс поставщика',
                 default => $integration?->source?->name,
             };
+
+            if ($onecCost !== null) {
+                $source = $source ? $source.' · себестоимость 1С' : 'себестоимость 1С';
+            }
 
             return [$supplier->id => [
                 'label' => $supplier->name,

@@ -213,7 +213,7 @@ class OrderSupplyRoutingTest extends TestCase
 
         $this->assertFalse($check['is_available']);
         $this->assertSame(0.0, (float) $check['stock_quantity']);
-        $this->assertSame('Сейчас нет в наличии', $check['stock_label']);
+        $this->assertSame('Сейчас нет в наличии · 1С', $check['stock_label']);
         $this->assertSame(7.0, (float) $item->supply_stock_quantity);
         $this->assertTrue($item->supply_is_available);
         $this->assertFalse($item->current_availability['is_available']);
@@ -223,7 +223,8 @@ class OrderSupplyRoutingTest extends TestCase
         $this->actingAs($manager)
             ->get(OrderResource::getUrl('view', ['record' => $fixture['order']], panel: 'admin'))
             ->assertOk()
-            ->assertSeeText('7 шт. при заказе · сейчас: нет в наличии')
+            ->assertSeeText('Свободно: 0 шт. · 1С, склад Основной')
+            ->assertSee('При оформлении заказа:')
             ->assertSee('Уточнить актуальное наличие по последнему обновлению базы');
     }
 
