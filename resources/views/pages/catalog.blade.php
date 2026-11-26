@@ -523,6 +523,8 @@
                 {{-- Список товаров --}}
                 <div class="col-xl-9">
 
+                    @includeWhen(isset($sakovichKits) && $sakovichKits->isNotEmpty(), 'partials.sakovich-kit-picker')
+
                     <div class="tf-shop-control">
                         {{-- Кнопка открытия фильтров на мобильных --}}
                         <button type="button" id="filterShop" class="tf-btn-filter d-xl-none" data-bs-toggle="offcanvas" data-bs-target="#catalog-filters" aria-controls="catalog-filters">

@@ -167,6 +167,7 @@ class SyncSantehskladPricelistCommand extends Command
                     }
                 }
 
+                app(\App\Services\Suppliers\SakovichPelletKits::class)->refresh($supplier, array_column($classified, 'article_key'));
                 app(SupplierProductAvailabilityService::class)->refreshMany(array_values(array_unique($touched)));
                 $source->forceFill(['last_run_at' => now()])->save();
                 $sync->forceFill(['last_run_at' => now(), 'last_status' => 'updated', 'last_exit_code' => 0])->save();
