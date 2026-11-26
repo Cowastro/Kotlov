@@ -15,8 +15,7 @@ class OneCReadWatchdog
         if (! config('onec.read_watchdog_enabled') || ! IntegrationSource::where('code', 'onec')->where('is_active', true)->exists()) {
             return;
         }
-        $hour = (int) now('Europe/Minsk')->format('G');
-        if ($hour < 7 || $hour >= 22) {
+        if (! OneCReadWindow::isOpen()) {
             return;
         }
         Cache::lock('onec-read-watchdog', 20)->get(function (): void {
