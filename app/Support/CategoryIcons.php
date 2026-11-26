@@ -81,6 +81,7 @@ final class CategoryIcons
         'regulyatory' => ['indirect', 'M5 4h14v16H5V4ZM7 12a5 5 0 1 0 10 0 5 5 0 1 0 -10 0ZM12 9.5V12l1.5 1.5'],
         'datchiki' => ['water', 'M10 4a2 2 0 0 1 4 0v10a4 4 0 1 1-4 0V4Zm2 7v6'],
         'zapchasti-dlya-kotlov' => ['equipment', 'M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9 7 7m10 10 2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1'],
+        'ventilyatory-nadduva' => ['equipment', 'M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9 7 7m10 10 2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1'],
         // krany-i-zapornaya-armatura
         'sharovye-krany' => ['flame', 'M2 11h4v5H2m20-5h-4v5h4M6 10h12v7H6v-7Zm6 0V7m-5-1h10'],
         'ventili-zapornye' => ['water', 'M2 15h4v4H2m20-4h-4v4h4M6 14h12v6H6v-6Zm6 0V8M8 6a4 1.6 0 1 0 8 0 4 1.6 0 1 0-8 0Z'],

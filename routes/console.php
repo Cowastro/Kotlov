@@ -136,6 +136,13 @@ Schedule::command('catalog:sync-membrane-tank-volume-filter --apply')
     ->withoutOverlapping(10)
     ->appendOutputTo(storage_path('logs/catalog-filter-sync.log'));
 
+// New supplier cards in «Регуляторы» get their «Назначение» group; stray heads, valves and blowers move out.
+Schedule::command('catalog:sort-boiler-automation --apply')
+    ->dailyAt('04:15')
+    ->timezone('Europe/Minsk')
+    ->withoutOverlapping(10)
+    ->appendOutputTo(storage_path('logs/catalog-filter-sync.log'));
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');

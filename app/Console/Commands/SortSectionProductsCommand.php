@@ -51,7 +51,9 @@ class SortSectionProductsCommand extends Command
             ['/^(montaznyi-komplekt|komplekt-podkliuceniia|komplekt-iz-dvuh|adapter-monoblocnyi|komplekt-universalnyi)/', 'komplekty-podklyucheniya'],
             ['/kronstein|kronshteyn|^sten-|^rucka-/', 'radiatornaya-armatura'],
             ['/magnievyi-anod|innowarm-termostat/', 'komplektuyushchie-dlya-vodonagrevateley'],
-            ['/^(bunker-dlia|snekovyi-transporter|ventiliator-nadduva|sveca-nakala|datcik-plameni|blok-silovoi|vmeste-s-flancem|reguliator-tiagi|regulyator-tyagi|hotex-reguliator-tiagi|vykliucatel-avtomaticeskii|predoxranitel-|komplekt-perenaladki|trubka-podaiushhei|kran-podpitki|turbonasadka|hx-28)/', 'zapchasti-dlya-kotlov'],
+            ['/^ventiliator-nadduva/', 'ventilyatory-nadduva'],
+            ['/^(reguliator-tiagi|regulyator-tyagi|hotex-reguliator-tiagi)/', 'regulyatory'],
+            ['/^(bunker-dlia|snekovyi-transporter|sveca-nakala|datcik-plameni|blok-silovoi|vmeste-s-flancem|vykliucatel-avtomaticeskii|predoxranitel-|komplekt-perenaladki|trubka-podaiushhei|kran-podpitki|turbonasadka|hx-28)/', 'zapchasti-dlya-kotlov'],
         ],
         'kotly' => [
             ['/^kotel-elektriceskii/', 'elektricheskie'],

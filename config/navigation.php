@@ -107,7 +107,7 @@ return [
             ['title' => 'Баки, нагрев, теплоносители', 'icon' => 'icon-Package', 'description' => 'Мембранные баки, ТЭНы и жидкости для систем отопления.',
                 'slugs' => ['membrannye-baki', 'elektricheskie-teny-dlya-otopleniya', 'teplonositeli']],
             ['title' => 'Автоматика и запчасти для котлов', 'icon' => 'icon-Devices', 'description' => 'Терморегуляторы, датчики температуры и запасные части.',
-                'slugs' => ['regulyatory', 'datchiki', 'zapchasti-dlya-kotlov']],
+                'slugs' => ['regulyatory', 'ventilyatory-nadduva', 'datchiki', 'zapchasti-dlya-kotlov']],
         ],
         'vodosnabzhenie' => [
             ['title' => 'Насосы', 'icon' => 'icon-Leaf', 'description' => 'Циркуляционные, скважинные, поверхностные, дренажные и промышленные.',
