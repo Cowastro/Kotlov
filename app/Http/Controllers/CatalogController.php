@@ -1073,6 +1073,12 @@ class CatalogController extends Controller
             }
         }
 
+        $kitSkus = array_keys(\App\Services\Suppliers\SakovichPelletKits::OPTIONS);
+        $sakovichKits = $category->slug === 'kotly-na-pelletah' && request()->integer('page', 1) === 1
+            ? (clone $query)->reorder()->whereIn('products.sku', $kitSkus)->get()
+                ->sortBy(fn (Product $kit) => array_search($kit->sku, $kitSkus, true))
+            : collect();
+
         $totalCount = $query->count();
         $products = $query->paginate(24)->withQueryString()->fragment('catalog-products');
         if ($isMinskFireplaceCatalog && $products->onFirstPage() && ! $hasFeaturedFireplaces
@@ -1835,7 +1841,7 @@ class CatalogController extends Controller
         }
 
         return view('pages.catalog', compact(
-            'saunaSections', 'heatingSections', 'bufferSections', 'detectorFacts',
+            'sakovichKits', 'saunaSections', 'heatingSections', 'bufferSections', 'detectorFacts',
             'isChimneySection',
             'ecokaminPromoHits',
             'ecokaminPromoMaxDiscount',
