@@ -227,6 +227,14 @@ final class BoilerAutomationGroups
                 'Диаметр' => [self::LEAK_SIZES, ['1/2"', '3/4"', '1"', '1 1/4"', '1 1/2"', '2"']],
                 'Напряжение привода' => [self::LEAK_VOLTAGES, array_values(self::LEAK_VOLTAGES)],
             ],
+            self::CONNECTION_KITS => [
+                'Тип' => [self::KIT_TYPES, self::KIT_ORDER],
+                'Исполнение' => [self::RADIATOR_SHAPES, array_values(array_unique(self::RADIATOR_SHAPES))],
+                'Цвет' => [self::COLORS, array_values(self::COLORS)],
+            ],
+            self::GAS_ALARMS => [
+                'Какой газ' => [self::ALARM_GASES, self::ALARM_ORDER],
+            ],
             self::GAS_HOSES => [
                 'Тип' => [self::HOSE_TYPES, array_values(self::HOSE_TYPES)],
                 'Длина' => [self::HOSE_LENGTHS, array_values(self::HOSE_LENGTHS)],
@@ -306,9 +314,9 @@ final class BoilerAutomationGroups
 
     /** Title pattern => «Исполнение» (how the valve body goes) of a radiator valve; mounts and plugs have none. */
     public const RADIATOR_SHAPES = [
-        '/^(?!кронштейн|переходник|заглушк|удлинител|крепление).*универсальн/u' => 'Универсальный',
+        '/^узел.*универсальн/u' => 'Универсальный',
         '/^(?!кронштейн|переходник|заглушк|удлинител|крепление).*(?<![а-я])углов/u' => 'Угловой',
-        '/^(?!кронштейн|переходник|заглушк|удлинител|крепление).*(?<![а-я])прям(ой|ые|ая)/u' => 'Прямой',
+        '/^(?!кронштейн|переходник|заглушк|удлинител|крепление).*(?<![а-я])(прям(ой|ые|ая)|проходн)/u' => 'Прямой',
         '/^(?!кронштейн|переходник|заглушк|удлинител|крепление).*осев/u' => 'Осевой',
     ];
 
@@ -319,6 +327,7 @@ final class BoilerAutomationGroups
         '/(?<![а-я])бел(ый|ая|ое|ые)(?![а-я])/u' => 'Белый',
         '/(?<![а-я])(черн|чёрн)(ый|ая|ое|ые)(?![а-я])/u' => 'Чёрный',
         '/(?<![а-я])сер(ый|ая|ое|ые)(?![а-я])/u' => 'Серый',
+        '/серебрист|металлик/u' => 'Серебристый',
     ];
 
     public const MIXING_VALVES = 'smesitelnye-klapany-i-uzly';
@@ -426,6 +435,48 @@ final class BoilerAutomationGroups
     public const LEAK_VOLTAGES = [
         '/(?<!\d)12\s*в/u' => '12 В',
         '/(?<!\d)2[23]0\s*[вv]/u' => '220–230 В',
+    ];
+
+    public const CONNECTION_KITS = 'komplekty-podklyucheniya';
+
+    /** «Тип» options of «Комплекты подключения», in filter order. */
+    public const KIT_ORDER = [
+        'Узлы нижнего подключения',
+        'Наборы дизайн-вентилей',
+        'Комплекты радиаторных клапанов',
+        'Монтажные комплекты',
+        'Кронштейны и крепления',
+        'Комплекты шаровых кранов',
+        'Для котлов и бойлеров',
+        'Прочее',
+    ];
+
+    /** Title pattern => «Тип» inside «Комплекты подключения»; the first match wins. */
+    public const KIT_TYPES = [
+        '/дизайн-вентил/u' => 'Наборы дизайн-вентилей',
+        '/узел (нижнего )?подключения|набор нижнего подключения/u' => 'Узлы нижнего подключения',
+        '/кронштейн|крепление/u' => 'Кронштейны и крепления',
+        '/комплект монтажный|монтажный комплект/u' => 'Монтажные комплекты',
+        '/шаров\w* кран/u' => 'Комплекты шаровых кранов',
+        '/бойлер|котла|адаптер моноблочный|отопительных контуров/u' => 'Для котлов и бойлеров',
+        '/радиатор|присоединительный набор|комплект подключения termica|регулировочный короб/u' => 'Комплекты радиаторных клапанов',
+        '/./u' => 'Прочее',
+    ];
+
+    public const GAS_ALARMS = 'signalizatory-zagazovannosti';
+
+    /** «Какой газ» options of «Сигнализаторы загазованности», in filter order. */
+    public const ALARM_ORDER = [
+        'Угарный газ (CO)',
+        'Природный газ (метан)',
+        'Комбинированные (CO + природный газ)',
+    ];
+
+    /** Title pattern => the gas an alarm detects (titles mix Latin and Cyrillic «CO»/«СО»). */
+    public const ALARM_GASES = [
+        '/[cс][oо]\s*\+\s*[cс][hн]|[cс][hн]4\s*,\s*[cс][oо]|комбинирован|два газа|загазованности и угарного/u' => 'Комбинированные (CO + природный газ)',
+        '/[cс][hн]4|природн|сгг|сжиженн/u' => 'Природный газ (метан)',
+        '/(?<![a-zа-я])[cс][oо](?![a-zа-я])|угарн/u' => 'Угарный газ (CO)',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';

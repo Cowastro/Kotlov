@@ -71,6 +71,13 @@ class SortBoilerAutomationCommandTest extends TestCase
         $leakValve = $card('Кран с электроприводом Neptun PROFI 12В 1 1/4', $leakValves);
         $leakKit = $card('Система Neptun PROFI Base 3/4', $leaks);
         $salus = $card('Датчик протечки Salus WLS600', $leaks);
+        $kits = $section('komplekty-podklyucheniya');
+        $herzUnit = $card('Узел подключения HERZ-3000, проходной 3/4"', $kits);
+        $mounting = $card('Монтажный комплект для радиатора Rifar Monolit/SupreMO 3/4 (цвет: металлик)', $kits);
+        $alarms = $section('signalizatory-zagazovannosti');
+        $coAlarm = $card('Детектор загазованности Счетприбор CО (угарный газ) (ДЗС-2)', $alarms);
+        $dualAlarm = $card('Детектор загазованности Счетприбор СН4,СО (два газа) (ДЗС-3)', $alarms);
+        $methaneAlarm = $card('Сигнализатор загазованности Барьер-CH4', $alarms);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -155,6 +162,13 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('3/4"', $value('Диаметр', $leakKit));
         $this->assertSame($leakSensors->id, $salus->fresh()->category_id);
         $this->assertSame('Датчики протечки', $value('Тип', $salus));
+        $this->assertSame('Узлы нижнего подключения', $value('Тип', $herzUnit));
+        $this->assertSame('Прямой', $value('Исполнение', $herzUnit));
+        $this->assertSame('Монтажные комплекты', $value('Тип', $mounting));
+        $this->assertSame('Серебристый', $value('Цвет', $mounting));
+        $this->assertSame('Угарный газ (CO)', $value('Какой газ', $coAlarm));
+        $this->assertSame('Комбинированные (CO + природный газ)', $value('Какой газ', $dualAlarm));
+        $this->assertSame('Природный газ (метан)', $value('Какой газ', $methaneAlarm));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)
