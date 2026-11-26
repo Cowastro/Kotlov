@@ -171,6 +171,10 @@ class SantehskladPriceList
     public function catalogName(array $row): string
     {
         $identity = $this->rowMatchIdentity($row);
+        if (preg_match('/^pellet_standart_([45])mm_(16|20|25|35)$/', $identity, $parts)) {
+            return "Теплообменник Sakovich Pellet Standart {$parts[1]} мм {$parts[2]} кВт";
+        }
+
         if (preg_match('/^kipi_rotary_(\d+)_(\d+)$/', $identity, $range)) {
             return "Пеллетная горелка KIPI Rotary {$range[1]}–{$range[2]} кВт с подающим устройством и автоматикой PLUM ecoMAX 361";
         }
