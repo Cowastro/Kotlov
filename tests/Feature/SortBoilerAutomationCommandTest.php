@@ -33,12 +33,17 @@ class SortBoilerAutomationCommandTest extends TestCase
         $kipi->forceFill(['meta_title' => 'вместе с фланцем 15-70 kW — купить в %city%'])->save();
         $hopper = $card('Бункер для пеллет ATMOS 500 л', $parts);
         $safety = $card('Термостат предохранительный FONDITAL', $parts);
+        $sensors = $section('datchiki');
+        $gauges = $section('manometry-i-termometry');
+        $outdoor = $card('Датчик уличной температуры (QAC 34), BAXI', $sensors);
+        $cylinder = $card('Датчик температуры бойлера Buderus AS1', $sensors);
+        $thermometer = $card('Термометр Watts F+R801 d=63 (10005800)', $sensors);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=4')
+            ->expectsOutputToContain('metric.boiler_automation.moved=5')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -59,6 +64,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Пеллетная горелка KIPI ROTARY 15-70 кВт с фланцем — купить в %city%', $kipi->fresh()->meta_title);
         $this->assertSame('Бункеры для пеллет', $group($hopper));
         $this->assertSame('Запчасти для газовых котлов', $group($safety));
+        $this->assertSame('Уличные (наружные) датчики', $group($outdoor));
+        $this->assertSame('Датчики бойлера и ГВС', $group($cylinder));
+        $this->assertSame($gauges->id, $thermometer->fresh()->category_id);
+        $this->assertNull($group($thermometer));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)
