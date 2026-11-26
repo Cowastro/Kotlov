@@ -346,6 +346,10 @@
                                     @include('partials.product-delivery-estimate')
                                 @endif
 
+                                @if (in_array($product->sku, ['KOTLOV-023090', 'KOTLOV-023094', 'KOTLOV-000295'], true) || isset(\App\Services\Suppliers\SakovichPelletKits::OPTIONS[$product->sku]))
+                                    <a class="link text-decoration-underline d-inline-block mb-16" href="{{ url('/kotly-na-pelletah').'?brand='.$product->brand_id.'#sakovich-kit-heading' }}">Сравнить комплекты с горелкой и бункером</a>
+                                @endif
+
                                 @include('partials.manager-product-context', ['product' => $product])
 
                                 @if ($b2bOffer && ($showMinskB2bWarehouse || $b2bWarehouseStocks->isNotEmpty()))

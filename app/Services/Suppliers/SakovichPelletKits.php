@@ -19,7 +19,7 @@ class SakovichPelletKits
         'KOTLOV-000301' => ['PELLET-MAX-50', 'ACCESSORY-4AB9E8438C072C37FE93', 'ACCESSORY-62C9461F435F4DFAE822'],
     ];
 
-    public function refresh(Supplier $supplier): void
+    public function refresh(Supplier $supplier, ?array $importedArticles = null): void
     {
         $components = $supplier->supplierProducts()->whereIn('supplier_article_normalized', array_merge(...array_values(self::COMPONENTS)))
             ->get()->keyBy('supplier_article_normalized');
@@ -31,7 +31,8 @@ class SakovichPelletKits
             }
 
             $rows = $components->only($articles);
-            if ($rows->count() !== count($articles) || $rows->contains(fn ($row) => $row->currency !== 'BYN'
+            if (($importedArticles !== null && array_diff($articles, $importedArticles))
+                || $rows->count() !== count($articles) || $rows->contains(fn ($row) => $row->currency !== 'BYN'
                 || (float) $row->price_byn <= 0 || (float) data_get($row->raw, 'retail') <= 0 || $row->stock_status === 'missing_from_feed')) {
                 $product->update(['requires_price_confirmation' => true]);
 
