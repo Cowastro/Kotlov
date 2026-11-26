@@ -4,19 +4,25 @@ namespace App\Console\Commands;
 
 use App\Services\Catalog\BoilerAutomationGroups as Groups;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Keeps «Регуляторы» searchable: thermostatic heads, valves, floor thermostats and the like leave for their own
- * sections, blowers go to «Вентиляторы наддува», and every regulator gets its «Назначение» (boiler, pumps, room
- * thermostats…) for the filter. Runs daily so new supplier cards are sorted too.
+ * Keeps the boiler automation, parts, sensors, gauges and meters sections searchable: strays leave for their own
+ * sections, blowers go to «Вентиляторы наддува», and every card gets its «Назначение» (and for meters its «Диаметр»)
+ * for the filter. Runs daily so new supplier cards are sorted too.
  */
 class SortBoilerAutomationCommand extends Command
 {
     protected $signature = 'catalog:sort-boiler-automation {--apply : Save the moves and groups}';
 
-    protected $description = 'Move misplaced cards out of «Регуляторы» and fill its «Назначение» filter';
+    protected $description = 'Move misplaced cards out of the boiler automation sections and fill their group filters';
+
+    private int $grouped = 0;
+
+    /** @var array<string, array<string, int>> */
+    private array $counts = [];
 
     public function handle(): int
     {
@@ -26,11 +32,10 @@ class SortBoilerAutomationCommand extends Command
 
             return self::FAILURE;
         }
-        $regulators = (int) $sections[Groups::SECTION];
-        $sources = array_filter([$regulators, $sections[Groups::PARTS] ?? null, $sections[Groups::SENSORS] ?? null, $sections[Groups::GAUGES] ?? null]);
+        $sources = collect(array_keys(Groups::filters()))->map(fn (string $slug) => $sections[$slug] ?? null)->filter()->values()->all();
         $apply = (bool) $this->option('apply');
-        $moved = $grouped = 0;
-        $counts = [];
+        $moved = $this->grouped = 0;
+        $this->counts = [];
 
         DB::beginTransaction();
         $products = DB::table('products')->whereIn('category_id', $sources)->orderBy('id')->get(['id', 'name', 'category_id']);
@@ -57,35 +62,15 @@ class SortBoilerAutomationCommand extends Command
         }
 
         foreach (Groups::filters() as $slug => [$rules, $order]) {
-            if (! isset($sections[$slug])) {
-                continue;
+            if (isset($sections[$slug])) {
+                $this->fill($products, $slug, (int) $sections[$slug], Groups::FILTER, $rules, $order, -10, true);
             }
-            $sectionId = (int) $sections[$slug];
-            $attributeId = $this->filterAttribute($sectionId);
-            $options = [];
-            foreach (array_values(array_unique([...$order, ...array_values($rules)])) as $i => $name) {
-                $options[$name] = DB::table('attribute_options')->where('attribute_id', $attributeId)->where('name', $name)->value('id')
-                    ?? DB::table('attribute_options')->insertGetId(['attribute_id' => $attributeId, 'name' => $name, 'sort_order' => $i, 'created_at' => now(), 'updated_at' => now()]);
-                DB::table('attribute_options')->where('id', $options[$name])->update(['sort_order' => $i]);
+        }
+        foreach (Groups::extraFilters() as $slug => $filters) {
+            $sort = -9;
+            foreach (isset($sections[$slug]) ? $filters : [] as $name => [$rules, $order]) {
+                $this->fill($products, $slug, (int) $sections[$slug], $name, $rules, $order, $sort++, false);
             }
-            foreach ($products->where('category_id', $sectionId) as $product) {
-                $group = Groups::group($product->name, $rules);
-                $counts[$slug][$group] = ($counts[$slug][$group] ?? 0) + 1;
-                $current = DB::table('product_attribute_values')->where('product_id', $product->id)->where('attribute_id', $attributeId)->first();
-                if ($current && (int) $current->option_id === (int) $options[$group]) {
-                    continue;
-                }
-                DB::table('product_attribute_values')->updateOrInsert(
-                    ['product_id' => $product->id, 'attribute_id' => $attributeId],
-                    ['option_id' => $options[$group], 'value' => null, 'created_at' => $current->created_at ?? now(), 'updated_at' => now()],
-                );
-                $grouped++;
-            }
-            // A card that left the section drops its «Назначение».
-            DB::table('product_attribute_values')->where('attribute_id', $attributeId)
-                ->whereNotIn('product_id', DB::table('products')->where('category_id', $sectionId)->select('id'))->delete();
-            // Options of an earlier grouping go: no empty group stays in the filter.
-            DB::table('attribute_options')->where('attribute_id', $attributeId)->whereNotIn('id', array_values($options))->delete();
         }
 
         if ($apply) {
@@ -98,26 +83,63 @@ class SortBoilerAutomationCommand extends Command
 
         $this->line('metric.status='.($apply ? 'applied' : 'dry_run'));
         $this->line("metric.boiler_automation.moved={$moved}");
-        $this->line("metric.boiler_automation.grouped={$grouped}");
-        foreach ($counts as $slug => $groups) {
+        $this->line("metric.boiler_automation.grouped={$this->grouped}");
+        foreach ($this->counts as $key => $groups) {
             foreach ($groups as $group => $count) {
-                $this->line("group {$slug} | {$group}: {$count}");
+                $this->line("group {$key} | {$group}: {$count}");
             }
         }
 
         return self::SUCCESS;
     }
 
-    private function filterAttribute(int $categoryId): int
+    /**
+     * One select filter of a section: its options in $order, each card of the section on the first matching rule
+     * (or «Прочее» when $fallback; otherwise a card no rule knows has no value).
+     */
+    private function fill(Collection $products, string $slug, int $sectionId, string $name, array $rules, array $order, int $sort, bool $fallback): void
     {
-        $key = ['category_id' => $categoryId, 'name' => Groups::FILTER, 'type' => 'select'];
+        $attributeId = $this->filterAttribute($sectionId, $name, $sort);
+        $options = [];
+        foreach (array_values(array_unique([...$order, ...array_values($rules)])) as $i => $option) {
+            $options[$option] = DB::table('attribute_options')->where('attribute_id', $attributeId)->where('name', $option)->value('id')
+                ?? DB::table('attribute_options')->insertGetId(['attribute_id' => $attributeId, 'name' => $option, 'sort_order' => $i, 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('attribute_options')->where('id', $options[$option])->update(['sort_order' => $i]);
+        }
+        $valued = [];
+        foreach ($products->where('category_id', $sectionId) as $product) {
+            $group = $fallback ? Groups::group($product->name, $rules) : Groups::match($product->name, $rules);
+            if ($group === null) {
+                continue;
+            }
+            $valued[] = $product->id;
+            $this->counts["{$slug} {$name}"][$group] = ($this->counts["{$slug} {$name}"][$group] ?? 0) + 1;
+            $current = DB::table('product_attribute_values')->where('product_id', $product->id)->where('attribute_id', $attributeId)->first();
+            if ($current && (int) $current->option_id === (int) $options[$group]) {
+                continue;
+            }
+            DB::table('product_attribute_values')->updateOrInsert(
+                ['product_id' => $product->id, 'attribute_id' => $attributeId],
+                ['option_id' => $options[$group], 'value' => null, 'created_at' => $current->created_at ?? now(), 'updated_at' => now()],
+            );
+            $this->grouped++;
+        }
+        // A card that left the section (or that no rule knows any more) drops its value.
+        DB::table('product_attribute_values')->where('attribute_id', $attributeId)->whereNotIn('product_id', $valued)->delete();
+        // Options of an earlier grouping go: no empty group stays in the filter.
+        DB::table('attribute_options')->where('attribute_id', $attributeId)->whereNotIn('id', array_values($options))->delete();
+    }
+
+    private function filterAttribute(int $categoryId, string $name, int $sort): int
+    {
+        $key = ['category_id' => $categoryId, 'name' => $name, 'type' => 'select'];
         $id = DB::table('attributes')->where($key)->value('id');
         if ($id) {
-            DB::table('attributes')->where('id', $id)->update(['in_filter' => true, 'sort_order' => -10]);
+            DB::table('attributes')->where('id', $id)->update(['in_filter' => true, 'sort_order' => $sort]);
 
             return (int) $id;
         }
 
-        return (int) DB::table('attributes')->insertGetId($key + ['in_filter' => true, 'in_product' => false, 'sort_order' => -10, 'created_at' => now(), 'updated_at' => now()]);
+        return (int) DB::table('attributes')->insertGetId($key + ['in_filter' => true, 'in_product' => false, 'sort_order' => $sort, 'created_at' => now(), 'updated_at' => now()]);
     }
 }
