@@ -28,6 +28,8 @@ final class BoilerAutomationGroups
         '/^комплект из двух отопительных контуров/u' => 'komplekty-podklyucheniya',
         '/панель изолирующая|термостат предохранительный|комплект трехходового крана с датчиком бойлера|^комплект подключения бойлера к электрическому котлу/u' => 'zapchasti-dlya-kotlov',
         '/^(термометр|термоманометр)/u' => 'manometry-i-termometry',
+        '/^крышка датчика импульсов/u' => 'schetchiki-gaza',
+        '/^радиомодуль lorawan/u' => 'schetchiki-vody-i-tepla',
         '/^насос-автомат/u' => 'nasosnyie-stantsii',
         '/^(вместе с фланцем|пеллетная горелка kipi rotary)/u' => 'pelletnye-gorelki',
         '/^пульт управления термофор/u' => 'aksessuary-dlya-bani',
@@ -120,6 +122,31 @@ final class BoilerAutomationGroups
         '/датчик/u' => 'Датчики котла и теплоносителя',
     ];
 
+    public const GAUGES = 'manometry-i-termometry';
+
+    /** «Назначение» options of «Манометры и термометры», in filter order. */
+    public const GAUGE_ORDER = [
+        'Манометры',
+        'Термоманометры',
+        'Термометры стрелочные (биметаллические)',
+        'Термометры стеклянные',
+        'Краны для манометров',
+        'Бобышки, оправы и отборные устройства',
+        'Переходники и присоединительные узлы',
+        'Прочее',
+    ];
+
+    /** Title pattern => «Назначение» inside «Манометры и термометры». */
+    public const GAUGE_GROUPS = [
+        '/^термоманометр/u' => 'Термоманометры',
+        '/^манометр|^указатель предельного давления/u' => 'Манометры',
+        '/^термометр стеклянн/u' => 'Термометры стеклянные',
+        '/^термометр/u' => 'Термометры стрелочные (биметаллические)',
+        '/^кран.*манометр/u' => 'Краны для манометров',
+        '/^(бобышка|оправа|устройство отборное)/u' => 'Бобышки, оправы и отборные устройства',
+        '/^(переходник|узел присоединительный|штуцер|полусгон)/u' => 'Переходники и присоединительные узлы',
+    ];
+
     /** Section slug => [patterns, option order] of its «Назначение» filter. */
     public static function filters(): array
     {
@@ -127,6 +154,7 @@ final class BoilerAutomationGroups
             self::SECTION => [self::GROUPS, self::ORDER],
             self::PARTS => [self::PART_GROUPS, self::PART_ORDER],
             self::SENSORS => [self::SENSOR_GROUPS, self::SENSOR_ORDER],
+            self::GAUGES => [self::GAUGE_GROUPS, self::GAUGE_ORDER],
         ];
     }
 

@@ -38,12 +38,16 @@ class SortBoilerAutomationCommandTest extends TestCase
         $outdoor = $card('Датчик уличной температуры (QAC 34), BAXI', $sensors);
         $cylinder = $card('Датчик температуры бойлера Buderus AS1', $sensors);
         $thermometer = $card('Термометр Watts F+R801 d=63 (10005800)', $sensors);
+        $glass = $card('Термометр стеклянный технический 100 (0+150°C) СП-2П №3 НЧ', $gauges);
+        $valve = $card('Кран шаровый для манометра ММ Ру 40 Ду 15хM20 (вода) ручка флажок LD', $gauges);
+        $radio = $card('Радиомодуль LoRaWAN CВC-02 НОРМА', $gauges);
+        $meters = $section('schetchiki-vody-i-tepla');
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=5')
+            ->expectsOutputToContain('metric.boiler_automation.moved=6')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -67,7 +71,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Уличные (наружные) датчики', $group($outdoor));
         $this->assertSame('Датчики бойлера и ГВС', $group($cylinder));
         $this->assertSame($gauges->id, $thermometer->fresh()->category_id);
-        $this->assertNull($group($thermometer));
+        $this->assertSame('Термометры стрелочные (биметаллические)', $group($thermometer));
+        $this->assertSame('Термометры стеклянные', $group($glass));
+        $this->assertSame('Краны для манометров', $group($valve));
+        $this->assertSame($meters->id, $radio->fresh()->category_id);
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
             ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Назначение')
             ->where('attributes.category_id', $regulators->id)
