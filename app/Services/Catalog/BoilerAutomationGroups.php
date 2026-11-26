@@ -201,6 +201,14 @@ final class BoilerAutomationGroups
         foreach (self::DIAMETERS as $dn) {
             $diameters['/(?:ду|dn)\s*'.$dn.'(?!\d)/u'] = 'Ду '.$dn;
         }
+        $pumps = [];
+        foreach (self::POWERED_PUMPS as $slug) {
+            $pumps[$slug] = ['Мощность двигателя' => [fn (string $title) => self::pumpPower($title), self::PUMP_POWERS]];
+            // Outside the pump picker (no head/flow data there) the supply is a plain filter read from the title.
+            if (in_array($slug, self::PLAIN_VOLTAGE_PUMPS, true)) {
+                $pumps[$slug]['Питание'] = [self::PUMP_VOLTAGES, array_values(self::PUMP_VOLTAGES)];
+            }
+        }
 
         return [
             self::METERS => ['Диаметр (Ду)' => [$diameters, array_values($diameters)]],
@@ -239,9 +247,7 @@ final class BoilerAutomationGroups
                 'Производительность' => [fn (string $title) => self::fanFlow($title), self::FAN_FLOWS],
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
-            ...array_fill_keys(self::POWERED_PUMPS, [
-                'Мощность двигателя' => [fn (string $title) => self::pumpPower($title), self::PUMP_POWERS],
-            ]),
+            ...$pumps,
             self::GAS_HOSES => [
                 'Тип' => [self::HOSE_TYPES, array_values(self::HOSE_TYPES)],
                 'Длина' => [self::HOSE_LENGTHS, array_values(self::HOSE_LENGTHS)],
@@ -525,6 +531,14 @@ final class BoilerAutomationGroups
 
     /** Pump sections whose cards carry no specs: the motor power comes from the title. */
     public const POWERED_PUMPS = ['mnogostupenchatye-nasosy', 'konsolnye-i-monoblochnye-nasosy', 'in-lain-nasosy'];
+
+    public const PLAIN_VOLTAGE_PUMPS = ['konsolnye-i-monoblochnye-nasosy', 'in-lain-nasosy'];
+
+    /** Title pattern => «Питание» of a pump (the same readings PumpCatalog takes from a title). */
+    public const PUMP_VOLTAGES = [
+        '/(?:3\s*[xх~]\s*)?(?:380|400)\s*[вv](?![a-zа-я])|[-_](?:380|400)(?:[-_]|$)/u' => '380–415 В',
+        '/(?:220|230)\s*[вv](?![a-zа-я])|[-_](?:220|230)(?:[-_]|$)/u' => '220–240 В',
+    ];
 
     /** «Мощность двигателя» options, smallest first. */
     public const PUMP_POWERS = ['До 1,5 кВт', 'Св. 1,5 до 4 кВт', 'Св. 4 до 11 кВт', 'Св. 11 до 30 кВт', 'Свыше 30 кВт'];
