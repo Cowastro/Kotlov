@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\VamExpress\Pages\ListVamExpressShipments;
+use App\Filament\Resources\VamExpress\Pages\ViewVamExpressShipment;
 use App\Filament\Resources\VamExpress\VamExpressShipmentResource;
 use App\Models\Order;
 use App\Models\User;
@@ -111,6 +112,40 @@ class VamExpressSyncTest extends TestCase
         $this->assertSame('Тестовый отправитель / Юридическое лицо', $shipment->fresh()->sender_profile);
         $this->assertSame($before, $order->fresh()->only(array_keys($before)));
         $this->assertSame('В пути', $order->fresh()->customerStatusLabel());
+    }
+
+    public function test_shipment_page_queues_its_exact_id_and_displays_the_completed_check(): void
+    {
+        $this->freezeSecond();
+        $settings = app(VamExpressSettings::class);
+        $settings->save('demo', 'secret', true);
+        $row = (new VamExpressHtml)->rows($this->listing())[0];
+        $shipment = VamExpressShipment::create($row + ['checked_at' => now()->subHour()]);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $this->actingAs(User::factory()->create(['role' => 'manager', 'is_active' => true]));
+
+        $page = Livewire::test(ViewVamExpressShipment::class, ['record' => $shipment->id])
+            ->assertSee('Обновить статус')
+            ->assertSee($shipment->checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i:s'))
+            ->callAction('refreshStatus')
+            ->assertSee('wire:poll.10s.visible', false)
+            ->assertSee('Проверка в очереди');
+        $this->assertSame([self::ID], $settings->get()['requested_ids']);
+        Http::assertNothingSent();
+
+        $this->mock(VamExpressPortal::class, function ($mock) use ($row): void {
+            $mock->shouldReceive('login')->once();
+            $mock->shouldReceive('recent')->once()->andReturn([]);
+            $mock->shouldReceive('find')->once()->with(self::ID)->andReturn([array_replace($row, ['carrier_status' => 'В пути'])]);
+            $mock->shouldReceive('senderProfile')->once()->andReturn('Тестовый отправитель');
+        });
+        $this->travel(1)->minute();
+        app(VamExpressSync::class)->run();
+
+        $page->call('refreshCheckedStatus')->assertSet('statusCheckRequestedAt', null)
+            ->assertDontSee('Проверка в очереди')
+            ->assertSee('В пути')
+            ->assertSee(now('Europe/Minsk')->format('d.m.Y H:i:s'));
     }
 
     public function test_failed_login_preserves_existing_data_and_does_not_retry_each_minute(): void
