@@ -271,6 +271,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::INSTALLATIONS => [
+                'Тип' => [self::INSTALLATION_TYPES, array_values(array_unique(self::INSTALLATION_TYPES))],
+                'Подводка воды' => [['/бок\.|боков/u' => 'Боковая', '/ниж\.|нижн/u' => 'Нижняя'], ['Боковая', 'Нижняя']],
+                'Режим смыва' => [['/двойн|двухрежимн/u' => 'Двойной', '/однорежимн/u' => 'Одинарный'], ['Двойной', 'Одинарный']],
+                'Цвет кнопки' => [self::FLUSH_BUTTON_COLORS, array_values(array_unique(self::FLUSH_BUTTON_COLORS))],
+            ],
             self::MANHOLES => [
                 'Тип' => [self::MANHOLE_TYPES, array_values(array_unique(self::MANHOLE_TYPES))],
                 'Класс нагрузки' => [fn (string $title) => self::loadClass($title), self::LOAD_CLASSES],
@@ -2195,6 +2201,29 @@ final class BoilerAutomationGroups
         '/^(люк|дождеприемник|решетка).*(чугун|вч50|гост 3634)/u' => 'Чугун',
         '/^люк/u' => 'Полимерно-песчаный',
         '/^(лоток|дождеприемник|решетка|пескоуловитель|трап|слив|заглушка|корзина|надстройка|перегородка|направляющий)/u' => 'Пластик',
+    ];
+
+    public const INSTALLATIONS = 'installyatsii-i-armatura-bachkov';
+
+    /** Title pattern => «Тип» inside «Инсталляции и арматура бачков», in filter order; the first match wins. */
+    public const INSTALLATION_TYPES = [
+        '/^(инсталляц|система инсталляции|скрытая система|инсталляционный сет)/u' => 'Инсталляции',
+        '/^кнопка/u' => 'Кнопки смыва',
+        '/^арматура наливная/u' => 'Наливная арматура',
+        '/^арматура сливная/u' => 'Сливная арматура',
+        '/^арматура/u' => 'Арматура бачка в комплекте',
+        '/^система смыва/u' => 'Педальные системы смыва',
+        '/^бачок/u' => 'Бачки',
+        '/^каркас/u' => 'Каркасы душевых поддонов',
+    ];
+
+    /** Title pattern => «Цвет кнопки» of a flush button or a cistern fitting set; the first match wins. */
+    public const FLUSH_BUTTON_COLORS = [
+        '/^(кнопка|система инсталляции|арматура).*(нержавеющая сталь|steel)/u' => 'Нержавеющая сталь',
+        '/^(кнопка|система инсталляции|арматура).*ч[её]рн/u' => 'Чёрный',
+        '/^(кнопка|система инсталляции|арматура).*(хром|кнопка хром|шток хром)/u' => 'Хром',
+        '/^(кнопка|система инсталляции|арматура).*металлизир/u' => 'Металлик',
+        '/^(кнопка|система инсталляции|арматура).*бел/u' => 'Белый',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';

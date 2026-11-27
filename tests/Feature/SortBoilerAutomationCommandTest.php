@@ -244,6 +244,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $castManhole = $card('Люк чугунный тяжелый "Т" (С250) - К, h100, ВЧ50, ГОСТ 3634-2019 MAGNUM', $manholes);
         $gardenManhole = $card('Люк полимерно-песчаный легкий садовый 15кН (зеленый) PLASTKRAFT', $manholes);
         $drainChannelEco = $card('Лоток Ecoteck STANDART 100.65 h69 с решеткой 100 чугунной С250', $manholes);
+        $installs = $section('installyatsii-i-armatura-bachkov');
+        $cisternKit = $card('Арматура для смывного бачка, двухрежимная, с нижней подводкой, AV Engineering', $installs);
+        $flushButton = $card('Кнопка управления для инсталляции Itaka (чёрная) KARIBA', $installs);
+        $rehauSet = $card('Система инсталляции для унитаза NOVAFLOW + кнопка смыва NOVA ORB 001 (круглые клавиши, пластик, хром, глянец) Рехау', $installs);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -516,6 +520,13 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Арматура бачка в комплекте', $value('Тип', $cisternKit));
+        $this->assertSame('Нижняя', $value('Подводка воды', $cisternKit));
+        $this->assertSame('Двойной', $value('Режим смыва', $cisternKit));
+        $this->assertSame('Кнопки смыва', $value('Тип', $flushButton));
+        $this->assertSame('Чёрный', $value('Цвет кнопки', $flushButton));
+        $this->assertSame('Инсталляции', $value('Тип', $rehauSet));
+        $this->assertSame('Хром', $value('Цвет кнопки', $rehauSet));
         $this->assertSame('Люки', $value('Тип', $castManhole));
         $this->assertSame('С250 (до 25 т)', $value('Класс нагрузки', $castManhole));
         $this->assertSame('Чугун', $value('Материал', $castManhole));
