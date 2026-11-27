@@ -139,4 +139,25 @@ class OrderOneCStockSourceTest extends TestCase
         $this->assertSame('warning', $display->color($item));
         $this->assertStringNotContainsString('99 шт.', $display->label($item));
     }
+
+    public function test_order_links_a_confirmed_own_stock_shortage_to_the_affected_item(): void
+    {
+        [$item, $stock] = $this->fixture();
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        $item->update(['fulfillment_route' => 'own_stock', 'fulfillment_confirmed_at' => now(),
+            'fulfillment_availability_status' => 'available']);
+        $stock->update(['stock_on_hand' => 0, 'stock_reserved' => 0]);
+
+        Livewire::test(ViewOrder::class, ['record' => $item->order_id])
+            ->assertSee('На нашем складе свободно 0 шт. из 1 шт. по заказу.')
+            ->assertSee('Проверить исполнение')
+            ->assertSeeHtml('href="#order-item-supplier-'.$item->id.'"');
+
+        $item->update(['fulfillment_availability_status' => 'reserved']);
+        Livewire::test(ViewOrder::class, ['record' => $item->order_id])->assertDontSee('Проверить исполнение');
+
+        $item->update(['fulfillment_availability_status' => 'available']);
+        $stock->update(['stock_synced_at' => now()->subDay()]);
+        Livewire::test(ViewOrder::class, ['record' => $item->order_id])->assertDontSee('Проверить исполнение');
+    }
 }

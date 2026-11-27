@@ -168,6 +168,7 @@ class OrderInfolist
                                     'labelAction' => $livewire->nextStepLabelAction(),
                                     'supplierItem' => $livewire->supplierItemToAssign(),
                                     'supplierReply' => $livewire->pendingSupplierReply(),
+                                    'ownStockReview' => $livewire->ownStockReview(),
                                     'onecHint' => (bool) auth()->user()?->isManager() && app(OneCItemCreator::class)->source() !== null
                                         && $livewire->getRecord()->status !== 'cancelled'
                                         ? app(OneCOrderJourney::class)->next($livewire->getRecord())

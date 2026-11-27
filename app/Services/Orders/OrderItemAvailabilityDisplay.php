@@ -57,6 +57,25 @@ class OrderItemAvailabilityDisplay
             : 'ЭкоКамин, Москва — наличие уточняется (последний остаток: '.$datedQuantity.')';
     }
 
+    public function ownStockShortage(OrderItem $item): ?string
+    {
+        if ($item->fulfillment_route !== 'own_stock' || ! $item->fulfillment_confirmed_at
+            || $item->fulfillment_availability_status !== 'available') {
+            return null;
+        }
+
+        $current = $this->current($item);
+        $quantity = $current['stock_quantity'] ?? null;
+        if (($current['stock_source'] ?? null) !== 'onec' || $quantity === null
+            || (float) $quantity >= (float) $item->quantity) {
+            return null;
+        }
+
+        $free = rtrim(rtrim(number_format((float) $quantity, 3, '.', ' '), '0'), '.');
+
+        return 'На нашем складе свободно '.$free.' шт. из '.$item->quantity.' шт. по заказу. Проверьте резерв и источник исполнения.';
+    }
+
     public function color(OrderItem $item): string
     {
         $current = $this->current($item);
