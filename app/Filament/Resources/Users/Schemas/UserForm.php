@@ -60,12 +60,6 @@ class UserForm
                         Toggle::make('is_active')
                             ->label('Активен')
                             ->default(true),
-
-                        Toggle::make('receives_stale_order_reminders')
-                            ->label('Напоминания о зависших заказах')
-                            ->helperText('Сводка в CRM по будням в 10:00, 13:00 и 16:00 по Минску.')
-                            ->visible(fn (): bool => (bool) auth()->user()?->isAdmin())
-                            ->default(false),
                     ]),
 
                 Section::make('Карточка сотрудника CRM')

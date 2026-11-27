@@ -250,18 +250,21 @@ class OrderDealControlTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         $manager = $this->manager();
         $secondManager = $this->manager();
-        $manager->update(['receives_stale_order_reminders' => true]);
-        $secondManager->update(['receives_stale_order_reminders' => true]);
+        $secondManager->update(['telegram_username' => 'manager_legacy_assignment']);
         $otherManager = $this->manager();
         $closed = $this->order('delivered');
         $archived = $this->order('processing');
         $scheduled = $this->order('processing');
         $advanced = $this->order('processing');
         $stalled = $this->order('processing');
+        $legacyAssigned = $this->order('checking');
+        $unassigned = $this->order('new');
         $recent = $this->order('confirmed');
-        foreach ([$closed, $archived, $scheduled, $advanced, $stalled] as $order) {
+        foreach ([$closed, $archived, $scheduled, $advanced, $stalled, $legacyAssigned, $unassigned] as $order) {
             $order->forceFill(['created_at' => now()->subDays(4), 'updated_at' => now()])->save();
         }
+        $stalled->update(['manager_id' => $manager->id, 'assigned_to' => '@manager_legacy_assignment']);
+        $legacyAssigned->update(['assigned_to' => '@manager_legacy_assignment']);
         $archived->update(['archived_at' => now(), 'archive_reason' => 'Закрыт менеджером']);
         $scheduled->forceFill(['deal_control_at' => now()->addHours(12), 'deal_next_action' => 'Позвонить покупателю'])->save();
         $advanced->statusHistory()->create(['status_from' => 'confirmed', 'status_to' => 'processing']);
@@ -269,20 +272,25 @@ class OrderDealControlTest extends TestCase
 
         Livewire::actingAs($manager)->test(ListOrders::class)
             ->call('selectOrderTab', 'stale_follow_up')
-            ->assertCanSeeTableRecords([$stalled])
+            ->assertCanSeeTableRecords([$stalled, $legacyAssigned, $unassigned])
             ->assertCanNotSeeTableRecords([$closed, $archived, $scheduled, $advanced, $recent]);
         $reminders = app(StaleOrderFollowUpReminder::class);
-        $this->assertSame(['orders' => 1, 'recipients' => 2], $reminders->preview());
+        $this->assertSame(['orders' => 3, 'recipients' => 2], $reminders->preview());
         $this->assertSame(2, $reminders->notify());
         $this->assertSame(0, $reminders->notify());
         $this->assertSame(1, $manager->notifications()->count());
         $this->assertSame(1, $secondManager->notifications()->count());
         $this->assertSame(0, $otherManager->notifications()->count());
-        $this->assertStringContainsString('tab=stale_follow_up', $manager->notifications()->sole()->data['actions'][0]['url']);
+        $notice = $manager->notifications()->sole()->data;
+        $this->assertStringContainsString('tab=stale_follow_up', $notice['actions'][0]['url']);
+        $this->assertStringContainsString($stalled->number, $notice['body']);
+        $this->assertStringNotContainsString($legacyAssigned->number, $notice['body']);
+        $this->assertStringContainsString($legacyAssigned->number, $secondManager->notifications()->sole()->data['body']);
 
         $this->travel(3)->hours();
         $this->assertSame(2, $reminders->notify());
         $stalled->forceFill(['deal_control_at' => now()->addHours(8), 'deal_next_action' => 'Уточнить дату доставки'])->save();
+        $legacyAssigned->update(['status' => 'cancelled']);
         $this->travel(3)->hours();
         $this->assertSame(0, $reminders->notify());
         $this->assertSame('processing', $stalled->fresh()->status);

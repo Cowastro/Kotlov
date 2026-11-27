@@ -644,7 +644,7 @@ Artisan::command('orders:remind-stale {--dry-run}', function (StaleOrderFollowUp
     }
 
     $this->info('Сводок о зависших заказах: '.$reminders->notify());
-})->purpose('Remind selected CRM staff about stale orders');
+})->purpose('Remind responsible CRM staff about stale orders');
 
 Schedule::command('orders:remind-stale')
     ->timezone(StaleOrderFollowUpReminder::TIMEZONE)
