@@ -270,6 +270,11 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::SEALANTS => [
+                'Тип' => [self::SEALANT_TYPES, array_values(array_unique(self::SEALANT_TYPES))],
+                'Диаметр (Ду)' => [fn (string $title) => preg_match('/^прокладк/u', mb_strtolower(trim($title))) ? self::ballValveDn($title) : null, array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
+                'Материал прокладки' => [self::GASKET_MATERIALS, array_values(self::GASKET_MATERIALS)],
+            ],
             self::PIPE_CLAMPS => [
                 'Тип' => [self::CLAMP_TYPES, self::CLAMP_ORDER],
                 'Диаметр трубы' => [fn (string $title) => self::clampPipeSize($title), ['До 20 мм', '21–32 мм', '33–50 мм', '51–76 мм', '77–114 мм', 'Свыше 114 мм']],
@@ -990,7 +995,7 @@ final class BoilerAutomationGroups
     public const BALL_GAS = ['/(?<![а-я])газ(?![а-я])/u' => 'Для газа'];
 
     /** The nominal sizes a ball valve is listed by. */
-    public const BALL_DNS = [10, 15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150, 200, 250, 300];
+    public const BALL_DNS = [10, 15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150, 200, 250, 300, 400, 500];
 
     public static function dnLabel(int $dn): string
     {
@@ -1715,6 +1720,30 @@ final class BoilerAutomationGroups
             default => 'Свыше 114 мм',
         };
     }
+
+    public const SEALANTS = 'uplotnitelnye-materialy';
+
+    /** Title pattern => «Тип» inside «Уплотнительные материалы», in filter order; the first match wins. */
+    public const SEALANT_TYPES = [
+        '/^набор|ремонтн|набор колец/u' => 'Наборы и ремкомплекты',
+        '/^паста|паста для льна/u' => 'Пасты для льна и резьбы',
+        '/^л[её]н(?!т)|каболка/u' => 'Лён сантехнический',
+        '/^нить/u' => 'Уплотнительные нити',
+        '/фум|ptfe|tape/u' => 'Фум-лента',
+        '/анаэробн|^гель/u' => 'Анаэробные герметики',
+        '/^прокладк.*(фланцев|ру \d|гост 15180)/u' => 'Фланцевые прокладки',
+        '/^прокладк|^кольцо/u' => 'Прокладки для резьбовых соединений',
+        '/паронит|техпластин/u' => 'Паронит и техпластина (листы)',
+        '/./u' => 'Замазки, набивки, ткани и прочее',
+    ];
+
+    /** Title pattern => «Материал прокладки». */
+    public const GASKET_MATERIALS = [
+        '/^прокладк.*паронит/u' => 'Паронит',
+        '/^прокладк.*силикон/u' => 'Силикон',
+        '/^прокладк.*прозрачн/u' => 'Прозрачные (полимер)',
+        '/^прокладк.*резин/u' => 'Резина',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
