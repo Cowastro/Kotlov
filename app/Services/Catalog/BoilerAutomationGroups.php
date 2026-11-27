@@ -271,7 +271,7 @@ final class BoilerAutomationGroups
             ],
             ...$pumps,
             self::SEALANTS => [
-                'Тип' => [self::SEALANT_TYPES, array_values(array_unique(self::SEALANT_TYPES))],
+                'Тип' => [self::SEALANT_TYPES, self::SEALANT_ORDER],
                 'Диаметр (Ду)' => [fn (string $title) => preg_match('/^прокладк/u', mb_strtolower(trim($title))) ? self::ballValveDn($title) : null, array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
                 'Материал прокладки' => [self::GASKET_MATERIALS, array_values(self::GASKET_MATERIALS)],
             ],
@@ -1723,7 +1723,21 @@ final class BoilerAutomationGroups
 
     public const SEALANTS = 'uplotnitelnye-materialy';
 
-    /** Title pattern => «Тип» inside «Уплотнительные материалы», in filter order; the first match wins. */
+    /** «Тип» options of «Уплотнительные материалы», the most asked-for first. */
+    public const SEALANT_ORDER = [
+        'Прокладки для резьбовых соединений',
+        'Фланцевые прокладки',
+        'Лён сантехнический',
+        'Пасты для льна и резьбы',
+        'Уплотнительные нити',
+        'Фум-лента',
+        'Анаэробные герметики',
+        'Наборы и ремкомплекты',
+        'Паронит и техпластина (листы)',
+        'Замазки, набивки, ткани и прочее',
+    ];
+
+    /** Title pattern => «Тип» inside «Уплотнительные материалы»; the first match wins. */
     public const SEALANT_TYPES = [
         '/^набор|ремонтн|набор колец/u' => 'Наборы и ремкомплекты',
         '/^паста|паста для льна/u' => 'Пасты для льна и резьбы',
