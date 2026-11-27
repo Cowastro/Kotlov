@@ -70,9 +70,16 @@ class ProductsTable
         return $table
             ->searchUsing(fn (Builder $query, string $search): Builder => app(AdminProductSearch::class)->apply($query, $search))
             ->searchPlaceholder('Название, артикул, код 1С')
-            ->emptyStateHeading(fn ($livewire): ?string => app(AdminProductSearch::class)->isUnlinkedOneCItem((string) $livewire->getTableSearch())
+            ->emptyStateHeading(fn ($livewire): ?string => $livewire->unlinkedOneCCode
                 ? 'Карточка не привязана'
                 : null)
+            ->emptyStateActions([
+                Action::make('openUnlinkedOneCItem')
+                    ->label('Открыть в номенклатуре 1С')
+                    ->link()
+                    ->visible(fn ($livewire): bool => OneCItemResource::canViewAny() && $livewire->unlinkedOneCCode !== null)
+                    ->url(fn ($livewire): string => OneCItemResource::getUrl('index', ['search' => $livewire->unlinkedOneCCode])),
+            ])
             ->extraAttributes(['class' => 'products-workspace'])
             ->stackedOnMobile()
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('is_archived', false))
