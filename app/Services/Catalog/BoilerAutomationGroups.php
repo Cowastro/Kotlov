@@ -262,6 +262,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::FASTENERS => [
+                'Тип' => [self::FASTENER_TYPES, array_values(array_unique(self::FASTENER_TYPES))],
+                'Размер резьбы' => [fn (string $title) => self::fastenerThread($title), array_map(fn (int $m) => 'М'.$m, self::FASTENER_THREADS)],
+            ],
             self::STOVE_CASTINGS => [
                 'Тип' => [self::CASTING_TYPES, array_values(array_unique(self::CASTING_TYPES))],
                 'Покрытие' => [self::CASTING_FINISHES, array_values(self::CASTING_FINISHES)],
@@ -1405,6 +1409,36 @@ final class BoilerAutomationGroups
         '/антрацит/u' => 'Антрацит',
         '/не крашен|некрашен/u' => 'Не крашенная',
     ];
+
+    public const FASTENERS = 'krepezh-i-metizy';
+
+    /** Title pattern => «Тип» inside «Крепёж и метизы», in filter order; the first match wins. */
+    public const FASTENER_TYPES = [
+        '/анкер|дюбел|цанга/u' => 'Анкеры и дюбели',
+        '/шпильк/u' => 'Шпильки и шуруп-шпильки',
+        '/^(болт|винт(?!-шуруп))/u' => 'Болты и винты',
+        '/^гайк|муфта .*прутк/u' => 'Гайки',
+        '/^шайб|подпятник/u' => 'Шайбы',
+        '/саморез|шуруп|винт-шуруп/u' => 'Саморезы и шурупы',
+        '/профил|консол|стойка монтаж|уголок|соединитель профиля|rapidrail|опора кровельн|t-соединит|заглушка пластиков|пластин|соединитель|угол|планка|шиногиб|гипсокартон/u' => 'Монтажные профили и консоли',
+        '/клипс|держател|скоба|крепеж|хомут/u' => 'Клипсы, скобы и держатели',
+        '/лента|стяжк/u' => 'Ленты и стяжки',
+        '/./u' => 'Прочее',
+    ];
+
+    /** The metric threads fasteners are listed by. */
+    public const FASTENER_THREADS = [4, 5, 6, 8, 10, 12, 14, 16, 20, 24];
+
+    /** The thread of a fastener from «М10», «M8х70», «М10-20/24»; plastic plugs and tapes get none. */
+    public static function fastenerThread(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        if (preg_match('/(?<![a-zа-я])[мm]\s?(\d{1,2})(?=\D|$)/u', $title, $m) && in_array((int) $m[1], self::FASTENER_THREADS, true)) {
+            return 'М'.(int) $m[1];
+        }
+
+        return null;
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
