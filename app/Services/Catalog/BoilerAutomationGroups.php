@@ -270,6 +270,13 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::PP_PIPES => [
+                'Армирование' => [self::PP_PIPE_REINFORCEMENT, array_values(self::PP_PIPE_REINFORCEMENT)],
+                'Диаметр' => [fn (string $title) => self::pipeDiameter($title, self::PP_DIAMETERS), array_map(fn (int $mm) => $mm.' мм', self::PP_DIAMETERS)],
+                'Давление' => [fn (string $title) => preg_match('/(?:pn|ру)\s?(10|16|20|25)(?!\d)/u', mb_strtolower($title), $m) ? 'PN '.$m[1] : null, ['PN 10', 'PN 16', 'PN 20', 'PN 25']],
+                'Цвет' => [self::PP_COLORS, array_values(self::PP_COLORS)],
+                'Длина' => [fn (string $title) => preg_match('/(?<![\d.,])([1234])\s?м(?![а-ям])/u', mb_strtolower($title), $m) ? $m[1].' м' : null, ['1 м', '2 м', '3 м', '4 м']],
+            ],
             self::PEX_PIPES => [
                 'Материал' => [fn (string $title) => self::pexPipeMaterial($title), ['PE-Xa', 'PE-Xb', 'PE-Xc', 'PE-X (тип не указан)', 'PE-RT', 'Металлополимерные (PE-Xa/AL/PE)']],
                 'Диаметр' => [fn (string $title) => self::pexPipeDiameter($title), ['14 мм', '16 мм', '17 мм', '18 мм', '20 мм', '25 мм', '32 мм']],
@@ -1616,6 +1623,15 @@ final class BoilerAutomationGroups
             default => 'Свыше 200 м',
         };
     }
+
+    public const PP_PIPES = 'polipropilenovye-truby';
+
+    /** Title pattern => «Армирование» of a PP pipe; the first match wins. */
+    public const PP_PIPE_REINFORCEMENT = [
+        '/алюм|фольг|stabi/u' => 'Алюминием (фольгой)',
+        '/стекловолок|fiber|basalt|faser/u' => 'Стекловолокном (базальтом)',
+        '/^(п\/п )?труба/u' => 'Без армирования',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 

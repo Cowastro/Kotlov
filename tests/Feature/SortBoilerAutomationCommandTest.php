@@ -190,6 +190,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $pexRt = $card('Труба PE-RT Дн 16х2 однослойная белая (отрезок 33 м) PRO AQUA', $pexPipes);
         $pexStabil = $card('Труба PE-Xa/AI/PE stabil 16,2х2,6 мм (бухта 100 м) Рехау', $pexPipes);
         $pexDowel = $card('Дюбель-хомут ALTStream D20 мм/ 50 шт', $pexPipes);
+        $ppPipes = $section('polipropilenovye-truby');
+        $ppGlass = $card('Труба ПП стекловолокно 25х3,5 PN20 SDR7,4 сер. 4м AV Engineering', $ppPipes);
+        $ppFoil = $card('Труба полипропиленовая армированная фольгой в центре 20х3,4 SDR 6 Ру 25 серая PRO AQUA', $ppPipes);
+        $ppPlain = $card('П/П Труба 110х10 SDR11 PN 10 белая (4 м) арт. 10103110 VALFEX', $ppPipes);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -457,6 +461,17 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Стекловолокном (базальтом)', $value('Армирование', $ppGlass));
+        $this->assertSame('25 мм', $value('Диаметр', $ppGlass));
+        $this->assertSame('PN 20', $value('Давление', $ppGlass));
+        $this->assertSame('Серый', $value('Цвет', $ppGlass));
+        $this->assertSame('4 м', $value('Длина', $ppGlass));
+        $this->assertSame('Алюминием (фольгой)', $value('Армирование', $ppFoil));
+        $this->assertSame('PN 25', $value('Давление', $ppFoil));
+        $this->assertSame('Без армирования', $value('Армирование', $ppPlain));
+        $this->assertSame('110 мм', $value('Диаметр', $ppPlain));
+        $this->assertSame('PN 10', $value('Давление', $ppPlain));
+        $this->assertSame('Белый', $value('Цвет', $ppPlain));
         $this->assertSame('16 мм', $value('Диаметр', $pexXa));
         $this->assertSame('С кислородным барьером', $value('Кислородный барьер', $pexXa));
         $this->assertSame('Свыше 200 м', $value('Длина', $pexXa));
