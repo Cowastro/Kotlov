@@ -57,13 +57,27 @@ class OrderDeliveryPreparation
 
     public function blocker(Order $order): ?string
     {
+        return $this->prerequisiteBlocker($order) ?? $this->planBlocker($order);
+    }
+
+    public function needsPreparation(Order $order): bool
+    {
+        return blank($order->onec_order_guid)
+            && $this->prerequisiteBlocker($order) === null
+            && $this->planBlocker($order) !== null
+            && ! app(OneCAgentTasks::class)->activeFor($order, OrderTaskHandler::TYPE);
+    }
+
+    private function prerequisiteBlocker(Order $order): ?string
+    {
         if ($order->status !== 'processing') {
             return 'Сначала подтвердите заказ и нажмите «Передать в исполнение».';
         }
         if ($reason = $this->destinationBlocker($order)) {
             return $reason;
         }
-        if (! $order->items()->exists() || $order->needsFulfillmentConfirmation()) {
+        if (($order->relationLoaded('items') ? $order->items->isEmpty() : ! $order->items()->exists())
+            || $order->needsFulfillmentConfirmation()) {
             return 'Сначала подтвердите исполнение всех позиций.';
         }
         if (in_array($order->delivery_type, ['evropochta', 'vam_express'], true) && ! $this->reference($order)) {
@@ -71,15 +85,28 @@ class OrderDeliveryPreparation
                 ? 'Сначала оформите Европочту: нужен трек-номер.'
                 : 'Сначала привяжите отправление ВАМ Экспресс: нужен ID заявки.';
         }
+
+        return null;
+    }
+
+    private function planBlocker(Order $order): ?string
+    {
         $plan = $order->delivery_preparation ?? [];
         if (blank($plan['from'] ?? null) || blank($plan['to'] ?? null) || blank($plan['prepared_at'] ?? null)) {
-            return 'Сначала согласуйте доставку: нажмите «Подготовить доставку / самовывоз».';
+            return $order->delivery_type === 'pickup'
+                ? 'Согласуйте место и дату выдачи заказа.'
+                : 'Согласуйте адрес и дату доставки заказа.';
         }
         if (! hash_equals((string) ($plan['signature'] ?? ''), $this->signature($order))) {
-            return 'Данные заказа или доставки изменились. Подтвердите подготовку доставки заново.';
+            return 'Данные заказа изменились. Согласуйте '.$this->handoverLabel($order).' заново.';
         }
 
         return null;
+    }
+
+    public function handoverLabel(Order $order): string
+    {
+        return $order->delivery_type === 'pickup' ? 'самовывоз' : 'доставку';
     }
 
     public function confirm(Order $order, User $actor, array $input): void

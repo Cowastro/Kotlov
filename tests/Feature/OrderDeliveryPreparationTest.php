@@ -201,6 +201,37 @@ class OrderDeliveryPreparationTest extends TestCase
         app(OneCSupplierOrderExport::class)->enqueue($order, 1, [], null);
     }
 
+    public function test_next_step_opens_delivery_or_pickup_without_saving(): void
+    {
+        $actor = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $this->actingAs($actor);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        foreach (['pickup' => 'самовывоз', 'transport' => 'доставку'] as $method => $label) {
+            $order = $this->order('processing', $method);
+            $page = Livewire::test(ViewOrder::class, ['record' => $order->id])
+                ->assertSeeHtml('data-order-next-action="prepareOrderDelivery"')
+                ->assertSee('Подготовить '.$label)
+                ->assertDontSeeHtml('data-order-next-action="advanceWorkflow"')
+                ->assertDontSeeHtml('data-order-next-action="onecOrder"')
+                ->mountAction('prepareOrderDelivery')->assertActionMounted('prepareOrderDelivery')
+                ->assertSet('mountedActions.0.data.method', $method);
+            $this->assertSame('Согласовать '.$label.' перед оформлением в 1С', $page->instance()->getMountedAction()->getModalHeading());
+            $page->call('unmountAction');
+            $this->assertNull($order->fresh()->delivery_preparation);
+        }
+
+        $awaitingItemReview = $this->order();
+        $awaitingItemReview->items()->update(['fulfillment_confirmed_at' => null]);
+        Livewire::test(ViewOrder::class, ['record' => $awaitingItemReview->id])
+            ->assertDontSeeHtml('data-order-next-action="prepareOrderDelivery"');
+        $awaitingCarrier = $this->order('processing', 'vam_express');
+        Livewire::test(ViewOrder::class, ['record' => $awaitingCarrier->id])
+            ->assertDontSeeHtml('data-order-next-action="prepareOrderDelivery"');
+        Http::assertNothingSent();
+        Mail::assertNothingQueued();
+    }
+
     public function test_existing_europochta_label_shows_tracking_without_a_second_dispatch_step(): void
     {
         $actor = User::factory()->create(['role' => 'admin', 'is_active' => true]);
