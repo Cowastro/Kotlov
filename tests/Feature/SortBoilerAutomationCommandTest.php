@@ -175,6 +175,15 @@ class SortBoilerAutomationCommandTest extends TestCase
         $anchor = $card('Анкер латунный (дюбель-втулка) М10 (12х33 мм) GOOD WORK', $fasteners);
         $washer = $card('Шайба М24 плоская увеличенная оцинкованная DIN 9021 (4 шт в блистере) ADMIRAL', $fasteners);
         $clip = $card('Крепеж-клипса для труб 28 GOOD WORK', $fasteners);
+        $steel = $section('stalnye-detali-truboprovodov');
+        $steelReducer = $card('Переход стальной оцинкованный бесшовный Дн 108х4,0-89х3,5 (Ду 100х80) ГОСТ 17378-2001', $steel);
+        $steelElbow = $card('Отвод стальной крутоизогнутый 90° шовный Дн 21,3х2,2 (Ду 15)', $steel);
+        $steelCap = $card('Заглушка стальная эллиптическая Дн 325х10,0 (Ду 300) под приварку РУНАК', $steel);
+        $waterFilters = $section('filtry');
+        $yFilter = $card('Фильтр латунный сетчатый Y-образный с внутренней резьбой Ру 30 Ду 32 GIACOMINI', $waterFilters);
+        $bbCartridge = $card('UNIPUMP Фильтрующий элемент ПП BB10-5M (полипропиленовый, big blue, 10", 5 мкм)', $waterFilters);
+        $slCartridge = $card('Картридж осадочный для холодной воды 50 мкм PP 50 - 10SL ГЕЙЗЕР', $waterFilters);
+        $dirtTrap = $card('Грязевик вертикальный стальной фланцевый Ру 16 Ду 80', $waterFilters);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -218,7 +227,7 @@ class SortBoilerAutomationCommandTest extends TestCase
             ->where('attributes.name', $filter)->where('product_id', $product->id)->value('attribute_options.name');
         $diameter = fn (Product $product) => $value('Диаметр (Ду)', $product);
         $this->assertSame('Ду 80', $diameter($woltman));
-        $this->assertSame('Ду 15', $diameter($hot));
+        $this->assertSame('Ду 15 (1/2")', $diameter($hot));
         $this->assertNull($diameter($radio));
         $this->assertSame('БелОМО КАТА', $value('Серия', $kata));
         $this->assertSame('G6', $value('Типоразмер', $kata));
@@ -432,6 +441,23 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Поддувальные дверки и зольники', $value('Тип', $ashDoor));
         $this->assertSame('Стёкла для дверок', $value('Тип', $doorGlass));
         $this->assertSame('Анкеры и дюбели', $value('Тип', $anchor));
+        $this->assertSame('Переходы', $value('Тип', $steelReducer));
+        $this->assertSame('Ду 100', $value('Диаметр (Ду)', $steelReducer));
+        $this->assertSame('Бесшовные', $value('Исполнение', $steelReducer));
+        $this->assertSame('Оцинкованные', $value('Покрытие', $steelReducer));
+        $this->assertSame('Отводы', $value('Тип', $steelElbow));
+        $this->assertSame('Ду 15 (1/2")', $value('Диаметр (Ду)', $steelElbow));
+        $this->assertSame('Шовные', $value('Исполнение', $steelElbow));
+        $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
+        $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
+        $this->assertSame('Сетчатые (косые) фильтры грубой очистки', $value('Тип', $yFilter));
+        $this->assertSame('Ду 32 (1 1/4")', $value('Диаметр (Ду)', $yFilter));
+        $this->assertSame('Картриджи и фильтрующие элементы', $value('Тип', $bbCartridge));
+        $this->assertSame('10" Big Blue', $value('Размер картриджа', $bbCartridge));
+        $this->assertNull($value('Диаметр (Ду)', $bbCartridge));
+        $this->assertSame('10" Slim Line', $value('Размер картриджа', $slCartridge));
+        $this->assertSame('Грязевики и фланцевые фильтры', $value('Тип', $dirtTrap));
+        $this->assertSame('Ду 80', $value('Диаметр (Ду)', $dirtTrap));
         $this->assertSame('М10', $value('Размер резьбы', $anchor));
         $this->assertSame('Шайбы', $value('Тип', $washer));
         $this->assertSame('М24', $value('Размер резьбы', $washer));

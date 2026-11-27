@@ -219,7 +219,7 @@ final class BoilerAutomationGroups
     {
         $diameters = [];
         foreach (self::DIAMETERS as $dn) {
-            $diameters['/(?:ду|dn)\s*'.$dn.'(?!\d)/u'] = 'Ду '.$dn;
+            $diameters['/(?:ду|dn)\s*'.$dn.'(?!\d)/u'] = self::dnLabel((int) $dn);
         }
         $pumps = [];
         foreach (self::POWERED_PUMPS as $slug) {
@@ -231,7 +231,8 @@ final class BoilerAutomationGroups
         }
 
         return [
-            self::METERS => ['Диаметр (Ду)' => [$diameters, array_values($diameters)]],
+            // The same labels and order as the valves: «Краны и запорная арматура» merges them into one list.
+            self::METERS => ['Диаметр (Ду)' => [$diameters, array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)]],
             self::GAS_METERS => [
                 'Серия' => [self::GAS_SERIES, self::GAS_SERIES_ORDER],
                 'Типоразмер' => [self::GAS_SIZES, array_values(self::GAS_SIZES)],
@@ -268,6 +269,17 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::STEEL_FITTINGS => [
+                'Тип' => [self::STEEL_TYPES, array_values(array_unique(self::STEEL_TYPES))],
+                'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
+                'Исполнение' => [['/бесшовн/u' => 'Бесшовные', '/шовн/u' => 'Шовные'], ['Бесшовные', 'Шовные']],
+                'Покрытие' => [self::STEEL_FINISHES, ['Оцинкованные', 'Без покрытия (чёрные)']],
+            ],
+            self::WATER_FILTERS => [
+                'Тип' => [self::WATER_FILTER_TYPES, array_values(array_unique(self::WATER_FILTER_TYPES))],
+                'Диаметр (Ду)' => [fn (string $title) => self::match($title, self::WATER_FILTER_TYPES) === 'Картриджи и фильтрующие элементы' ? null : self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
+                'Размер картриджа' => [fn (string $title) => self::cartridgeSize($title), ['10" Slim Line', '10" Big Blue', '20" Big Blue', '5"']],
+            ],
             self::FASTENERS => [
                 'Тип' => [self::FASTENER_TYPES, array_values(array_unique(self::FASTENER_TYPES))],
                 'Размер резьбы' => [fn (string $title) => self::fastenerThread($title), array_map(fn (int $m) => 'М'.$m, self::FASTENER_THREADS)],
@@ -462,7 +474,7 @@ final class BoilerAutomationGroups
         'Термостатические смесители (ГВС, тёплый пол)',
         'Насосно-смесительные группы и узлы',
         'Приводы и сервоприводы',
-        'Балансировочные клапаны',
+        'Балансировочные и регулирующие клапаны',
         'Запасные термоэлементы',
         'Прочее',
     ];
@@ -472,7 +484,7 @@ final class BoilerAutomationGroups
         '/^(сервопривод|привод|электропривод|переходники для приводов)/u' => 'Приводы и сервоприводы',
         '/термостатическ\w* элемент/u' => 'Запасные термоэлементы',
         '/насосн\w* групп|насосно-смесительн|смесительн\w* узел|узел смесительн|mix-unit|laddomat|смесительное устройство/u' => 'Насосно-смесительные группы и узлы',
-        '/балансировочн/u' => 'Балансировочные клапаны',
+        '/балансировочн/u' => 'Балансировочные и регулирующие клапаны',
         '/(?<![a-z])vta|atm |атм |am63c|aquamix|r156|tvmix|tsv-tv|regulus tv /u' => 'Термостатические смесители (ГВС, тёплый пол)',
         '/regulus tsv|(?<![a-z])atv |термический для котлов|vtc511/u' => 'Термостатические клапаны для котлов (антиконденсат)',
         '/четыр[её]хходов|шестиходов|vrg 141|arv 484/u' => 'Четырёх- и шестиходовые клапаны',
@@ -936,7 +948,7 @@ final class BoilerAutomationGroups
     public const BALL_GAS = ['/(?<![а-я])газ(?![а-я])/u' => 'Для газа'];
 
     /** The nominal sizes a ball valve is listed by. */
-    public const BALL_DNS = [10, 15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150, 200];
+    public const BALL_DNS = [10, 15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150, 200, 250, 300];
 
     public static function dnLabel(int $dn): string
     {
@@ -1322,7 +1334,7 @@ final class BoilerAutomationGroups
         '/обратн/u' => 'Обратные клапаны',
         '/воздухоотводчик|развоздуш|сепаратор/u' => 'Воздухоотводчики и сепараторы',
         '/электромагнитн|отсекающ|термозапорн/u' => 'Электромагнитные и отсекающие клапаны',
-        '/электропривод/u' => 'Электроприводы',
+        '/электропривод/u' => 'Приводы и сервоприводы',
         '/sani|sololift|канализационная насосная|аварийная сигнализация/u' => 'Канализационные насосные установки (SFA)',
         '/задвижк/u' => 'Задвижки',
         '/3-х|приоритет|подпиточн|компенсатор|клапан/u' => 'Прочие клапаны',
@@ -1474,6 +1486,59 @@ final class BoilerAutomationGroups
 
         return null;
     }
+
+    public const WATER_FILTERS = 'filtry';
+
+    /** Title pattern => «Тип» inside «Фильтры», in filter order; the first match wins. */
+    public const WATER_FILTER_TYPES = [
+        '/промывн|самоочищ/u' => 'Промывные фильтры',
+        '/шламоуловит|магнитн/u' => 'Шламоуловители и магнитные фильтры',
+        '/грязевик|фланцев|чугунн/u' => 'Грязевики и фланцевые фильтры',
+        '/косой|y-образн|т-образн|сетчат|осадочный (ду|для)|фильтр осадочный|^фильтр латунный|^фильтр косой/u' => 'Сетчатые (косые) фильтры грубой очистки',
+        '/картридж|фильтрующий элемент/u' => 'Картриджи и фильтрующие элементы',
+        '/корпус|колба|аквабрайт|модуль|unifilter/u' => 'Корпуса (колбы) фильтров',
+        '/накип|protector|bwt/u' => 'Фильтры от накипи',
+        '/ballu|air master/u' => 'Фильтры для очистителей воздуха',
+        '/./u' => 'Комплектующие',
+    ];
+
+    /** The cartridge (or housing) size: 10" Slim Line, 10"/20" Big Blue, 5". */
+    public static function cartridgeSize(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        if (! preg_match('/картридж|фильтрующий элемент|корпус|колба|аквабрайт|модуль|unifilter|набор/u', $title)) {
+            return null;
+        }
+        $bb = (bool) preg_match('/big blue|(?<![a-z])bb(?![a-z])|\dbb|ббб?|ббб|бб-/u', $title);
+        $inches = preg_match('/(?<!\d)(5|10|20)\s*(?:"|″|”|дюйм)/u', $title, $m) ? (int) $m[1]
+            : (preg_match('/(?:bb|sl|бб-?)(10|20)|(10|20)(?:bb|sl|бб)/u', $title, $m) ? (int) ($m[1] !== '' ? $m[1] : $m[2]) : null);
+
+        return match (true) {
+            $inches === 5 => '5"',
+            $inches === 20 => '20" Big Blue',
+            $inches === 10 && $bb => '10" Big Blue',
+            $inches === 10 => '10" Slim Line',
+            default => null,
+        };
+    }
+
+    public const STEEL_FITTINGS = 'stalnye-detali-truboprovodov';
+
+    /** Title pattern => «Тип» inside «Стальные детали трубопроводов», in filter order; the first match wins. */
+    public const STEEL_TYPES = [
+        '/^переход/u' => 'Переходы',
+        '/^отвод/u' => 'Отводы',
+        '/^тройник/u' => 'Тройники',
+        '/^заглушк/u' => 'Заглушки',
+        '/компенсатор/u' => 'Компенсаторы',
+        '/./u' => 'Опоры, уголок и прочее',
+    ];
+
+    /** Title pattern => «Покрытие» of a steel fitting: galvanised, otherwise black (the welded fittings). */
+    public const STEEL_FINISHES = [
+        '/оцинк/u' => 'Оцинкованные',
+        '/^(переход|отвод|тройник|заглушк)/u' => 'Без покрытия (чёрные)',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
