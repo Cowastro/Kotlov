@@ -23,7 +23,7 @@ class OrderDealControlNotifier
         foreach ($ids as $id) {
             $count += DB::transaction(function () use ($id, $cutoff): int {
                 $order = Order::query()->lockForUpdate()->find($id);
-                if (! $order || ! $order->dealIsActive() || ! $order->deal_control_at?->isPast()
+                if (! $order || ! $order->dealIsActive() || $order->hasAutomaticDealControl() || ! $order->deal_control_at?->isPast()
                     || $order->deal_control_notified_at?->greaterThanOrEqualTo($cutoff)) {
                     return 0;
                 }

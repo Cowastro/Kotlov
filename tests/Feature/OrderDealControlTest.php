@@ -351,11 +351,16 @@ class OrderDealControlTest extends TestCase
         $legacyAssigned = $this->order('checking');
         $unassigned = $this->order('new');
         $recent = $this->order('confirmed');
-        foreach ([$closed, $archived, $scheduled, $advanced, $stalled, $legacyAssigned, $unassigned] as $order) {
+        $postedOneC = $this->order('shipped');
+        foreach ([$closed, $archived, $scheduled, $advanced, $stalled, $legacyAssigned, $unassigned, $postedOneC] as $order) {
             $order->forceFill(['created_at' => now()->subDays(4), 'updated_at' => now()])->save();
         }
         $stalled->update(['manager_id' => $manager->id, 'assigned_to' => '@manager_legacy_assignment']);
         $legacyAssigned->update(['assigned_to' => '@manager_legacy_assignment']);
+        $postedOneC->forceFill([
+            'manager_id' => $otherManager->id, 'onec_posted' => true, 'onec_order_guid' => 'posted-1c-order',
+            'deal_control_at' => now()->subDay(), 'deal_next_action' => 'Старая проверка наличия',
+        ])->save();
         $archived->update(['archived_at' => now(), 'archive_reason' => 'Закрыт менеджером']);
         $scheduled->forceFill(['deal_control_at' => now()->addHours(12), 'deal_next_action' => 'Позвонить покупателю'])->save();
         $advanced->statusHistory()->create(['status_from' => 'confirmed', 'status_to' => 'processing']);
@@ -364,7 +369,7 @@ class OrderDealControlTest extends TestCase
         Livewire::actingAs($manager)->test(ListOrders::class)
             ->call('selectOrderTab', 'stale_follow_up')
             ->assertCanSeeTableRecords([$stalled, $legacyAssigned, $unassigned])
-            ->assertCanNotSeeTableRecords([$closed, $archived, $scheduled, $advanced, $recent]);
+            ->assertCanNotSeeTableRecords([$closed, $archived, $scheduled, $advanced, $recent, $postedOneC]);
         $reminders = app(StaleOrderFollowUpReminder::class);
         $this->assertSame(['orders' => 3, 'recipients' => 2], $reminders->preview());
         $this->assertSame(2, $reminders->notify());
@@ -636,12 +641,23 @@ class OrderDealControlTest extends TestCase
         $tomorrow = $this->order();
         $tomorrow->forceFill(['deal_next_action' => 'Согласовать', 'deal_control_at' => now()->addDay()])->save();
         $unscheduled = $this->order();
+        $draft = $this->order('processing');
+        $draft->forceFill(['onec_order_guid' => 'draft-1c-order'])->save();
+        $postedWithoutStep = $this->order('shipped');
+        $postedWithoutStep->forceFill(['onec_order_guid' => 'posted-without-step', 'onec_posted' => true])->save();
+        $postedOverdue = $this->order('shipped');
+        $postedOverdue->forceFill([
+            'onec_order_guid' => 'posted-overdue', 'onec_posted' => true,
+            'deal_next_action' => 'Старый шаг', 'deal_control_at' => now()->subMinutes(20),
+        ])->save();
         $closed = $this->order('cancelled');
         $closed->forceFill(['deal_control_at' => now()->subDay()])->save();
 
         $this->assertSame([$due->id], Order::query()->dealControl('today')->pluck('id')->all());
         $this->assertSame([$due->id], Order::query()->dealControl('overdue')->pluck('id')->all());
-        $this->assertSame([$unscheduled->id], Order::query()->dealControl('unscheduled')->pluck('id')->all());
+        $this->assertEqualsCanonicalizing([$unscheduled->id, $draft->id], Order::query()->dealControl('unscheduled')->pluck('id')->all());
+        $this->assertSame('Этап ведётся в 1С', $postedWithoutStep->dealControlLabel());
+        $this->assertSame('Этап ведётся в 1С', $postedOverdue->dealControlLabel());
     }
 
     public function test_fulfillment_conflict_keeps_the_follow_up_without_claiming_a_false_stage(): void

@@ -8,13 +8,14 @@
     $currentIndex = array_search($order->effectiveDealStage(), array_keys($stages), true);
     $active = $order->dealIsActive();
     $completed = $order->effectiveDealStage() === 'completed' && $order->status !== 'cancelled';
-    $overdue = $active && $order->deal_control_at?->isPast();
-    $today = $active && $order->deal_control_at?->timezone('Europe/Minsk')->isToday();
+    $manualControl = $active && ! $order->hasAutomaticDealControl();
+    $overdue = $manualControl && $order->deal_control_at?->isPast();
+    $today = $manualControl && $order->deal_control_at?->timezone('Europe/Minsk')->isToday();
     $isTable ??= false;
     $isAttention ??= false;
     $canSelectStage = $isTable && $active && ! \App\Services\Orders\OrderWorkflow::managedBy1c($order);
     $controlLabel = $order->dealControlLabel();
-    if (! $isTable && $active && ! $order->deal_control_at) {
+    if (! $isTable && $manualControl && ! $order->deal_control_at) {
         $controlLabel = 'Срок контроля не назначен';
     }
     $context = $isTable ? ['table' => true, 'recordKey' => (string) $order->getKey()] : [];
@@ -67,7 +68,7 @@
     @endunless
     <div class="order-deal__control {{ $overdue ? 'is-overdue' : ($today ? 'is-today' : '') }}">
         <span>{{ $controlLabel }}</span>
-        @if ($active)
+        @if ($manualControl)
             <button type="button" title="Изменить следующий шаг и срок контроля"
                 wire:click.stop="mountAction('manageDeal', {}, @js($context))">Изменить</button>
         @endif
@@ -138,11 +139,11 @@
                     @endif
                 </div>
             @endif
-            @if ($active && filled($order->deal_next_action))
+            @if ($manualControl && filled($order->deal_next_action))
                 <p class="text-gray-500 dark:text-gray-400">{{ $order->deal_next_action }}</p>
             @endif
         </div>
-    @elseif ($active && filled($order->deal_next_action))
+    @elseif ($manualControl && filled($order->deal_next_action))
         <div class="order-deal__next" title="{{ $order->deal_next_action }}">{{ $order->deal_next_action }}</div>
     @endif
     @if (isset($queueShortcut))
