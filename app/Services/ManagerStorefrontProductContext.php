@@ -46,14 +46,14 @@ class ManagerStorefrontProductContext
         return $this->buildOffers($product);
     }
 
-    /** Only city-level stock labels are public. */
-    public function ecokaminWarehouseLabels(Product $product): array
+    /** Public availability excludes internal warehouse locations. */
+    public function ecokaminPublicStockLabel(Product $product): ?string
     {
         if (! $this->isEcokamin($product)) {
-            return [];
+            return null;
         }
 
-        return $this->buildOffers($product)->pluck('city_stock')->filter()->first() ?? [];
+        return $this->buildOffers($product)->pluck('public_stock')->filter()->first();
     }
 
     private function isEcokamin(Product $product): bool
@@ -231,12 +231,12 @@ class ManagerStorefrontProductContext
             // links. Keep the supplier once and preserve its warehouse breakdown
             // inside that single offer instead of repeating the same name.
             ->groupBy('supplier_key')
-            ->map(fn (Collection $offers): array => $this->mergeSupplierOffers($offers, $isEcokamin))
+            ->map(fn (Collection $offers): array => $this->mergeSupplierOffers($offers, $isEcokamin, $product->unit))
             ->values();
     }
 
     /** @param Collection<int, array<string, mixed>> $offers */
-    private function mergeSupplierOffers(Collection $offers, bool $isEcokamin): array
+    private function mergeSupplierOffers(Collection $offers, bool $isEcokamin, ?string $unit): array
     {
         // A brand-to-supplier assignment is a contact fallback, not a second
         // physical warehouse. Keep it only when there is no real source.
@@ -271,11 +271,20 @@ class ManagerStorefrontProductContext
         $best['locations'] = $locations->all();
         if ($isEcokamin && $offers->contains(fn (array $row): bool => ! $row['assignment_only']
             && in_array($row['warehouse'], ['Склад Москва', 'Склад Минск'], true))) {
+            $confirmedTotal = 0.0;
+            $confirmedCities = 0;
             foreach (['Москва', 'Минск'] as $city) {
                 $confirmed = $offers->first(fn (array $row): bool => $row['warehouse'] === 'Склад '.$city
                     && ! $row['assignment_only'] && $row['confirmed_quantity']);
                 $best['city_stock'][$city] = $confirmed['stock'] ?? 'наличие уточняется';
+                if ($confirmed !== null) {
+                    $confirmedCities++;
+                    $confirmedTotal += (float) $confirmed['stock_quantity'];
+                }
             }
+            $best['public_stock'] = $confirmedTotal > 0 || $confirmedCities === 2
+                ? 'На складе поставщика — '.$this->formatQuantity($confirmedTotal, $unit)
+                : 'Наличие уточняется';
         }
         if ($best['assignment_only'] ?? false) {
             $best['warehouse'] = null;

@@ -272,15 +272,21 @@ class ManagerStorefrontExperienceTest extends TestCase
         $this->assertStringContainsString('Минск — 7 шт.', $html);
         $this->assertStringNotContainsString('11 шт. · 2 склада', $html);
 
-        $product->update(['sku' => 'PS-012.008']);
+        $product->update(['sku' => 'PS-012.008', 'in_stock' => true, 'availability_status' => 'in_stock']);
         $product->warehouseStocks()->update(['available_quantity' => 21]);
         $offer->update(['stock_quantity' => null, 'in_stock' => true]);
-        $this->assertSame(['Москва' => '21 шт.', 'Минск' => 'наличие уточняется'],
-            app(ManagerStorefrontProductContext::class)->ecokaminWarehouseLabels($product->fresh()));
+        $this->assertSame('На складе поставщика — 21 шт.',
+            app(ManagerStorefrontProductContext::class)->ecokaminPublicStockLabel($product->fresh()));
         auth()->logout();
         $this->get('/manager-storefront-test/manager-storefront-product')
-            ->assertOk()->assertSeeText('Москва — 21 шт.')->assertSeeText('Минск — наличие уточняется')
+            ->assertOk()->assertSeeText('На складе поставщика — 21 шт.')->assertDontSeeText('Москва —')->assertDontSeeText('Минск — наличие уточняется')
             ->assertDontSeeText('SECRET-123');
+
+        $this->get('/brands/ecokamin')->assertOk()
+            ->assertSeeTextInOrder([$product->name, '10.00 BYN', 'На складе поставщика — 21 шт.'])->assertDontSeeText('Москва —')->assertDontSeeText('Минск — наличие уточняется')
+            ->assertDontSeeText('SECRET-123');
+        $this->view('partials.product-card-list', ['product' => $product->fresh()])
+            ->assertSeeTextInOrder(['10.00 BYN', 'На складе поставщика — 21 шт.'])->assertDontSeeText('Москва —')->assertDontSeeText('Минск — наличие уточняется');
     }
 
     public function test_ecokamin_site_availability_is_not_called_the_minsk_warehouse(): void

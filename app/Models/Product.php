@@ -467,7 +467,7 @@ class Product extends Model
     public function scopeWithSupplierChannels($query)
     {
         return $query->with([
-            'supplierProducts:id,product_id,supplier_id,supplier_article,supplier_catalog_code,fulfillment_details,supplier_name,price_byn,in_stock,stock_status,stock_quantity,stock_text,warehouse_name,delivery_days,match_confidence,last_stock_synced_at,last_synced_at,updated_at',
+            'supplierProducts:id,product_id,supplier_id,source_url,match_status,supplier_article,supplier_catalog_code,fulfillment_details,supplier_name,price_byn,in_stock,stock_status,stock_quantity,stock_text,warehouse_name,delivery_days,match_confidence,last_stock_synced_at,last_synced_at,updated_at',
             'supplierProducts.supplier:id,crm_counterparty_id,code,name,contact,is_active',
             'supplierProducts.supplier.crmCounterparty.contactPoints',
             'supplierProducts.supplier.latestChannelTransition',

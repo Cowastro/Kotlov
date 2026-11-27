@@ -47,7 +47,8 @@ class BrandController extends Controller
         $products = $brand->products()
             ->orderable()
             ->withSupplierChannels()
-            ->with(['category'])
+            ->with(['category', 'brand:id,name,slug'])
+            ->when($brand->slug === 'ecokamin', fn ($query) => $query->with('warehouseStocks.supplier.crmCounterparty.contactPoints'))
             ->orderByDesc('is_featured')
             ->orderByDesc('rating')
             ->paginate(24);
