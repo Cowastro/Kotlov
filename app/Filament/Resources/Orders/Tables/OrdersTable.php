@@ -161,6 +161,14 @@ class OrdersTable
                     ->grow(false)
                     ->weight('bold'),
 
+                ViewColumn::make('queue_attention')
+                    ->label('Что сделать')
+                    ->visible(fn (ListOrders $livewire): bool => $livewire->activeTab === 'attention')
+                    ->disabledClick()
+                    ->view('filament.resources.orders.queue-attention')
+                    ->width('235px')
+                    ->grow(false),
+
                 TextColumn::make('onec_order')
                     ->label('1С')
                     ->badge()
@@ -319,10 +327,10 @@ class OrdersTable
                     ->view('filament.resources.orders.deal-progress')
                     ->viewData(fn (Order $record, ListOrders $livewire): array => [
                         'isTable' => true,
-                        'queueShortcut' => in_array($livewire->activeTab, ['attention', 'stale_follow_up'], true)
+                        'queueShortcut' => $livewire->activeTab === 'stale_follow_up'
                             ? app(OrderNextStep::class)->queueShortcut($record)
                             : null,
-                        'queueWaitReasons' => in_array($livewire->activeTab, ['attention', 'stale_follow_up'], true)
+                        'queueWaitReasons' => $livewire->activeTab === 'stale_follow_up'
                             ? app(OrderNextStep::class)->queueWaitReasons($record)
                             : [],
                     ])

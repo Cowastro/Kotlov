@@ -25,7 +25,7 @@ class OrderCarrierAttention
                         ->where(fn (Builder $missing) => $missing->whereNull('synced_at')->orWhereColumn('checked_at', '>', 'synced_at'))))));
     }
 
-    /** @return list<array{label: string, url?: string, link?: string}> */
+    /** @return list<array{label: string, action: string, url?: string, link?: string}> */
     public static function reasons(Order $order): array
     {
         if ($order->delivery_type === 'evropochta') {
@@ -37,10 +37,10 @@ class OrderCarrierAttention
             $url = ShipmentResource::trackingUrl($order);
             if ($order->carrier_provider === 'evropochta' && $order->carrier_reference === $order->evropochta_tracking_number
                 && $order->carrier_stage === 'attention') {
-                $reasons[] = self::reason('Европочта · '.$order->carrier_status_text, $url);
+                $reasons[] = self::reason('Европочта · '.$order->carrier_status_text, 'Согласовать с клиентом дальнейшую доставку или возврат', $url);
             }
             if ($order->carrier_check_failed_at) {
-                $reasons[] = self::reason('Европочта · Не удалось проверить статус', $url);
+                $reasons[] = self::reason('Европочта · Не удалось проверить статус', 'Повторить проверку в разделе Европочты', $url);
             }
 
             return $reasons;
@@ -52,19 +52,19 @@ class OrderCarrierAttention
                 ? VamExpressShipmentResource::getUrl('view', ['record' => $shipment])
                 : null;
             if (in_array(VamExpressStatus::group($shipment->carrier_status), ['cancelled', 'warning', 'return', 'exchange'], true)) {
-                $reasons[] = self::reason('ВАМ Экспресс · '.$shipment->carrier_status, $url);
+                $reasons[] = self::reason('ВАМ Экспресс · '.$shipment->carrier_status, 'Уточнить у перевозчика дальнейшую доставку или возврат', $url);
             }
             if ($shipment->checked_at && (! $shipment->synced_at || $shipment->checked_at->gt($shipment->synced_at))) {
-                $reasons[] = self::reason('ВАМ Экспресс · Отправление не найдено при проверке', $url);
+                $reasons[] = self::reason('ВАМ Экспресс · Отправление не найдено при проверке', 'Сверить номер заявки и обновить статус', $url);
             }
         }
 
         return $reasons;
     }
 
-    /** @return array{label: string, url?: string, link?: string} */
-    private static function reason(string $label, ?string $url): array
+    /** @return array{label: string, action: string, url?: string, link?: string} */
+    private static function reason(string $label, string $action, ?string $url): array
     {
-        return ['label' => $label] + ($url ? ['url' => $url, 'link' => 'Открыть отправление'] : []);
+        return compact('label', 'action') + ($url ? ['url' => $url, 'link' => 'Открыть отправление'] : []);
     }
 }
