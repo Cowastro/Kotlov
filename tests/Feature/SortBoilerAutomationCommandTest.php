@@ -293,6 +293,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $flangeSection = $section('flantsy');
         $weldNeck = $card('Фланец стальной воротниковый (приварной встык) Ду 80 Ру 16 тип 11 исполнение B ГОСТ 33259-2015 Союз Металл', $flangeSection);
         $flatFlange = $card('Фланец стальной плоский Ру 6 Ду 100 тип 01 ряд 1 исполнение B ГОСТ 33259-2015 MAGNUM', $flangeSection);
+        $showerSystems = $section('dushevye-sistemy');
+        $thermoShower = $card('Душевая термостатическая система (Lt), серия THS хром, AV Engineering', $showerSystems);
+        $lotusShower = $card('Душевая система (Lt) D35, серия Lotus белый, a-five', $showerSystems);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -565,6 +568,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Термостатический', $value('Управление', $thermoShower));
+        $this->assertSame('Хром', $value('Цвет', $thermoShower));
+        $this->assertSame('Однорычажный', $value('Управление', $lotusShower));
+        $this->assertSame('Белый', $value('Цвет', $lotusShower));
         $this->assertSame('Воротниковый (тип 11)', $value('Тип', $weldNeck));
         $this->assertSame('Ду 80', $value('Диаметр (Ду)', $weldNeck));
         $this->assertSame('Ру 16', $value('Давление (Ру)', $weldNeck));
