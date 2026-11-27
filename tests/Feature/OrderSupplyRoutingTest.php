@@ -390,13 +390,14 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertSame($supplier->id, $item->fulfillment_supplier_id);
         $this->assertNull($item->fulfillment_purchase_price, 'The supplier snapshot cannot replace a missing 1C cost.');
         $this->assertSame('processing', $order->fresh()->status);
-        $page->assertSee('оформите отправление и получите трек')
+        $page->assertSeeHtml('data-order-next-action="prepareEvropochtaShipment"')
             ->assertActionHidden('advanceWorkflow');
 
         $order->forceFill(['evropochta_tracking_number' => 'BY080027046773'])->save();
         Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->id])
             ->assertActionHidden('advanceWorkflow')
             ->assertActionVisible('prepareOrderDelivery')
+            ->assertSee('Печать этикетки Европочты')
             ->assertActionVisible('printEvropochtaLabel_thermal')
             ->assertActionVisible('printEvropochtaLabel_address');
     }

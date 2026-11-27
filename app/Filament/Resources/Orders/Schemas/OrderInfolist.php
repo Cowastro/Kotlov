@@ -163,7 +163,12 @@ class OrderInfolist
                         ->schema([
                             ViewEntry::make('deal_progress')->hiddenLabel()
                                 ->view('filament.resources.orders.deal-progress')
-                                ->viewData(['isTable' => false]),
+                                ->viewData(fn ($livewire): array => [
+                                    'nextAction' => $livewire->nextStepAction(),
+                                    'labelAction' => $livewire->nextStepLabelAction(),
+                                    'supplierItem' => $livewire->supplierItemToAssign(),
+                                    'supplierReply' => $livewire->pendingSupplierReply(),
+                                ]),
                         ]),
 
                     Section::make('Товары заказа')
@@ -227,6 +232,7 @@ class OrderInfolist
 
                                     TextEntry::make('supply_supplier')
                                         ->label('Поставщик')
+                                        ->extraAttributes(fn (OrderItem $record): array => ['id' => 'order-item-supplier-'.$record->id])
                                         ->columnSpan(2)
                                         ->state(fn (OrderItem $record): ?string => $record->fulfillment_supplier_name
                                             ?: $record->fulfillmentSupplier?->name
