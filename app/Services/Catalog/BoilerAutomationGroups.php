@@ -275,6 +275,11 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::FLANGES => [
+                'Тип' => [['/воротников|тип 11/u' => 'Воротниковый (тип 11)', '/плоск|тип 01/u' => 'Плоский приварной (тип 01)'], ['Плоский приварной (тип 01)', 'Воротниковый (тип 11)']],
+                'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
+                'Давление (Ру)' => [['/ру 6(?!\d)/u' => 'Ру 6', '/ру 10(?!\d)/u' => 'Ру 10', '/ру 16(?!\d)/u' => 'Ру 16', '/ру 25(?!\d)/u' => 'Ру 25'], ['Ру 6', 'Ру 10', 'Ру 16', 'Ру 25']],
+            ],
             self::GLOBE_VALVES => [
                 'Присоединение' => [['/фланцев|15с65нж/u' => 'Фланцевое', '/(?<![а-я])пп(?![а-я])/u' => 'Под пластиковую или пресс-трубу', '/муфтов|15б\d|скрытого монтажа/u' => 'Внутренняя — внутренняя резьба'], ['Внутренняя — внутренняя резьба', 'Под пластиковую или пресс-трубу', 'Фланцевое']],
                 'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
@@ -2532,6 +2537,8 @@ final class BoilerAutomationGroups
     ];
 
     public const GLOBE_VALVES = 'ventili-zapornye';
+
+    public const FLANGES = 'flantsy';
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
