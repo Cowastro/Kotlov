@@ -274,6 +274,11 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::PVC_PIPES => [
+                'Тип' => [self::PVC_TYPES, array_values(array_unique(self::PVC_TYPES))],
+                'Диаметр' => [fn (string $title) => preg_match('/(?<!\d)(110|125|160|225|315)(?!\d)/u', str_ireplace('НПВХ125', 'НПВХ', $title), $m) ? $m[1].' мм' : null, ['110 мм', '125 мм', '160 мм', '225 мм', '315 мм']],
+                'Рабочее давление' => [['/ру 0,6|sdr41/u' => 'PN 6 (0,6 МПа)', '/ру 1(,0)? m?мпа|ру 1(,0)? mпа|sdr26/u' => 'PN 10 (1,0 МПа)'], ['PN 6 (0,6 МПа)', 'PN 10 (1,0 МПа)']],
+            ],
             self::CHECK_VALVES => [
                 'Конструкция' => [self::CHECK_VALVE_TYPES, array_values(array_unique(self::CHECK_VALVE_TYPES))],
                 'Присоединение' => [self::CHECK_VALVE_JOINTS, ['Внутренняя — внутренняя резьба', 'Под пластиковую или пресс-трубу', 'Фланцевое', 'Межфланцевое']],
@@ -2383,6 +2388,18 @@ final class BoilerAutomationGroups
         '/стальн/u' => 'Сталь',
         '/(?<![а-я])пп(?![а-я])/u' => 'Полипропилен (ПП)',
         '/латун|valtec|цветлит|(?<![а-я])ld$|sti$|aquasfera|giacomini|av engineering/u' => 'Латунь',
+    ];
+
+    public const PVC_PIPES = 'truby-npvh-napornye';
+
+    /** Title pattern => «Тип» inside «Напорные трубы НПВХ», in filter order; the first match wins. */
+    public const PVC_TYPES = [
+        '/^труба/u' => 'Трубы',
+        '/^отвод/u' => 'Отводы',
+        '/^тройник|^крестовин/u' => 'Тройники и крестовины',
+        '/^патрубок/u' => 'Патрубки (раструб, фланец)',
+        '/^муфта/u' => 'Муфты ремонтные',
+        '/./u' => 'Редукторы и заглушки',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';

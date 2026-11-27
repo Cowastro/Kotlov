@@ -270,6 +270,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $checkValves = $section('obratnye-klapany');
         $springCheck = $card('Клапан обратный 3/4" вн.-вн. пружинный латунный шток, LD', $checkValves);
         $waferCheck = $card('Клапан обратный межфланцевый 19ч21бр Ру 16 Ду 80', $checkValves);
+        $pvcPipes = $section('truby-npvh-napornye');
+        $pvcPipe = $card('Труба НПВХ125 SDR41 Ру 0,6 MПа Дн 160х4х3140 ХЕМКОР', $pvcPipes);
+        $pvcTee = $card('Тройник раструб НПВХ напорный с манжетой Ру 1,0 МПа Ду 225/225х90* ERA', $pvcPipes);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -542,6 +545,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Трубы', $value('Тип', $pvcPipe));
+        $this->assertSame('160 мм', $value('Диаметр', $pvcPipe));
+        $this->assertSame('PN 6 (0,6 МПа)', $value('Рабочее давление', $pvcPipe));
+        $this->assertSame('Тройники и крестовины', $value('Тип', $pvcTee));
+        $this->assertSame('225 мм', $value('Диаметр', $pvcTee));
+        $this->assertSame('PN 10 (1,0 МПа)', $value('Рабочее давление', $pvcTee));
         $this->assertSame('Пружинный', $value('Конструкция', $springCheck));
         $this->assertSame('Внутренняя — внутренняя резьба', $value('Присоединение', $springCheck));
         $this->assertSame('Ду 20 (3/4")', $value('Диаметр (Ду)', $springCheck));
