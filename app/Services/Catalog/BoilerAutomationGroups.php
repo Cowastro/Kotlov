@@ -271,6 +271,9 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::FIREWOOD_RACKS => [
+                'Тип' => [self::FIREWOOD_TYPES, array_values(array_unique(self::FIREWOOD_TYPES))],
+            ],
             self::TOOLS => [
                 'Тип' => [self::TOOL_TYPES, self::TOOL_ORDER],
             ],
@@ -2257,6 +2260,18 @@ final class BoilerAutomationGroups
         '/^(трос|вантуз)/u' => 'Тросы и вантузы для прочистки',
         '/олово|припой/u' => 'Припой для пайки',
         '/./u' => 'Прочий инструмент',
+    ];
+
+    public const FIREWOOD_RACKS = 'drovnitsyi';
+
+    /** Title pattern => «Тип» inside «Дровницы и каминные принадлежности», in filter order; the first match wins. */
+    public const FIREWOOD_TYPES = [
+        '/^дровница/u' => 'Дровницы',
+        '/биокамин/u' => 'Биокамины и остекление',
+        '/стекло термостойк/u' => 'Термостойкие стёкла',
+        '/шамотн|колосник|вермикулит/u' => 'Шамот, колосники и вермикулит',
+        '/^ермак/u' => 'Аксессуары для банных печей ERMAK',
+        '/./u' => 'Мангалы, очаги и прочее',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';

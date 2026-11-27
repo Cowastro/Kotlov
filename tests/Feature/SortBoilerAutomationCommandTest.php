@@ -252,6 +252,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $toiletNozzle = $card('Насадка для унитаза Дн 110х250 мм W1220 АНИ пласт', $tools);
         $weldNozzle = $card('Насадка сменная к сварочному аппарату Ду 25', $tools);
         $crimpPliers = $card('Щипцы обжимные Giacoqest 1/2" (в комплекте с калибратором, шестигранным ключом) GIACOMINI', $tools);
+        $firewood = $section('drovnitsyi');
+        $logRack = $card('Дровница кованная D310 Везувий', $firewood);
+        $ermakGlass = $card('Ермак Стекло термостойкое 153x153x4,0 (ПБС)', $firewood);
+        $bioFire = $card('Kratki Настенный биокамин DELTA3/TUV', $firewood);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -524,6 +528,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Дровницы', $value('Тип', $logRack));
+        $this->assertSame('Термостойкие стёкла', $value('Тип', $ermakGlass));
+        $this->assertSame('Биокамины и остекление', $value('Тип', $bioFire));
         $this->assertSame('Тросы и вантузы для прочистки', $value('Тип', $toiletNozzle));
         $this->assertSame('Насадки для сварочных аппаратов', $value('Тип', $weldNozzle));
         $this->assertSame('Прочий инструмент', $value('Тип', $crimpPliers));
