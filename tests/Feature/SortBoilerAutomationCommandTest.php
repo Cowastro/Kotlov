@@ -132,12 +132,17 @@ class SortBoilerAutomationCommandTest extends TestCase
         $sewerTee = $card('Тройник полипропиленовый для внутренней канализации Skolan SKEA Ду 110х58(50)х87° OSTENDORF', $sewer);
         $sewerElbow = $card('Отвод полипропиленовый для внутренней канализации 58x15° Stilte Plus PRO AQUA', $sewer);
         $sewerTrap = $card('Трап вертикальный регулируемый Дн 110 (решетка нержавеющая сталь 150х150 мм) арт. TA1712 АНИ Пласт', $sewer);
+        $plumbing = $section('komplektuyushchie-dlya-santekhniki');
+        $showerHose = $card('Шланг душевой, 150 см, AV Engineering', $plumbing);
+        $towelUnion = $card('Американка угловая для полотенцесушителя 1"х1" гайка-штуцер хромированная (2 шт.)', $plumbing);
+        $cistern = $card('Впускной механизм с нижней подачей 1/2", AV Engineering', $plumbing);
+        $neptun = $card('Система контроля протечки воды 1/2" PROFI Base NEPTUN', $plumbing);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=11')
+            ->expectsOutputToContain('metric.boiler_automation.moved=12')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -331,6 +336,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('50 мм', $value('Диаметр', $sewerElbow));
         $this->assertSame('Трапы и воронки', $value('Тип', $sewerTrap));
         $this->assertSame('110 мм', $value('Диаметр', $sewerTrap));
+        $this->assertSame('Душевые шланги', $value('Тип', $showerHose));
+        $this->assertSame('Подключение полотенцесушителей', $value('Тип', $towelUnion));
+        $this->assertSame('Арматура бачков, писсуаров и инсталляции', $value('Тип', $cistern));
+        $this->assertSame($leaks->id, $neptun->fresh()->category_id);
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
