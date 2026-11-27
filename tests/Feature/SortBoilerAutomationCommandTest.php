@@ -216,6 +216,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $foamTube = $card('Трубка теплоизоляционная Energoflex Super Protect 28/9 2 м красная', $insulation);
         $woolShell = $card('Цилиндр теплоизоляционный Ц100/А-1200.60.40 Winpipe', $insulation);
         $tape = $card('Лента армированная самоклеящаяся Energopro 48 мм х 25 м (красная) С', $insulation);
+        $siphons = $section('sifony-i-trapy');
+        $bottleSiphon = $card('Сифон для мойки бутылочный 1 1/2"х40 с гибкой трубой 40х50 C0110 АНИ пласт', $siphons);
+        $washerSiphon = $card('Сифон для кухни, выпуск 1 1/2", с отводом для стир. маш., гофра 1 1/2" - 40/50 (800мм), AV Engineeri', $siphons);
+        $drainChannel = $card('Водоотводящий желоб с двойной решеткой 650, Alcaplast', $siphons);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -488,6 +492,13 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Для мойки (кухни)', $value('Назначение', $bottleSiphon));
+        $this->assertSame('Бутылочный', $value('Конструкция', $bottleSiphon));
+        $this->assertSame('Пластиковый', $value('Материал', $bottleSiphon));
+        $this->assertNull($value('Отвод для стиральной машины', $bottleSiphon));
+        $this->assertSame('Гофрированный', $value('Конструкция', $washerSiphon));
+        $this->assertSame('С отводом для стиральной машины', $value('Отвод для стиральной машины', $washerSiphon));
+        $this->assertSame('Желоба и трапы', $value('Назначение', $drainChannel));
         $this->assertSame('Трубки из вспененного полиэтилена', $value('Тип', $foamTube));
         $this->assertSame('20–28 мм', $value('Диаметр трубы', $foamTube));
         $this->assertSame('9 мм', $value('Толщина изоляции', $foamTube));
