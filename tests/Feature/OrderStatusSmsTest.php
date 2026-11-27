@@ -131,7 +131,7 @@ class OrderStatusSmsTest extends TestCase
         Http::assertNothingSent();
 
         $this->artisan('orders:send-status-sms')->assertSuccessful();
-        $order->refresh()->transitionTo('completed');
+        $this->assertNull($stages->apply($order));
         $this->artisan('orders:send-status-sms')->assertSuccessful();
 
         $requests = Http::recorded(fn (Request $request): bool => str_contains($request['message'], 'Оставьте отзыв'));

@@ -57,7 +57,7 @@ final class OrderStatusSmsNotifier
             'updated_at' => now(),
         ]);
 
-        if (in_array($status, ['delivered', 'completed'], true)
+        if ($status === 'delivered'
             && ! in_array($order->getRawOriginal('status'), ['delivered', 'completed', 'cancelled'], true)
             && $order->canAutoRequestCustomerReview()) {
             DB::table('order_status_sms')->insertOrIgnore([
