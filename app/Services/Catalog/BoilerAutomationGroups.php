@@ -271,6 +271,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::MANHOLES => [
+                'Тип' => [self::MANHOLE_TYPES, array_values(array_unique(self::MANHOLE_TYPES))],
+                'Класс нагрузки' => [fn (string $title) => self::loadClass($title), self::LOAD_CLASSES],
+                'Материал' => [self::MANHOLE_MATERIALS, array_values(array_unique(self::MANHOLE_MATERIALS))],
+                'Цвет люка' => [['/^люк.*зел[её]н/u' => 'Зелёный', '/^люк.*ч[её]рн/u' => 'Чёрный', '/^люк.*сер/u' => 'Серый', '/^люк.*красн/u' => 'Красный'], ['Зелёный', 'Чёрный', 'Серый', 'Красный']],
+            ],
             self::FIREPLACE_GRILLES => [
                 'Тип' => [self::GRILLE_TYPES, array_values(array_unique(self::GRILLE_TYPES))],
                 'Размер' => [fn (string $title) => self::grilleSize($title), self::GRILLE_SIZES],
@@ -2145,6 +2151,51 @@ final class BoilerAutomationGroups
 
         return in_array($size, self::GRILLE_SIZES, true) ? $size : null;
     }
+
+    public const MANHOLES = 'lyuki-i-dozhdepriemniki';
+
+    /** Title pattern => «Тип» inside «Люки и дождеприёмники», in filter order; the first match wins. */
+    public const MANHOLE_TYPES = [
+        '/^люк/u' => 'Люки',
+        '/^дождеприемник/u' => 'Дождеприёмники',
+        '/^лоток/u' => 'Водоотводные лотки',
+        '/^решетка/u' => 'Решётки',
+        '/^пескоуловитель/u' => 'Пескоуловители',
+        '/^(трап|слив|поддон)/u' => 'Трапы, сливы и придверные поддоны',
+        '/./u' => 'Комплектующие',
+    ];
+
+    /** «Класс нагрузки» options (EN 124), light to heavy. */
+    public const LOAD_CLASSES = ['А15 (до 1,5 т)', 'А30–В60 (до 6 т)', 'В125 (до 12,5 т)', 'С250 (до 25 т)', 'D400 (до 40 т)'];
+
+    /** The load class of a manhole, gully or drain from «А15», «(С250)», «B-125», «60кН», «3 т». */
+    public static function loadClass(string $title): ?string
+    {
+        $t = mb_strtolower(trim(html_entity_decode($title)));
+        if (preg_match('/(?<![а-яa-z])[абвсcdbа]-?\s?(8|10|15|30|60|125|250|400)(?!\d)/u', $t, $m)
+            || preg_match('/(?<![\d,])(8|10|15|30|60|125|250|400)\s?кн/u', $t, $m)) {
+            $kn = (int) $m[1];
+        } elseif (preg_match('/(?<![\d,])(1,5|3)\s?т(?![а-я])/u', $t, $m)) {
+            $kn = $m[1] === '3' ? 30 : 15;
+        } else {
+            return null;
+        }
+
+        return self::LOAD_CLASSES[match (true) {
+            $kn <= 15 => 0,
+            $kn <= 60 => 1,
+            $kn <= 125 => 2,
+            $kn <= 250 => 3,
+            default => 4,
+        }];
+    }
+
+    /** Title pattern => «Материал» of a manhole, gully or grate (not of the grate a plastic channel comes with). */
+    public const MANHOLE_MATERIALS = [
+        '/^(люк|дождеприемник|решетка).*(чугун|вч50|гост 3634)/u' => 'Чугун',
+        '/^люк/u' => 'Полимерно-песчаный',
+        '/^(лоток|дождеприемник|решетка|пескоуловитель|трап|слив|заглушка|корзина|надстройка|перегородка|направляющий)/u' => 'Пластик',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 

@@ -240,6 +240,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $kratkiGrille = $card('Kratki Решетка каминная GX 17х30 графитовая с жалюзи', $grilles);
         $luftPanel = $card('Kratki Решетка каминная LUFT NP черная C 800х400х120', $grilles);
         $aeroGrille = $card('Nordflam Решетка каминная AERO 90*600 белая', $grilles);
+        $manholes = $section('lyuki-i-dozhdepriemniki');
+        $castManhole = $card('Люк чугунный тяжелый "Т" (С250) - К, h100, ВЧ50, ГОСТ 3634-2019 MAGNUM', $manholes);
+        $gardenManhole = $card('Люк полимерно-песчаный легкий садовый 15кН (зеленый) PLASTKRAFT', $manholes);
+        $drainChannelEco = $card('Лоток Ecoteck STANDART 100.65 h69 с решеткой 100 чугунной С250', $manholes);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -512,6 +516,15 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Люки', $value('Тип', $castManhole));
+        $this->assertSame('С250 (до 25 т)', $value('Класс нагрузки', $castManhole));
+        $this->assertSame('Чугун', $value('Материал', $castManhole));
+        $this->assertSame('А15 (до 1,5 т)', $value('Класс нагрузки', $gardenManhole));
+        $this->assertSame('Полимерно-песчаный', $value('Материал', $gardenManhole));
+        $this->assertSame('Зелёный', $value('Цвет люка', $gardenManhole));
+        $this->assertSame('Водоотводные лотки', $value('Тип', $drainChannelEco));
+        $this->assertSame('Пластик', $value('Материал', $drainChannelEco));
+        $this->assertSame('С250 (до 25 т)', $value('Класс нагрузки', $drainChannelEco));
         $this->assertSame('Классические', $value('Тип', $kratkiGrille));
         $this->assertSame('17×30 см', $value('Размер', $kratkiGrille));
         $this->assertSame('Графитовая', $value('Цвет', $kratkiGrille));
