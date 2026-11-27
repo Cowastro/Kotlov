@@ -274,6 +274,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::CHECK_VALVES => [
+                'Конструкция' => [self::CHECK_VALVE_TYPES, array_values(array_unique(self::CHECK_VALVE_TYPES))],
+                'Присоединение' => [self::CHECK_VALVE_JOINTS, ['Внутренняя — внутренняя резьба', 'Под пластиковую или пресс-трубу', 'Фланцевое', 'Межфланцевое']],
+                'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
+                'Материал' => [self::CHECK_VALVE_MATERIALS, ['Латунь', 'Полипропилен (ПП)', 'Сталь', 'Нержавеющая сталь', 'Чугун']],
+            ],
             self::DRY_SEWAGE_PUMPS => [
                 'Тип' => [self::DRY_SEWAGE_TYPES, array_values(array_unique(self::DRY_SEWAGE_TYPES))],
                 'Мощность двигателя' => [fn (string $title) => self::wellmixPower($title), ['До 1,5 кВт', '2,2–4 кВт', '5,5–7,5 кВт', '11–15 кВт', '18,5–22 кВт']],
@@ -2350,6 +2356,34 @@ final class BoilerAutomationGroups
             default => '18,5–22 кВт',
         };
     }
+
+    public const CHECK_VALVES = 'obratnye-klapany';
+
+    /** Title pattern => «Конструкция» of a check valve; the first match wins. */
+    public const CHECK_VALVE_TYPES = [
+        '/шаров/u' => 'Шаровой',
+        '/дву[хс]?створчат/u' => 'Двустворчатый',
+        '/подъ[её]мн|золотник|16кч9нж|16ч6п/u' => 'Подъёмный (золотниковый)',
+        '/межфланцев|дисков|осев/u' => 'Дисковый (межфланцевый)',
+        '/пружинн|(?<![а-я])пп(?![а-я])|вн\./u' => 'Пружинный',
+    ];
+
+    /** Title pattern => «Присоединение» of a check valve; the first match wins. */
+    public const CHECK_VALVE_JOINTS = [
+        '/межфланцев/u' => 'Межфланцевое',
+        '/фланцев|двустворчат|двухстворчат/u' => 'Фланцевое',
+        '/(?<![а-я])пп(?![а-я])/u' => 'Под пластиковую или пресс-трубу',
+        '/вн\.|"|пружинн|ру 40 ду 15/u' => 'Внутренняя — внутренняя резьба',
+    ];
+
+    /** Title pattern => «Материал» of a check valve (the body); the first match wins. */
+    public const CHECK_VALVE_MATERIALS = [
+        '/нерж/u' => 'Нержавеющая сталь',
+        '/чугун|19ч21бр|16кч9нж|16ч6п|шаров/u' => 'Чугун',
+        '/стальн/u' => 'Сталь',
+        '/(?<![а-я])пп(?![а-я])/u' => 'Полипропилен (ПП)',
+        '/латун|valtec|цветлит|(?<![а-я])ld$|sti$|aquasfera|giacomini|av engineering/u' => 'Латунь',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 

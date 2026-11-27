@@ -267,6 +267,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $dryPumps = $section('kanalizatsionnye-nasosy-sukhoy-ustanovki');
         $wellmix = $card('Канализационный насос сухой установки WELLMIX 80 WL 50-25-7.5', $dryPumps);
         $sanicubic = $card('Sanicubic 2 Pro', $dryPumps);
+        $checkValves = $section('obratnye-klapany');
+        $springCheck = $card('Клапан обратный 3/4" вн.-вн. пружинный латунный шток, LD', $checkValves);
+        $waferCheck = $card('Клапан обратный межфланцевый 19ч21бр Ру 16 Ду 80', $checkValves);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -539,6 +542,14 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Пружинный', $value('Конструкция', $springCheck));
+        $this->assertSame('Внутренняя — внутренняя резьба', $value('Присоединение', $springCheck));
+        $this->assertSame('Ду 20 (3/4")', $value('Диаметр (Ду)', $springCheck));
+        $this->assertSame('Латунь', $value('Материал', $springCheck));
+        $this->assertSame('Дисковый (межфланцевый)', $value('Конструкция', $waferCheck));
+        $this->assertSame('Межфланцевое', $value('Присоединение', $waferCheck));
+        $this->assertSame('Ду 80', $value('Диаметр (Ду)', $waferCheck));
+        $this->assertSame('Чугун', $value('Материал', $waferCheck));
         $this->assertSame('Насосы сухой установки WELLMIX', $value('Тип', $wellmix));
         $this->assertSame('5,5–7,5 кВт', $value('Мощность двигателя', $wellmix));
         $this->assertSame('Ду 80', $value('Диаметр выхода (Ду)', $wellmix));
