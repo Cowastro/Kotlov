@@ -261,6 +261,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $homeFans = $section('ventilyatory');
         $exhaustFan = $card('Royal Thermo RAFR 120 D', $homeFans);
         $towerFan = $card('Ballu BFT-110R', $homeFans);
+        $grills = $section('mangalyi');
+        $asgard = $card('Мангал передвижной ComfortProm Асгард с крышей + решетка барбекю (сталь 3 мм)', $grills);
+        $hikeGrill = $card('Мангал складной ComfortProm Пегас', $grills);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -533,6 +536,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Мангалы', $value('Тип', $asgard));
+        $this->assertSame('Передвижной (на колёсах)', $value('Конструкция', $asgard));
+        $this->assertSame('С крышей или навесом', $value('Крыша', $asgard));
+        $this->assertSame('3 мм', $value('Толщина стали', $asgard));
+        $this->assertSame('Складной, переносной', $value('Конструкция', $hikeGrill));
+        $this->assertNull($value('Крыша', $hikeGrill));
         $this->assertSame('Вытяжные для ванной и кухни', $value('Тип', $exhaustFan));
         $this->assertSame('120 мм', $value('Диаметр', $exhaustFan));
         $this->assertSame('Колонные', $value('Тип', $towerFan));

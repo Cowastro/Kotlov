@@ -274,6 +274,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::GRILLS => [
+                'Тип' => [self::GRILL_TYPES, array_values(array_unique(self::GRILL_TYPES))],
+                'Конструкция' => [self::GRILL_BUILDS, array_values(array_unique(self::GRILL_BUILDS))],
+                'Крыша' => [['/^(мангал|пп мангал).*(крыш|навес)|^мангал-беседка/u' => 'С крышей или навесом'], ['С крышей или навесом']],
+                'Толщина стали' => [['/сталь 2\s?мм/u' => '2 мм', '/сталь 3\s?мм/u' => '3 мм', '/сталь 5\s?мм/u' => '5 мм'], ['2 мм', '3 мм', '5 мм']],
+            ],
             self::HOUSEHOLD_FANS => [
                 'Тип' => [self::HOUSEHOLD_FAN_TYPES, array_values(array_unique(self::HOUSEHOLD_FAN_TYPES))],
                 'Диаметр' => [['/^(ballu baf|royal thermo raf)\S*[- ]?(100)\b/u' => '100 мм', '/^(ballu baf|royal thermo raf)\S*[- ]?(120)\b/u' => '120 мм', '/^(ballu baf|royal thermo raf)\S*[- ]?(150)\b/u' => '150 мм'], ['100 мм', '120 мм', '150 мм']],
@@ -2294,6 +2300,24 @@ final class BoilerAutomationGroups
         '/промышленн/u' => 'Промышленные',
         '/подпора/u' => 'Вентиляторы подпора воздуха',
         '/приточно-вытяжн/u' => 'Приточно-вытяжные установки',
+    ];
+
+    public const GRILLS = 'mangalyi';
+
+    /** Title pattern => «Тип» inside «Мангалы», in filter order; the first match wins. */
+    public const GRILL_TYPES = [
+        '/^мангал-беседка/u' => 'Мангалы-беседки',
+        '/^(печь|казан-мангал)/u' => 'Печи под казан',
+        '/костров\w* чаш|очаг/u' => 'Костровые чаши',
+        '/^(казан|жаровня)|крышка чугунная/u' => 'Казаны, крышки и жаровни',
+        '/мангал/u' => 'Мангалы',
+    ];
+
+    /** Title pattern => «Конструкция» of a grill; the first match wins. */
+    public const GRILL_BUILDS = [
+        '/передвижн|тачанка|карета/u' => 'Передвижной (на колёсах)',
+        '/складн|разборн|поход|пикник|пионер|облегченн/u' => 'Складной, переносной',
+        '/^мангал/u' => 'Стационарный',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
