@@ -270,6 +270,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::PIPE_CLAMPS => [
+                'Тип' => [self::CLAMP_TYPES, array_values(array_unique(self::CLAMP_TYPES))],
+                'Диаметр трубы' => [fn (string $title) => self::clampPipeSize($title), ['До 20 мм', '21–32 мм', '33–50 мм', '51–76 мм', '77–114 мм', 'Свыше 114 мм']],
+            ],
             self::PP_PIPES => [
                 'Армирование' => [self::PP_PIPE_REINFORCEMENT, array_values(self::PP_PIPE_REINFORCEMENT)],
                 'Диаметр' => [fn (string $title) => self::pipeDiameter($title, self::PP_DIAMETERS), array_map(fn (int $mm) => $mm.' мм', self::PP_DIAMETERS)],
@@ -1632,6 +1636,49 @@ final class BoilerAutomationGroups
         '/стекловолок|fiber|basalt|faser/u' => 'Стекловолокном (базальтом)',
         '/^(п\/п )?труба/u' => 'Без армирования',
     ];
+
+    public const PIPE_CLAMPS = 'krepleniya-dlya-trub';
+
+    /** Title pattern => «Тип» inside «Крепления для труб», in filter order; the first match wins. */
+    public const CLAMP_TYPES = [
+        '/(для пэ|п\/э) труб|хомут \d+ х/u' => 'Хомуты-врезки для ПЭ труб',
+        '/червячн/u' => 'Червячные хомуты',
+        '/хомут-дюбель|дюбель-крюк|крюк/u' => 'Хомуты-дюбели и крюки',
+        '/фиксатор поворота/u' => 'Фиксаторы поворота',
+        '/теплого пола|такер|шина фиксирующ/u' => 'Крепёж для тёплого пола',
+        '/клипс|пластик/u' => 'Пластиковые клипсы и опоры',
+        '/хомут|ктр/u' => 'Металлические хомуты',
+        '/./u' => 'Кронштейны и прочее',
+    ];
+
+    /** The pipe outside diameter a clamp takes: the top of «25-28 мм», «d20», «Ду 108 … 105-114 мм», «для труб 20 мм». */
+    public static function clampPipeSize(string $title): ?string
+    {
+        if (self::match($title, self::CLAMP_TYPES) === 'Кронштейны и прочее') {
+            return null;
+        }
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        $mm = match (true) {
+            (bool) preg_match('/(\d{2,3})\s*[-–]\s*(\d{2,3})\s*мм/u', $title, $m) => (int) $m[2],
+            (bool) preg_match('/(?<![a-zа-я])d\s?(\d{2,3})(?!\d)/u', $title, $m) => (int) $m[1],
+            (bool) preg_match('/(?:для труб|клипса для теплого пола)\s*(\d{2,3})\s*мм/u', $title, $m) => (int) $m[1],
+            (bool) preg_match('/(?:хомут|опора\)?(?: вк)?(?: \(хомут\))?)\s+(\d{2,3})(?!\d)/u', $title, $m) => (int) $m[1],
+            (bool) preg_match('/(?<![\d.,])(\d{1,3})\s*[-–]\s*(\d{1,3})(?![\d.,])/u', $title, $m) => (int) $m[2],
+            ! str_starts_with($title, 'дюбель-крюк') && preg_match('/(?<![\d.,])(\d{2,3})\s*мм/u', $title, $m) => (int) $m[1],
+            (bool) preg_match('/(?:ду|dn)\s?(\d{2,3})(?!\d)/u', $title, $m) => (int) $m[1],
+            default => null,
+        };
+
+        return match (true) {
+            $mm === null => null,
+            $mm <= 20 => 'До 20 мм',
+            $mm <= 32 => '21–32 мм',
+            $mm <= 50 => '33–50 мм',
+            $mm <= 76 => '51–76 мм',
+            $mm <= 114 => '77–114 мм',
+            default => 'Свыше 114 мм',
+        };
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 

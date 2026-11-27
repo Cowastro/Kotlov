@@ -194,6 +194,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $ppGlass = $card('Труба ПП стекловолокно 25х3,5 PN20 SDR7,4 сер. 4м AV Engineering', $ppPipes);
         $ppFoil = $card('Труба полипропиленовая армированная фольгой в центре 20х3,4 SDR 6 Ру 25 серая PRO AQUA', $ppPipes);
         $ppPlain = $card('П/П Труба 110х10 SDR11 PN 10 белая (4 м) арт. 10103110 VALFEX', $ppPipes);
+        $clamps = $section('krepleniya-dlya-trub');
+        $ktr = $card('Хомут КТР оцинкованный Ду 20 (3/4") 25-28 мм М8х60', $clamps);
+        $ppClip = $card('Клипса (опора) для труб ПП d40, сер. РТП', $clamps);
+        $turn = $card('Фиксатор поворота трубы 90° Varmega VM36101 для труб 16 мм', $clamps);
+        $brackets = $card('Комплект регулируемых кронштейнов Varmega VM15970, 195-235 мм, для коллекторных групп, 2 шт.', $clamps);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -461,6 +466,14 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Металлические хомуты', $value('Тип', $ktr));
+        $this->assertSame('21–32 мм', $value('Диаметр трубы', $ktr));
+        $this->assertSame('Пластиковые клипсы и опоры', $value('Тип', $ppClip));
+        $this->assertSame('33–50 мм', $value('Диаметр трубы', $ppClip));
+        $this->assertSame('Фиксаторы поворота', $value('Тип', $turn));
+        $this->assertSame('До 20 мм', $value('Диаметр трубы', $turn));
+        $this->assertSame('Кронштейны и прочее', $value('Тип', $brackets));
+        $this->assertNull($value('Диаметр трубы', $brackets));
         $this->assertSame('Стекловолокном (базальтом)', $value('Армирование', $ppGlass));
         $this->assertSame('25 мм', $value('Диаметр', $ppGlass));
         $this->assertSame('PN 20', $value('Давление', $ppGlass));
