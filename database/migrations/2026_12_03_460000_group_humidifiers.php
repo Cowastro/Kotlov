@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Artisan;
 
 /**
- * «Увлажнители воздуха» get «Тип».
+ * «Увлажнители воздуха» get «Тип»; Electrolux drinking water filters leave for «Фильтры для воды» as «Системы очистки питьевой воды».
  */
 return new class extends Migration
 {

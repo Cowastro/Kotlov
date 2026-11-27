@@ -17,6 +17,7 @@ final class BoilerAutomationGroups
 
     /** Title pattern => section the card belongs to (from «Регуляторы» or «Запчасти для котлов»). */
     public const MOVES = [
+        '/^фильтр для очистки воды electrolux/u' => 'filtry',
         '/^(blist|ермак) стекло термостойк/u' => 'stekla-dlya-pechey-i-kaminov',
         '/^мангал вертикальный большой/u' => 'mangalyi',
         '/^ермак (бак навесной|катализатор|конвектор дымохода|модуль закрытой каменки|парообразователь|сетка-каменка|тэн|теплообменник|удлинитель тоннеля)/u' => 'aksessuary-dlya-bani',
@@ -1646,6 +1647,7 @@ final class BoilerAutomationGroups
 
     /** Title pattern => «Тип» inside «Фильтры», in filter order; the first match wins. */
     public const WATER_FILTER_TYPES = [
+        '/^фильтр для очистки воды|обратн\w* осмос|osmoprof/u' => 'Системы очистки питьевой воды',
         '/промывн|самоочищ/u' => 'Промывные фильтры',
         '/шламоуловит|магнитн/u' => 'Шламоуловители и магнитные фильтры',
         '/грязевик|фланцев|чугунн/u' => 'Грязевики и фланцевые фильтры',
@@ -2453,7 +2455,6 @@ final class BoilerAutomationGroups
      * Ballu AP purifiers, Electrolux EDH / EDM / EDL dehumidifiers.
      */
     public const HUMIDIFIER_TYPES = [
-        '/фильтр для очистки воды/u' => 'Фильтры для питьевой воды',
         '/смола|calcoff/u' => 'Расходники и аксессуары',
         '/приточн/u' => 'Приточные очистители (бризеры)',
         '/осушитель|electrolux ed[hml]-/u' => 'Осушители воздуха',

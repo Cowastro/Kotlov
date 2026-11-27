@@ -280,13 +280,14 @@ class SortBoilerAutomationCommandTest extends TestCase
         $ehu = $card('Electrolux EHU-5115D', $humidifiers);
         $boneco = $card('Boneco H400', $humidifiers);
         $dehumidifier = $card('Electrolux EDL-20L', $humidifiers);
+        $drinkFilter = $card('Фильтр для очистки воды Electrolux iStream TotalPure X-3 Softening', $humidifiers);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=19')
+            ->expectsOutputToContain('metric.boiler_automation.moved=20')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -555,6 +556,8 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Увлажнители воздуха', $value('Тип', $ehu));
         $this->assertSame('Климатические комплексы (увлажнение и очистка)', $value('Тип', $boneco));
         $this->assertSame('Осушители воздуха', $value('Тип', $dehumidifier));
+        $this->assertSame($section('filtry')->id, $drinkFilter->fresh()->category_id);
+        $this->assertSame('Системы очистки питьевой воды', $value('Тип', $drinkFilter));
         $this->assertSame('6–8 м²', $value('Площадь обогрева', $okeMat));
         $this->assertSame('150 Вт/м²', $value('Удельная мощность', $okeMat));
         $this->assertSame('1,5–2 м²', $value('Площадь обогрева', $meyerMat));
