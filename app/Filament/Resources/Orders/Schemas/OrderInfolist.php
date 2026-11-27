@@ -261,13 +261,21 @@ class OrderInfolist
                                                 ->color('warning')
                                                 ->tooltip('Назначить или сменить фактического поставщика')
                                                 ->modalHeading(fn (OrderItem $record): string => 'Поставщик: '.$record->product_name)
-                                                ->modalDescription('Рекомендация из базы сохранится для сравнения. Здесь фиксируется фактический поставщик, наличие или резерв и решение менеджера.')
+                                                ->modalDescription(fn (OrderItem $record, array $arguments): string => ($arguments['reviewOwnStock'] ?? false)
+                                                    && app(OrderItemAvailabilityDisplay::class)->moscowSupplierSuggestion($record)
+                                                        ? 'Предложенный источник — ЭкоКамин, склад Москва. Уточните наличие и срок поставки.'
+                                                        : 'Рекомендация из базы сохранится для сравнения. Здесь фиксируется фактический поставщик, наличие или резерв и решение менеджера.')
                                                 ->modalSubmitActionLabel('Подтвердить')
                                                 ->fillForm(function (OrderItem $record, array $arguments): array {
+                                                    $reviewOwnStock = $arguments['reviewOwnStock'] ?? false;
+                                                    $moscowSupplierId = $reviewOwnStock
+                                                        ? app(OrderItemAvailabilityDisplay::class)->moscowSupplierSuggestion($record)
+                                                        : null;
                                                     $recommendedRoute = $record->supplyContext()['status'];
-                                                    $route = $record->fulfillment_route
-                                                        ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase');
-                                                    $supplierId = $record->fulfillment_supplier_id
+                                                    $route = $moscowSupplierId ? 'supplier_purchase' : ($record->fulfillment_route
+                                                        ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase'));
+                                                    $supplierId = $moscowSupplierId
+                                                        ?: $record->fulfillment_supplier_id
                                                         ?: data_get($record->current_availability, 'supplier_id')
                                                         ?: $record->supply_supplier_id;
                                                     $supplier = $supplierId
@@ -277,9 +285,11 @@ class OrderInfolist
                                                     return [
                                                         'fulfillment_route' => $route,
                                                         'supplier_id' => $supplierId,
-                                                        'purchase_price' => self::assignmentPrice($record, $route),
-                                                        'availability_status' => $record->fulfillment_availability_status,
-                                                        'request_reserve_now' => ! ($arguments['reviewOwnStock'] ?? false),
+                                                        'purchase_price' => $moscowSupplierId && $moscowSupplierId !== (int) $record->supply_supplier_id
+                                                            ? null
+                                                            : self::assignmentPrice($record, $route),
+                                                        'availability_status' => $moscowSupplierId ? 'clarifying' : $record->fulfillment_availability_status,
+                                                        'request_reserve_now' => ! $reviewOwnStock,
                                                         'reservation_quantity' => $record->quantity,
                                                         'reservation_recipient' => $supplier?->contactEmailAddresses()[0] ?? null,
                                                         'note' => null,

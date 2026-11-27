@@ -69,6 +69,24 @@ class OrderItemAvailabilityDisplay
         return 'Свободно: '.$free.' шт.';
     }
 
+    public function moscowSupplierSuggestion(OrderItem $item): ?int
+    {
+        $stock = $item->product?->ecokaminMoscowStock;
+        if (! $stock?->hasFreshPositiveStock() || (float) $stock->available_quantity < (float) $item->quantity
+            || ! $stock->supplier?->is_active) {
+            return null;
+        }
+
+        $current = $this->current($item);
+
+        if (($current['stock_source'] ?? null) !== 'onec' || ! isset($current['stock_quantity'])
+            || (float) $current['stock_quantity'] !== 0.0) {
+            return null;
+        }
+
+        return (int) $stock->supplier_id;
+    }
+
     public function ownStockShortage(OrderItem $item): ?string
     {
         if ($item->fulfillment_route !== 'own_stock' || ! $item->fulfillment_confirmed_at
