@@ -127,6 +127,10 @@ class OrderCustomerReviewTest extends TestCase
         \Illuminate\Support\Facades\Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/sendQuickSMS')
             && $request['phone'] === '375291234567' && mb_strlen($request['message']) <= 70);
         $this->assertSame('review-123', $order->fresh()->review_sms_id);
+        $journal = $order->statusSms()->where('order_status', 'customer_review')->sole();
+        $this->assertSame('review-123', $journal->sms_id);
+        $this->assertSame('accepted', $journal->state);
+        $this->assertSame('KOTLOV: Оставьте отзыв: https://kotlov.by/r/'.$order->fresh()->review_sms_token, $journal->message);
         $history = $order->statusHistory()->where('comment', 'like', '%review-123%')->sole();
         $this->assertSame($manager->id, $history->user_id);
         $this->assertSame('delivered', $order->fresh()->status);
@@ -137,6 +141,31 @@ class OrderCustomerReviewTest extends TestCase
             $this->assertArrayHasKey('phone', $e->errors());
         }
         \Illuminate\Support\Facades\Http::assertSentCount(1);
+    }
+
+    public function test_existing_review_sms_is_backfilled_once_and_can_be_marked_delivered_without_sending(): void
+    {
+        [$order] = $this->order();
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        $order->forceFill(['review_sms_sent_at' => now(), 'review_sms_id' => '12345'])->save();
+        $migration = require database_path('migrations/2026_11_27_231000_backfill_review_sms_history.php');
+        $migration->up();
+        $migration->up();
+
+        $journal = $order->statusSms()->where('order_status', 'customer_review')->sole();
+        $this->assertSame('12345', $journal->sms_id);
+        $this->assertSame('accepted', $journal->state);
+
+        config(['services.sms_by.token' => 'test-token', 'services.sms_by.base_url' => 'https://app.sms.by']);
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
+        \Illuminate\Support\Facades\Http::fake([
+            'app.sms.by/api/v1/checkSMS*' => \Illuminate\Support\Facades\Http::response(['sms_id' => '12345', 'delivered' => true]),
+        ]);
+        $this->assertSame('Доставлено', app(\App\Services\Orders\OrderReviewSms::class)->checkDelivery($order));
+        $this->assertSame('delivered', $journal->fresh()->state);
+        \Illuminate\Support\Facades\Http::assertSentCount(1);
+        \Illuminate\Support\Facades\Http::assertSent(fn ($request): bool => $request->method() === 'GET'
+            && str_contains($request->url(), '/checkSMS?') && $request['sms_id'] === '12345');
     }
 
     public function test_sms_failure_is_not_recorded_as_sent_and_invalid_numbers_are_rejected(): void
