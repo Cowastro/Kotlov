@@ -258,6 +258,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $ermakGlass = $card('Ермак Стекло термостойкое 153x153x4,0 (ПБС)', $firewood);
         $bioFire = $card('Kratki Настенный биокамин DELTA3/TUV', $firewood);
         $ermakModule = $card('Ермак Модуль закрытой каменки ERMAK 20/24', $firewood);
+        $homeFans = $section('ventilyatory');
+        $exhaustFan = $card('Royal Thermo RAFR 120 D', $homeFans);
+        $towerFan = $card('Ballu BFT-110R', $homeFans);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -530,6 +533,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Вытяжные для ванной и кухни', $value('Тип', $exhaustFan));
+        $this->assertSame('120 мм', $value('Диаметр', $exhaustFan));
+        $this->assertSame('Колонные', $value('Тип', $towerFan));
+        $this->assertNull($value('Диаметр', $towerFan));
         $this->assertSame('Дровницы', $value('Тип', $logRack));
         $this->assertSame($section('stekla-dlya-pechey-i-kaminov')->id, $ermakGlass->fresh()->category_id);
         $this->assertSame($section('aksessuary-dlya-bani')->id, $ermakModule->fresh()->category_id);
