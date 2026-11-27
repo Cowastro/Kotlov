@@ -98,7 +98,11 @@ class OneCSupplierOrderTest extends TestCase
         $this->assertSame('done', $steps['Товары связаны с 1С']['state']);
         $this->assertSame('todo', $steps['Заказы поставщикам в 1С']['state']);
         $this->assertSame('Поставщик-тест: не заказан', $steps['Заказы поставщикам в 1С']['detail']);
-        Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])->assertSee('1С: что сделано и что дальше')->assertSee('Создать заказ в 1С');
+        Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertSee('Состояние в 1С')
+            ->assertSeeHtml('data-order-next-action="onecOrder"')
+            ->assertDontSee('Этапы по 1С');
+        $this->assertStringNotContainsString('Создать заказ в 1С', $journey->render($order)->toHtml());
         $listed = fn (): array => tap(Livewire::test(ListOrders::class), fn ($p) => $p->filterTable('onec_order', 'supplier_todo'))
             ->instance()->getTableRecords()->pluck('id')->all();
         $this->assertSame([$order->id], $listed());

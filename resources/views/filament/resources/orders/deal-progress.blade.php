@@ -93,6 +93,9 @@
                     {{ $nextAction->getLabel() }}
                 </x-filament::button>
             @endif
+            @if (! empty($onecHint) && ! str_contains($order->workflowNextStep(), $onecHint))
+                <p>{{ $onecHint }}</p>
+            @endif
             @if (isset($labelAction))
                 <x-filament::link :href="$labelAction->getUrl()" target="_blank" rel="noopener" icon="heroicon-o-printer">
                     Печать этикетки Европочты

@@ -95,11 +95,11 @@ class OneCOrderJourney
                 : $documents->map(fn (array $d): string => $d['name'].' — '.($d['posted'] ? 'проведён' : 'не проведён'))->implode('; '),
             'hint' => $unposted->isNotEmpty() ? 'Проведите в 1С: '.$unposted->pluck('name')->implode(', ').'. Сайт сверяет каждые 30 минут.' : null];
 
-        // 5. The stages follow 1C.
-        $after = in_array($order->status, ['processing', 'shipped', 'delivered'], true);
-        $steps[] = ['title' => 'Этапы по 1С', 'state' => $order->status === 'delivered' ? self::DONE : ($after ? self::WAIT : self::LATER),
-            'detail' => (Order::STATUSES[$order->status] ?? $order->status).($exported ? ' · «'.mb_strtolower(OneCOrderProfiles::STATUSES[$order->onec_doc_status] ?? (string) $order->onec_doc_status).'» в 1С' : ''),
-            'hint' => null];
+        if ($exported && filled($order->onec_doc_status)) {
+            $steps[] = ['title' => 'Статус заказа в 1С', 'state' => $finished ? self::DONE : self::WAIT,
+                'detail' => OneCOrderProfiles::STATUSES[$order->onec_doc_status] ?? $order->onec_doc_status,
+                'hint' => null];
+        }
 
         return $steps;
     }
@@ -126,16 +126,13 @@ class OneCOrderJourney
     public function render(Order $order): HtmlString
     {
         $steps = $this->steps($order);
-        $next = $this->next($order);
         $icons = [self::DONE => ['✓', '#16a34a'], self::WAIT => ['…', '#2563eb'], self::TODO => ['!', '#d97706'], self::LATER => ['·', '#9ca3af']];
-        $html = $next ? '<div style="margin-bottom:10px;padding:8px 12px;border-radius:8px;background:rgba(217,119,6,.12);border-left:3px solid #d97706">'
-            .'<b>Дальше:</b> '.e($next).'</div>' : '<div style="margin-bottom:10px;color:#16a34a"><b>По 1С всё сделано.</b></div>';
-        $html .= '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px">';
-        foreach ($steps as $i => $step) {
+        $html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px">';
+        foreach ($steps as $step) {
             [$icon, $color] = $icons[$step['state']];
             $html .= '<div style="padding:8px 10px;border-radius:8px;border:1px solid '.($step['state'] === self::TODO ? $color : 'rgba(127,127,127,.25)').'">'
                 .'<div style="font-weight:600"><span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;background:'.$color
-                .';color:#fff;font-size:12px;margin-right:6px">'.$icon.'</span>'.($i + 1).'. '.e($step['title']).'</div>'
+                .';color:#fff;font-size:12px;margin-right:6px">'.$icon.'</span>'.e($step['title']).'</div>'
                 .'<div style="font-size:12px;color:#9ca3af;margin-top:4px">'.e($step['detail']).'</div></div>';
         }
 
