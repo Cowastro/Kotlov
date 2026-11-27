@@ -11,6 +11,8 @@ use RuntimeException;
 
 final class OrderStatusSmsNotifier
 {
+    private const REVIEW_EVENT = 'customer-review';
+
     public function __construct(private readonly SmsByClient $sms) {}
 
     public function record(Order $order, string $status, string $eventKey): void
@@ -54,6 +56,19 @@ final class OrderStatusSmsNotifier
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        if ($status === 'delivered'
+            && ! in_array($order->getRawOriginal('status'), ['delivered', 'completed', 'cancelled'], true)
+            && $order->canAutoRequestCustomerReview()) {
+            DB::table('order_status_sms')->insertOrIgnore([
+                'order_id' => $order->getKey(),
+                'event_key' => self::REVIEW_EVENT,
+                'order_status' => 'customer_review',
+                'message' => 'KOTLOV: Оставьте отзыв',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 
     public function sendPending(): int
@@ -66,7 +81,9 @@ final class OrderStatusSmsNotifier
         $messages = OrderStatusSms::query()->where('state', 'pending')
             ->with('order:id,customer_phone,status,payment_status')->orderBy('id')->limit(30)->get();
         foreach ($messages as $message) {
-            $sent += (int) $this->send($message);
+            $sent += (int) ($message->event_key === self::REVIEW_EVENT
+                ? app(OrderReviewSms::class)->sendAutomatically($message)
+                : $this->send($message));
         }
 
         return $sent;

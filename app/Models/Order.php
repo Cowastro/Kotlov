@@ -76,6 +76,14 @@ class Order extends Model
         return $this->status !== 'cancelled' && $this->effectiveDealStage() === 'completed';
     }
 
+    public function canAutoRequestCustomerReview(): bool
+    {
+        return ! $this->is_internal && ! $this->archived_at
+            && $this->canRequestCustomerReview()
+            && ! $this->review_sms_attempted_at && ! $this->review_sms_sent_at
+            && filled($this->customer_phone);
+    }
+
     public function dealControlLabel(): string
     {
         if (! $this->dealIsActive()) {
