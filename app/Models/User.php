@@ -30,6 +30,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
         'role',
         'is_crm_user',
         'can_manage_b2b_orders',
+        'receives_stale_order_reminders',
         'client_type',
 
         'phone',
@@ -58,6 +59,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
         'is_active' => 'boolean',
         'is_crm_user' => 'boolean',
         'can_manage_b2b_orders' => 'boolean',
+        'receives_stale_order_reminders' => 'boolean',
         'b2b_approved' => 'boolean',
         'client_type' => ClientType::class,
     ];

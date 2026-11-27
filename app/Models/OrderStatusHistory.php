@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,6 +15,11 @@ class OrderStatusHistory extends Model
         'status_from', 'status_to', 'comment',
         'deal_stage_from', 'deal_stage_to',
     ];
+
+    public function scopeChangedStatus(Builder $query): Builder
+    {
+        return $query->whereColumn('status_from', '!=', 'status_to');
+    }
 
     public function enteredDealStage(): ?string
     {

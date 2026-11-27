@@ -23,7 +23,7 @@ class ListOrders extends ListRecords
 {
     use HasOrdersNavigation;
 
-    private const WORK_TABS = ['work_queue', 'control_today', 'control_overdue', 'control_missing', 'attention', 'my', 'unassigned', 'all', 'finished'];
+    private const WORK_TABS = ['work_queue', 'control_today', 'control_overdue', 'control_missing', 'attention', 'stale_follow_up', 'my', 'unassigned', 'all', 'finished'];
 
     protected static string $resource = OrderResource::class;
 
@@ -133,6 +133,12 @@ class ListOrders extends ListRecords
                 ->icon('heroicon-o-exclamation-triangle')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $this->attentionQueue($query))
                 ->badge($attentionCount ?: null)
+                ->badgeColor('danger'),
+
+            'stale_follow_up' => Tab::make('Зависшие заказы')
+                ->icon('heroicon-o-clock')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->staleFollowUp()->orderBy('orders.created_at'))
+                ->badge($this->ordersQuery()->staleFollowUp()->count() ?: null)
                 ->badgeColor('danger'),
 
             'archived' => Tab::make('Архив / неактуальные')
