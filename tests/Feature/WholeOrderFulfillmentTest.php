@@ -149,7 +149,12 @@ class WholeOrderFulfillmentTest extends TestCase
         }
         $guid = 'bbbbbbbb-0000-0000-0000-000000000099';
         app(OrderTaskHandler::class)->finished($export, ['ok' => true, 'data' => ['document_key' => $guid, 'document_number' => 'TEST-SUPPLY']]);
-        foreach ([['КОбеспечению', 'ОжидаетсяОбеспечение', 'Комплектация'], ['КВыполнению', 'ГотовКОтгрузке', 'Готов к отгрузке'], ['Закрыт', 'Закрыт', 'Отгружен']] as [$documentStatus, $state, $label]) {
+        foreach ([
+            ['КОбеспечению', 'ОжидаетсяОбеспечение', 'Комплектация'],
+            ['КВыполнению', 'ГотовКОтгрузке', 'Готов к отгрузке'],
+            ['КВыполнению', 'ГотовКЗакрытию', 'Отгружен'],
+            ['Закрыт', 'Закрыт', 'Получен'],
+        ] as [$documentStatus, $state, $label]) {
             $this->travel(1)->minutes();
             $task = OneCAgentTask::create(['type' => 'doc_status', 'title' => 'Test', 'status' => 'sending', 'picked_at' => now(),
                 'payload' => ['queries' => ['orders_1' => 'orders', 'states_1' => 'states'], 'parts' => ['orders_1' => ['code' => 200], 'states_1' => ['code' => 200]]]]);
@@ -164,14 +169,13 @@ class WholeOrderFulfillmentTest extends TestCase
             $this->assertSame(4, $order->items()->count());
             $this->assertSame(9, (int) $order->items()->sum('quantity'));
         }
-        $this->assertSame('shipped', $order->fresh()->status);
-        $this->actingAs($client)->get(route('account.orders.show', $order))->assertOk()->assertSeeText('Отгружен')->assertDontSeeText('Заказ получен клиентом.');
+        $this->assertSame('delivered', $order->fresh()->status);
+        $this->actingAs($client)->get(route('account.orders.show', $order))->assertOk()->assertSeeText('Получен')->assertSeeText('Заказ получен клиентом.');
         $html = (new OrderStatusUpdatedMail($order->fresh()))->render();
-        $this->assertStringContainsString('Ваш заказ укомплектован и отгружен.', $html);
         $this->assertStringNotContainsString('Ожидаем поступление', $html);
-        Mail::assertQueuedCount(3); // acceptance, processing, shipment; repeated answers never send duplicates
+        Mail::assertQueuedCount(4); // acceptance, processing, shipment, receipt; repeated answers never send duplicates
         Mail::assertQueued(OrderStatusUpdatedMail::class, fn ($mail) => $mail->statusAtQueue === 'shipped' && $mail->statusDetails['title'] === 'Отгружен');
-        $this->assertDatabaseMissing('order_stage_email_claims', ['order_id' => $order->id, 'status' => 'delivered']);
+        $this->assertDatabaseHas('order_stage_email_claims', ['order_id' => $order->id, 'status' => 'delivered']);
     }
 
     public function test_one_stock_pool_is_not_promised_twice_for_repeated_product_lines(): void

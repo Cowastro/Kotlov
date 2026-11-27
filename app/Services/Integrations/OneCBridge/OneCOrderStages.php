@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Once an order is in 1C its logistics are done there, so the site moves its stages after 1C: a posted order «К
- * обеспечению» / «К выполнению» is «В исполнении». A closed pickup is received; other closed orders are shipped,
- * with receipt confirmed separately. Only forward, never a cancelled one.
+ * обеспечению» / «К выполнению» is «В исполнении». A closed order completes the deal. Only forward, never a cancelled one.
  * The customer hears of every move of an order the manager confirmed on the site. An order 1C already has in work
  * that was never confirmed on the site (an old one, agreed with the customer outside the site) moves silently.
  * A 1C order closed with every line cancelled is not a delivery: the manager gets a note instead.
@@ -28,8 +27,7 @@ class OneCOrderStages
         }
 
         return match (true) {
-            $order->onec_doc_status === 'Закрыт' || $order->onec_state === 'Закрыт'
-                => $order->delivery_type === 'pickup' ? 'delivered' : 'shipped',
+            $order->onec_doc_status === 'Закрыт' || $order->onec_state === 'Закрыт' => 'delivered',
             $order->onec_state === 'ГотовКЗакрытию' => 'shipped',
             // ready: the customer picks it up — «Готов к самовывозу» (the SMS names the 1C order); else it is shipping
             $order->onec_state === 'ГотовКОтгрузке' => $order->delivery_type === 'pickup' ? 'shipped' : 'processing',
