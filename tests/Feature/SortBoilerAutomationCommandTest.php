@@ -290,6 +290,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $globeValves = $section('ventili-zapornye');
         $castGlobe = $card('Вентиль запорный (клапан) фланцевый 15кч19п Ру 16 Ду 40', $globeValves);
         $brassGlobe = $card('Вентиль запорный (клапан) 15б1п Ду 25 Цветлит', $globeValves);
+        $flangeSection = $section('flantsy');
+        $weldNeck = $card('Фланец стальной воротниковый (приварной встык) Ду 80 Ру 16 тип 11 исполнение B ГОСТ 33259-2015 Союз Металл', $flangeSection);
+        $flatFlange = $card('Фланец стальной плоский Ру 6 Ду 100 тип 01 ряд 1 исполнение B ГОСТ 33259-2015 MAGNUM', $flangeSection);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -562,6 +565,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Воротниковый (тип 11)', $value('Тип', $weldNeck));
+        $this->assertSame('Ду 80', $value('Диаметр (Ду)', $weldNeck));
+        $this->assertSame('Ру 16', $value('Давление (Ру)', $weldNeck));
+        $this->assertSame('Плоский приварной (тип 01)', $value('Тип', $flatFlange));
+        $this->assertSame('Ру 6', $value('Давление (Ру)', $flatFlange));
         $this->assertSame('Фланцевое', $value('Присоединение', $castGlobe));
         $this->assertSame('Ду 40 (1 1/2")', $value('Диаметр (Ду)', $castGlobe));
         $this->assertSame('Чугун', $value('Материал', $castGlobe));
