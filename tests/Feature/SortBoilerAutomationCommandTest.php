@@ -208,6 +208,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $castSewerPipe = $card('Труба чугунная канализационная 100х1000', $castPipes);
         $castFlangeTee = $card('Тройник чугунный фланцевый Ру 10/16 Ду 100х50', $castPipes);
         $repairClamp = $card('Хомут ремонтный оцинкованный "краб" Ду 100 (101-110) 3 1/2"', $castPipes);
+        $doors = $section('dveri-dlya-ban-i-saun');
+        $cooper = $card('Дверь стеклянная для бани Cooper PRO 190×81,5, бронза', $doors);
+        $fireway = $card('Дверь для бани стеклянная Fireway 1800×700 графит матовый', $doors);
+        $doorwood = $card('ДВЕРЬ "ТЕПЛАЯ НОЧЬ" БРОНЗА МАТОВАЯ 190 х 60', $doors);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -480,6 +484,14 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Бронза', $value('Цвет стекла', $cooper));
+        $this->assertSame('190 см', $value('Высота', $cooper));
+        $this->assertSame('80 см', $value('Ширина', $cooper));
+        $this->assertSame('Графит матовый', $value('Цвет стекла', $fireway));
+        $this->assertSame('180 см', $value('Высота', $fireway));
+        $this->assertSame('70 см', $value('Ширина', $fireway));
+        $this->assertSame('Бронза матовая', $value('Цвет стекла', $doorwood));
+        $this->assertSame('60 см', $value('Ширина', $doorwood));
         $this->assertSame('Трубы', $value('Тип', $castSewerPipe));
         $this->assertSame('Канализация', $value('Назначение', $castSewerPipe));
         $this->assertSame('Ду 100', $value('Диаметр (Ду)', $castSewerPipe));

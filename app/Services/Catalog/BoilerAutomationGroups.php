@@ -270,6 +270,11 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::SAUNA_DOORS => [
+                'Цвет стекла' => [self::DOOR_GLASS, ['Бронза', 'Бронза матовая', 'Графит', 'Графит матовый', 'Сатин (матовое)', 'Прозрачное']],
+                'Высота' => [fn (string $title) => self::doorSize($title, 0), ['170 см', '180 см', '190 см', '200 см', '210 см']],
+                'Ширина' => [fn (string $title) => self::doorSize($title, 1), ['60 см', '70 см', '80 см', '90 см']],
+            ],
             self::CAST_PIPES => [
                 'Тип' => [self::CAST_PIPE_TYPES, array_values(array_unique(self::CAST_PIPE_TYPES))],
                 'Назначение' => [self::CAST_PIPE_USES, array_values(self::CAST_PIPE_USES)],
@@ -1789,6 +1794,34 @@ final class BoilerAutomationGroups
         '/канализац|(?<![a-z])sml(?![a-z])|^трап/u' => 'Канализация',
         '/фланц|раструб|тайтон|ру \d|надвижн|компенсацион/u' => 'Напорные трубопроводы (водопровод)',
     ];
+
+    public const SAUNA_DOORS = 'dveri-dlya-ban-i-saun';
+
+    /** Title pattern => «Цвет стекла» of a sauna door; the matt shades before the plain ones. */
+    public const DOOR_GLASS = [
+        '/бронз\w* матов/u' => 'Бронза матовая',
+        '/графит\w* матов/u' => 'Графит матовый',
+        '/сатин|бесцветн\w* матов|матов\w* бесцветн/u' => 'Сатин (матовое)',
+        '/прозрачн|бесцветн/u' => 'Прозрачное',
+        '/бронз/u' => 'Бронза',
+        '/графит/u' => 'Графит',
+    ];
+
+    /** The door height ($part 0) or width ($part 1), cm, from «190 х 70», «1800*700», «190×71,5». */
+    public static function doorSize(string $title, int $part): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        if (! str_contains($title, 'дверь') || ! preg_match('/(\d{3,4})\s*[xх×*]\s*(\d{2,3})(?:[.,]\d)?/u', $title, $m)) {
+            return null;
+        }
+        $height = (int) $m[1];
+        $height = $height > 1000 ? intdiv($height, 10) : $height;
+        $width = (int) $m[2];
+        $width = $width > 100 ? intdiv($width, 10) : $width;
+        $value = $part === 0 ? $height : (int) (round($width / 10) * 10);
+
+        return $value.' см';
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
