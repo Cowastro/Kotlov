@@ -329,6 +329,12 @@ class OrdersTable
                     ->width('350px')
                     ->visibleFrom('md'),
 
+                ViewColumn::make('delivery_type')
+                    ->label('Доставка')
+                    ->view('filament.resources.orders.delivery-column')
+                    ->width('130px')
+                    ->grow(false),
+
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()

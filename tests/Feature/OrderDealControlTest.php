@@ -313,11 +313,13 @@ class OrderDealControlTest extends TestCase
 
         $list = Livewire::actingAs($this->manager())->test(ListOrders::class)
             ->assertCanSeeTableRecords([$euro, $vam, $pickup])
-            ->assertSee('Европочта · Выдано')
+            ->assertSee('Европочта')
+            ->assertSee('Выдано')
             ->assertSee('ВАМ Экспресс')
-            ->assertSee('· В пути')
-            ->assertDontSee('ВАМ Экспресс · Не оформлено');
-        $this->assertSame(2, substr_count($list->html(), 'data-order-carrier-status'));
+            ->assertSee('В пути')
+            ->assertSee('Самовывоз')
+            ->assertDontSee('Не оформлено');
+        $this->assertSame(3, substr_count($list->html(), 'data-order-delivery'));
     }
 
     public function test_label_is_not_dispatch_and_dispatch_is_not_receipt(): void
