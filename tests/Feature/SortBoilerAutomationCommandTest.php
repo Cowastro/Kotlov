@@ -142,6 +142,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $pumpBlock = $card('UNIPUMP Блок управления насосом ТУРБИ-М2 (1,5-3,0 бар)', $pumpParts);
         $guideRail = $card('Автоматическая трубная муфта WELLMIX DN 100 для насоса WQ2 и GNWQ 11кВт и выше', $pumpParts);
         $screwJoint = $card('IMP PUMPS Винтовое соединение R 1" без уплотнений', $pumpParts);
+        $bathSection = $section('aksessuary-dlya-bani');
+        $bathMisc = $child('aksessuaryi-dlya-bani', $bathSection);
+        $bathThermometer = $card('Термометр для бани и сауны малый "С легким паром" ТБС-41', $bathMisc);
+        $stoneNet = $card('Сетка для камней Везувий Стандарт Ø 300', $bathSection);
+        $kazan = $card('Казан чугунный Везувий 12л с ручкой (БЕЗ КРЫШКИ)', $bathSection);
+        $fireStove = $card('Печь-Камин ВЕЗУВИЙ ПК-01 (205) беж. 12 кВт (200 м3) Ø 150 мм', $bathSection);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -349,6 +355,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Автоматика, реле и частотники', $value('Тип', $pumpBlock));
         $this->assertSame('Монтаж насоса и скважины', $value('Тип', $guideRail));
         $this->assertSame('Фитинги и соединения', $value('Тип', $screwJoint));
+        $this->assertSame($bathMisc->id, $bathThermometer->fresh()->category_id);
+        $this->assertSame('Приборы: термометры и часы', $value('Тип', $bathThermometer));
+        $this->assertSame('Сетки и каменки для камней', $value('Тип', $stoneNet));
+        $this->assertSame('Казаны, мангалы и коптильни', $value('Тип', $kazan));
+        $this->assertSame('Печи и каменки', $value('Тип', $fireStove));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
