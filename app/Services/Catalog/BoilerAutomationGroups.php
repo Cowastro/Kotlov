@@ -274,6 +274,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::HOUSEHOLD_FANS => [
+                'Тип' => [self::HOUSEHOLD_FAN_TYPES, array_values(array_unique(self::HOUSEHOLD_FAN_TYPES))],
+                'Диаметр' => [['/^(ballu baf|royal thermo raf)\S*[- ]?(100)\b/u' => '100 мм', '/^(ballu baf|royal thermo raf)\S*[- ]?(120)\b/u' => '120 мм', '/^(ballu baf|royal thermo raf)\S*[- ]?(150)\b/u' => '150 мм'], ['100 мм', '120 мм', '150 мм']],
+            ],
             self::FIREWOOD_RACKS => [
                 'Тип' => [self::FIREWOOD_TYPES, array_values(array_unique(self::FIREWOOD_TYPES))],
             ],
@@ -2273,6 +2277,23 @@ final class BoilerAutomationGroups
         '/биокамин/u' => 'Биокамины и остекление',
         '/шамотн|колосник|вермикулит/u' => 'Шамот, колосники и вермикулит',
         '/./u' => 'Мангалы, очаги и прочее',
+    ];
+
+    public const HOUSEHOLD_FANS = 'ventilyatory';
+
+    /**
+     * Title pattern => «Тип» inside «Вентиляторы», in filter order; the first match wins. Most cards are named by the
+     * model only, so the series decides: Ballu BAF / Royal Thermo RAF exhaust, BFF / EFF floor, BFT / EFT tower,
+     * Electrolux ETF table, Ballu BIF industrial.
+     */
+    public const HOUSEHOLD_FAN_TYPES = [
+        '/^(ballu baf|royal thermo raf)/u' => 'Вытяжные для ванной и кухни',
+        '/напольн|^(ballu bff|electrolux eff)/u' => 'Напольные',
+        '/^(ballu bft|electrolux eft)/u' => 'Колонные',
+        '/^electrolux etf/u' => 'Настольные',
+        '/промышленн/u' => 'Промышленные',
+        '/подпора/u' => 'Вентиляторы подпора воздуха',
+        '/приточно-вытяжн/u' => 'Приточно-вытяжные установки',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
