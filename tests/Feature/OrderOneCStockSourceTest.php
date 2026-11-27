@@ -92,11 +92,17 @@ class OrderOneCStockSourceTest extends TestCase
 
     public function test_order_card_shows_current_stock_as_primary_and_keeps_history_separate(): void
     {
-        [$item, $stock] = $this->fixture();
+        [$item, $stock, , $supplier] = $this->fixture();
         $item->order->update(['delivery_type' => 'pickup', 'payment_type' => 'cash', 'payment_status' => 'pending']);
+        $warehouse = $item->product->warehouseStocks()->create([
+            'supplier_id' => $supplier->id, 'warehouse_code' => 'ecokamin-moscow',
+            'warehouse_name' => 'Склад Москва', 'available_quantity' => 21,
+            'as_of_date' => now()->toDateString(), 'last_synced_at' => now(),
+        ]);
         $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
         $page = Livewire::test(ViewOrder::class, ['record' => $item->order_id])
             ->assertSeeText('Свободно: 1 шт. · 1С, склад Основной')
+            ->assertSeeText('ЭкоКамин, Москва — 21 шт.')
             ->assertSeeText('Исполнение менеджером ещё не подтверждено')
             ->assertDontSeeText('Наличие не было известно · сейчас:');
         $display = app(OrderItemAvailabilityDisplay::class);
@@ -104,7 +110,9 @@ class OrderOneCStockSourceTest extends TestCase
         $this->assertStringStartsWith('При оформлении заказа:', $display->history($item));
         $this->assertNull($item->fresh()->fulfillment_confirmed_at);
         $stock->update(['stock_on_hand' => 0, 'stock_reserved' => 0]);
-        $page->call('$refresh')->assertSeeText('Свободно: 0 шт. · 1С, склад Основной');
+        $warehouse->update(['last_synced_at' => now()->subDays(15), 'as_of_date' => now()->subDays(15)->toDateString()]);
+        $page->call('$refresh')->assertSeeText('Свободно: 0 шт. · 1С, склад Основной')
+            ->assertSeeText('ЭкоКамин, Москва — наличие уточняется (последний остаток: 21 шт.');
         $this->assertSame('danger', $display->color($item->fresh()));
     }
 
