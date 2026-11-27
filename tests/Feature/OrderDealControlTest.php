@@ -88,7 +88,7 @@ class OrderDealControlTest extends TestCase
         \Illuminate\Support\Facades\Http::assertNothingSent();
     }
 
-    public function test_order_card_points_to_the_supplier_position_and_preselects_the_sent_request(): void
+    public function test_order_card_opens_supplier_assignment_and_preselects_the_sent_request(): void
     {
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         $manager = $this->manager();
@@ -98,9 +98,16 @@ class OrderDealControlTest extends TestCase
             'price' => 100, 'quantity' => 1, 'total' => 100, 'fulfillment_route' => 'supplier_purchase',
         ]);
         $card = fn () => Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->getRouteKey()]);
-        $card()->assertSee('Назначьте поставщика для позиции')
-            ->assertSeeHtml('href="#order-item-supplier-'.$item->id.'"')
-            ->assertSeeHtml('id="order-item-supplier-'.$item->id.'"');
+        $assignment = $card()->assertSee('Назначить поставщика')
+            ->assertSeeHtml('data-order-next-action="openNextFulfillmentStep"')
+            ->assertDontSeeHtml('data-order-next-action="advanceWorkflow"')
+            ->call('openNextFulfillmentStep')
+            ->assertSet('mountedActions.0.data.request_reserve_now', false);
+        $action = $assignment->instance()->getMountedAction();
+        $this->assertSame('assignItemSupplier', $action?->getName());
+        $this->assertTrue($action->getRecord()->is($item));
+        $assignment->call('unmountAction');
+        $this->assertNull($item->fresh()->fulfillment_supplier_id);
 
         $supplier = \App\Models\Supplier::create(['name' => 'Поставщик для проверки', 'code' => 'deal-test-supplier']);
         $item->update(['fulfillment_supplier_id' => $supplier->id, 'fulfillment_confirmed_at' => now()]);

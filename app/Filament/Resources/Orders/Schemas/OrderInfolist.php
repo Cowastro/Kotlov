@@ -166,9 +166,8 @@ class OrderInfolist
                                 ->viewData(fn ($livewire): array => [
                                     'nextAction' => $livewire->nextStepAction(),
                                     'labelAction' => $livewire->nextStepLabelAction(),
-                                    'supplierItem' => $livewire->supplierItemToAssign(),
+                                    'fulfillmentStep' => $livewire->nextFulfillmentStep(),
                                     'supplierReply' => $livewire->pendingSupplierReply(),
-                                    'ownStockReview' => $livewire->ownStockReview(),
                                     'onecHint' => (bool) auth()->user()?->isManager() && app(OneCItemCreator::class)->source() !== null
                                         && $livewire->getRecord()->status !== 'cancelled'
                                         ? app(OneCOrderJourney::class)->next($livewire->getRecord())
@@ -237,7 +236,6 @@ class OrderInfolist
 
                                     TextEntry::make('supply_supplier')
                                         ->label('Поставщик')
-                                        ->extraAttributes(fn (OrderItem $record): array => ['id' => 'order-item-supplier-'.$record->id])
                                         ->columnSpan(2)
                                         ->state(fn (OrderItem $record): ?string => $record->fulfillment_supplier_name
                                             ?: $record->fulfillmentSupplier?->name
@@ -289,7 +287,7 @@ class OrderInfolist
                                                             ? null
                                                             : self::assignmentPrice($record, $route),
                                                         'availability_status' => $moscowSupplierId ? 'clarifying' : $record->fulfillment_availability_status,
-                                                        'request_reserve_now' => ! $reviewOwnStock,
+                                                        'request_reserve_now' => ! ($arguments['fromNextStep'] ?? false),
                                                         'reservation_quantity' => $record->quantity,
                                                         'reservation_recipient' => $supplier?->contactEmailAddresses()[0] ?? null,
                                                         'note' => null,
