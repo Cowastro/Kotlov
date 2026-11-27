@@ -223,7 +223,6 @@ class ViewOrder extends ViewRecord
         return [
             $this->confirmFulfillmentAction(),
             Action::make('advanceWorkflow')
-                ->authorize(fn (): bool => OrderResource::canEdit($this->record))
                 ->label(fn (): string => app(OrderWorkflow::class)->step($this->record)['label'] ?? 'Следующий этап')
                 ->icon(fn (): string => app(OrderWorkflow::class)->step($this->record)['icon'] ?? 'heroicon-o-arrow-right')
                 ->color(fn (): string => app(OrderWorkflow::class)->step($this->record)['color'] ?? 'gray')
