@@ -33,14 +33,21 @@ class CarrierOrderProgress
         $name = mb_strtolower(trim($status['status'] ?? ''));
         $stage = match (true) {
             ($status['code'] ?? null) === 0 => 'created',
-            in_array($name, ['отменено', 'отменена', 'заявка отменена', 'возврат', 'возвращено отправителю', 'отказ получателя'], true) => 'attention',
-            in_array($name, ['вручено', 'вручено получателю', 'выдано получателю', 'доставлено получателю'], true) => 'delivered',
+            in_array($name, ['отменено', 'отменена', 'заявка отменена', 'возврат', 'возврат отправителю', 'возвращено отправителю', 'отказ получателя'], true) => 'attention',
+            in_array($name, ['вручено', 'вручено получателю', 'выдано', 'выдано получателю', 'доставлено получателю'], true) => 'delivered',
             in_array($name, ['прибыло в отделение назначения', 'готово к выдаче', 'ожидает получения'], true) => 'ready',
             in_array($name, ['в пути', 'в пути в отделение назначения', 'передано курьеру'], true) => 'transit',
             in_array($name, ['принято', 'принято от отправителя', 'принято в отделении', 'принято к пересылке'], true) => 'accepted',
             default => null,
         };
         $this->apply($order->id, 'evropochta', $number, $number, $stage, $status['status'] ?? '', $observedAt);
+    }
+
+    public function euroCheckFailed(Order $order, string $number, CarbonInterface $observedAt): void
+    {
+        Order::whereKey($order->id)->where('delivery_type', 'evropochta')->where('evropochta_tracking_number', $number)
+            ->where(fn ($query) => $query->whereNull('carrier_checked_at')->orWhere('carrier_checked_at', '<=', $observedAt))
+            ->update(['carrier_check_failed_at' => $observedAt]);
     }
 
     private function apply(int $id, string $provider, string $reference, ?string $display, ?string $stage, string $text, CarbonInterface $observedAt): void
@@ -62,6 +69,9 @@ class CarrierOrderProgress
                 return;
             }
             $previous = $same ? $order->carrier_stage : null;
+            if ($provider === 'evropochta' && $order->carrier_check_failed_at?->lte($observedAt)) {
+                $order->forceFill(['carrier_check_failed_at' => null])->save();
+            }
             if ($stage === 'created' && $previous && $previous !== 'created') {
                 return;
             }

@@ -46,6 +46,7 @@ class SyncEvropochtaOrderStatusCommand extends Command
                         $progress->euro($order, $status, $observedAt, $number);
                     } catch (EvropochtaShipmentException) {
                         Cache::put($key.':unavailable', true, now()->addMinutes(30));
+                        $progress->euroCheckFailed($order, $number, $observedAt);
                     }
                 });
             }

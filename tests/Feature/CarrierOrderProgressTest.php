@@ -60,13 +60,14 @@ class CarrierOrderProgressTest extends TestCase
         $this->euro($order, 'Заявка создана', 0);
         $this->assertSame('processing', $order->status);
         Mail::assertNothingQueued();
-        foreach (['Принято в отделении' => 'Передан перевозчику', 'В пути' => 'В пути', 'Готово к выдаче' => 'Ожидает получения', 'Вручено получателю' => 'Получен'] as $name => $label) {
+        foreach (['Принято в отделении' => 'Передан перевозчику', 'В пути' => 'В пути', 'Готово к выдаче' => 'Ожидает получения', 'Выдано' => 'Получен'] as $name => $label) {
             $this->euro($order, $name);
             $this->euro($order, $name);
             $this->assertSame($label, $order->customerStatusLabel());
             $this->actingAs($order->user)->get(route('account.orders.show', $order))->assertOk()->assertSeeText($label)->assertSeeText(self::TRACK);
         }
         $this->assertSame('delivered', $order->status);
+        $this->assertSame('pending', $order->payment_status);
         $this->assertSame('30.00', $order->total);
         $this->assertEquals(3, $order->items()->sum('quantity'));
         Mail::assertQueuedCount(4);
@@ -186,11 +187,19 @@ class CarrierOrderProgressTest extends TestCase
         config(['services.evropochta.token' => 'test']);
         $order = $this->order();
         $this->euro($order, 'В пути');
-        Http::fake(['api-kassa.evropochta.by/*' => Http::response([], 503)]);
+        Http::fake(['api-kassa.evropochta.by/*' => Http::sequence()
+            ->push([], 503)
+            ->push(['number' => self::TRACK, 'status' => ['value' => 90, 'name' => 'Выдано']])]);
         $this->artisan('shipping:sync-evropochta-status')->assertSuccessful();
         $this->artisan('shipping:sync-evropochta-status')->assertSuccessful();
         Http::assertSentCount(1);
         $this->assertSame('В пути', $order->fresh()->customerStatusLabel());
+        $this->assertNotNull($order->fresh()->carrier_check_failed_at);
         Mail::assertQueuedCount(1);
+
+        $this->travel(31)->minutes();
+        $this->artisan('shipping:sync-evropochta-status')->assertSuccessful();
+        $this->assertNull($order->fresh()->carrier_check_failed_at);
+        $this->assertSame('delivered', $order->fresh()->status);
     }
 }

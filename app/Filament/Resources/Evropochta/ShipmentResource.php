@@ -54,6 +54,18 @@ class ShipmentResource extends Resource
         return OrderResource::getEloquentQuery()->where('delivery_type', 'evropochta');
     }
 
+    public static function trackingUrl(Order $order): ?string
+    {
+        return filled($order->evropochta_tracking_number) && static::canAccess()
+            ? static::getUrl('index', [
+                'tab' => 'all',
+                'search' => $order->evropochta_tracking_number,
+                'tableAction' => 'trackEvropochtaShipment',
+                'tableActionRecord' => $order->getKey(),
+            ])
+            : null;
+    }
+
     public static function table(Table $table): Table
     {
         return $table

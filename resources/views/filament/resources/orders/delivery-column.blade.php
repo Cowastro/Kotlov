@@ -12,15 +12,9 @@
         'kit' => 'ТК КИТ',
         default => $fullLabel,
     };
-    $euroUrl = $method === 'evropochta' && filled($order->evropochta_tracking_number)
-        && \App\Filament\Resources\Evropochta\ShipmentResource::canAccess()
-            ? \App\Filament\Resources\Evropochta\ShipmentResource::getUrl('index', [
-                'tab' => 'all',
-                'search' => $order->evropochta_tracking_number,
-                'tableAction' => 'trackEvropochtaShipment',
-                'tableActionRecord' => $order->getKey(),
-            ])
-            : null;
+    $euroUrl = $method === 'evropochta'
+        ? \App\Filament\Resources\Evropochta\ShipmentResource::trackingUrl($order)
+        : null;
 @endphp
 
 <div class="grid gap-1 px-3 py-2 text-xs" data-order-delivery>

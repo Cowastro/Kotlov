@@ -69,7 +69,7 @@ class OrderNextStep
     /** @return list<array{label: string, url?: string, link?: string}> */
     public function queueWaitReasons(Order $order): array
     {
-        $reasons = [];
+        $reasons = OrderCarrierAttention::reasons($order);
         $task = $order->latestOnecOrderTask;
         if ($task?->status === OneCAgentTask::FAILED
             && ($task->type !== OrderTaskHandler::TYPE || blank($order->onec_order_guid) || $order->onec_deleted)) {
