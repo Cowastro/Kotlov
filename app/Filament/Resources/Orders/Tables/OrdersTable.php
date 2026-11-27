@@ -123,7 +123,7 @@ class OrdersTable
                     'items.product.integrationProducts.source.supplier.crmCounterparty.contactPoints',
                     'items.product.supplierProducts.supplier.crmCounterparty.contactPoints',
                     'manager:id,name',
-                    'vamExpressShipments:id,order_id,display_id,carrier_status',
+                    'vamExpressShipments:id,order_id,remote_id,display_id,carrier_status',
                     'customerReviews:id,order_id,is_approved,created_at',
                     'statusHistory.user:id,name',
                     'dealByInbox:id,order_id,remote_order_id,remote_status,remote_status_name,remote_created_at',
@@ -331,6 +331,7 @@ class OrdersTable
 
                 ViewColumn::make('delivery_type')
                     ->label('Доставка')
+                    ->disabledClick()
                     ->view('filament.resources.orders.delivery-column')
                     ->width('130px')
                     ->grow(false),
