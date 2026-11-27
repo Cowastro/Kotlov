@@ -19,6 +19,8 @@ final class BoilerAutomationGroups
     public const MOVES = [
         '/^фильтр для очистки воды electrolux/u' => 'filtry',
         '/хоммет/u' => 'installyatsii-i-armatura-bachkov',
+        '/^дровница (d\d|дк-|кованная d|везувий «русский лес»)/u' => 'drovnitsyi',
+        '/^очаг \(чаша для костра/u' => 'mangalyi',
         '/^(blist|ермак) стекло термостойк/u' => 'stekla-dlya-pechey-i-kaminov',
         '/^мангал вертикальный большой/u' => 'mangalyi',
         '/^ермак (бак навесной|катализатор|конвектор дымохода|модуль закрытой каменки|парообразователь|сетка-каменка|тэн|теплообменник|удлинитель тоннеля)/u' => 'aksessuary-dlya-bani',
@@ -276,6 +278,9 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::FIREPLACE_SETS => [
+                'Исполнение' => [['/кованн/u' => 'Кованые', '/русский лес/u' => 'Серия «Русский лес»'], ['Кованые', 'Серия «Русский лес»']],
+            ],
             self::GATE_VALVES => [
                 'Тип' => [self::GATE_VALVE_TYPES, array_values(array_unique(self::GATE_VALVE_TYPES))],
                 'Материал' => [['/^задвижка чугун|^шиберная/u' => 'Чугун', '/^задвижка стальн/u' => 'Сталь'], ['Сталь', 'Чугун']],
@@ -2618,6 +2623,8 @@ final class BoilerAutomationGroups
         '/обрезиненным клином/u' => 'Клиновые с обрезиненным клином',
         '/30ч6бр|30с41нж/u' => 'Клиновые с металлическим уплотнением',
     ];
+
+    public const FIREPLACE_SETS = 'kaminnye-nabory';
 
     public const GAS_HOSES = 'gazovye-shlangi';
 

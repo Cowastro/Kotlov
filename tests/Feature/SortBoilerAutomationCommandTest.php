@@ -312,13 +312,17 @@ class SortBoilerAutomationCommandTest extends TestCase
         $steelGate = $card('Задвижка стальная 30с41нж Ру 16 Ду 125 BRDHSB', $gateValves);
         $rubberGate = $card('Задвижка чугунная с обрезиненным клином 30ч39р Ру 10/16 Ду 80 с гайкой BENARMO', $gateValves);
         $gateStem = $card('Шток телескопический для задвижек 30ч39р 1,7-2,9 м Ду 200 BENARMO', $gateValves);
+        $fireplaceSets = $section('kaminnye-nabory');
+        $forgedSet = $card('Набор каминный кованный Везувий N310B', $fireplaceSets);
+        $setRack = $card('Дровница кованная D110 Везувий', $fireplaceSets);
+        $setHearth = $card('Очаг (чаша для костра, кострище) ЧК1', $fireplaceSets);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=21')
+            ->expectsOutputToContain('metric.boiler_automation.moved=23')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -584,6 +588,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Кованые', $value('Исполнение', $forgedSet));
+        $this->assertSame($firewood->id, $setRack->fresh()->category_id);
+        $this->assertSame('Дровницы', $value('Тип', $setRack));
+        $this->assertSame($grills->id, $setHearth->fresh()->category_id);
+        $this->assertSame('Костровые чаши', $value('Тип', $setHearth));
         $this->assertSame('Клиновые с металлическим уплотнением', $value('Тип', $steelGate));
         $this->assertSame('Сталь', $value('Материал', $steelGate));
         $this->assertSame('Ду 125', $value('Диаметр (Ду)', $steelGate));
