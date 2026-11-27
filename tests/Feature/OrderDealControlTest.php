@@ -268,6 +268,7 @@ class OrderDealControlTest extends TestCase
             ->assertCanSeeTableRecords([$euro, $vam])
             ->assertSee('Европочта · Отказ получателя')
             ->assertSee('Европочта · Не удалось проверить статус')
+            ->assertSee('Повторить проверку в разделе Европочты')
             ->assertSee('ВАМ Экспресс · Возврат')
             ->assertSee('ВАМ Экспресс · Отправление не найдено при проверке')
             ->assertSee('tableActionRecord='.$euro->id)
@@ -276,6 +277,32 @@ class OrderDealControlTest extends TestCase
         $euro->forceFill(['evropochta_tracking_number' => 'BY999999999999'])->save();
         $shipment->update(['carrier_status' => 'В пути', 'synced_at' => now()]);
         $this->assertFalse(\App\Services\Orders\OrderCarrierAttention::query(Order::query())->exists());
+    }
+
+    public function test_attention_queue_explains_stock_and_margin_without_expanding_the_order(): void
+    {
+        config(['shop.order_management.minimum_margin_percent' => 10]);
+        $manager = $this->manager();
+        $stock = $this->order('shipped');
+        $margin = $this->order('processing');
+        foreach ([$stock, $margin] as $order) {
+            $order->update(['manager_id' => $manager->id]);
+            $order->items()->create([
+                'product_name' => 'Товар', 'quantity' => 1, 'price' => 100, 'total' => 100,
+                'supply_status' => 'own_stock', 'supply_captured_at' => now(),
+                'supply_is_available' => $order->is($margin), 'supply_purchase_price' => $order->is($margin) ? 95 : 70,
+            ]);
+        }
+
+        Livewire::actingAs($manager)->test(ListOrders::class)
+            ->assertDontSeeHtml('data-order-queue-attention')
+            ->call('selectOrderTab', 'attention')
+            ->assertCanSeeTableRecords([$stock, $margin])
+            ->assertSee('Что сделать')
+            ->assertSee('Нет подтверждённого остатка')
+            ->assertSee('Сверить остаток и источник отгрузки')
+            ->assertSee('Маржа ниже 10%')
+            ->assertSee('Сверить входную цену и цену продажи');
     }
 
     public function test_stalled_order_queue_and_repeated_staff_digests_follow_real_progress(): void

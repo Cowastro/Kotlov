@@ -992,43 +992,45 @@ class Order extends Model
         $problems = collect();
 
         if ($supply['unresolved_count'] > 0) {
-            $problems->push(['severity' => 'critical', 'label' => 'Не определён поставщик: '.$supply['unresolved_count']]);
+            $problems->push(['code' => 'missing_supplier', 'severity' => 'critical', 'label' => 'Не определён поставщик: '.$supply['unresolved_count']]);
         }
         if ($supply['missing_price_count'] > 0) {
-            $problems->push(['severity' => 'critical', 'label' => 'Нет входной цены: '.$supply['missing_price_count']]);
+            $problems->push(['code' => 'missing_price', 'severity' => 'critical', 'label' => 'Нет входной цены: '.$supply['missing_price_count']]);
         }
         if ($supply['negative_margin_count'] > 0) {
-            $problems->push(['severity' => 'critical', 'label' => 'Убыточных позиций: '.$supply['negative_margin_count']]);
+            $problems->push(['code' => 'negative_margin', 'severity' => 'critical', 'label' => 'Убыточных позиций: '.$supply['negative_margin_count']]);
         }
         if ($supply['low_margin_count'] > 0) {
             $problems->push([
+                'code' => 'low_margin',
                 'severity' => 'warning',
                 'label' => 'Маржа ниже '.number_format($supply['minimum_margin_percent'], 0).'%: '.$supply['low_margin_count'],
             ]);
         }
         if (($supply['unknown_availability_count'] ?? 0) > 0) {
-            $problems->push(['severity' => 'warning', 'label' => 'Наличие требует уточнения: '.$supply['unknown_availability_count']]);
+            $problems->push(['code' => 'no_stock', 'severity' => 'warning', 'label' => 'Наличие требует уточнения: '.$supply['unknown_availability_count']]);
         }
         if ($supply['unavailable_count'] > 0) {
-            $problems->push(['severity' => 'warning', 'label' => 'Нет подтверждённого остатка: '.$supply['unavailable_count']]);
+            $problems->push(['code' => 'no_stock', 'severity' => 'warning', 'label' => 'Нет подтверждённого остатка: '.$supply['unavailable_count']]);
         }
 
         $isActive = ! in_array($this->status, ['delivered', 'completed', 'cancelled'], true);
         if ($isActive && ! $this->manager_id && blank($this->assigned_to)) {
-            $problems->push(['severity' => 'warning', 'label' => 'Не назначен менеджер']);
+            $problems->push(['code' => 'unassigned', 'severity' => 'warning', 'label' => 'Не назначен менеджер']);
         }
 
         if (config('onec.order_queue_enabled', false)) {
             $syncState = $this->onecSyncState();
             if (in_array($syncState, ['conflict', 'unknown', 'no_response', 'delayed'], true)) {
                 $problems->push([
+                    'code' => 'sync_problem',
                     'severity' => $syncState === 'conflict' ? 'critical' : 'warning',
                     'label' => $this->onecSyncLabel(),
                 ]);
             }
         }
         if ($this->payment_status === 'failed') {
-            $problems->push(['severity' => 'critical', 'label' => 'Ошибка оплаты']);
+            $problems->push(['code' => 'payment_failed', 'severity' => 'critical', 'label' => 'Ошибка оплаты']);
         }
         $rejectedSupplierRequests = $this->relationLoaded('supplierOrderRequests')
             ? $this->supplierOrderRequests->where('status', 'rejected')->count()
@@ -1036,6 +1038,7 @@ class Order extends Model
         if ($rejectedSupplierRequests > 0) {
             $problems->push([
                 'severity' => 'critical',
+                'code' => 'supplier_request_rejected',
                 'label' => 'Поставщик отклонил заявок: '.$rejectedSupplierRequests,
             ]);
         }
