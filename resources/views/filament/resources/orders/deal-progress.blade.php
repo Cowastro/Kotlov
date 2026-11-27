@@ -106,10 +106,32 @@
             @if (! isset($fulfillmentStep) && ! $preparingDelivery && ! empty($onecHint) && ! str_contains($order->workflowNextStep(), $onecHint))
                 <p>{{ $onecHint }}</p>
             @endif
-            @if (! isset($fulfillmentStep) && ! $preparingDelivery && isset($labelAction))
-                <x-filament::link :href="$labelAction->getUrl()" target="_blank" rel="noopener" icon="heroicon-o-printer">
-                    Печать этикетки Европочты
-                </x-filament::link>
+            @if (isset($labelAction))
+                @php
+                    $trackingNumber = $order->evropochta_tracking_number;
+                    $labelStatus = app(\App\Services\Shipping\Evropochta::class)->labelStatus($trackingNumber, 'thermal');
+                    $labelReady = $labelStatus === \App\Services\Shipping\Evropochta::LABEL_READY;
+                @endphp
+                <div class="mt-2 flex flex-wrap items-center gap-2"
+                    wire:key="evropochta-label-{{ $order->getKey() }}-{{ $trackingNumber }}"
+                    @unless ($labelReady)
+                        wire:init="refreshEvropochtaLabelStatus"
+                        wire:poll.30s.visible="refreshEvropochtaLabelStatus"
+                    @endunless>
+                    <span>Трек-номер Европочты <strong>{{ $trackingNumber }}</strong></span>
+                    @if ($labelReady)
+                        <x-filament::button tag="a" size="sm" color="gray" :href="$labelAction->getUrl()"
+                            target="_blank" rel="noopener" icon="heroicon-o-printer">
+                            Распечатать этикетку
+                        </x-filament::button>
+                    @else
+                        <span role="status" class="text-gray-500 dark:text-gray-400">{{ match ($labelStatus) {
+                            \App\Services\Shipping\Evropochta::LABEL_PENDING => 'Этикетка ещё готовится',
+                            \App\Services\Shipping\Evropochta::LABEL_UNAVAILABLE => 'Этикетка временно недоступна',
+                            default => 'Проверяем готовность этикетки',
+                        } }}</span>
+                    @endif
+                </div>
             @endif
             @if ($active && filled($order->deal_next_action))
                 <p class="text-gray-500 dark:text-gray-400">{{ $order->deal_next_action }}</p>
