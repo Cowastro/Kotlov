@@ -69,6 +69,13 @@
     @if (! $isTable)
         <div class="order-deal__next">
             <strong>Следующий шаг</strong>
+            @if (isset($ownStockReview))
+                <p><strong>{{ $ownStockReview['item']->product_name }}{{ $ownStockReview['item']->product_sku ? ' · '.$ownStockReview['item']->product_sku : '' }}</strong></p>
+                <p>{{ $ownStockReview['message'] }}</p>
+                <x-filament::button tag="a" size="sm" color="warning" :href="'#order-item-supplier-'.$ownStockReview['item']->id">
+                    Проверить исполнение
+                </x-filament::button>
+            @endif
             @if (isset($supplierItem))
                 <p>Назначьте поставщика для позиции «{{ $supplierItem->product_name }}»{{ $supplierItem->product_sku ? ' · '.$supplierItem->product_sku : '' }}.</p>
                 <x-filament::button tag="a" size="sm" :href="'#order-item-supplier-'.$supplierItem->id" icon="heroicon-o-arrow-down">

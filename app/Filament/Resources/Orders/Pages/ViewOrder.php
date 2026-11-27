@@ -135,6 +135,25 @@ class ViewOrder extends ViewRecord
             && in_array($item->fulfillment_route ?: $item->supplyContext()['status'], ['supplier_purchase', 'direct_supplier'], true));
     }
 
+    /** @return array{item: OrderItem, message: string}|null */
+    public function ownStockReview(): ?array
+    {
+        $order = $this->record;
+        if (! OrderResource::canEdit($order) || ! in_array($order->status, ['checking', 'confirmed', 'processing'], true)
+            || (filled($order->onec_order_guid) && ! $order->onec_deleted && $order->onec_posted)) {
+            return null;
+        }
+
+        $display = app(\App\Services\Orders\OrderItemAvailabilityDisplay::class);
+        foreach ($order->items as $item) {
+            if ($message = $display->ownStockShortage($item)) {
+                return ['item' => $item, 'message' => $message];
+            }
+        }
+
+        return null;
+    }
+
     public function pendingSupplierReply(): ?SupplierOrderRequest
     {
         if (! OrderResource::canEdit($this->record) || ! in_array($this->record->status, ['confirmed', 'processing'], true)) {
