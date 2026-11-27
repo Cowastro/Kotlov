@@ -16,6 +16,9 @@
     $displayAvailabilityStatus = method_exists($product, 'publicAvailabilityStatus') ? $product->publicAvailabilityStatus() : $availabilityStatus;
     // Публичный каталог всегда остаётся розничным. Оптовое предложение
     // показывается и заказывается только из отдельного B2B-кабинета.
+    $cityStock = $product->is_active && ! $product->is_archived
+        ? app(\App\Services\ManagerStorefrontProductContext::class)->ecokaminWarehouseLabels($product)
+        : [];
     $b2bComparison = [];
     $b2bOffer = null;
     $isB2bOffer = false;
@@ -141,6 +144,10 @@
             @endif
         </div>
 
+        @foreach ($cityStock as $city => $stockLabel)
+            <div class="text-caption-01">{{ $city }} — {{ $stockLabel }}</div>
+        @endforeach
+
         @includeWhen(str_starts_with($product->name, 'Теплообменник Sakovich Pellet Standart '), 'partials.sakovich-exchanger-price-note')
 
         @if ($onlinePrice !== null)
@@ -192,34 +199,36 @@
         @include('partials.manager-product-context', ['product' => $product, 'compact' => true, 'productUrl' => $productUrl])
 
         {{-- Наличие --}}
-        <div class="mb-10">
-            @if ($isB2bOffer)
-                <span class="text-caption-01 text-success">
-                    <i class="icon icon-CheckCircle"></i>
-                    @if ($b2bAvailability)
-                        {{ $b2bAvailability['label'] }}
-                    @elseif ($b2bMoscowStock)
-                        {{ $b2bMoscowStock->warehouse_name }}:
-                        {{ $b2bMoscowStock->formattedAvailableQuantity() }}
-                    @else
-                        {{ $product->brand?->slug === 'ecokamin' ? 'Склад Минск' : data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
-                        {{ $b2bOffer->formattedStockQuantity() }}
-                    @endif
-                </span>
-            @elseif ($displayAvailabilityStatus === 'in_stock')
-                <span class="text-caption-01 text-success">
-                    <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }}
-                </span>
-            @elseif ($displayAvailabilityStatus === 'check')
-                <span class="text-caption-01 text-warning">
-                    <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }} · наличие и срок подтвердит менеджер
-                </span>
-            @else
-                <span class="text-caption-01 text-danger">
-                    <i class="icon icon-XCircle"></i> Нет в наличии
-                </span>
-            @endif
-        </div>
+        @if (! $cityStock)
+            <div class="mb-10">
+                @if ($isB2bOffer)
+                    <span class="text-caption-01 text-success">
+                        <i class="icon icon-CheckCircle"></i>
+                        @if ($b2bAvailability)
+                            {{ $b2bAvailability['label'] }}
+                        @elseif ($b2bMoscowStock)
+                            {{ $b2bMoscowStock->warehouse_name }}:
+                            {{ $b2bMoscowStock->formattedAvailableQuantity() }}
+                        @else
+                            {{ $product->brand?->slug === 'ecokamin' ? 'Склад Минск' : data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
+                            {{ $b2bOffer->formattedStockQuantity() }}
+                        @endif
+                    </span>
+                @elseif ($displayAvailabilityStatus === 'in_stock')
+                    <span class="text-caption-01 text-success">
+                        <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }}
+                    </span>
+                @elseif ($displayAvailabilityStatus === 'check')
+                    <span class="text-caption-01 text-warning">
+                        <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }} · наличие и срок подтвердит менеджер
+                    </span>
+                @else
+                    <span class="text-caption-01 text-danger">
+                        <i class="icon icon-XCircle"></i> Нет в наличии
+                    </span>
+                @endif
+            </div>
+        @endif
 
         {{-- Действия --}}
         <ul class="product-action_list">

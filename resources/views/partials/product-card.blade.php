@@ -23,6 +23,9 @@
     $displayAvailabilityStatus = method_exists($product, 'publicAvailabilityStatus') ? $product->publicAvailabilityStatus() : $availabilityStatus;
     // Публичный каталог всегда остаётся розничным. Оптовое предложение
     // показывается и заказывается только из отдельного B2B-кабинета.
+    $cityStock = $product->is_active && ! $product->is_archived
+        ? app(\App\Services\ManagerStorefrontProductContext::class)->ecokaminWarehouseLabels($product)
+        : [];
     $b2bComparison = [];
     $b2bOffer = null;
     $isB2bOffer = false;
@@ -208,12 +211,12 @@
             </div>
         @endif
 
-        @if (! $isB2bOffer && $displayAvailabilityStatus === 'in_stock')
+        @if (! $cityStock && ! $isB2bOffer && $displayAvailabilityStatus === 'in_stock')
             <div class="product-card-availability" aria-label="{{ $availabilityLabel }}">
                 <span class="product-card-availability__dot" aria-hidden="true"></span>
                 <span>{{ $availabilityLabel }}</span>
             </div>
-        @elseif (! $isB2bOffer && $displayAvailabilityStatus === 'check')
+        @elseif (! $cityStock && ! $isB2bOffer && $displayAvailabilityStatus === 'check')
             <div class="product-card-availability" aria-label="Товар доступен к заказу, наличие подтвердит менеджер">
                 <span class="product-card-availability__dot" aria-hidden="true"></span>
                 <span>{{ $availabilityLabel }}</span>
@@ -228,6 +231,10 @@
                 </span>
             @endif
         </div>
+
+        @foreach ($cityStock as $city => $stockLabel)
+            <div class="text-caption-01">{{ $city }} — {{ $stockLabel }}</div>
+        @endforeach
 
         @includeWhen(str_starts_with($product->name, 'Теплообменник Sakovich Pellet Standart '), 'partials.sakovich-exchanger-price-note')
 
