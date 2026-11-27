@@ -270,6 +270,13 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::CAST_PIPES => [
+                'Тип' => [self::CAST_PIPE_TYPES, array_values(array_unique(self::CAST_PIPE_TYPES))],
+                'Назначение' => [self::CAST_PIPE_USES, array_values(self::CAST_PIPE_USES)],
+                'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title)
+                    ?? (preg_match('/^труба[^\d]*(50|100|150)\s*[xх]\s*\d{3,4}/u', mb_strtolower($title), $m) ? self::dnLabel((int) $m[1]) : null),
+                    array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
+            ],
             self::SEALANTS => [
                 'Тип' => [self::SEALANT_TYPES, self::SEALANT_ORDER],
                 'Диаметр (Ду)' => [fn (string $title) => preg_match('/^прокладк/u', mb_strtolower(trim($title))) ? self::ballValveDn($title) : null, array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
@@ -1757,6 +1764,30 @@ final class BoilerAutomationGroups
         '/^прокладк.*силикон/u' => 'Силикон',
         '/^прокладк.*прозрачн/u' => 'Прозрачные (полимер)',
         '/^прокладк.*резин/u' => 'Резина',
+    ];
+
+    public const CAST_PIPES = 'chugunnye-truby-i-fasonnye-chasti';
+
+    /** Title pattern => «Тип» inside «Чугунные трубы и фасонные части», in filter order; the first match wins. */
+    public const CAST_PIPE_TYPES = [
+        '/^труба/u' => 'Трубы',
+        '/^(отвод|колено)/u' => 'Отводы и колена',
+        '/^тройник/u' => 'Тройники',
+        '/^крестовин/u' => 'Крестовины',
+        '/^муфт/u' => 'Муфты и муфты-фланцы',
+        '/^(переход|патрубок|фланец)/u' => 'Переходы, патрубки и фланцы',
+        '/^заглушк/u' => 'Заглушки',
+        '/^хомут/u' => 'Ремонтные хомуты',
+        '/^седло/u' => 'Сёдла (врезки)',
+        '/^трап/u' => 'Трапы',
+        '/./u' => 'Уплотнения и прочее',
+    ];
+
+    /** Title pattern => «Назначение»: sewer (incl. SML), pressure (flanged/socket), repair; the first match wins. */
+    public const CAST_PIPE_USES = [
+        '/ремонтн|универсальн|седло|для пэ и пвх/u' => 'Ремонт и соединение труб',
+        '/канализац|(?<![a-z])sml(?![a-z])|^трап/u' => 'Канализация',
+        '/фланц|раструб|тайтон|ру \d|надвижн|компенсацион/u' => 'Напорные трубопроводы (водопровод)',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';

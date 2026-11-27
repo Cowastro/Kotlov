@@ -204,6 +204,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $flax = $card('Лен сантехнический чесаный 200 г, AV Engineering', $sealants);
         $flangeGasket = $card('Прокладка паронитовая Ру 10/16 Ду 100 исп. А ГОСТ 15180-86', $sealants);
         $threadGasket = $card('Прокладка резиновая для разъемных соединений Ду 25 (1")', $sealants);
+        $castPipes = $section('chugunnye-truby-i-fasonnye-chasti');
+        $castSewerPipe = $card('Труба чугунная канализационная 100х1000', $castPipes);
+        $castFlangeTee = $card('Тройник чугунный фланцевый Ру 10/16 Ду 100х50', $castPipes);
+        $repairClamp = $card('Хомут ремонтный оцинкованный "краб" Ду 100 (101-110) 3 1/2"', $castPipes);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -476,6 +480,13 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Трубы', $value('Тип', $castSewerPipe));
+        $this->assertSame('Канализация', $value('Назначение', $castSewerPipe));
+        $this->assertSame('Ду 100', $value('Диаметр (Ду)', $castSewerPipe));
+        $this->assertSame('Тройники', $value('Тип', $castFlangeTee));
+        $this->assertSame('Напорные трубопроводы (водопровод)', $value('Назначение', $castFlangeTee));
+        $this->assertSame('Ремонтные хомуты', $value('Тип', $repairClamp));
+        $this->assertSame('Ремонт и соединение труб', $value('Назначение', $repairClamp));
         $this->assertSame('Фум-лента', $value('Тип', $fumTape));
         $this->assertSame('Лён сантехнический', $value('Тип', $flax));
         $this->assertSame('Фланцевые прокладки', $value('Тип', $flangeGasket));
