@@ -31,6 +31,7 @@ use App\Services\Orders\OrderWorkflow;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
 use App\Services\Orders\SupplierReservationMailService;
+use App\Services\Shipping\Evropochta;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
@@ -200,6 +201,13 @@ class ViewOrder extends ViewRecord
         $action = $this->cachedActions['printEvropochtaLabel_thermal'] ?? null;
 
         return $action?->isVisible() && $action->isAuthorized() ? $action : null;
+    }
+
+    public function refreshEvropochtaLabelStatus(): void
+    {
+        if ($this->nextStepLabelAction() !== null) {
+            app(Evropochta::class)->checkLabelStatus($this->record->evropochta_tracking_number, 'thermal');
+        }
     }
 
     public function getCachedHeaderActions(): array

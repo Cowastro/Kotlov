@@ -13,6 +13,10 @@ class Evropochta
 {
     public const STATUS_CREATED = 0;
 
+    public const LABEL_READY = 'ready';
+    public const LABEL_PENDING = 'pending';
+    public const LABEL_UNAVAILABLE = 'unavailable';
+
     public const LABEL_FORMATS = [
         'thermal' => '10 × 10 см',
         'address' => 'A5',
@@ -301,6 +305,53 @@ class Evropochta
             throw new EvropochtaShipmentException('Проверьте трек-номер и формат ярлыка.');
         }
 
+        $key = $this->labelStatusKey($number, $format);
+        try {
+            $pdf = $this->downloadShipmentLabel($number, $format);
+        } catch (EvropochtaShipmentException $error) {
+            $pending = $error->getCode() === EvropochtaShipmentException::LABEL_PENDING;
+            Cache::put($key, $pending ? self::LABEL_PENDING : self::LABEL_UNAVAILABLE, $pending ? 25 : 60);
+            throw $error;
+        }
+
+        Cache::put($key, self::LABEL_READY, now()->addMinutes(15));
+
+        return $pdf;
+    }
+
+    public function labelStatus(string $number, string $format): ?string
+    {
+        return Cache::get($this->labelStatusKey($number, $format));
+    }
+
+    public function checkLabelStatus(string $number, string $format): void
+    {
+        $key = $this->labelStatusKey($number, $format);
+        if (Cache::has($key)) {
+            return;
+        }
+
+        Cache::lock($key.':check', 20)->get(function () use ($key, $number, $format): void {
+            if (Cache::has($key)) {
+                return;
+            }
+
+            try {
+                $this->shipmentLabel($number, $format);
+            } catch (EvropochtaShipmentException) {
+                // Failed downloads normally cache their status; invalid historical tracking numbers fail validation earlier.
+                Cache::add($key, self::LABEL_UNAVAILABLE, 60);
+            }
+        });
+    }
+
+    private function labelStatusKey(string $number, string $format): string
+    {
+        return 'evropochta.label-status.'.$format.'.'.$number;
+    }
+
+    private function downloadShipmentLabel(string $number, string $format): string
+    {
         try {
             $response = $this->request()->accept('application/pdf')->get("label/{$format}/{$number}");
         } catch (ConnectionException) {
@@ -308,7 +359,10 @@ class Evropochta
         }
 
         if ($response->status() === 404) {
-            throw new EvropochtaShipmentException('Ярлык ещё готовится. Повторите запрос через три минуты после оформления.');
+            throw new EvropochtaShipmentException(
+                'Ярлык ещё готовится. Повторите запрос через три минуты после оформления.',
+                EvropochtaShipmentException::LABEL_PENDING,
+            );
         }
         if (in_array($response->status(), [401, 403], true)) {
             throw new EvropochtaShipmentException('Европочта отклонила доступ. Проверьте ключ и договор.');

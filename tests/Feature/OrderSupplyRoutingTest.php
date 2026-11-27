@@ -397,7 +397,7 @@ class OrderSupplyRoutingTest extends TestCase
         Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->id])
             ->assertActionHidden('advanceWorkflow')
             ->assertActionVisible('prepareOrderDelivery')
-            ->assertSee('Печать этикетки Европочты')
+            ->assertSeeInOrder(['Следующий шаг', 'Трек-номер Европочты', 'BY080027046773'])
             ->assertActionVisible('printEvropochtaLabel_thermal')
             ->assertActionVisible('printEvropochtaLabel_address');
     }

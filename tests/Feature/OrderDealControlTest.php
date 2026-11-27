@@ -54,7 +54,7 @@ class OrderDealControlTest extends TestCase
         $card = fn () => Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->getRouteKey()]);
 
         $confirmation = $card()->assertSeeHtml('data-order-next-action="confirmFulfillment"')
-            ->assertDontSee('Печать этикетки Европочты')
+            ->assertDontSee('Трек-номер Европочты')
             ->assertActionVisible('confirmInternalOrder');
         $this->assertNotContains(
             'confirmFulfillment',
@@ -72,7 +72,7 @@ class OrderDealControlTest extends TestCase
 
         $order->update(['status' => 'processing']);
         $card()->assertSeeHtml('data-order-next-action="prepareEvropochtaShipment"')
-            ->assertDontSee('Печать этикетки Европочты');
+            ->assertDontSee('Трек-номер Европочты');
 
         $order->update(['evropochta_quote' => [
             'store_id_finish' => 2,
@@ -81,8 +81,7 @@ class OrderDealControlTest extends TestCase
         $card()->assertSeeHtml('data-order-next-action="createEvropochtaShipment"');
 
         $order->forceFill(['evropochta_tracking_number' => '9999900000001'])->save();
-        $card()->assertSee('Печать этикетки Европочты')
-            ->assertSee(route('admin.orders.evropochta-label', ['order' => $order, 'format' => 'thermal']))
+        $card()->assertSeeInOrder(['Следующий шаг', 'Трек-номер Европочты', '9999900000001', 'Проверяем готовность этикетки'])
             ->assertDontSeeHtml('data-order-next-action="createEvropochtaShipment"');
         $this->assertSame('processing', $order->fresh()->status);
         \Illuminate\Support\Facades\Http::assertNothingSent();

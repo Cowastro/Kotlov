@@ -204,7 +204,7 @@ class EvropochtaOrderShipmentTest extends TestCase
             ->assertActionVisible('trackEvropochtaShipment')
             ->assertActionVisible('printEvropochtaLabel_thermal')
             ->assertActionVisible('printEvropochtaLabel_address')
-            ->assertSeeInOrder(['Ход заказа', 'Следующий шаг', 'Товары заказа', 'Трек-номер'])
+            ->assertSeeInOrder(['Ход заказа', 'Следующий шаг', 'Трек-номер Европочты', self::TRACK, 'Товары заказа'])
             ->assertSee(self::TRACK)
             ->assertSee('Статус Европочты');
 
@@ -258,6 +258,35 @@ class EvropochtaOrderShipmentTest extends TestCase
             ->assertContent($pdf);
         Http::assertSentCount(3);
         Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
+    }
+
+    public function test_next_step_checks_an_existing_label_and_shows_print_only_when_ready(): void
+    {
+        $order = $this->order(['evropochta_tracking_number' => self::TRACK]);
+        $this->signIn();
+        Http::fake([
+            self::API.'label/thermal/'.self::TRACK => Http::sequence()
+                ->pushStatus(404)
+                ->push('%PDF-1.7', 200),
+        ]);
+
+        $page = Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertSeeInOrder(['Следующий шаг', 'Трек-номер Европочты', self::TRACK, 'Проверяем готовность этикетки']);
+        Http::assertNothingSent();
+        $page->call('refreshEvropochtaLabelStatus')
+            ->assertSee('Этикетка ещё готовится')
+            ->assertDontSee('Распечатать этикетку');
+        $page->call('refreshEvropochtaLabelStatus')->assertSee('Этикетка ещё готовится');
+        Http::assertSentCount(1);
+
+        $this->travel(31)->seconds();
+        $page->call('refreshEvropochtaLabelStatus')
+            ->assertSee('Распечатать этикетку')
+            ->assertSee(route('admin.orders.evropochta-label', ['order' => $order, 'format' => 'thermal']))
+            ->assertDontSee('Этикетка ещё готовится');
+        Http::assertSentCount(2);
+        Http::assertNotSent(fn (Request $request): bool => $request->method() !== 'GET');
+        $this->assertSame(self::TRACK, $order->fresh()->evropochta_tracking_number);
     }
 
     public function test_manager_cancels_a_created_shipment_and_keeps_the_order_and_track(): void
