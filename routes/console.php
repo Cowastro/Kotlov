@@ -8,6 +8,7 @@ use App\Services\Integrations\OneCBridge\OneCPostingReminder;
 use App\Services\Integrations\OneCBridge\OneCReadWindow;
 use App\Services\Orders\OrderDealControlNotifier;
 use App\Services\Orders\OrderStatusSmsNotifier;
+use App\Services\Orders\StaleOrderFollowUpReminder;
 use App\Services\PartnerLevelEvaluator;
 use App\Services\Shipping\VamExpressSettings;
 use App\Services\Suppliers\EurotermPortalCredentials;
@@ -633,6 +634,22 @@ Artisan::command('orders:notify-control', function (OrderDealControlNotifier $no
 })->purpose('Remind responsible managers about due order follow-ups');
 
 Schedule::command('orders:notify-control')->everyFiveMinutes()->withoutOverlapping();
+
+Artisan::command('orders:remind-stale {--dry-run}', function (StaleOrderFollowUpReminder $reminders): void {
+    if ($this->option('dry-run')) {
+        $stats = $reminders->preview();
+        $this->info('Зависших заказов: '.$stats['orders'].' · получателей: '.$stats['recipients']);
+
+        return;
+    }
+
+    $this->info('Сводок о зависших заказах: '.$reminders->notify());
+})->purpose('Remind responsible CRM staff about stale orders');
+
+Schedule::command('orders:remind-stale')
+    ->timezone(StaleOrderFollowUpReminder::TIMEZONE)
+    ->cron('0 10,13,16 * * 1-5')
+    ->withoutOverlapping();
 
 Artisan::command('orders:remind-onec-posting', function (OneCPostingReminder $reminders): void {
     $this->info('Заказов, требующих проведения в 1С: '.$reminders->syncOpen());

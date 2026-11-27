@@ -119,6 +119,20 @@ class Order extends Model
         };
     }
 
+    public function scopeStaleFollowUp(Builder $query): Builder
+    {
+        $now = now();
+        $cutoff = $now->copy()->subHours(48);
+
+        return $query->operationallyActive()
+            ->where('orders.created_at', '<=', $cutoff)
+            ->whereDoesntHave('statusHistory', fn (Builder $history): Builder => $history
+                ->changedStatus()->where('created_at', '>', $cutoff))
+            ->where(fn (Builder $control): Builder => $control
+                ->whereNull('deal_control_at')->orWhere('deal_control_at', '<=', $now)
+                ->orWhereNull('deal_next_action')->orWhereRaw("TRIM(deal_next_action) = ''"));
+    }
+
     private ?string $pendingStatusHistoryComment = null;
 
     private ?int $pendingStatusHistoryId = null;

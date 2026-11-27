@@ -141,7 +141,7 @@ class OrdersTable
                         ->latest('last_detected_at'),
                     'integrationDeliveries',
                 ])
-                ->when($table->getLivewire()->activeTab === 'attention', fn (Builder $query): Builder => $query->with([
+                ->when(in_array($table->getLivewire()->activeTab, ['attention', 'stale_follow_up'], true), fn (Builder $query): Builder => $query->with([
                     'latestOnecOrderTask:id,subject_type,subject_id,type,status',
                 ])))
             ->columns([
@@ -318,10 +318,10 @@ class OrdersTable
                     ->view('filament.resources.orders.deal-progress')
                     ->viewData(fn (Order $record, ListOrders $livewire): array => [
                         'isTable' => true,
-                        'queueShortcut' => $livewire->activeTab === 'attention'
+                        'queueShortcut' => in_array($livewire->activeTab, ['attention', 'stale_follow_up'], true)
                             ? app(OrderNextStep::class)->queueShortcut($record)
                             : null,
-                        'queueWaitReasons' => $livewire->activeTab === 'attention'
+                        'queueWaitReasons' => in_array($livewire->activeTab, ['attention', 'stale_follow_up'], true)
                             ? app(OrderNextStep::class)->queueWaitReasons($record)
                             : [],
                     ])

@@ -10,6 +10,7 @@ use App\Models\OneCAgentTask;
 use App\Models\User;
 use App\Services\Orders\OrderDealControl;
 use App\Services\Orders\OrderDealControlNotifier;
+use App\Services\Orders\StaleOrderFollowUpReminder;
 use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Shipping\Evropochta;
 use Filament\Facades\Filament;
@@ -241,6 +242,58 @@ class OrderDealControlTest extends TestCase
             ->assertDontSee('Ошибка 1С')->assertDontSee('Ждём ответ поставщика · Тестовый поставщик')
             ->assertDontSee('Этикетка Европочты ещё готовится');
         \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
+    public function test_stalled_order_queue_and_repeated_staff_digests_follow_real_progress(): void
+    {
+        $this->travelTo(now('Europe/Minsk')->setTime(10, 0));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $manager = $this->manager();
+        $secondManager = $this->manager();
+        $secondManager->update(['telegram_username' => 'manager_legacy_assignment']);
+        $otherManager = $this->manager();
+        $closed = $this->order('delivered');
+        $archived = $this->order('processing');
+        $scheduled = $this->order('processing');
+        $advanced = $this->order('processing');
+        $stalled = $this->order('processing');
+        $legacyAssigned = $this->order('checking');
+        $unassigned = $this->order('new');
+        $recent = $this->order('confirmed');
+        foreach ([$closed, $archived, $scheduled, $advanced, $stalled, $legacyAssigned, $unassigned] as $order) {
+            $order->forceFill(['created_at' => now()->subDays(4), 'updated_at' => now()])->save();
+        }
+        $stalled->update(['manager_id' => $manager->id, 'assigned_to' => '@manager_legacy_assignment']);
+        $legacyAssigned->update(['assigned_to' => '@manager_legacy_assignment']);
+        $archived->update(['archived_at' => now(), 'archive_reason' => 'Закрыт менеджером']);
+        $scheduled->forceFill(['deal_control_at' => now()->addHours(12), 'deal_next_action' => 'Позвонить покупателю'])->save();
+        $advanced->statusHistory()->create(['status_from' => 'confirmed', 'status_to' => 'processing']);
+        $stalled->statusHistory()->create(['status_from' => 'processing', 'status_to' => 'processing', 'comment' => 'Обновление моста']);
+
+        Livewire::actingAs($manager)->test(ListOrders::class)
+            ->call('selectOrderTab', 'stale_follow_up')
+            ->assertCanSeeTableRecords([$stalled, $legacyAssigned, $unassigned])
+            ->assertCanNotSeeTableRecords([$closed, $archived, $scheduled, $advanced, $recent]);
+        $reminders = app(StaleOrderFollowUpReminder::class);
+        $this->assertSame(['orders' => 3, 'recipients' => 2], $reminders->preview());
+        $this->assertSame(2, $reminders->notify());
+        $this->assertSame(0, $reminders->notify());
+        $this->assertSame(1, $manager->notifications()->count());
+        $this->assertSame(1, $secondManager->notifications()->count());
+        $this->assertSame(0, $otherManager->notifications()->count());
+        $notice = $manager->notifications()->sole()->data;
+        $this->assertStringContainsString('tab=stale_follow_up', $notice['actions'][0]['url']);
+        $this->assertStringContainsString($stalled->number, $notice['body']);
+        $this->assertStringNotContainsString($legacyAssigned->number, $notice['body']);
+        $this->assertStringContainsString($legacyAssigned->number, $secondManager->notifications()->sole()->data['body']);
+
+        $this->travel(3)->hours();
+        $this->assertSame(2, $reminders->notify());
+        $stalled->forceFill(['deal_control_at' => now()->addHours(8), 'deal_next_action' => 'Уточнить дату доставки'])->save();
+        $legacyAssigned->update(['status' => 'cancelled']);
+        $this->travel(3)->hours();
+        $this->assertSame(0, $reminders->notify());
+        $this->assertSame('processing', $stalled->fresh()->status);
     }
 
     public function test_label_is_not_dispatch_and_dispatch_is_not_receipt(): void
