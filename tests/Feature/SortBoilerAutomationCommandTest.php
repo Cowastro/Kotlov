@@ -224,6 +224,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $mpPress = $card('Пресс-муфта 16 арт. RM102Y003 GIACOMINI', $mpSections);
         $mpCompress = $card('Угольник переходной никелированный 20х3/4" обжимной с наружной резьбой для металлопластиковой трубы AQUASFERA', $mpSections);
         $mpPpsu = $card('Пресс-тройник PPSU 26x3/26x3/26x3 арт. 9024.54 KAN', $mpSections);
+        $pumpGroups = $section('gruppy-bystrogo-montazha-kotelnyx');
+        $mixGroup = $card('Смесительная насосная группа HANSA MK DN 32', $pumpGroups);
+        $thermoGroup = $card('Насосная группа BRV 1"  c насосом UPSO 25-65 Grundfos c термостатическим клапаном', $pumpGroups);
+        $safetyGroup = $card('Группа безопасности котла Varmega VM16001, 1", латунь', $pumpGroups);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -496,6 +500,14 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Насосные группы', $value('Тип', $mixGroup));
+        $this->assertSame('Смесительный', $value('Контур', $mixGroup));
+        $this->assertSame('Ду 32 (1 1/4")', $value('Присоединение', $mixGroup));
+        $this->assertSame($pumpGroups->id, $thermoGroup->fresh()->category_id);
+        $this->assertSame('С насосом', $value('Насос в комплекте', $thermoGroup));
+        $this->assertSame('Группы безопасности котла', $value('Тип', $safetyGroup));
+        $this->assertNull($value('Контур', $safetyGroup));
+        $this->assertSame('Ду 25 (1")', $value('Присоединение', $safetyGroup));
         $this->assertSame('Муфты, соединители и переходники', $value('Тип', $mpPress));
         $this->assertSame('Пресс', $value('Способ соединения', $mpPress));
         $this->assertSame('Без резьбы', $value('Резьба', $mpPress));
