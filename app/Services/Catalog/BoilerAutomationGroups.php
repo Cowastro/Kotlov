@@ -271,7 +271,7 @@ final class BoilerAutomationGroups
             ],
             ...$pumps,
             self::PIPE_CLAMPS => [
-                'Тип' => [self::CLAMP_TYPES, array_values(array_unique(self::CLAMP_TYPES))],
+                'Тип' => [self::CLAMP_TYPES, self::CLAMP_ORDER],
                 'Диаметр трубы' => [fn (string $title) => self::clampPipeSize($title), ['До 20 мм', '21–32 мм', '33–50 мм', '51–76 мм', '77–114 мм', 'Свыше 114 мм']],
             ],
             self::PP_PIPES => [
@@ -1639,7 +1639,19 @@ final class BoilerAutomationGroups
 
     public const PIPE_CLAMPS = 'krepleniya-dlya-trub';
 
-    /** Title pattern => «Тип» inside «Крепления для труб», in filter order; the first match wins. */
+    /** «Тип» options of «Крепления для труб», the most asked-for first. */
+    public const CLAMP_ORDER = [
+        'Металлические хомуты',
+        'Пластиковые клипсы и опоры',
+        'Хомуты-дюбели и крюки',
+        'Фиксаторы поворота',
+        'Червячные хомуты',
+        'Хомуты-врезки для ПЭ труб',
+        'Крепёж для тёплого пола',
+        'Кронштейны и прочее',
+    ];
+
+    /** Title pattern => «Тип» inside «Крепления для труб»; the first match wins. */
     public const CLAMP_TYPES = [
         '/(для пэ|п\/э) труб|хомут \d+ х/u' => 'Хомуты-врезки для ПЭ труб',
         '/червячн/u' => 'Червячные хомуты',
