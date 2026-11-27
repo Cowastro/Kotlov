@@ -63,7 +63,7 @@ final class OrderStatusSmsNotifier
             DB::table('order_status_sms')->insertOrIgnore([
                 'order_id' => $order->getKey(),
                 'event_key' => self::REVIEW_EVENT,
-                'order_status' => $status,
+                'order_status' => 'customer_review',
                 'message' => 'KOTLOV: Оставьте отзыв',
                 'created_at' => now(),
                 'updated_at' => now(),
