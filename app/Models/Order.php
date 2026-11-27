@@ -958,7 +958,9 @@ class Order extends Model
                     }
 
                     foreach (array_keys(array_diff_key(self::OPERATIONAL_PROBLEMS, $ignored)) as $problem) {
-                        $attention->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem($problem));
+                        $attention->orWhere(fn (Builder $part): Builder => $part
+                            ->when($problem === 'no_stock', fn (Builder $beforeDispatch): Builder => $beforeDispatch->where('orders.status', '!=', 'shipped'))
+                            ->withOperationalProblem($problem));
                     }
                 }),
             default => $query,

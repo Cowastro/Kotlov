@@ -116,6 +116,9 @@ class OrderNextStep
         $orderUrl = OrderResource::getUrl('view', ['record' => $order]);
         $summary = $order->managementSummary();
         $problems = $summary['problems'];
+        if ($order->status === 'shipped') {
+            $problems = $problems->whereNotIn('code', ['no_stock', 'availability_unknown']);
+        }
         $itemDetails = [];
         $mixedItems = $order->items->whereNotNull('supply_captured_at')->whereNotNull('supply_supplier_id');
         if ($mixedItems->pluck('supply_supplier_id')->unique()->count() > 1) {
@@ -130,9 +133,7 @@ class OrderNextStep
             $action = match ($problem['code']) {
                 'missing_supplier' => 'Назначить поставщика по позиции',
                 'missing_price' => 'Уточнить входную цену по позиции',
-                'no_stock', 'availability_unknown' => $order->status === 'shipped'
-                    ? 'Сверить остаток и источник отгрузки'
-                    : 'Подтвердить остаток или выбрать другой источник',
+                'no_stock', 'availability_unknown' => 'Подтвердить остаток или выбрать другой источник',
                 'mixed_suppliers' => 'Сверить позиции и сроки у каждого поставщика',
                 'unassigned' => 'Назначить ответственного менеджера',
                 'sync_problem' => 'Проверить обмен с 1С в заказе',
