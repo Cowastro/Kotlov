@@ -4,6 +4,7 @@ namespace App\Filament\Resources\OneCOrderProfiles\Pages;
 
 use App\Filament\Resources\OneCOrderProfiles\OneCOrderProfileResource;
 use App\Filament\Resources\Orders\Actions\OneCOrderExportAction;
+use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCReferences;
 use Filament\Resources\Pages\EditRecord;
 
@@ -19,7 +20,7 @@ class EditOneCOrderProfile extends EditRecord
             $value = strtolower((string) ($header[$field] ?? ''));
             $data['f'][$alias] = $value !== '' && $value !== OneCReferences::ZERO ? $value : null;
         }
-        $data['status'] = $header['Статус'] ?? null;
+        $data['status'] = OneCOrderProfiles::exportStatus($header['Статус'] ?? null);
         $data['delivery'] = $header['СпособДоставки'] ?? null;
         $data['with_vat'] = (bool) ($header['ЦенаВключаетНДС'] ?? false);
         $data['vat'] = $data['row_defaults']['СтавкаНДС_Key'] ?? null;

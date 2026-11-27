@@ -168,10 +168,12 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame('eeeeeeee-0000-0000-0000-000000000002', $form['h']['Менеджер_Key']);
         $this->assertStringContainsString('К оплате 49,98р.', $form['info']);
         $this->assertSame([], $export->problems($order, $profile, $form));
+        $this->assertSame('КОбеспечению', $form['status']);
+        $this->assertArrayNotHasKey('КВыполнению', OneCOrderProfiles::exportStatusOptions('КВыполнению'));
 
-        $task = $export->enqueue($order, $form, $this->admin);
+        $task = $export->enqueue($order, array_replace($form, ['status' => 'КВыполнению']), $this->admin);
         $body = $task->payload['body'];
-        $this->assertSame('КВыполнению', $body['Статус']);
+        $this->assertSame('КОбеспечению', $body['Статус']);
         $this->assertSame('ДоКлиента', $body['СпособДоставки']);
         $this->assertSame('Тестовск, Ул. Примерная, 1', $body['АдресДоставки']);
         $this->assertSame('', $body['АдресДоставкиПеревозчика']);
@@ -196,6 +198,11 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame($planned, $body['Товары'][0]['ДатаОтгрузки']);
         $this->assertSame(49.98, $body['ЭтапыГрафикаОплаты'][0]['СуммаПлатежа']);
 
+        // A queued export from before the fix must use the same status when the agent takes it.
+        $legacyPayload = $task->payload;
+        $legacyPayload['body']['Статус'] = 'КВыполнению';
+        $task->update(['payload' => $legacyPayload]);
+
         // An old agent cannot create orders: the order waits for agent 4.
         $this->agent('3')->get('/1c/agent/tasks/next')->assertOk()->assertSee('none');
         $this->agent('10')->get('/1c/agent/tasks/next')->assertOk()->assertSee('none');
@@ -211,7 +218,7 @@ class OneCOrderExportTest extends TestCase
         $order->refresh();
         $this->assertSame('МПУТ-000800', $order->onec_order_number);
         $this->assertSame('dddddddd-0000-0000-0000-000000000800', $order->onec_order_guid);
-        $this->assertSame('Заказ 1С МПУТ-000800, не проведён, к выполнению', $task->fresh()->summary);
+        $this->assertSame('Заказ 1С МПУТ-000800, не проведён, к обеспечению', $task->fresh()->summary);
 
         $this->expectException(DomainException::class);
         $export->enqueue($order, $form, $this->admin);
@@ -351,7 +358,7 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame('МПУТ-000756', $profile->template_number);
 
         Livewire::test(EditOneCOrderProfile::class, ['record' => $profile->getRouteKey()])
-            ->assertFormSet(['f.org' => self::ORG, 'f.partner' => self::RETAIL, 'status' => 'КВыполнению', 'with_vat' => true])
+            ->assertFormSet(['f.org' => self::ORG, 'f.partner' => self::RETAIL, 'status' => 'КОбеспечению', 'with_vat' => true])
             ->fillForm(['status' => 'НеСогласован'])
             ->call('save')->assertHasNoFormErrors();
         $profile->refresh();

@@ -37,7 +37,16 @@ class OrderTaskHandler implements OneCAgentTaskHandler
         return $lines;
     }
 
-    public function claimed(OneCAgentTask $task): void {}
+    public function claimed(OneCAgentTask $task): void
+    {
+        $payload = $task->payload;
+        $status = data_get($payload, 'body.Статус');
+        $supportedStatus = OneCOrderProfiles::exportStatus($status);
+        if ($status !== $supportedStatus) {
+            $payload['body']['Статус'] = $supportedStatus;
+            $task->forceFill(['payload' => $payload])->save();
+        }
+    }
 
     public function finished(OneCAgentTask $task, array $result): ?string
     {

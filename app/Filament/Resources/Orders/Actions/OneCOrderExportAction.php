@@ -314,7 +314,7 @@ class OneCOrderExportAction
                         + ($state ? [$state => (string) $refs->label('contract', $state)] : [])),
                 $select('subdivision', 'subdivision'),
                 $select('manager', 'user'),
-                Select::make('status')->label('Статус в 1С')->options(fn (?string $state): array => OneCOrderProfiles::STATUSES + ($state ? [$state => $state] : [])),
+                Select::make('status')->label('Статус в 1С')->options(fn (?string $state): array => OneCOrderProfiles::exportStatusOptions($state)),
                 $select('priority', 'priority'),
             ]),
             Section::make('Доставка')->columns(2)->schema([
