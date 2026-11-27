@@ -152,10 +152,16 @@ class OrderOneCStockSourceTest extends TestCase
         ]);
         $stock->update(['stock_on_hand' => 0, 'stock_reserved' => 0]);
 
+        $item->order->items()->create([
+            'product_name' => 'Позиция без поставщика', 'price' => 100, 'quantity' => 1, 'total' => 100,
+            'fulfillment_route' => 'supplier_purchase',
+        ]);
         $page = Livewire::test(ViewOrder::class, ['record' => $item->order_id])
             ->assertSee('На нашем складе свободно 0 шт. из 1 шт. по заказу.')
             ->assertSee('Проверить исполнение')
-            ->call('reviewOwnStockFulfillment');
+            ->assertSee('Позиций, требующих внимания: 2')
+            ->assertDontSee('Для этой позиции нужно назначить поставщика.')
+            ->call('openNextFulfillmentStep');
         $instance = $page->instance();
         $action = $instance->getMountedAction();
         $this->assertSame('assignItemSupplier', $action?->getName());
@@ -174,7 +180,7 @@ class OrderOneCStockSourceTest extends TestCase
         $moscow = $item->product->ecokaminMoscowStock;
         $moscow->update(['last_synced_at' => now()->subDays(15)]);
         Livewire::test(ViewOrder::class, ['record' => $item->order_id])
-            ->call('reviewOwnStockFulfillment')
+            ->call('openNextFulfillmentStep')
             ->assertSet('mountedActions.0.data.fulfillment_route', 'own_stock');
 
         $item->update(['fulfillment_availability_status' => 'reserved']);

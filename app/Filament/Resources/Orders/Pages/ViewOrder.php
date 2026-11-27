@@ -21,6 +21,7 @@ use App\Models\SupplierOrderRequest;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\Orders\OrderAvailabilityConfirmation;
+use App\Services\Orders\OrderItemAvailabilityDisplay;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderItemFulfillmentPicker;
 use App\Services\Orders\OrderPortal;
@@ -125,38 +126,37 @@ class ViewOrder extends ViewRecord
         return null;
     }
 
-    public function supplierItemToAssign(): ?OrderItem
-    {
-        if (! OrderResource::canEdit($this->record) || ! in_array($this->record->status, ['new', 'checking', 'confirmed', 'processing'], true)) {
-            return null;
-        }
-
-        return $this->record->items->first(fn (OrderItem $item): bool => blank($item->fulfillment_supplier_id)
-            && in_array($item->fulfillment_route ?: $item->supplyContext()['status'], ['supplier_purchase', 'direct_supplier'], true));
-    }
-
-    /** @return array{item: OrderItem, message: string}|null */
-    public function ownStockReview(): ?array
+    /** @return array{item: OrderItem, message: ?string, count: int}|null */
+    public function nextFulfillmentStep(): ?array
     {
         $order = $this->record;
-        if (! OrderResource::canEdit($order) || ! in_array($order->status, ['checking', 'confirmed', 'processing'], true)
-            || (filled($order->onec_order_guid) && ! $order->onec_deleted && $order->onec_posted)) {
+        if (! OrderResource::canEdit($order) || ! in_array($order->status, ['new', 'checking', 'confirmed', 'processing'], true)) {
             return null;
         }
 
-        $display = app(\App\Services\Orders\OrderItemAvailabilityDisplay::class);
-        foreach ($order->items as $item) {
-            if ($message = $display->ownStockShortage($item)) {
-                return ['item' => $item, 'message' => $message];
+        $unassigned = $order->items->filter(fn (OrderItem $item): bool => blank($item->fulfillment_supplier_id)
+            && in_array($item->fulfillment_route ?: $item->supplyContext()['status'], ['supplier_purchase', 'direct_supplier'], true));
+        $canReviewOwnStock = $order->status !== 'new'
+            && ! (filled($order->onec_order_guid) && ! $order->onec_deleted && $order->onec_posted);
+        $shortages = [];
+        if ($canReviewOwnStock) {
+            $display = app(OrderItemAvailabilityDisplay::class);
+            foreach ($order->items as $item) {
+                if ($message = $display->ownStockShortage($item)) {
+                    $shortages[] = ['item' => $item, 'message' => $message];
+                }
             }
         }
 
-        return null;
+        $next = $shortages[0] ?? ['item' => $unassigned->first(), 'message' => null];
+
+        return $next['item'] ? $next + ['count' => count($shortages) + $unassigned->count()] : null;
     }
 
-    public function reviewOwnStockFulfillment(): void
+    public function openNextFulfillmentStep(): void
     {
-        $item = $this->ownStockReview()['item'] ?? null;
+        $next = $this->nextFulfillmentStep();
+        $item = $next['item'] ?? null;
         $items = $item ? $this->getSchema('infolist')?->getComponentByStatePath('items') : null;
         if (! $items instanceof \Filament\Infolists\Components\RepeatableEntry) {
             return;
@@ -168,8 +168,11 @@ class ViewOrder extends ViewRecord
             }
 
             $action = $row->getComponentByStatePath('supply_supplier')?->getAction('assignItemSupplier');
-            if ($action?->isVisible() && $action->isAuthorized()) {
-                $this->mountAction($action->getName(), ['reviewOwnStock' => true], $action->getContext());
+            if ($action?->isVisible() && $action->isAuthorized() && ! $action->isDisabled()) {
+                $this->mountAction($action->getName(), [
+                    'reviewOwnStock' => $next['message'] !== null,
+                    'fromNextStep' => true,
+                ], $action->getContext());
             }
 
             return;

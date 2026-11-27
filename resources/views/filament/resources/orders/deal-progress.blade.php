@@ -69,17 +69,19 @@
     @if (! $isTable)
         <div class="order-deal__next">
             <strong>Следующий шаг</strong>
-            @if (isset($ownStockReview))
-                <p><strong>{{ $ownStockReview['item']->product_name }}{{ $ownStockReview['item']->product_sku ? ' · '.$ownStockReview['item']->product_sku : '' }}</strong></p>
-                <p>{{ $ownStockReview['message'] }}</p>
-                <x-filament::button type="button" size="sm" color="warning" wire:click="reviewOwnStockFulfillment">
-                    Проверить исполнение
-                </x-filament::button>
-            @endif
-            @if (isset($supplierItem))
-                <p>Назначьте поставщика для позиции «{{ $supplierItem->product_name }}»{{ $supplierItem->product_sku ? ' · '.$supplierItem->product_sku : '' }}.</p>
-                <x-filament::button tag="a" size="sm" :href="'#order-item-supplier-'.$supplierItem->id" icon="heroicon-o-arrow-down">
-                    Перейти к назначению поставщика
+            @if (isset($fulfillmentStep))
+                @php
+                    $item = $fulfillmentStep['item'];
+                    $shortage = $fulfillmentStep['message'];
+                @endphp
+                <p><strong>{{ $item->product_name }}{{ $item->product_sku ? ' · '.$item->product_sku : '' }}</strong></p>
+                <p>{{ $shortage ?? 'Для этой позиции нужно назначить поставщика.' }}</p>
+                @if ($fulfillmentStep['count'] > 1)
+                    <p>Позиций, требующих внимания: {{ $fulfillmentStep['count'] }}</p>
+                @endif
+                <x-filament::button type="button" size="sm" :color="$shortage ? 'warning' : 'primary'"
+                    data-order-next-action="openNextFulfillmentStep" wire:click="openNextFulfillmentStep">
+                    {{ $shortage ? 'Проверить исполнение' : 'Назначить поставщика' }}
                 </x-filament::button>
             @elseif (($nextAction ?? null)?->getName() === 'recordSupplierEmailResponse' && isset($supplierReply))
                 <p>Ждём ответ от {{ $supplierReply->supplier_name }} по заявке {{ $supplierReply->number }}.</p>
@@ -93,17 +95,17 @@
             @else
                 <p>{{ $order->workflowNextStep() }}</p>
             @endif
-            @if (! isset($supplierItem) && isset($nextAction) && $nextAction->getName() !== 'recordSupplierEmailResponse')
+            @if (! isset($fulfillmentStep) && isset($nextAction) && $nextAction->getName() !== 'recordSupplierEmailResponse')
                 <x-filament::button type="button" size="sm" :icon="$nextAction->getIcon()"
                     data-order-next-action="{{ $nextAction->getName() }}"
                     wire:click="mountAction('{{ $nextAction->getName() }}')">
                     {{ $nextAction->getLabel() }}
                 </x-filament::button>
             @endif
-            @if (! empty($onecHint) && ! str_contains($order->workflowNextStep(), $onecHint))
+            @if (! isset($fulfillmentStep) && ! empty($onecHint) && ! str_contains($order->workflowNextStep(), $onecHint))
                 <p>{{ $onecHint }}</p>
             @endif
-            @if (isset($labelAction))
+            @if (! isset($fulfillmentStep) && isset($labelAction))
                 <x-filament::link :href="$labelAction->getUrl()" target="_blank" rel="noopener" icon="heroicon-o-printer">
                     Печать этикетки Европочты
                 </x-filament::link>
