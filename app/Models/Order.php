@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\Integrations\OneCBridge\OrderSupplyTaskHandler;
+use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Marketplaces\DealByOrderStatusSync;
 use App\Services\Orders\OrderItemSupplyContextResolver;
 use App\Services\Orders\OrderStatusSmsNotifier;
@@ -11,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -345,6 +348,13 @@ class Order extends Model
     public function statusSms(): HasMany
     {
         return $this->hasMany(OrderStatusSms::class)->latest('id');
+    }
+
+    public function latestOnecOrderTask(): MorphOne
+    {
+        return $this->morphOne(OneCAgentTask::class, 'subject')
+            ->ofMany(['id' => 'max'], fn (Builder $query): Builder => $query
+                ->whereIn('type', [OrderTaskHandler::TYPE, OrderSupplyTaskHandler::TYPE]));
     }
 
     public function scopeOperationallyActive(Builder $query): Builder

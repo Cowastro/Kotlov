@@ -129,7 +129,7 @@ class OrdersTable
                     'archivedBy:id,name',
                     'placedEconomicSnapshot',
                     'latestSettlement',
-                    'supplierOrderRequests:id,order_id,supplier_id,supplier_name,status,transfer_mode,sent_at,acknowledged_at',
+                    'supplierOrderRequests:id,order_id,supplier_id,supplier_name,number,status,transfer_mode,sent_at,acknowledged_at',
                     'portalLinks' => fn ($query) => $query
                         ->whereNull('revoked_at')
                         ->where('expires_at', '>', now())
@@ -140,7 +140,10 @@ class OrdersTable
                         ->with('source')
                         ->latest('last_detected_at'),
                     'integrationDeliveries',
-                ]))
+                ])
+                ->when($table->getLivewire()->activeTab === 'attention', fn (Builder $query): Builder => $query->with([
+                    'latestOnecOrderTask:id,subject_type,subject_id,type,status',
+                ])))
             ->columns([
                 TextColumn::make('number')
                     ->label('№ заказа')
@@ -318,6 +321,9 @@ class OrdersTable
                         'queueShortcut' => $livewire->activeTab === 'attention'
                             ? app(OrderNextStep::class)->queueShortcut($record)
                             : null,
+                        'queueWaitReasons' => $livewire->activeTab === 'attention'
+                            ? app(OrderNextStep::class)->queueWaitReasons($record)
+                            : [],
                     ])
                     ->width('350px')
                     ->visibleFrom('md'),
