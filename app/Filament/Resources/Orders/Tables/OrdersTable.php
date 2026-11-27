@@ -23,6 +23,7 @@ use App\Services\Integrations\OneCBridge\OneCOrderProfiles;
 use App\Services\Integrations\OneCBridge\OneCOrderStates;
 use App\Services\Integrations\OneCBridge\OneCSupplierOrderExport;
 use App\Services\Orders\OrderItemFulfillmentManager;
+use App\Services\Orders\OrderNextStep;
 use App\Services\Orders\OrderPortal;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\OrderWorkflow;
@@ -111,12 +112,13 @@ class OrdersTable
                 ->withSum('items', 'quantity')
                 ->with([
                     'partnerBranch:id,name,city_id',
-                    'items:id,order_id,product_id,integration_product_id,warehouse_stock_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_warehouse_name,supply_delivery_days,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price,fulfillment_availability_status,fulfillment_confirmed_at',
+                    'items:id,order_id,product_id,integration_product_id,supplier_product_id,warehouse_stock_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_warehouse_name,supply_delivery_days,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price,fulfillment_availability_status,fulfillment_confirmed_at',
                     'items.fulfillmentSupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
                     'items.fulfillmentSupplier.crmCounterparty.contactPoints',
                     'items.supplySupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
                     'items.supplySupplier.crmCounterparty.contactPoints',
                     'items.integrationProduct.source.supplier.crmCounterparty.contactPoints',
+                    'items.supplierProduct.supplier',
                     'items.product.category:id,name,slug',
                     'items.product.integrationProducts.source.supplier.crmCounterparty.contactPoints',
                     'items.product.supplierProducts.supplier.crmCounterparty.contactPoints',
@@ -127,7 +129,7 @@ class OrdersTable
                     'archivedBy:id,name',
                     'placedEconomicSnapshot',
                     'latestSettlement',
-                    'supplierOrderRequests:id,order_id,supplier_id,supplier_name,status,sent_at,acknowledged_at',
+                    'supplierOrderRequests:id,order_id,supplier_id,supplier_name,status,transfer_mode,sent_at,acknowledged_at',
                     'portalLinks' => fn ($query) => $query
                         ->whereNull('revoked_at')
                         ->where('expires_at', '>', now())
@@ -311,7 +313,12 @@ class OrdersTable
                     // would create nested anchors and let the browser split the layout.
                     ->disabledClick()
                     ->view('filament.resources.orders.deal-progress')
-                    ->viewData(['isTable' => true])
+                    ->viewData(fn (Order $record, ListOrders $livewire): array => [
+                        'isTable' => true,
+                        'queueShortcut' => $livewire->activeTab === 'attention'
+                            ? app(OrderNextStep::class)->queueShortcut($record)
+                            : null,
+                    ])
                     ->width('350px')
                     ->visibleFrom('md'),
 

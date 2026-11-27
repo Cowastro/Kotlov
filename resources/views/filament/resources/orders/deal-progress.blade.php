@@ -68,7 +68,7 @@
         @endif
     </div>
     @if (! $isTable)
-        <div class="order-deal__next">
+        <div class="order-deal__next" @if ($openQueueNextStep ?? false) wire:init="openQueueNextStep" @endif>
             <strong>Следующий шаг</strong>
             @if (isset($fulfillmentStep))
                 @php
@@ -139,6 +139,16 @@
         </div>
     @elseif ($active && filled($order->deal_next_action))
         <div class="order-deal__next" title="{{ $order->deal_next_action }}">{{ $order->deal_next_action }}</div>
+    @endif
+    @if (isset($queueShortcut))
+        <div class="mt-1 flex flex-wrap items-center gap-2">
+            <x-filament::button tag="a" size="xs" :href="$queueShortcut['url']" data-order-queue-next-step>
+                {{ $queueShortcut['label'] }}
+            </x-filament::button>
+            @if ($queueShortcut['count'] > 1)
+                <span title="Позиций, требующих внимания">Позиций: {{ $queueShortcut['count'] }}</span>
+            @endif
+        </div>
     @endif
     <div class="order-deal__facts">
         @if ($isTable)

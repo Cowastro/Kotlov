@@ -167,6 +167,7 @@ class OrderInfolist
                                 ->view('filament.resources.orders.deal-progress')
                                 ->viewData(fn ($livewire): array => [
                                     'nextAction' => $livewire->nextStepAction(),
+                                    'openQueueNextStep' => $livewire->queueNextStep !== null,
                                     'labelAction' => $livewire->nextStepLabelAction(),
                                     'fulfillmentStep' => $livewire->nextFulfillmentStep(),
                                     'supplierReply' => $livewire->pendingSupplierReply(),
