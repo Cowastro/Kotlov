@@ -49,7 +49,15 @@ class EvropochtaShipmentManagement
             if (! Cache::add($key.':refreshing', true, now()->addMinutes(3))) {
                 return 'Статус уже проверялся недавно. Повторная проверка доступна через 3 минуты.';
             }
-            $status = $this->carrier->shipmentStatus($order->evropochta_tracking_number);
+            $number = $order->evropochta_tracking_number;
+            $observedAt = now();
+            try {
+                $status = $this->carrier->shipmentStatus($number);
+            } catch (EvropochtaShipmentException $exception) {
+                app(CarrierOrderProgress::class)->euroCheckFailed($order, $number, $observedAt);
+
+                throw $exception;
+            }
             $this->remember($order, $status);
             return $status['status'];
         });

@@ -193,6 +193,7 @@ class Order extends Model
     protected $casts = [
         'delivery_preparation' => 'array',
         'carrier_checked_at' => 'datetime',
+        'carrier_check_failed_at' => 'datetime',
         'is_internal' => 'boolean',
         'deal_control_at' => 'datetime',
         'deal_stage_changed_at' => 'datetime',
@@ -303,8 +304,9 @@ class Order extends Model
         });
 
         static::updating(function (Order $order) {
-            if (($order->isDirty('delivery_type') && ! ($order->delivery_type === 'vam_express' && $order->getOriginal('carrier_provider') === 'vam')) || ($order->isDirty('evropochta_tracking_number') && $order->getOriginal('carrier_provider') === 'evropochta')) {
-                $order->forceFill(array_fill_keys(['carrier_provider', 'carrier_reference', 'carrier_display_reference', 'carrier_stage', 'carrier_status_text', 'carrier_checked_at', 'carrier_polled_at'], null));
+            if (($order->isDirty('delivery_type') && ! ($order->delivery_type === 'vam_express' && $order->getOriginal('carrier_provider') === 'vam'))
+                || ($order->isDirty('evropochta_tracking_number') && $order->getOriginal('delivery_type') === 'evropochta')) {
+                $order->forceFill(array_fill_keys(['carrier_provider', 'carrier_reference', 'carrier_display_reference', 'carrier_stage', 'carrier_status_text', 'carrier_checked_at', 'carrier_polled_at', 'carrier_check_failed_at'], null));
             }
             $userId = Auth::id();
             $claimedBy = trim((string) $order->getOriginal('assigned_to'));

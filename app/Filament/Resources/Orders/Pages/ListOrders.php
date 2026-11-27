@@ -77,7 +77,8 @@ class ListOrders extends ListRecords
                 ->where('status', OneCAgentTask::FAILED)
                 ->where(fn (Builder $current): Builder => $current->where('type', '!=', OrderTaskHandler::TYPE)
                     ->orWhereNull('orders.onec_order_guid')->orWhere('orders.onec_order_guid', '')
-                    ->orWhere('orders.onec_deleted', true))));
+                    ->orWhere('orders.onec_deleted', true)))
+            ->orWhere(fn (Builder $delivery): Builder => \App\Services\Orders\OrderCarrierAttention::query($delivery)));
     }
 
     public function getTabs(): array

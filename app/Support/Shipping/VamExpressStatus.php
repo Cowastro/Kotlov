@@ -7,9 +7,21 @@ use Illuminate\Database\Eloquent\Builder;
 
 class VamExpressStatus
 {
+    private const ATTENTION_PREFIXES = [
+        'частичный отказ' => 'warning', 'перенос' => 'warning',
+        'отказ' => 'cancelled', 'отмена' => 'cancelled', 'отменена' => 'cancelled',
+        'обмен' => 'exchange', 'дост. от кл.' => 'return', 'возврат' => 'return',
+    ];
+
     public static function group(?string $status): string
     {
         $status = mb_strtolower(trim($status ?? ''));
+
+        foreach (self::ATTENTION_PREFIXES as $prefix => $group) {
+            if (str_starts_with($status, $prefix)) {
+                return $group;
+            }
+        }
 
         return match (true) {
             in_array($status, ['обработана', 'доставлена', 'завершено'], true) => 'delivered',
@@ -17,10 +29,6 @@ class VamExpressStatus
             $status === 'не обработана' => 'new',
             $status === 'на складе' => 'warehouse',
             $status === 'в пути' => 'transit',
-            str_starts_with($status, 'частичный отказ'), str_starts_with($status, 'перенос') => 'warning',
-            str_starts_with($status, 'отказ'), str_starts_with($status, 'отмена'), $status === 'отменена' => 'cancelled',
-            str_starts_with($status, 'обмен') => 'exchange',
-            str_starts_with($status, 'дост. от кл.') => 'return',
             default => 'unknown',
         };
     }
@@ -55,8 +63,13 @@ class VamExpressStatus
             'work' => $query->whereIn('carrier_status', ['Не обработана', 'На складе']),
             'transit' => $query->where('carrier_status', 'В пути'),
             'delivered' => $query->whereIn('carrier_status', ['Обработана', 'Доставлена', 'Завершено']),
-            'attention' => $query->where(fn (Builder $q) => $q->where('carrier_status', 'like', 'Перенос%')
-                ->orWhere('carrier_status', 'like', 'Отказ%')->orWhere('carrier_status', 'like', 'Частичный отказ%')),
+            'attention' => $query->where(function (Builder $q): void {
+                foreach (array_keys(self::ATTENTION_PREFIXES) as $prefix) {
+                    foreach ([$prefix, mb_strtoupper(mb_substr($prefix, 0, 1)).mb_substr($prefix, 1), mb_strtoupper($prefix)] as $case) {
+                        $q->orWhere('carrier_status', 'like', $case.'%');
+                    }
+                }
+            }),
             default => $query,
         };
     }

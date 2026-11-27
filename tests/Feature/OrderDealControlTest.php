@@ -245,6 +245,39 @@ class OrderDealControlTest extends TestCase
         \Illuminate\Support\Facades\Http::assertNothingSent();
     }
 
+    public function test_attention_queue_shows_delivery_exceptions_with_links_to_exact_shipments(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $euro = $this->order('shipped');
+        $euro->forceFill(['delivery_type' => 'evropochta', 'evropochta_tracking_number' => 'BY123456789012'])->save();
+        $euro->forceFill([
+            'carrier_provider' => 'evropochta', 'carrier_reference' => 'BY123456789012',
+            'carrier_stage' => 'attention', 'carrier_status_text' => 'Отказ получателя',
+            'carrier_check_failed_at' => now(),
+        ])->save();
+        $vam = $this->order('shipped');
+        $vam->forceFill(['delivery_type' => 'vam_express'])->save();
+        $shipment = $vam->vamExpressShipments()->save(new VamExpressShipment([
+            'remote_id' => 'carrier-return', 'display_id' => 'RETURN', 'carrier_status' => 'Возврат',
+            'synced_at' => now()->subHour(), 'checked_at' => now(),
+        ]));
+
+        $this->assertEqualsCanonicalizing([$euro->id, $vam->id],
+            \App\Services\Orders\OrderCarrierAttention::query(Order::query())->pluck('id')->all());
+        Livewire::actingAs($this->manager())->test(ListOrders::class)->call('selectOrderTab', 'attention')
+            ->assertCanSeeTableRecords([$euro, $vam])
+            ->assertSee('Европочта · Отказ получателя')
+            ->assertSee('Европочта · Не удалось проверить статус')
+            ->assertSee('ВАМ Экспресс · Возврат')
+            ->assertSee('ВАМ Экспресс · Отправление не найдено при проверке')
+            ->assertSee('tableActionRecord='.$euro->id)
+            ->assertSee('/admin/vam-express-shipments/'.$shipment->id);
+
+        $euro->forceFill(['evropochta_tracking_number' => 'BY999999999999'])->save();
+        $shipment->update(['carrier_status' => 'В пути', 'synced_at' => now()]);
+        $this->assertFalse(\App\Services\Orders\OrderCarrierAttention::query(Order::query())->exists());
+    }
+
     public function test_stalled_order_queue_and_repeated_staff_digests_follow_real_progress(): void
     {
         $this->travelTo(now('Europe/Minsk')->setTime(10, 0));
