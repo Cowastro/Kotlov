@@ -189,6 +189,11 @@ class OrderInfolist
                                 ->schema([
                                     TextEntry::make('product_name')
                                         ->label('Товар')
+                                        ->extraAttributes(fn (OrderItem $record): array => [
+                                            'id' => $record->adminAnchor(),
+                                            'style' => 'scroll-margin-top: 6rem',
+                                            'tabindex' => '-1',
+                                        ])
                                         ->columnSpan(['default' => 2, 'lg' => 3])
                                         ->url(fn (OrderItem $record): ?string => $record->publicProductUrl())
                                         ->openUrlInNewTab()

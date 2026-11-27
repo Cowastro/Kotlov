@@ -161,7 +161,8 @@ class OrderItemSupplyContextResolver
      *     negative_margin_count: int, low_margin_count: int,
      *     minimum_margin_percent: float, sale_total: float, purchase_total: float,
      *     priced_sale_total: float, margin_total: float, margin_percent: float|null,
-     *     items_count: int, priced_items_count: int
+     *     items_count: int, priced_items_count: int, unknown_availability_count: int,
+     *     problem_item_ids: array<string, list<int>>
      * }
      */
     public function summarize(Order $order): array
@@ -186,21 +187,29 @@ class OrderItemSupplyContextResolver
         $pricedSaleTotal = round((float) $pricedContexts->sum('sale_total'), 2);
         $marginTotal = round((float) $pricedContexts->sum('margin_total'), 2);
         $minimumMarginPercent = (float) config('shop.order_management.minimum_margin_percent', 10);
-
-        return [
-            'supplier_names' => $contexts->pluck('supplier_name')->filter()->unique()->values(),
-            'unresolved_count' => $contexts->where('status', 'unresolved')->count(),
-            'missing_price_count' => $contexts->where('has_purchase_price', false)->count(),
-            'unavailable_count' => $contexts->whereStrict('is_available', false)->count(),
-            'unknown_availability_count' => $contexts->whereStrict('is_available', null)->count(),
-            'negative_margin_count' => $pricedContexts->filter(
-                fn (array $context): bool => (float) $context['margin_total'] < 0,
-            )->count(),
-            'low_margin_count' => $pricedContexts->filter(
+        $problemContexts = [
+            'missing_supplier' => $contexts->where('status', 'unresolved'),
+            'missing_price' => $contexts->where('has_purchase_price', false),
+            'no_stock' => $contexts->whereStrict('is_available', false),
+            'availability_unknown' => $contexts->whereStrict('is_available', null),
+            'negative_margin' => $pricedContexts->filter(fn (array $context): bool => (float) $context['margin_total'] < 0),
+            'low_margin' => $pricedContexts->filter(
                 fn (array $context): bool => (float) $context['margin_total'] >= 0
                     && $context['margin_percent'] !== null
                     && (float) $context['margin_percent'] < $minimumMarginPercent,
-            )->count(),
+            ),
+        ];
+
+        return [
+            'supplier_names' => $contexts->pluck('supplier_name')->filter()->unique()->values(),
+            'unresolved_count' => $problemContexts['missing_supplier']->count(),
+            'missing_price_count' => $problemContexts['missing_price']->count(),
+            'unavailable_count' => $problemContexts['no_stock']->count(),
+            'unknown_availability_count' => $problemContexts['availability_unknown']->count(),
+            'negative_margin_count' => $problemContexts['negative_margin']->count(),
+            'low_margin_count' => $problemContexts['low_margin']->count(),
+            'problem_item_ids' => array_map(fn (Collection $matching): array => $matching->keys()
+                ->map(fn ($key) => $order->items[$key]->getKey())->filter()->values()->all(), $problemContexts),
             'minimum_margin_percent' => $minimumMarginPercent,
             'sale_total' => $saleTotal,
             'purchase_total' => $purchaseTotal,

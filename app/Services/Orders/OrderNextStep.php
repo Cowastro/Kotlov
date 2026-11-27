@@ -109,13 +109,15 @@ class OrderNextStep
         return $reasons;
     }
 
-    /** @return list<array{label: string, action: string, url?: string, link?: string}> */
+    /** @return list<array{label: string, action: string, url?: string, link?: string, items?: list<array{label: string, url: string}>}> */
     public function queueAttentionReasons(Order $order): array
     {
         $reasons = $this->queueWaitReasons($order);
         $orderUrl = OrderResource::getUrl('view', ['record' => $order]);
-        $problems = $order->managementSummary()['problems'];
-        if ($order->items->whereNotNull('supply_captured_at')->pluck('supply_supplier_id')->filter()->unique()->count() > 1) {
+        $summary = $order->managementSummary();
+        $problems = $summary['problems'];
+        $mixedItems = $order->items->whereNotNull('supply_captured_at')->whereNotNull('supply_supplier_id');
+        if ($mixedItems->pluck('supply_supplier_id')->unique()->count() > 1) {
             $problems = $problems->concat([['code' => 'mixed_suppliers', 'label' => 'Несколько поставщиков']]);
         }
         if (config('onec.order_queue_enabled', false) && $order->integrationIssues->isNotEmpty()
@@ -128,7 +130,7 @@ class OrderNextStep
                 'missing_supplier' => 'Назначить поставщика по позиции',
                 'missing_price' => 'Уточнить входную цену по позиции',
                 'negative_margin', 'low_margin' => 'Сверить входную цену и цену продажи',
-                'no_stock' => $order->status === 'shipped'
+                'no_stock', 'availability_unknown' => $order->status === 'shipped'
                     ? 'Сверить остаток и источник отгрузки'
                     : 'Подтвердить остаток или выбрать другой источник',
                 'mixed_suppliers' => 'Сверить позиции и сроки у каждого поставщика',
@@ -137,7 +139,17 @@ class OrderNextStep
                 'supplier_request_rejected' => 'Уточнить отказ и подобрать другой источник',
                 'payment_failed' => 'Проверить платёж и способ оплаты',
             };
-            $reasons[] = ['label' => $problem['label'], 'action' => $action];
+            $itemIds = match ($problem['code']) {
+                'mixed_suppliers' => $mixedItems->modelKeys(),
+                'supplier_request_rejected' => $order->supplierOrderRequests->where('status', 'rejected')
+                    ->loadMissing('items:id,supplier_order_request_id,order_item_id')->pluck('items')->flatten(1)->pluck('order_item_id')->all(),
+                default => $summary['problem_item_ids'][$problem['code']] ?? [],
+            };
+            $items = $order->items->whereIn('id', $itemIds)->map(fn (OrderItem $item): array => [
+                'label' => $item->product_name.($item->product_sku ? ' · '.$item->product_sku : ''),
+                'url' => $orderUrl.'#'.$item->adminAnchor(),
+            ])->values()->all();
+            $reasons[] = ['label' => $problem['label'], 'action' => $action, 'items' => $items];
         }
 
         return $reasons ?: [[
