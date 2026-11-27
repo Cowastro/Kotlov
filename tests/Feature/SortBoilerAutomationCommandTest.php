@@ -228,6 +228,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $mixGroup = $card('Смесительная насосная группа HANSA MK DN 32', $pumpGroups);
         $thermoGroup = $card('Насосная группа BRV 1"  c насосом UPSO 25-65 Grundfos c термостатическим клапаном', $pumpGroups);
         $safetyGroup = $card('Группа безопасности котла Varmega VM16001, 1", латунь', $pumpGroups);
+        $sanitary = $section('santekhnicheskaya-posuda');
+        $stoneSink = $card('Мойка кухонная из искусственного камня RICHI гранит 510х510 мм, AV Engineering', $sanitary);
+        $compactWc = $card('Унитаз-компакт Бриз (эконом: 1 режим, полипроп, кос. выпуск) SANTEK', $sanitary);
+        $wallWc = $card('Унитаз подвесной AV Engineering, ART X', $sanitary);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -500,6 +504,14 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Кухонные мойки', $value('Тип', $stoneSink));
+        $this->assertSame('Искусственный камень', $value('Материал', $stoneSink));
+        $this->assertSame('Гранит', $value('Цвет мойки', $stoneSink));
+        $this->assertSame('Унитазы-компакт', $value('Тип', $compactWc));
+        $this->assertSame('Косой', $value('Выпуск унитаза', $compactWc));
+        $this->assertSame('Керамика', $value('Материал', $compactWc));
+        $this->assertSame('Подвесные унитазы', $value('Тип', $wallWc));
+        $this->assertNull($value('Выпуск унитаза', $wallWc));
         $this->assertSame('Насосные группы', $value('Тип', $mixGroup));
         $this->assertSame('Смесительный', $value('Контур', $mixGroup));
         $this->assertSame('Ду 32 (1 1/4")', $value('Присоединение', $mixGroup));

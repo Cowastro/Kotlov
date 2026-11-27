@@ -271,6 +271,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::SANITARY_WARE => [
+                'Тип' => [self::SANITARY_TYPES, array_values(array_unique(self::SANITARY_TYPES))],
+                'Материал' => [self::SANITARY_MATERIALS, array_values(array_unique(self::SANITARY_MATERIALS))],
+                'Выпуск унитаза' => [['/^унитаз-компакт.*(косой|кос\.|диагональн)/u' => 'Косой', '/^унитаз-компакт.*(горизонтальн|гор\.)/u' => 'Горизонтальный'], ['Косой', 'Горизонтальный']],
+                'Цвет мойки' => [self::SINK_COLORS, array_values(array_unique(self::SINK_COLORS))],
+            ],
             self::PUMP_GROUPS => [
                 'Тип' => [self::PUMP_GROUP_TYPES, array_values(array_unique(self::PUMP_GROUP_TYPES))],
                 'Контур' => [fn (string $title) => self::pumpGroupCircuit($title), ['Прямой', 'Смесительный', 'Защита обратки', 'Гелиосистема']],
@@ -2014,6 +2020,42 @@ final class BoilerAutomationGroups
 
         return ['Ду 20 (3/4")', 'Ду 25 (1")', 'Ду 32 (1 1/4")', 'Ду 40 (1 1/2")'][[20 => 0, 25 => 1, 32 => 2, 40 => 3][$dn]];
     }
+
+    public const SANITARY_WARE = 'santekhnicheskaya-posuda';
+
+    /** Title pattern => «Тип» inside «Унитазы, умывальники, мойки», in filter order; the first match wins. */
+    public const SANITARY_TYPES = [
+        '/^унитаз-компакт/u' => 'Унитазы-компакт',
+        '/^унитаз подвесн/u' => 'Подвесные унитазы',
+        '/^умывальник/u' => 'Умывальники',
+        '/^пьедестал/u' => 'Пьедесталы',
+        '/^мойка/u' => 'Кухонные мойки',
+        '/^поддон/u' => 'Душевые поддоны',
+        '/^ванна/u' => 'Ванны',
+        '/генуя/u' => 'Чаши «Генуя»',
+        '/^писсуар/u' => 'Писсуары',
+        '/^(бачок|чаша для унитаза)/u' => 'Бачки и чаши унитазов',
+    ];
+
+    /** Title pattern => «Материал» of sanitary ware; whatever is not stone, steel or cast iron is ceramic. */
+    public const SANITARY_MATERIALS = [
+        '/искусственного камня/u' => 'Искусственный камень',
+        '/нерж/u' => 'Нержавеющая сталь',
+        '/стальн/u' => 'Эмалированная сталь',
+        '/чугун/u' => 'Чугун',
+        '/^(унитаз|умывальник|пьедестал|писсуар|бачок|чаша для унитаза)/u' => 'Керамика',
+    ];
+
+    /** Title pattern => «Цвет мойки» of a stone kitchen sink. */
+    public const SINK_COLORS = [
+        '/^мойка.*бел/u' => 'Белый',
+        '/^мойка.*песочн/u' => 'Песочный',
+        '/^мойка.*гранит/u' => 'Гранит',
+        '/^мойка.*ч[её]рн/u' => 'Чёрный',
+        '/^мойка.*оникс/u' => 'Оникс',
+        '/^мойка.*олово/u' => 'Олово',
+        '/^мойка.*серебро/u' => 'Серебро',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
