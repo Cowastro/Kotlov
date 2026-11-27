@@ -159,6 +159,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $flexSus = $card('Подводка гибкая, SUS, гайка 3/4" - штуцер 3/4" 80см AV Engineering', $flex);
         $flexNeedle = $card('Подводка гибкая, Nylon, иголка м10 короткая - гайка 1/2" 120 см AV Engineering', $flex);
         $flexMetres = $card('Тифлос Шланг водопроводный гибкий G1/2″ ВР–G1/2″ ВР, 1,0 м', $flex);
+        $outdoorSewer = $section('naruzhnaya-kanalizatsiya');
+        $outdoorPipe = $card('Труба ПВХ для наружной канализации SN8 160х4,7х6080 ХЕМКОР', $outdoorSewer);
+        $outdoorRtp = $card('Труба НК 110х2000мм. SN2 РТП', $outdoorSewer);
+        $outdoorBend = $card('Отвод гофрированный Дн 315х45°', $outdoorSewer);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -391,6 +395,16 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Гайка — гайка (ВР–ВР)', $value('Присоединение', $flexMetres));
         $this->assertSame('90–120 см', $value('Длина', $flexMetres));
         $this->assertSame($hoses->id, $flexGas->fresh()->category_id);
+        $this->assertSame('Трубы', $value('Тип', $outdoorPipe));
+        $this->assertSame('160 мм', $value('Диаметр', $outdoorPipe));
+        $this->assertSame('SN8', $value('Класс жёсткости', $outdoorPipe));
+        $this->assertSame('ПВХ', $value('Материал', $outdoorPipe));
+        $this->assertSame('6 м', $value('Длина трубы', $outdoorPipe));
+        $this->assertSame('1–2 м', $value('Длина трубы', $outdoorRtp));
+        $this->assertSame('SN2', $value('Класс жёсткости', $outdoorRtp));
+        $this->assertSame('Отводы и колена', $value('Тип', $outdoorBend));
+        $this->assertSame('315 мм', $value('Диаметр', $outdoorBend));
+        $this->assertSame('Гофрированные (двухслойные)', $value('Материал', $outdoorBend));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')

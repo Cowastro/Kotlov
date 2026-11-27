@@ -260,6 +260,13 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::OUTDOOR_SEWER => [
+                'Тип' => [self::SEWER_TYPES, self::SEWER_ORDER],
+                'Диаметр' => [fn (string $title) => self::sewerDiameter($title, self::OUTDOOR_SEWER_DIAMETERS), array_map(fn (int $mm) => $mm.' мм', self::OUTDOOR_SEWER_DIAMETERS)],
+                'Класс жёсткости' => [['/sn\s?2(?!\d)/u' => 'SN2', '/sn\s?4(?!\d)/u' => 'SN4', '/sn\s?6(?!\d)/u' => 'SN6', '/sn\s?8(?!\d)/u' => 'SN8'], ['SN2', 'SN4', 'SN6', 'SN8']],
+                'Материал' => [self::OUTDOOR_SEWER_MATERIALS, array_values(self::OUTDOOR_SEWER_MATERIALS)],
+                'Длина трубы' => [fn (string $title) => self::outdoorPipeLength($title), ['До 1 м', '1–2 м', '3 м', '6 м']],
+            ],
             self::FLEX_HOSES => [
                 'Назначение' => [self::FLEX_USES, array_values(self::FLEX_USES)],
                 'Присоединение' => [self::FLEX_JOINTS, array_values(self::FLEX_JOINTS)],
@@ -1135,7 +1142,7 @@ final class BoilerAutomationGroups
         '/отвод|колено/u' => 'Отводы и колена',
         '/переход|редукц/u' => 'Переходы и редукции',
         '/муфт/u' => 'Муфты',
-        '/заглушк/u' => 'Заглушки',
+        '/заглушк|^крышк/u' => 'Заглушки',
         '/ревизи/u' => 'Ревизии',
         '/трап|воронк/u' => 'Трапы и воронки',
         '/манжет|кольцо|уплотн/u' => 'Манжеты и уплотнения',
@@ -1151,13 +1158,13 @@ final class BoilerAutomationGroups
     public const SEWER_LENGTHS = [150, 250, 315, 500, 750, 1000, 1500, 2000, 3000];
 
     /** The first sewer size of a title («Ду 110х50», «Дн 110», «d32», «110/50х87»); Stilte «58» is the 50 line. */
-    public static function sewerDiameter(string $title): ?string
+    public static function sewerDiameter(string $title, array $sizes = self::SEWER_DIAMETERS): ?string
     {
         $title = preg_replace('/(?<![\w])(?:дн|ду|d)\s?(?=\d)/u', ' ', mb_strtolower(trim(html_entity_decode($title))));
         if (preg_match_all('/(?<![\w.,\/])(\d{2,3})(?=\s*(?:[xх×*\/,]|мм|$|\s|\())/u', $title, $m)) {
             foreach ($m[1] as $mm) {
                 $mm = ['58' => 50, '78' => 75][$mm] ?? (int) $mm;
-                if (in_array($mm, self::SEWER_DIAMETERS, true)) {
+                if (in_array($mm, $sizes, true)) {
                     return $mm.' мм';
                 }
             }
@@ -1329,6 +1336,41 @@ final class BoilerAutomationGroups
             $cm <= 120 => '90–120 см',
             $cm <= 150 => '150 см',
             default => '200 см и длиннее',
+        };
+    }
+
+    public const OUTDOOR_SEWER = 'naruzhnaya-kanalizatsiya';
+
+    /** The outdoor sewer pipe sizes, mm. */
+    public const OUTDOOR_SEWER_DIAMETERS = [90, 110, 125, 160, 200, 250, 315, 400, 500, 630];
+
+    /** Title pattern => «Материал» of an outdoor sewer part; the first match wins. */
+    public const OUTDOOR_SEWER_MATERIALS = [
+        '/гофрирован|двухслойн|prokan|корсис/u' => 'Гофрированные (двухслойные)',
+        '/полипропилен|(?<![а-я])пп(?![а-я])/u' => 'Полипропилен (ПП)',
+        '/пвх|(?<![а-я])нк(?![а-я])/u' => 'ПВХ',
+    ];
+
+    /** The length band of an outdoor sewer pipe from «110х3,2х3000», «НК 110х2000мм» or «(6 м)»; fittings get none. */
+    public static function outdoorPipeLength(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        if (! str_starts_with($title, 'труба')) {
+            return null;
+        }
+        $mm = match (true) {
+            (bool) preg_match('/\d+\s*[xх]\s*\d+(?:[.,]\d+)?\s*[xх]\s*(\d{3,4})/u', $title, $m) => (int) $m[1],
+            (bool) preg_match('/\d{2,3}\s*[xх]\s*(\d{3,4})\s*мм/u', $title, $m) => (int) $m[1],
+            (bool) preg_match('/\((\d+(?:[.,]\d+)?)\s*м\)/u', $title, $m) => (int) round((float) str_replace(',', '.', $m[1]) * 1000),
+            default => null,
+        };
+
+        return match (true) {
+            $mm === null => null,
+            $mm <= 1000 => 'До 1 м',
+            $mm <= 2000 => '1–2 м',
+            $mm <= 3500 => '3 м',
+            default => '6 м',
         };
     }
 
