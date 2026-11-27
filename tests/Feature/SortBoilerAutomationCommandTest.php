@@ -273,6 +273,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $pvcPipes = $section('truby-npvh-napornye');
         $pvcPipe = $card('Труба НПВХ125 SDR41 Ру 0,6 MПа Дн 160х4х3140 ХЕМКОР', $pvcPipes);
         $pvcTee = $card('Тройник раструб НПВХ напорный с манжетой Ру 1,0 МПа Ду 225/225х90* ERA', $pvcPipes);
+        $heatMats = $section('nagrevatelynye-maty');
+        $okeMat = $card('Мат нагревательный "OneKeyElectro" OKE-1050-7,00', $heatMats);
+        $meyerMat = $card('Нагревательный мат Grand Meyer THM200-015', $heatMats);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -545,6 +548,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('6–8 м²', $value('Площадь обогрева', $okeMat));
+        $this->assertSame('150 Вт/м²', $value('Удельная мощность', $okeMat));
+        $this->assertSame('1,5–2 м²', $value('Площадь обогрева', $meyerMat));
+        $this->assertSame('200 Вт/м²', $value('Удельная мощность', $meyerMat));
         $this->assertSame('Трубы', $value('Тип', $pvcPipe));
         $this->assertSame('160 мм', $value('Диаметр', $pvcPipe));
         $this->assertSame('PN 6 (0,6 МПа)', $value('Рабочее давление', $pvcPipe));

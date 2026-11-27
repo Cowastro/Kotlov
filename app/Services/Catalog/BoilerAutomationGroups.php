@@ -274,6 +274,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::HEATING_MATS => [
+                'Площадь обогрева' => [fn (string $title) => self::matSpec($title)[0], self::MAT_AREAS],
+                'Удельная мощность' => [fn (string $title) => self::matSpec($title)[1], ['150 Вт/м²', '160 Вт/м²', '180 Вт/м²', '200 Вт/м²']],
+            ],
             self::PVC_PIPES => [
                 'Тип' => [self::PVC_TYPES, array_values(array_unique(self::PVC_TYPES))],
                 'Диаметр' => [fn (string $title) => preg_match('/(?<!\d)(110|125|160|225|315)(?!\d)/u', str_ireplace('НПВХ125', 'НПВХ', $title), $m) ? $m[1].' мм' : null, ['110 мм', '125 мм', '160 мм', '225 мм', '315 мм']],
@@ -2401,6 +2405,42 @@ final class BoilerAutomationGroups
         '/^муфта/u' => 'Муфты ремонтные',
         '/./u' => 'Редукторы и заглушки',
     ];
+
+    public const HEATING_MATS = 'nagrevatelynye-maty';
+
+    public const MAT_AREAS = ['До 1 м²', '1,5–2 м²', '2,5–3 м²', '3,5–5 м²', '6–8 м²', '9–12 м²', '14–15 м²'];
+
+    /**
+     * [area bucket, W/m²] of a heating mat: OneKeyElectro «OKE-1050-7,00», Теплолюкс «1080 Вт/6,0 м2», Electrolux and
+     * AC Electric «2-150-6» (cores-W/m²-m²), Grand Meyer «THM200-015» (200 W/m², 1,5 m²).
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    public static function matSpec(string $title): array
+    {
+        $t = mb_strtolower(trim(html_entity_decode($title)));
+        [$area, $density] = match (true) {
+            (bool) preg_match('/oke-(\d+)-(\d+(?:,\d+)?)/u', $t, $m) => [(float) str_replace(',', '.', $m[2]), null],
+            (bool) preg_match('/(\d+)\s*вт\/(\d+(?:,\d+)?)\s*м2/u', $t, $m) => [(float) str_replace(',', '.', $m[2]), null],
+            (bool) preg_match('/\b2-(1[56]0)-(\d+(?:,\d+)?)/u', $t, $m) => [(float) str_replace(',', '.', $m[2]), (int) $m[1]],
+            (bool) preg_match('/thm(200)-(\d{3})/u', $t, $m) => [((int) $m[2]) / 10, 200],
+            default => [null, null],
+        };
+        if ($area !== null && $density === null && isset($m[1])) {
+            $density = (int) round(((int) $m[1]) / $area);
+        }
+        $bucket = $area === null ? null : match (true) {
+            $area <= 1 => 'До 1 м²',
+            $area <= 2 => '1,5–2 м²',
+            $area <= 3 => '2,5–3 м²',
+            $area <= 5 => '3,5–5 м²',
+            $area <= 8 => '6–8 м²',
+            $area <= 12 => '9–12 м²',
+            default => '14–15 м²',
+        };
+
+        return [$bucket, in_array($density, [150, 160, 180, 200], true) ? $density.' Вт/м²' : null];
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
