@@ -271,6 +271,13 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::MP_FITTINGS => [
+                'Тип' => [self::PRESS_TYPES, self::PRESS_ORDER],
+                'Способ соединения' => [self::MP_JOINTS, array_values(array_unique(self::MP_JOINTS))],
+                'Резьба' => [self::MP_THREADS, array_values(array_unique(self::MP_THREADS))],
+                'Диаметр трубы' => [fn (string $title) => self::mpDiameter($title), ['16 мм', '18 мм', '20 мм', '25 мм', '26 мм', '28 мм', '32 мм']],
+                'Материал' => [self::MP_MATERIALS, array_values(array_unique(self::MP_MATERIALS))],
+            ],
             self::SIPHONS => [
                 'Назначение' => [self::SIPHON_USES, array_values(array_unique(self::SIPHON_USES))],
                 'Конструкция' => [self::SIPHON_KINDS, array_values(array_unique(self::SIPHON_KINDS))],
@@ -1901,6 +1908,41 @@ final class BoilerAutomationGroups
         '/прямоточн/u' => 'Прямоточный',
         '/трубн|u-образн|s-образн|u-форм/u' => 'Трубный (U/S-образный)',
         '/гофр/u' => 'Гофрированный',
+    ];
+
+    public const MP_FITTINGS = 'fitingi-dlya-metalloplastikovykh-trub';
+
+    /** Title pattern => «Способ соединения» of a fitting for multilayer pipe; the first match wins. */
+    public const MP_JOINTS = [
+        '/push|вставн/u' => 'Вставной (push)',
+        '/обжимн|^м\/п|конусн|евроконус|для труб многослойных/u' => 'Обжимной (резьбовой)',
+        '/пресс|ppsu|pexfit|press|^(тройник|отвод|муфта|заглушка)\b/u' => 'Пресс',
+    ];
+
+    /** Title pattern => «Резьба» of a fitting; plain pipe-to-pipe fittings get «Без резьбы». */
+    public const MP_THREADS = [
+        '/накидн|евроконус/u' => 'Накидная гайка',
+        '/внутренн|(?<![а-я])вр(?![а-я])/u' => 'Внутренняя резьба',
+        '/наружн|(?<![а-я])нр(?![а-я])|g\s?\d/u' => 'Наружная резьба',
+        '/^(?!кольцо|элемент)/u' => 'Без резьбы',
+    ];
+
+    /** The pipe size of a fitting for multilayer pipe: «Пресс-муфта 16 арт. …», «1/2"х16х16», «20х3/4"». */
+    public static function mpDiameter(string $title): ?string
+    {
+        if (($size = self::pressDiameter($title)) !== null) {
+            return $size;
+        }
+
+        return preg_match('/(?<![\d\/.,])(16|18|20|25|26|28|32)(?![\d,.])/u', mb_strtolower($title), $m) ? $m[1].' мм' : null;
+    }
+
+    /** Title pattern => «Материал» of a fitting for multilayer pipe. */
+    public const MP_MATERIALS = [
+        '/ppsu/u' => 'Пластик PPSU',
+        '/бронз/u' => 'Бронза',
+        '/^(кольцо|элемент уплотнительный)/u' => 'Уплотнения',
+        '/./u' => 'Латунь',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
