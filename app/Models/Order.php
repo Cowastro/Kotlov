@@ -7,6 +7,7 @@ use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use App\Services\Marketplaces\DealByOrderStatusSync;
 use App\Services\Orders\OrderItemSupplyContextResolver;
 use App\Services\Orders\OrderStatusSmsNotifier;
+use App\Services\Orders\OrderWorkflow;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -93,6 +94,9 @@ class Order extends Model
             return $this->isArchivedAsIrrelevant() ? 'В архиве'
                 : ($this->status === 'cancelled' ? 'Закрыт с причиной' : 'Работа завершена');
         }
+        if ($this->hasAutomaticDealControl()) {
+            return 'Этап ведётся в 1С';
+        }
         if (! $this->deal_control_at || blank($this->deal_next_action)) {
             return 'Назначьте следующий шаг и контроль';
         }
@@ -104,16 +108,32 @@ class Order extends Model
         return $prefix.$this->deal_control_at->timezone('Europe/Minsk')->format('d.m H:i');
     }
 
+    public function hasAutomaticDealControl(): bool
+    {
+        return $this->onec_posted === true && OrderWorkflow::managedBy1c($this);
+    }
+
+    public function scopeRequiresManualDealControl(Builder $query): Builder
+    {
+        return $query->whereNot(fn (Builder $automatic): Builder => $automatic
+            ->whereIn('orders.status', ['processing', 'shipped'])
+            ->whereNotNull('orders.onec_order_guid')
+            ->whereRaw("TRIM(orders.onec_order_guid) <> ''")
+            ->whereNotNull('orders.onec_posted')
+            ->where('orders.onec_posted', true)
+            ->where('orders.onec_deleted', false));
+    }
+
     public function scopeDealControl(Builder $query, string $queue): Builder
     {
         $query->operationallyActive();
 
         return match ($queue) {
-            'overdue' => $query->whereNotNull('deal_control_at')->where('deal_control_at', '<=', now()),
-            'today' => $query->whereBetween('deal_control_at', [
+            'overdue' => $query->requiresManualDealControl()->whereNotNull('deal_control_at')->where('deal_control_at', '<=', now()),
+            'today' => $query->requiresManualDealControl()->whereBetween('deal_control_at', [
                 now('Europe/Minsk')->startOfDay()->utc(), now('Europe/Minsk')->endOfDay()->utc(),
             ]),
-            'unscheduled' => $query->where(fn (Builder $missing): Builder => $missing
+            'unscheduled' => $query->requiresManualDealControl()->where(fn (Builder $missing): Builder => $missing
                 ->whereNull('deal_control_at')->orWhereNull('deal_next_action')->orWhere('deal_next_action', '')),
             default => $query,
         };
@@ -124,7 +144,7 @@ class Order extends Model
         $now = now();
         $cutoff = $now->copy()->subHours(48);
 
-        return $query->operationallyActive()
+        return $query->operationallyActive()->requiresManualDealControl()
             ->where('orders.created_at', '<=', $cutoff)
             ->whereDoesntHave('statusHistory', fn (Builder $history): Builder => $history
                 ->changedStatus()->where('created_at', '>', $cutoff))
