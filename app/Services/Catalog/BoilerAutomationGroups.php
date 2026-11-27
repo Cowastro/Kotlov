@@ -275,6 +275,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::CORRUGATED_FITTINGS => [
+                'Тип' => [['/^муфта/u' => 'Муфты', '/^тройник/u' => 'Тройники', '/^угольник/u' => 'Угольники', '/^гайка/u' => 'Гайки накидные'], ['Муфты', 'Тройники', 'Угольники', 'Гайки накидные']],
+                'Резьба' => [self::CORRUGATED_THREADS, ['Внутренняя резьба', 'Наружная резьба', 'Без резьбы (труба — труба)']],
+                'Диаметр трубы' => [fn (string $title) => preg_match('/(?<![\d\/])(15|20|25|32|40|50)\s*[xх×]/u', $title, $m) ? 'Ду '.$m[1] : null, ['Ду 15', 'Ду 20', 'Ду 25', 'Ду 32', 'Ду 40', 'Ду 50']],
+                'Для газа' => [['/газ/u' => 'Для газа'], ['Для газа']],
+            ],
             self::HEATING_CABLES => [
                 'Мощность' => [fn (string $title) => self::cableSpec($title)[0], self::CABLE_POWERS],
                 'Длина кабеля' => [fn (string $title) => self::cableSpec($title)[1], self::CABLE_LENGTHS],
@@ -2510,6 +2516,15 @@ final class BoilerAutomationGroups
 
         return [$power, $length];
     }
+
+    public const CORRUGATED_FITTINGS = 'fitingi-dlya-gofrirovannoj-truby';
+
+    /** Title pattern => «Резьба» of a Stahlmann fitting: (F) female, (M) male, «15х15» pipe to pipe. */
+    public const CORRUGATED_THREADS = [
+        '/\(f\)|внутренн/u' => 'Внутренняя резьба',
+        '/\([mм]\)/u' => 'Наружная резьба',
+        '/^(муфта|тройник) stahlmann \d{2}х\d{2}(х\d{2})? /u' => 'Без резьбы (труба — труба)',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 

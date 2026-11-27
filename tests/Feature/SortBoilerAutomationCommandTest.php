@@ -284,6 +284,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $heatCables = $section('nagrevatelynye-kabeli');
         $etcCable = $card('Нагревательный кабель Electrolux ETC 2-17-1200', $heatCables);
         $thcCable = $card('Нагревательный кабель Grand Meyer THC20-115', $heatCables);
+        $corrFittings = $section('fitingi-dlya-gofrirovannoj-truby');
+        $corrCoupling = $card('Муфта Stahlmann (M) газ 20х3/4', $corrFittings);
+        $corrPlain = $card('Тройник Stahlmann 25х25х25 EF', $corrFittings);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -556,6 +559,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Муфты', $value('Тип', $corrCoupling));
+        $this->assertSame('Наружная резьба', $value('Резьба', $corrCoupling));
+        $this->assertSame('Ду 20', $value('Диаметр трубы', $corrCoupling));
+        $this->assertSame('Для газа', $value('Для газа', $corrCoupling));
+        $this->assertSame('Без резьбы (труба — труба)', $value('Резьба', $corrPlain));
+        $this->assertSame('Ду 25', $value('Диаметр трубы', $corrPlain));
         $this->assertSame('1000–1500 Вт', $value('Мощность', $etcCable));
         $this->assertSame('50–100 м', $value('Длина кабеля', $etcCable));
         $this->assertSame('Более 2000 Вт', $value('Мощность', $thcCable));
