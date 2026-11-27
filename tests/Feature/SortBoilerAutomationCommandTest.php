@@ -184,13 +184,19 @@ class SortBoilerAutomationCommandTest extends TestCase
         $bbCartridge = $card('UNIPUMP Фильтрующий элемент ПП BB10-5M (полипропиленовый, big blue, 10", 5 мкм)', $waterFilters);
         $slCartridge = $card('Картридж осадочный для холодной воды 50 мкм PP 50 - 10SL ГЕЙЗЕР', $waterFilters);
         $dirtTrap = $card('Грязевик вертикальный стальной фланцевый Ру 16 Ду 80', $waterFilters);
+        $underfloor = $section('vodyanoy-teplyy-pol');
+        $pexPipes = $section('truby-iz-sshitogo-polietilena');
+        $pexXa = $card('Труба PE-Xа с антидиффузионным слоем 16х2 (отрезок 300 м) красная PRO AQUA', $pexPipes);
+        $pexRt = $card('Труба PE-RT Дн 16х2 однослойная белая (отрезок 33 м) PRO AQUA', $pexPipes);
+        $pexStabil = $card('Труба PE-Xa/AI/PE stabil 16,2х2,6 мм (бухта 100 м) Рехау', $pexPipes);
+        $pexDowel = $card('Дюбель-хомут ALTStream D20 мм/ 50 шт', $pexPipes);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=16')
+            ->expectsOutputToContain('metric.boiler_automation.moved=17')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -450,6 +456,17 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Шовные', $value('Исполнение', $steelElbow));
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
+        $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('16 мм', $value('Диаметр', $pexXa));
+        $this->assertSame('С кислородным барьером', $value('Кислородный барьер', $pexXa));
+        $this->assertSame('Свыше 200 м', $value('Длина', $pexXa));
+        $this->assertSame('PE-RT', $value('Материал', $pexRt));
+        $this->assertSame('Без барьера', $value('Кислородный барьер', $pexRt));
+        $this->assertSame('11–50 м', $value('Длина', $pexRt));
+        $this->assertSame('Металлополимерные (PE-Xa/AL/PE)', $value('Материал', $pexStabil));
+        $this->assertSame('16 мм', $value('Диаметр', $pexStabil));
+        $this->assertSame('51–100 м', $value('Длина', $pexStabil));
+        $this->assertSame($underfloor->id, $pexDowel->fresh()->category_id);
         $this->assertSame('Сетчатые (косые) фильтры грубой очистки', $value('Тип', $yFilter));
         $this->assertSame('Ду 32 (1 1/4")', $value('Диаметр (Ду)', $yFilter));
         $this->assertSame('Картриджи и фильтрующие элементы', $value('Тип', $bbCartridge));

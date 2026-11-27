@@ -45,6 +45,7 @@ final class BoilerAutomationGroups
         '/^шланг душевой/u' => self::PLUMBING_PARTS,
         '/^master flash/u' => 'krovelnye-prohodki-master-flash',
         '/^лампа для бани/u' => 'abazhury-dlya-bani',
+        '/^(дюбель-хомут|скоба теплого пола)|пешель\) защитная/u' => 'vodyanoy-teplyy-pol',
         '/ливнев|лив\. канал|ливнесток/u' => self::OUTDOOR_SEWER,
         '/^(sanicubic|sanifloor|sanidouche|sanivite|saniaccess)|sanialarm|^канализационная насосная установка|^шиберная задвижка .*sfa/u' => 'kanalizatsionnye-nasosy-sukhoy-ustanovki',
         '/^(печь-камин|чугунная печь-камин|камин\s+этна)/u' => 'pechi-kaminy',
@@ -269,6 +270,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::PEX_PIPES => [
+                'Материал' => [fn (string $title) => self::pexPipeMaterial($title), ['PE-Xa', 'PE-Xb', 'PE-Xc', 'PE-X (тип не указан)', 'PE-RT', 'Металлополимерные (PE-Xa/AL/PE)']],
+                'Диаметр' => [fn (string $title) => self::pexPipeDiameter($title), ['14 мм', '16 мм', '17 мм', '18 мм', '20 мм', '25 мм', '32 мм']],
+                'Кислородный барьер' => [fn (string $title) => self::pexPipeBarrier($title), ['С кислородным барьером', 'Без барьера']],
+                'Длина' => [fn (string $title) => self::pexPipeLength($title), ['До 10 м', '11–50 м', '51–100 м', '101–200 м', 'Свыше 200 м']],
+            ],
             self::STEEL_FITTINGS => [
                 'Тип' => [self::STEEL_TYPES, array_values(array_unique(self::STEEL_TYPES))],
                 'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
@@ -1539,6 +1546,76 @@ final class BoilerAutomationGroups
         '/оцинк/u' => 'Оцинкованные',
         '/^(переход|отвод|тройник|заглушк)/u' => 'Без покрытия (чёрные)',
     ];
+
+    public const PEX_PIPES = 'truby-iz-sshitogo-polietilena';
+
+    /** A PEX pipe title in Latin letters: the titles mix Cyrillic «РЕ-Х», «PE-Xа» with Latin «PE-Xa». */
+    private static function pexTitle(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        if (! preg_match('/^(уценка )?труба(?! \(пешель)/u', $title)) {
+            return null;
+        }
+
+        return strtr($title, ['р' => 'p', 'е' => 'e', 'х' => 'x', 'а' => 'a', 'с' => 'c', 'в' => 'b']);
+    }
+
+    public static function pexPipeMaterial(string $title): ?string
+    {
+        $t = self::pexTitle($title);
+
+        return match (true) {
+            $t === null => null,
+            (bool) preg_match('/stabil|\/al\/|\/ai\/|platinum/u', $t) => 'Металлополимерные (PE-Xa/AL/PE)',
+            (bool) preg_match('/pe-?xa|rautitan|rautherm|therm s|flex 16/u', $t) => 'PE-Xa',
+            (bool) preg_match('/pe-?xb/u', $t) => 'PE-Xb',
+            (bool) preg_match('/pe-?xc|teceflex|multifit-pex/u', $t) => 'PE-Xc',
+            (bool) preg_match('/pe-?rt/u', $t) => 'PE-RT',
+            (bool) preg_match('/pe-?x|pex/u', $t) => 'PE-X (тип не указан)',
+            default => null,
+        };
+    }
+
+    /** The outside diameter: «16х2», «16,2х2,6» (16), «Ø 17х2», «DN 16х2,0»; inch-sized Giacoqest pipes get none. */
+    public static function pexPipeDiameter(string $title): ?string
+    {
+        $t = self::pexTitle($title);
+        if ($t === null || ! preg_match('/(?<![\d.,])(14|16|17|18|20|25|32)(?:[.,]\d)?\s*[xх]\s*\d/u', $t, $m)) {
+            return null;
+        }
+
+        return $m[1].' мм';
+    }
+
+    public static function pexPipeBarrier(string $title): ?string
+    {
+        $t = self::pexTitle($title);
+
+        return match (true) {
+            $t === null => null,
+            (bool) preg_match('/evoh|evon|kиcлopoд|кислород|антидиффуз|aнтидиффуз|5s|пятислойн|многослойн|stabil|\/al\/|\/ai\//u', mb_strtolower(trim(html_entity_decode($title)))) => 'С кислородным барьером',
+            (bool) preg_match('/однослойн/u', mb_strtolower($title)) => 'Без барьера',
+            default => null,
+        };
+    }
+
+    /** The coil or cut length: «(отрезок 33 м)», «бухта 200 м», «(240 м)». */
+    public static function pexPipeLength(string $title): ?string
+    {
+        $t = self::pexTitle($title);
+        if ($t === null || ! preg_match('/(\d{1,3})\s*[мm](?![a-zа-я])/u', $t, $m)) {
+            return null;
+        }
+        $length = (int) $m[1];
+
+        return match (true) {
+            $length <= 10 => 'До 10 м',
+            $length <= 50 => '11–50 м',
+            $length <= 100 => '51–100 м',
+            $length <= 200 => '101–200 м',
+            default => 'Свыше 200 м',
+        };
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
