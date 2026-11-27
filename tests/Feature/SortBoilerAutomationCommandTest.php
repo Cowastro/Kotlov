@@ -236,6 +236,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $zotaSep = $card('Гидроразделитель ZOTA 5 контуров', $hydroSections);
         $northSep = $card('Гидравлический разделитель (гидрострелка) Север-100', $hydroSections);
         $aveGroup = $card('Коллекторная группа AVE777, 8 вых. AV Engineering', $hydroSections);
+        $grilles = $section('kaminnye-reshyotki');
+        $kratkiGrille = $card('Kratki Решетка каминная GX 17х30 графитовая с жалюзи', $grilles);
+        $luftPanel = $card('Kratki Решетка каминная LUFT NP черная C 800х400х120', $grilles);
+        $aeroGrille = $card('Nordflam Решетка каминная AERO 90*600 белая', $grilles);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -508,6 +512,15 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Классические', $value('Тип', $kratkiGrille));
+        $this->assertSame('17×30 см', $value('Размер', $kratkiGrille));
+        $this->assertSame('Графитовая', $value('Цвет', $kratkiGrille));
+        $this->assertSame('С жалюзи', $value('Жалюзи', $kratkiGrille));
+        $this->assertSame('Большие панели (LUFT NL/NP, AERO)', $value('Тип', $luftPanel));
+        $this->assertSame('40×80 см', $value('Размер', $luftPanel));
+        $this->assertSame('Чёрная', $value('Цвет', $luftPanel));
+        $this->assertSame('9×60 см', $value('Размер', $aeroGrille));
+        $this->assertSame('Белая', $value('Цвет', $aeroGrille));
         $this->assertSame('Гидрострелки с коллектором', $value('Тип', $zotaSep));
         $this->assertSame('5 контуров', $value('Число контуров', $zotaSep));
         $this->assertSame('Гидрострелки', $value('Тип', $northSep));
