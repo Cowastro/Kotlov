@@ -150,6 +150,14 @@
             @endif
         </div>
     @endif
+    @foreach ($queueWaitReasons ?? [] as $reason)
+        <p class="text-xs text-gray-600 dark:text-gray-300" data-order-queue-wait>
+            {{ $reason['label'] }}
+            @if (isset($reason['url']))
+                <a href="{{ $reason['url'] }}" class="underline">{{ $reason['link'] }}</a>
+            @endif
+        </p>
+    @endforeach
     <div class="order-deal__facts">
         @if ($isTable)
             <span title="Ответственный менеджер">{{ $order->manager?->name ?: ($order->assigned_to ?: 'Без ответственного') }}</span>

@@ -5,7 +5,9 @@ namespace App\Filament\Resources\Orders\Pages;
 use App\Filament\Concerns\HasOrdersNavigation;
 use App\Filament\Resources\Orders\Actions\QuickOrderAction;
 use App\Filament\Resources\Orders\OrderResource;
+use App\Models\OneCAgentTask;
 use App\Models\Order;
+use App\Services\Integrations\OneCBridge\OrderTaskHandler;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\EmbeddedTable;
@@ -64,6 +66,20 @@ class ListOrders extends ListRecords
         ];
     }
 
+    private function attentionQueue(Builder $query): Builder
+    {
+        return $query->operationallyActive()->where(fn (Builder $attention): Builder => $attention
+            ->where(fn (Builder $problems): Builder => $problems->withOperationalProblem('needs_attention'))
+            ->orWhere(fn (Builder $supplier): Builder => $supplier->whereIn('status', ['confirmed', 'processing'])
+                ->whereHas('supplierOrderRequests', fn (Builder $requests): Builder => $requests
+                    ->where('status', 'sent')->where('transfer_mode', 'email')))
+            ->orWhereHas('latestOnecOrderTask', fn (Builder $task): Builder => $task
+                ->where('status', OneCAgentTask::FAILED)
+                ->where(fn (Builder $current): Builder => $current->where('type', '!=', OrderTaskHandler::TYPE)
+                    ->orWhereNull('orders.onec_order_guid')->orWhere('orders.onec_order_guid', '')
+                    ->orWhere('orders.onec_deleted', true))));
+    }
+
     public function getTabs(): array
     {
         $colors = [
@@ -80,7 +96,7 @@ class ListOrders extends ListRecords
         $workQueueCount = $this->ordersQuery()->operationallyActive()->count();
         $unassigned = $this->ordersQuery()->operationallyActive()->withoutResponsible()->count();
         $myCount = $this->ordersQuery()->where('manager_id', auth()->id())->count();
-        $attentionCount = $this->ordersQuery()->withOperationalProblem('needs_attention')->count();
+        $attentionCount = $this->attentionQueue($this->ordersQuery())->count();
         $missingPriceCount = $this->ordersQuery()->operationallyActive()->withOperationalProblem('missing_price')->count();
         $missingSupplierCount = $this->ordersQuery()->operationallyActive()->withOperationalProblem('missing_supplier')->count();
         $marginRiskCount = $this->ordersQuery()
@@ -115,7 +131,7 @@ class ListOrders extends ListRecords
 
             'attention' => Tab::make('Нужна реакция')
                 ->icon('heroicon-o-exclamation-triangle')
-                ->modifyQueryUsing(fn (Builder $query) => $query->withOperationalProblem('needs_attention'))
+                ->modifyQueryUsing(fn (Builder $query): Builder => $this->attentionQueue($query))
                 ->badge($attentionCount ?: null)
                 ->badgeColor('danger'),
 

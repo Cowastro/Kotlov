@@ -2,12 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\OneCAgentTasks\OneCAgentTaskResource;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Models\Order;
+use App\Models\OneCAgentTask;
 use App\Models\User;
 use App\Services\Orders\OrderDealControl;
 use App\Services\Orders\OrderDealControlNotifier;
+use App\Services\Integrations\OneCBridge\OrderTaskHandler;
+use App\Services\Shipping\Evropochta;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -190,6 +194,53 @@ class OrderDealControlTest extends TestCase
         $item->update(['fulfillment_confirmed_at' => null]);
         $this->assertNull($card()->instance()->getMountedAction());
         $this->assertSame('processing', $order->fresh()->status);
+    }
+
+    public function test_attention_queue_links_the_current_failed_order_task_and_shows_supplier_and_label_waits(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $manager = $this->manager();
+        $failedOrder = $this->order('processing');
+        $supplierOrder = $this->order('confirmed');
+        $labelOrder = $this->order('shipped');
+        $failedOrder->update(['manager_id' => $manager->id]);
+        $supplierOrder->update(['manager_id' => $manager->id]);
+        $labelOrder->forceFill(['delivery_type' => 'evropochta', 'evropochta_tracking_number' => 'BY080027046773'])->save();
+
+        $supplier = \App\Models\Supplier::create(['name' => 'Тестовый поставщик', 'code' => 'queue-wait-supplier']);
+        $request = $supplierOrder->supplierOrderRequests()->create([
+            'supplier_id' => $supplier->id, 'supplier_name' => $supplier->name, 'number' => 'REQ-WAIT-1',
+            'route' => 'supplier_purchase', 'status' => 'sent', 'transfer_mode' => 'email',
+        ]);
+        $taskData = [
+            'type' => OrderTaskHandler::TYPE, 'subject_type' => $failedOrder->getMorphClass(),
+            'subject_id' => $failedOrder->id, 'title' => 'Передача заказа', 'status' => OneCAgentTask::FAILED,
+        ];
+        $oldTask = OneCAgentTask::create($taskData);
+        $failedTask = OneCAgentTask::create($taskData);
+        $cacheKey = 'evropochta.label-status.thermal.'.$labelOrder->evropochta_tracking_number;
+        \Illuminate\Support\Facades\Cache::put($cacheKey, Evropochta::LABEL_PENDING, 60);
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
+        \Illuminate\Support\Facades\Http::fake();
+
+        $queue = Livewire::actingAs($manager)->test(ListOrders::class)
+            ->assertDontSeeHtml('data-order-queue-wait')
+            ->call('selectOrderTab', 'attention')
+            ->assertCanSeeTableRecords([$failedOrder, $supplierOrder, $labelOrder])
+            ->assertSee('Ошибка 1С')
+            ->assertSee('Задача №'.$failedTask->id)
+            ->assertSeeHtml(OneCAgentTaskResource::getUrl('view', ['record' => $failedTask]))
+            ->assertDontSeeHtml(OneCAgentTaskResource::getUrl('view', ['record' => $oldTask]))
+            ->assertSee('Ждём ответ поставщика · Тестовый поставщик · REQ-WAIT-1')
+            ->assertSee('Этикетка Европочты ещё готовится');
+
+        OneCAgentTask::create(array_replace($taskData, ['status' => OneCAgentTask::QUEUED]));
+        $request->update(['status' => 'acknowledged']);
+        \Illuminate\Support\Facades\Cache::put($cacheKey, Evropochta::LABEL_READY, 60);
+        $queue->call('$refresh')->assertCanNotSeeTableRecords([$failedOrder, $supplierOrder])
+            ->assertDontSee('Ошибка 1С')->assertDontSee('Ждём ответ поставщика · Тестовый поставщик')
+            ->assertDontSee('Этикетка Европочты ещё готовится');
+        \Illuminate\Support\Facades\Http::assertNothingSent();
     }
 
     public function test_label_is_not_dispatch_and_dispatch_is_not_receipt(): void
