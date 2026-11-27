@@ -248,6 +248,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $cisternKit = $card('Арматура для смывного бачка, двухрежимная, с нижней подводкой, AV Engineering', $installs);
         $flushButton = $card('Кнопка управления для инсталляции Itaka (чёрная) KARIBA', $installs);
         $rehauSet = $card('Система инсталляции для унитаза NOVAFLOW + кнопка смыва NOVA ORB 001 (круглые клавиши, пластик, хром, глянец) Рехау', $installs);
+        $tools = $section('instrumenty-dlya-montazha');
+        $toiletNozzle = $card('Насадка для унитаза Дн 110х250 мм W1220 АНИ пласт', $tools);
+        $weldNozzle = $card('Насадка сменная к сварочному аппарату Ду 25', $tools);
+        $crimpPliers = $card('Щипцы обжимные Giacoqest 1/2" (в комплекте с калибратором, шестигранным ключом) GIACOMINI', $tools);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -520,6 +524,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Тросы и вантузы для прочистки', $value('Тип', $toiletNozzle));
+        $this->assertSame('Насадки для сварочных аппаратов', $value('Тип', $weldNozzle));
+        $this->assertSame('Прочий инструмент', $value('Тип', $crimpPliers));
         $this->assertSame('Арматура бачка в комплекте', $value('Тип', $cisternKit));
         $this->assertSame('Нижняя', $value('Подводка воды', $cisternKit));
         $this->assertSame('Двойной', $value('Режим смыва', $cisternKit));
