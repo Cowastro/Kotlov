@@ -199,6 +199,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $ppClip = $card('Клипса (опора) для труб ПП d40, сер. РТП', $clamps);
         $turn = $card('Фиксатор поворота трубы 90° Varmega VM36101 для труб 16 мм', $clamps);
         $brackets = $card('Комплект регулируемых кронштейнов Varmega VM15970, 195-235 мм, для коллекторных групп, 2 шт.', $clamps);
+        $sealants = $section('uplotnitelnye-materialy');
+        $fumTape = $card('Лента Фум "MAXITAPE" 12 мм х 0,1 мм (L=13,2 м) UNIPAK', $sealants);
+        $flax = $card('Лен сантехнический чесаный 200 г, AV Engineering', $sealants);
+        $flangeGasket = $card('Прокладка паронитовая Ру 10/16 Ду 100 исп. А ГОСТ 15180-86', $sealants);
+        $threadGasket = $card('Прокладка резиновая для разъемных соединений Ду 25 (1")', $sealants);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -471,6 +476,15 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Фум-лента', $value('Тип', $fumTape));
+        $this->assertSame('Лён сантехнический', $value('Тип', $flax));
+        $this->assertSame('Фланцевые прокладки', $value('Тип', $flangeGasket));
+        $this->assertSame('Ду 100', $value('Диаметр (Ду)', $flangeGasket));
+        $this->assertSame('Паронит', $value('Материал прокладки', $flangeGasket));
+        $this->assertSame('Прокладки для резьбовых соединений', $value('Тип', $threadGasket));
+        $this->assertSame('Ду 25 (1")', $value('Диаметр (Ду)', $threadGasket));
+        $this->assertSame('Резина', $value('Материал прокладки', $threadGasket));
+        $this->assertNull($value('Диаметр (Ду)', $flax));
         $this->assertSame('Металлические хомуты', $value('Тип', $ktr));
         $this->assertSame('21–32 мм', $value('Диаметр трубы', $ktr));
         $this->assertSame('Пластиковые клипсы и опоры', $value('Тип', $ppClip));
