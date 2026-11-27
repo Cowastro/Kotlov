@@ -1283,6 +1283,7 @@ class OrderInfolist
                                         'accepted' => 'Принято SMS.BY',
                                         'unconfirmed' => 'Отправка не подтверждена',
                                         'no_phone' => 'Нет корректного телефона',
+                                        'not_needed' => 'Запрос отзыва пропущен',
                                         'outdated' => 'Пропущено: этап уже изменился',
                                         'tracking_pending' => 'В очереди СМС с треком',
                                         'unavailable' => 'Сервис СМС не настроен',

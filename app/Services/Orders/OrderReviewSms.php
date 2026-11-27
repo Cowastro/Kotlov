@@ -4,12 +4,14 @@ namespace App\Services\Orders;
 
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
+use App\Models\OrderStatusSms;
 use App\Services\PhoneVerificationService;
 use App\Services\SmsByClient;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 final class OrderReviewSms
 {
@@ -51,20 +53,82 @@ final class OrderReviewSms
             if ($order->review_sms_attempted_at && Carbon::parse($order->review_sms_attempted_at)->gt(now()->subMinute())) {
                 throw ValidationException::withMessages(['phone' => 'Повторная отправка доступна через минуту. При ошибке сначала проверьте журнал SMS.BY.']);
             }
-            $message = $this->message($order);
-            $order->forceFill(['review_sms_attempted_at' => now()])->save();
-            $id = app(SmsByClient::class)->sendSms($phone, $sender, $message);
-            DB::transaction(function () use ($order, $id, $phone): void {
-                $order->forceFill(['review_sms_sent_at' => now(), 'review_sms_id' => $id])->save();
-                $order->statusHistory()->create([
-                    'user_id' => auth()->id(), 'status_from' => $order->status, 'status_to' => $order->status,
-                    'comment' => 'Ссылка на отзыв отправлена по СМС на +'.$phone.'. Принято SMS.BY, ID: '.$id.'.',
-                ]);
-            });
-
-            return $id;
+            return $this->deliver($order, $phone, $sender, $this->message($order), auth()->id());
         } finally {
             $lock->release();
         }
+    }
+
+    public function sendAutomatically(OrderStatusSms $request): bool
+    {
+        $lock = Cache::lock('order-review-sms:'.$request->order_id, 60);
+        if (! $lock->get()) {
+            return false;
+        }
+
+        try {
+            $pending = OrderStatusSms::whereKey($request->id)->where('state', 'pending');
+            if (! $pending->exists()) {
+                return false;
+            }
+
+            $order = $request->order?->fresh();
+            if (! $order?->canAutoRequestCustomerReview() || $order->customerReviews()->exists()) {
+                $pending->update(['state' => 'not_needed']);
+
+                return false;
+            }
+
+            try {
+                $phone = app(PhoneVerificationService::class)->normalize($order->customer_phone);
+            } catch (ValidationException) {
+                $pending->update(['state' => 'no_phone']);
+
+                return false;
+            }
+
+            try {
+                $message = $this->message($order);
+            } catch (ValidationException) {
+                $pending->update(['state' => 'unavailable']);
+
+                return false;
+            }
+
+            // Claim before contacting the provider. A timeout can mean the SMS was accepted.
+            if ($pending->update(['state' => 'unconfirmed', 'message' => $message]) !== 1) {
+                return false;
+            }
+
+            try {
+                $this->deliver($order, $phone, (string) config('services.sms_by.alphaname_id'), $message, null, $request);
+            } catch (RuntimeException) {
+                return false;
+            }
+
+            return true;
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function deliver(Order $order, string $phone, string $sender, string $message, ?int $userId, ?OrderStatusSms $request = null): string
+    {
+        $order->forceFill(['review_sms_attempted_at' => now()])->save();
+        $id = app(SmsByClient::class)->sendSms($phone, $sender, $message);
+        DB::transaction(function () use ($order, $id, $phone, $userId, $request): void {
+            $sentAt = now();
+            $order->forceFill(['review_sms_sent_at' => $sentAt, 'review_sms_id' => $id])->save();
+            $comment = $request ? 'Автоматически отправлена ссылка на отзыв' : 'Ссылка на отзыв отправлена';
+            $order->statusHistory()->create([
+                'user_id' => $userId, 'status_from' => $order->status, 'status_to' => $order->status,
+                'comment' => $comment.' по СМС на +'.$phone.'. Принято SMS.BY, ID: '.$id.'.',
+            ]);
+            if ($request) {
+                OrderStatusSms::whereKey($request->id)->update(['state' => 'accepted', 'sms_id' => $id, 'sent_at' => $sentAt]);
+            }
+        });
+
+        return $id;
     }
 }

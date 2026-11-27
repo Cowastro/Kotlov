@@ -5,12 +5,14 @@ namespace Tests\Feature;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Integrations\OneCBridge\OneCOrderStages;
 use App\Services\Orders\OrderWorkflow;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -25,6 +27,7 @@ class OrderStatusSmsTest extends TestCase
         parent::setUp();
 
         config([
+            'app.url' => 'https://kotlov.by',
             'services.sms_by.enabled' => true,
             'services.sms_by.base_url' => 'https://app.sms.by',
             'services.sms_by.token' => 'test-token',
@@ -103,7 +106,63 @@ class OrderStatusSmsTest extends TestCase
             'KOTLOV: ORD-2026-0010 принят.',
             'KOTLOV: ORD-2026-0010 готов к самовывозу.',
             'KOTLOV: ORD-2026-0010 доставлен.',
+            'KOTLOV: Оставьте отзыв: https://kotlov.by/r/'.$order->fresh()->review_sms_token,
         ], Http::recorded()->map(fn (array $entry): string => $entry[0]['message'])->all());
+    }
+
+    public function test_successful_one_c_closure_sends_one_review_sms_and_records_it_without_a_manager(): void
+    {
+        Mail::fake();
+        Http::fake([self::SMS_URL => Http::response(['sms_id' => 'closed-order'])]);
+        $order = $this->order([
+            'status' => 'shipped',
+            'onec_order_guid' => '6297bf5c-8b7b-4b73-8536-874d0677d501',
+        ]);
+        $order->forceFill([
+            'onec_posted' => true,
+            'onec_doc_status' => 'Закрыт',
+        ])->save();
+        $stages = app(OneCOrderStages::class);
+        $this->assertNull($stages->apply($order, allLinesCancelled: true));
+        $this->assertDatabaseMissing('order_status_sms', ['event_key' => 'customer-review']);
+        $this->assertSame('delivered', $stages->apply($order));
+        $this->assertNull($stages->apply($order));
+        $this->assertDatabaseHas('order_status_sms', ['event_key' => 'customer-review', 'state' => 'pending']);
+        Http::assertNothingSent();
+
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
+        $order->refresh()->transitionTo('completed');
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
+
+        $requests = Http::recorded(fn (Request $request): bool => str_contains($request['message'], 'Оставьте отзыв'));
+        $this->assertCount(1, $requests);
+        $this->assertSame('375291110000', $requests->first()[0]['phone']);
+        $this->assertSame('closed-order', $order->fresh()->review_sms_id);
+        $this->assertDatabaseHas('order_status_sms', ['event_key' => 'customer-review', 'state' => 'accepted']);
+        $this->assertNull($order->statusHistory()->where('comment', 'like', 'Автоматически отправлена ссылка на отзыв%')->sole()->user_id);
+    }
+
+    public function test_review_sms_skips_cancelled_and_previously_contacted_orders_and_does_not_retry_timeout(): void
+    {
+        Http::fake([self::SMS_URL => Http::failedConnection()]);
+        $cancelled = $this->order(['status' => 'shipped']);
+        $cancelled->transitionTo('delivered');
+        $cancelled->transitionTo('cancelled');
+        $contacted = $this->order(['number' => 'ORD-CONTACTED', 'status' => 'shipped']);
+        $contacted->transitionTo('delivered');
+        $contacted->forceFill(['review_sms_sent_at' => now(), 'review_sms_id' => 'manual-review'])->save();
+        $timeout = $this->order(['number' => 'ORD-TIMEOUT', 'status' => 'shipped']);
+        $timeout->transitionTo('delivered');
+
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
+        $this->artisan('orders:send-status-sms')->assertSuccessful();
+
+        $requests = Http::recorded(fn (Request $request): bool => str_contains($request['message'], 'Оставьте отзыв'));
+        $this->assertCount(1, $requests);
+        $this->assertSame('not_needed', $cancelled->statusSms()->where('event_key', 'customer-review')->value('state'));
+        $this->assertSame('not_needed', $contacted->statusSms()->where('event_key', 'customer-review')->value('state'));
+        $this->assertSame('unconfirmed', $timeout->statusSms()->where('event_key', 'customer-review')->value('state'));
+        $this->assertNull($timeout->fresh()->review_sms_id);
     }
 
     public function test_rollback_and_marketplace_import_do_not_send_and_uncertain_sends_are_not_retried(): void
