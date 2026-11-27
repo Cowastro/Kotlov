@@ -299,13 +299,14 @@ class SortBoilerAutomationCommandTest extends TestCase
         $waterFloor = $section('vodyanoy-teplyy-pol');
         $floorPipe = $card('Труба PE-Xc Kermi x-net 20x2 из сшитого полиэтилена', $waterFloor);
         $floorTape = $card('Лента демпферная Energofloor 10 мм/0,1х11 м', $waterFloor);
+        $xommet = $card('XOMMET Профиль ХОММЕТ 3м, 9000000', $waterFloor);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=20')
+            ->expectsOutputToContain('metric.boiler_automation.moved=21')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -575,6 +576,8 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('20 мм', $value('Диаметр трубы', $floorPipe));
         $this->assertSame('Демпферная лента', $value('Тип', $floorTape));
         $this->assertNull($value('Диаметр трубы', $floorTape));
+        $this->assertSame($installs->id, $xommet->fresh()->category_id);
+        $this->assertSame('Монтажная система ХОММЕТ', $value('Тип', $xommet));
         $this->assertSame('Термостатический', $value('Управление', $thermoShower));
         $this->assertSame('Хром', $value('Цвет', $thermoShower));
         $this->assertSame('Однорычажный', $value('Управление', $lotusShower));

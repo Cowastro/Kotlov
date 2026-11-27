@@ -18,6 +18,7 @@ final class BoilerAutomationGroups
     /** Title pattern => section the card belongs to (from «Регуляторы» or «Запчасти для котлов»). */
     public const MOVES = [
         '/^фильтр для очистки воды electrolux/u' => 'filtry',
+        '/хоммет/u' => 'installyatsii-i-armatura-bachkov',
         '/^(blist|ермак) стекло термостойк/u' => 'stekla-dlya-pechey-i-kaminov',
         '/^мангал вертикальный большой/u' => 'mangalyi',
         '/^ермак (бак навесной|катализатор|конвектор дымохода|модуль закрытой каменки|парообразователь|сетка-каменка|тэн|теплообменник|удлинитель тоннеля)/u' => 'aksessuary-dlya-bani',
@@ -2287,6 +2288,7 @@ final class BoilerAutomationGroups
         '/^система смыва/u' => 'Педальные системы смыва',
         '/^бачок/u' => 'Бачки',
         '/^каркас/u' => 'Каркасы душевых поддонов',
+        '/хоммет/u' => 'Монтажная система ХОММЕТ',
     ];
 
     /** Title pattern => «Цвет кнопки» of a flush button or a cistern fitting set; the first match wins. */
