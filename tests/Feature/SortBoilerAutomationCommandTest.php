@@ -287,6 +287,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $corrFittings = $section('fitingi-dlya-gofrirovannoj-truby');
         $corrCoupling = $card('Муфта Stahlmann (M) газ 20х3/4', $corrFittings);
         $corrPlain = $card('Тройник Stahlmann 25х25х25 EF', $corrFittings);
+        $globeValves = $section('ventili-zapornye');
+        $castGlobe = $card('Вентиль запорный (клапан) фланцевый 15кч19п Ру 16 Ду 40', $globeValves);
+        $brassGlobe = $card('Вентиль запорный (клапан) 15б1п Ду 25 Цветлит', $globeValves);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -559,6 +562,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Фланцевое', $value('Присоединение', $castGlobe));
+        $this->assertSame('Ду 40 (1 1/2")', $value('Диаметр (Ду)', $castGlobe));
+        $this->assertSame('Чугун', $value('Материал', $castGlobe));
+        $this->assertSame('Внутренняя — внутренняя резьба', $value('Присоединение', $brassGlobe));
+        $this->assertSame('Латунь', $value('Материал', $brassGlobe));
         $this->assertSame('Муфты', $value('Тип', $corrCoupling));
         $this->assertSame('Наружная резьба', $value('Резьба', $corrCoupling));
         $this->assertSame('Ду 20', $value('Диаметр трубы', $corrCoupling));
