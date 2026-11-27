@@ -90,7 +90,7 @@ class OneCOrderProfileResource extends Resource
                 ->columns(2)->schema([
                     $field('org'), $field('warehouse'), $field('partner'), $field('counterparty'), $field('agreement'), $field('contract'),
                     $field('subdivision'), $field('manager'), $field('zone'), $field('priority'),
-                    Select::make('status')->label('Статус')->options(fn (?string $state): array => OneCOrderProfiles::STATUSES + ($state ? [$state => $state] : [])),
+                    Select::make('status')->label('Статус')->options(fn (?string $state): array => OneCOrderProfiles::exportStatusOptions($state)),
                     Select::make('delivery')->label('Способ доставки')->options(fn (?string $state): array => OneCOrderProfiles::DELIVERY + ($state ? [$state => $state] : [])),
                     Select::make('vat')->label('Ставка НДС в строках')->options(fn (?string $state): array => $refs->options('vat_rate', current: $state)),
                     Toggle::make('with_vat')->label('Цена включает НДС'),

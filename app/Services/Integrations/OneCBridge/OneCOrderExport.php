@@ -250,7 +250,7 @@ class OneCOrderExport
         return [
             'profile_id' => $profile->id,
             'h' => $h,
-            'status' => $profile->header['Статус'] ?? 'НеСогласован',
+            'status' => OneCOrderProfiles::exportStatus($profile->header['Статус'] ?? 'НеСогласован'),
             'delivery' => $this->deliveryMethod($order, $profile),
             'address' => $address,
             'info' => $this->withDeliveryDetails($order, $info),
@@ -395,6 +395,9 @@ class OneCOrderExport
         $doc['Date'] = $now;
         if ($has('Статус') && filled($form['status'] ?? null)) {
             $doc['Статус'] = $form['status'];
+        }
+        if (isset($doc['Статус'])) {
+            $doc['Статус'] = OneCOrderProfiles::exportStatus($doc['Статус']);
         }
         $deliveryMethod = $form['delivery'] ?? $this->deliveryMethod($order, $profile);
         if ($has('СпособДоставки') && filled($deliveryMethod)) {

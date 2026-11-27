@@ -32,6 +32,22 @@ class OneCOrderProfiles
         'КВыполнению' => 'К выполнению',
     ];
 
+    private const REJECTED_EXPORT_STATUS = 'КВыполнению';
+
+    public static function exportStatus(?string $status): ?string
+    {
+        return $status === self::REJECTED_EXPORT_STATUS ? 'КОбеспечению' : $status;
+    }
+
+    public static function exportStatusOptions(?string $current): array
+    {
+        $options = self::STATUSES;
+        unset($options[self::REJECTED_EXPORT_STATUS]);
+        $current = self::exportStatus($current);
+
+        return $current ? $options + [$current => $current] : $options;
+    }
+
     /** «Способ доставки» */
     public const DELIVERY = [
         'Самовывоз' => 'Самовывоз',
