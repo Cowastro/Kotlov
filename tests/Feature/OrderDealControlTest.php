@@ -318,6 +318,10 @@ class OrderDealControlTest extends TestCase
             ->assertSee('ВАМ Экспресс')
             ->assertSee('В пути')
             ->assertSee('Самовывоз')
+            ->assertSee('search=BY00000012345')
+            ->assertSee('tableAction=trackEvropochtaShipment')
+            ->assertSee('tableActionRecord='.$euro->id)
+            ->assertSee('https://vamexpress.by/UserUI/TicketEdit.aspx?id=carrier-test')
             ->assertDontSee('Не оформлено');
         $this->assertSame(3, substr_count($list->html(), 'data-order-delivery'));
     }
