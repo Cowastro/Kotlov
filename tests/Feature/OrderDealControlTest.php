@@ -248,15 +248,21 @@ class OrderDealControlTest extends TestCase
     public function test_attention_queue_shows_delivery_exceptions_with_links_to_exact_shipments(): void
     {
         Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $manager = $this->manager();
         $euro = $this->order('shipped');
-        $euro->forceFill(['delivery_type' => 'evropochta', 'evropochta_tracking_number' => 'BY123456789012'])->save();
+        $euro->forceFill(['delivery_type' => 'evropochta', 'evropochta_tracking_number' => 'BY123456789012', 'manager_id' => $manager->id])->save();
+        $euro->items()->create([
+            'product_name' => 'Отгруженный товар', 'quantity' => 1, 'price' => 100, 'total' => 100,
+            'supply_status' => 'own_stock', 'supply_captured_at' => now()->subDays(5),
+            'supply_is_available' => false, 'supply_purchase_price' => 70,
+        ]);
         $euro->forceFill([
             'carrier_provider' => 'evropochta', 'carrier_reference' => 'BY123456789012',
             'carrier_stage' => 'attention', 'carrier_status_text' => 'Отказ получателя',
             'carrier_check_failed_at' => now(),
         ])->save();
         $vam = $this->order('shipped');
-        $vam->forceFill(['delivery_type' => 'vam_express'])->save();
+        $vam->forceFill(['delivery_type' => 'vam_express', 'manager_id' => $manager->id])->save();
         $shipment = $vam->vamExpressShipments()->save(new VamExpressShipment([
             'remote_id' => 'carrier-return', 'display_id' => 'RETURN', 'carrier_status' => 'Возврат',
             'synced_at' => now()->subHour(), 'checked_at' => now(),
@@ -264,26 +270,28 @@ class OrderDealControlTest extends TestCase
 
         $this->assertEqualsCanonicalizing([$euro->id, $vam->id],
             \App\Services\Orders\OrderCarrierAttention::query(Order::query())->pluck('id')->all());
-        Livewire::actingAs($this->manager())->test(ListOrders::class)->call('selectOrderTab', 'attention')
+        $queue = Livewire::actingAs($manager)->test(ListOrders::class)->call('selectOrderTab', 'attention')
             ->assertCanSeeTableRecords([$euro, $vam])
             ->assertSee('Европочта · Отказ получателя')
             ->assertSee('Европочта · Не удалось проверить статус')
             ->assertSee('Повторить проверку в разделе Европочты')
             ->assertSee('ВАМ Экспресс · Возврат')
             ->assertSee('ВАМ Экспресс · Отправление не найдено при проверке')
+            ->assertDontSee('Нет подтверждённого остатка: 1')
             ->assertSee('tableActionRecord='.$euro->id)
             ->assertSee('/admin/vam-express-shipments/'.$shipment->id);
 
         $euro->forceFill(['evropochta_tracking_number' => 'BY999999999999'])->save();
         $shipment->update(['carrier_status' => 'В пути', 'synced_at' => now()]);
         $this->assertFalse(\App\Services\Orders\OrderCarrierAttention::query(Order::query())->exists());
+        $queue->call('$refresh')->assertCanNotSeeTableRecords([$euro, $vam]);
     }
 
     public function test_attention_queue_shows_stock_while_margin_stays_in_economics(): void
     {
         config(['shop.order_management.minimum_margin_percent' => 10]);
         $manager = $this->manager();
-        $stock = $this->order('shipped');
+        $stock = $this->order('checking');
         $margin = $this->order('processing');
         foreach ([$stock, $margin] as $order) {
             $order->update(['manager_id' => $manager->id]);
@@ -312,7 +320,7 @@ class OrderDealControlTest extends TestCase
             ->assertCanNotSeeTableRecords([$margin])
             ->assertSee('Что сделать')
             ->assertSee('Нет подтверждённого остатка')
-            ->assertSee('Сверить остаток и источник отгрузки')
+            ->assertSee('Подтвердить остаток или выбрать другой источник')
             ->assertSee('Последняя проверка: 3 шт. · Проверено у поставщика')
             ->assertSee('При заказе: 0 шт. · Склад поставщика')
             ->assertDontSee('Маржа ниже 10%')
