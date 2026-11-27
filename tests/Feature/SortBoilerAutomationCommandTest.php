@@ -163,6 +163,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $outdoorPipe = $card('Труба ПВХ для наружной канализации SN8 160х4,7х6080 ХЕМКОР', $outdoorSewer);
         $outdoorRtp = $card('Труба НК 110х2000мм. SN2 РТП', $outdoorSewer);
         $outdoorBend = $card('Отвод гофрированный Дн 315х45°', $outdoorSewer);
+        $castings = $section('pechnoe-i-kaminnoe-lite');
+        $fireDoor = $card('Дверка ВЕЗУВИЙ каминная 218 (Бронза)', $castings);
+        $stoveDoor = $card('Дверца Fireway K-211 топочная 250×280 мм', $castings);
+        $ashDoor = $card('Дверка ВЕЗУВИЙ поддувальная ДП-2 (Бронза)', $castings);
+        $doorGlass = $card('Стекло Везувий 270 (0,207х0,247)', $castings);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -405,6 +410,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Отводы и колена', $value('Тип', $outdoorBend));
         $this->assertSame('315 мм', $value('Диаметр', $outdoorBend));
         $this->assertSame('Гофрированные (двухслойные)', $value('Материал', $outdoorBend));
+        $this->assertSame('Каминные дверки', $value('Тип', $fireDoor));
+        $this->assertSame('Бронза', $value('Покрытие', $fireDoor));
+        $this->assertSame('Топочные (печные) дверки', $value('Тип', $stoveDoor));
+        $this->assertNull($value('Покрытие', $stoveDoor));
+        $this->assertSame('Поддувальные дверки и зольники', $value('Тип', $ashDoor));
+        $this->assertSame('Стёкла для дверок', $value('Тип', $doorGlass));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
