@@ -271,6 +271,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::HYDRO_SEPARATORS => [
+                'Тип' => [self::HYDRO_SEPARATOR_TYPES, array_values(array_unique(self::HYDRO_SEPARATOR_TYPES))],
+                'Число контуров' => [fn (string $title) => self::hydroCircuits($title), array_map(fn (int $n) => self::circuitsLabel($n), range(2, 12))],
+            ],
             self::SANITARY_WARE => [
                 'Тип' => [self::SANITARY_TYPES, array_values(array_unique(self::SANITARY_TYPES))],
                 'Материал' => [self::SANITARY_MATERIALS, array_values(array_unique(self::SANITARY_MATERIALS))],
@@ -2056,6 +2060,38 @@ final class BoilerAutomationGroups
         '/^мойка.*олово/u' => 'Олово',
         '/^мойка.*серебро/u' => 'Серебро',
     ];
+
+    public const HYDRO_SEPARATORS = 'gidravlicheskie-razdeliteli-i-kollektory';
+
+    /** Title pattern => «Тип» inside «Гидравлические разделители и коллекторы», in filter order; the first match wins. */
+    public const HYDRO_SEPARATOR_TYPES = [
+        '/консол|кронштейн для|комплект крепления|соединительный комплект|^фитинг|клапан бойлера/u' => 'Крепления и комплектующие',
+        '/совмещенн|с гидравлическим разделителем|^гидроразделитель zota \d|север-м|север-компакт|гидрострелка 1", \d/u' => 'Гидрострелки с коллектором',
+        '/^(oleo?-pro )?(гидравлическ\w* (стрелка|разделитель)|гидроразделитель|разделитель гидравлическ)/u' => 'Гидрострелки',
+        '/коллекторная группа|расходомер|royal thermo/u' => 'Коллекторы для тёплого пола и радиаторов',
+        '/коллектор/u' => 'Котельные распределительные коллекторы',
+    ];
+
+    /** The number of heating circuits of a manifold or a combined separator: «5 контуров», «7 о/к», «Север-М4», «8 вых.». */
+    public static function hydroCircuits(string $title): ?string
+    {
+        $t = mb_strtolower(trim(html_entity_decode($title)));
+        if (self::match($t, self::HYDRO_SEPARATOR_TYPES) === 'Крепления и комплектующие') {
+            return null;
+        }
+        if (preg_match('/(\d{1,2})\s*(?:контур|о\/к|отоп|вых)/u', $t, $m) || preg_match('/север-[мm](\d)/u', $t, $m)) {
+            $n = (int) $m[1];
+
+            return $n >= 2 && $n <= 12 ? self::circuitsLabel($n) : null;
+        }
+
+        return null;
+    }
+
+    public static function circuitsLabel(int $n): string
+    {
+        return $n.' '.(in_array($n % 10, [2, 3, 4], true) && ! in_array($n % 100, [12, 13, 14], true) ? 'контура' : 'контуров');
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
