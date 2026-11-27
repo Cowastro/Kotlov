@@ -5,6 +5,7 @@ namespace App\Filament\Resources\VamExpress;
 use App\Filament\Pages\VamExpressCalculator;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\VamExpress\Pages\ListVamExpressShipments;
+use App\Filament\Resources\VamExpress\Pages\ViewVamExpressShipment;
 use App\Filament\Resources\VamExpressDrafts\VamExpressDraftResource;
 use App\Models\VamExpressShipment;
 use App\Support\Shipping\VamExpressStatus;
@@ -21,6 +22,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class VamExpressShipmentResource extends Resource
@@ -57,6 +59,12 @@ class VamExpressShipmentResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function canView(Model $record): bool
+    {
+        return static::canViewAny()
+            && ($record->order_id === null || ($record->order && OrderResource::canView($record->order)));
     }
 
     public static function getEloquentQuery(): Builder
@@ -156,6 +164,9 @@ class VamExpressShipmentResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => ListVamExpressShipments::route('/')];
+        return [
+            'index' => ListVamExpressShipments::route('/'),
+            'view' => ViewVamExpressShipment::route('/{record}'),
+        ];
     }
 }
