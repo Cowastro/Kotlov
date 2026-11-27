@@ -17,6 +17,7 @@
         $controlLabel = 'Срок контроля не назначен';
     }
     $context = $isTable ? ['table' => true, 'recordKey' => (string) $order->getKey()] : [];
+    $preparingDelivery = ($nextAction ?? null)?->getName() === 'prepareOrderDelivery';
 @endphp
 <section class="order-deal {{ $isTable ? 'order-deal--compact' : 'order-deal--full' }}"
     wire:key="order-deal-layout-v4-{{ $order->getKey() }}-{{ $isTable ? 'table' : 'card' }}-{{ $order->effectiveDealStage() }}"
@@ -102,10 +103,10 @@
                     {{ $nextAction->getLabel() }}
                 </x-filament::button>
             @endif
-            @if (! isset($fulfillmentStep) && ! empty($onecHint) && ! str_contains($order->workflowNextStep(), $onecHint))
+            @if (! isset($fulfillmentStep) && ! $preparingDelivery && ! empty($onecHint) && ! str_contains($order->workflowNextStep(), $onecHint))
                 <p>{{ $onecHint }}</p>
             @endif
-            @if (! isset($fulfillmentStep) && isset($labelAction))
+            @if (! isset($fulfillmentStep) && ! $preparingDelivery && isset($labelAction))
                 <x-filament::link :href="$labelAction->getUrl()" target="_blank" rel="noopener" icon="heroicon-o-printer">
                     Печать этикетки Европочты
                 </x-filament::link>

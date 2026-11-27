@@ -21,6 +21,7 @@ use App\Models\SupplierOrderRequest;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\Orders\OrderAvailabilityConfirmation;
+use App\Services\Orders\OrderDeliveryPreparation;
 use App\Services\Orders\OrderItemAvailabilityDisplay;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderItemFulfillmentPicker;
@@ -111,7 +112,8 @@ class ViewOrder extends ViewRecord
             $order->usesGuidedFulfillment() && $order->needsFulfillmentConfirmation() => ['confirmFulfillment', 'confirmItemFulfillment'],
             $this->pendingSupplierReply() !== null => ['recordSupplierEmailResponse'],
             $order->needsEvropochtaShipment() => ['createEvropochtaShipment', 'prepareEvropochtaShipment'],
-            $order->status === 'processing' && blank($order->onec_order_guid) => ['advanceWorkflow', 'onecOrder', 'prepareOrderDelivery'],
+            app(OrderDeliveryPreparation::class)->needsPreparation($order) => ['prepareOrderDelivery'],
+            $order->status === 'processing' && blank($order->onec_order_guid) => ['advanceWorkflow', 'onecOrder'],
             default => ['advanceWorkflow'],
         };
 
