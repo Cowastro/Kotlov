@@ -296,6 +296,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $showerSystems = $section('dushevye-sistemy');
         $thermoShower = $card('Душевая термостатическая система (Lt), серия THS хром, AV Engineering', $showerSystems);
         $lotusShower = $card('Душевая система (Lt) D35, серия Lotus белый, a-five', $showerSystems);
+        $waterFloor = $section('vodyanoy-teplyy-pol');
+        $floorPipe = $card('Труба PE-Xc Kermi x-net 20x2 из сшитого полиэтилена', $waterFloor);
+        $floorTape = $card('Лента демпферная Energofloor 10 мм/0,1х11 м', $waterFloor);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -568,6 +571,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Трубы', $value('Тип', $floorPipe));
+        $this->assertSame('20 мм', $value('Диаметр трубы', $floorPipe));
+        $this->assertSame('Демпферная лента', $value('Тип', $floorTape));
+        $this->assertNull($value('Диаметр трубы', $floorTape));
         $this->assertSame('Термостатический', $value('Управление', $thermoShower));
         $this->assertSame('Хром', $value('Цвет', $thermoShower));
         $this->assertSame('Однорычажный', $value('Управление', $lotusShower));

@@ -275,6 +275,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::WATER_FLOOR => [
+                'Тип' => [self::WATER_FLOOR_TYPES, array_values(array_unique(self::WATER_FLOOR_TYPES))],
+                'Диаметр трубы' => [fn (string $title) => preg_match('/^труба (?!\(пешель).*?(?<!\d)(16|20|25)\s?[x×х]/u', mb_strtolower($title), $m) ? $m[1].' мм' : null, ['16 мм', '20 мм', '25 мм']],
+            ],
             self::SHOWER_SYSTEMS => [
                 'Управление' => [self::FAUCET_CONTROLS, array_values(array_unique(self::FAUCET_CONTROLS))],
                 'Цвет' => [self::FAUCET_COLORS, array_values(self::FAUCET_COLORS)],
@@ -2545,6 +2549,20 @@ final class BoilerAutomationGroups
     public const FLANGES = 'flantsy';
 
     public const SHOWER_SYSTEMS = 'dushevye-sistemy';
+
+    public const WATER_FLOOR = 'vodyanoy-teplyy-pol';
+
+    /** Title pattern => «Тип» inside «Водяной тёплый пол», in filter order; the first match wins. */
+    public const WATER_FLOOR_TYPES = [
+        '/пешель|гофрированн/u' => 'Защитная гофротруба',
+        '/^труба/u' => 'Трубы',
+        '/мат |плита/u' => 'Маты и плиты с фиксаторами',
+        '/лента|компенсационн/u' => 'Демпферная лента',
+        '/фольг|фолия/u' => 'Фольга и плёнка',
+        '/скоба|клипс|фиксатор|дюбель-хомут/u' => 'Крепёж трубы (скобы, клипсы)',
+        '/расходомер/u' => 'Расходомеры',
+        '/./u' => 'Прочее',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
