@@ -220,6 +220,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $bottleSiphon = $card('Сифон для мойки бутылочный 1 1/2"х40 с гибкой трубой 40х50 C0110 АНИ пласт', $siphons);
         $washerSiphon = $card('Сифон для кухни, выпуск 1 1/2", с отводом для стир. маш., гофра 1 1/2" - 40/50 (800мм), AV Engineeri', $siphons);
         $drainChannel = $card('Водоотводящий желоб с двойной решеткой 650, Alcaplast', $siphons);
+        $mpSections = $section('fitingi-dlya-metalloplastikovykh-trub');
+        $mpPress = $card('Пресс-муфта 16 арт. RM102Y003 GIACOMINI', $mpSections);
+        $mpCompress = $card('Угольник переходной никелированный 20х3/4" обжимной с наружной резьбой для металлопластиковой трубы AQUASFERA', $mpSections);
+        $mpPpsu = $card('Пресс-тройник PPSU 26x3/26x3/26x3 арт. 9024.54 KAN', $mpSections);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -492,6 +496,18 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Муфты, соединители и переходники', $value('Тип', $mpPress));
+        $this->assertSame('Пресс', $value('Способ соединения', $mpPress));
+        $this->assertSame('Без резьбы', $value('Резьба', $mpPress));
+        $this->assertSame('16 мм', $value('Диаметр трубы', $mpPress));
+        $this->assertSame('Латунь', $value('Материал', $mpPress));
+        $this->assertSame('Угольники и отводы', $value('Тип', $mpCompress));
+        $this->assertSame('Обжимной (резьбовой)', $value('Способ соединения', $mpCompress));
+        $this->assertSame('Наружная резьба', $value('Резьба', $mpCompress));
+        $this->assertSame('20 мм', $value('Диаметр трубы', $mpCompress));
+        $this->assertSame('Тройники', $value('Тип', $mpPpsu));
+        $this->assertSame('26 мм', $value('Диаметр трубы', $mpPpsu));
+        $this->assertSame('Пластик PPSU', $value('Материал', $mpPpsu));
         $this->assertSame('Для мойки (кухни)', $value('Назначение', $bottleSiphon));
         $this->assertSame('Бутылочный', $value('Конструкция', $bottleSiphon));
         $this->assertSame('Пластиковый', $value('Материал', $bottleSiphon));
