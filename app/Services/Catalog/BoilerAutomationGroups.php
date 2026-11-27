@@ -366,6 +366,7 @@ final class BoilerAutomationGroups
                 'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
                 'Ручка' => [self::BALL_HANDLES, array_values(array_unique(self::BALL_HANDLES))],
                 'Для газа' => [self::BALL_GAS, array_values(self::BALL_GAS)],
+                'Материал' => [fn (string $title) => self::ballValveMaterial($title), ['Латунь', 'Полипропилен (ПП)', 'Пластик (для ПЭ труб)', 'Сталь', 'Нержавеющая сталь', 'Чугун']],
             ],
             self::PP_FITTINGS => [
                 'Тип' => [self::PP_TYPES, self::PP_ORDER],
@@ -954,6 +955,29 @@ final class BoilerAutomationGroups
         '/нар\.?-вн|вн\.?-нар|внутренней\/наружной|наружной\/внутренней|(?<![а-яa-z])(?:нв|мр)(?![а-яa-z])|муфта-цапка/u' => 'Внутренняя — наружная резьба',
         '/вн\.?-вн|внутренней резьбой|(?<![а-яa-z])(?:вв|мм)(?![а-яa-z])|муфтов/u' => 'Внутренняя — внутренняя резьба',
     ];
+
+    /**
+     * The body material of a ball valve: named in the title, or by series (КШЦ/КШТ/КШШС steel, 11Б27 brass); a plain
+     * threaded or union valve without a word for it is a brass one.
+     */
+    public static function ballValveMaterial(string $title): ?string
+    {
+        $t = mb_strtolower(trim(html_entity_decode($title)));
+        if (! preg_match('/кран/u', $t)) {
+            return null;
+        }
+
+        return match (true) {
+            (bool) preg_match('/нерж/u', $t) => 'Нержавеющая сталь',
+            (bool) preg_match('/чугун/u', $t) => 'Чугун',
+            (bool) preg_match('/(?<![а-я])пп(?![а-я])|ppr|полипропилен/u', $t) => 'Полипропилен (ПП)',
+            (bool) preg_match('/пластик|для пэ труб/u', $t) => 'Пластик (для ПЭ труб)',
+            (bool) preg_match('/стальн|кшц|кшт|кшшс|бивал|рунак|приварк|фланц/u', $t) => 'Сталь',
+            (bool) preg_match('/латун|(?<![а-я])лат\.|11б27|giacoqest|пресс-соедин|крдш|кран крн/u', $t) => 'Латунь',
+            in_array(self::match($t, self::BALL_JOINTS), ['Внутренняя — внутренняя резьба', 'Внутренняя — наружная резьба', 'Наружная — наружная резьба', 'С американкой, гайкой или сгоном'], true) => 'Латунь',
+            default => null,
+        };
+    }
 
     /** Title pattern => «Ручка» of a ball valve. */
     public const BALL_HANDLES = [

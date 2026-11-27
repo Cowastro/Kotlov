@@ -356,6 +356,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Под пластиковую или пресс-трубу', $value('Присоединение', $ppBall));
         $this->assertSame('Ду 25 (1")', $value('Диаметр (Ду)', $ppBall));
         $this->assertSame('Ду 20 (3/4")', $value('Диаметр (Ду)', $peBall));
+        $this->assertSame('Латунь', $value('Материал', $gasBall));
+        $this->assertSame('Латунь', $value('Материал', $inchBall));
+        $this->assertSame('Сталь', $value('Материал', $flangeBall));
+        $this->assertSame('Полипропилен (ПП)', $value('Материал', $ppBall));
+        $this->assertSame('Пластик (для ПЭ труб)', $value('Материал', $peBall));
         $this->assertSame('Для кухни', $value('Назначение', $kitchen));
         $this->assertSame('Однорычажный', $value('Управление', $kitchen));
         $this->assertSame('С краном для питьевой воды', $value('Кран для питьевой воды', $kitchen));
