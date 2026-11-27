@@ -15,6 +15,19 @@ use RuntimeException;
 
 final class OrderReviewSms
 {
+    public function checkDelivery(Order $order): string
+    {
+        abort_unless(OrderResource::canEdit($order), 403);
+        $smsId = (string) $order->review_sms_id;
+        $status = app(SmsByClient::class)->deliveryStatus($smsId);
+        if ($status === 'Доставлено') {
+            $order->statusSms()->where('order_status', 'customer_review')
+                ->where('sms_id', $smsId)->where('state', 'accepted')->update(['state' => 'delivered']);
+        }
+
+        return $status;
+    }
+
     public function message(Order $order): string
     {
         $token = DB::transaction(function () use ($order): string {
@@ -116,7 +129,7 @@ final class OrderReviewSms
     {
         $order->forceFill(['review_sms_attempted_at' => now()])->save();
         $id = app(SmsByClient::class)->sendSms($phone, $sender, $message);
-        DB::transaction(function () use ($order, $id, $phone, $userId, $request): void {
+        DB::transaction(function () use ($order, $id, $phone, $message, $userId, $request): void {
             $sentAt = now();
             $order->forceFill(['review_sms_sent_at' => $sentAt, 'review_sms_id' => $id])->save();
             $comment = $request ? 'Автоматически отправлена ссылка на отзыв' : 'Ссылка на отзыв отправлена';
@@ -126,6 +139,18 @@ final class OrderReviewSms
             ]);
             if ($request) {
                 OrderStatusSms::whereKey($request->id)->update(['state' => 'accepted', 'sms_id' => $id, 'sent_at' => $sentAt]);
+            } else {
+                DB::table('order_status_sms')->insertOrIgnore([
+                    'order_id' => $order->id,
+                    'event_key' => 'review:'.substr(hash('sha256', $id), 0, 25),
+                    'order_status' => 'customer_review',
+                    'message' => $message,
+                    'state' => 'accepted',
+                    'sms_id' => $id,
+                    'sent_at' => $sentAt,
+                    'created_at' => $sentAt,
+                    'updated_at' => $sentAt,
+                ]);
             }
         });
 

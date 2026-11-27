@@ -7,6 +7,7 @@ use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\OneCItems\OneCItemResource;
 use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
+use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\Actions\ProductOneCItemAction;
 use App\Filament\Resources\VamExpress\VamExpressShipmentResource;
 use App\Livewire\EvropochtaOrderStatus;
@@ -37,6 +38,7 @@ use App\Services\Orders\OrderDeliveryPreparation;
 use App\Services\Orders\OrderItemAvailabilityChecker;
 use App\Services\Orders\OrderItemAvailabilityDisplay;
 use App\Services\Orders\OrderItemFulfillmentManager;
+use App\Services\Orders\OrderReviewSms;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierReservationMailService;
@@ -1268,6 +1270,24 @@ class OrderInfolist
                     ->columnSpanFull()
                     ->collapsible()
                     ->collapsed()
+                    ->headerActions([
+                        Action::make('check_review_sms_delivery')
+                            ->label('Проверить доставку СМС об отзыве')
+                            ->icon('heroicon-o-arrow-path')
+                            ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
+                            ->visible(fn (Order $record): bool => filled($record->review_sms_id))
+                            ->action(function (Order $record): void {
+                                try {
+                                    $status = app(OrderReviewSms::class)->checkDelivery($record);
+                                } catch (\RuntimeException) {
+                                    Notification::make()->title('SMS.BY не вернул статус доставки')->warning()->send();
+
+                                    return;
+                                }
+                                $record->unsetRelation('statusSms');
+                                Notification::make()->title('СМС об отзыве · '.$status)->success()->send();
+                            }),
+                    ])
                     ->schema([
                         RepeatableEntry::make('statusSms')
                             ->label('СМС покупателю')
@@ -1281,6 +1301,7 @@ class OrderInfolist
                                     ->badge()
                                     ->formatStateUsing(fn (string $state): string => match ($state) {
                                         'accepted' => 'Принято SMS.BY',
+                                        'delivered' => 'Доставлено',
                                         'unconfirmed' => 'Отправка не подтверждена',
                                         'no_phone' => 'Нет корректного телефона',
                                         'not_needed' => 'Запрос отзыва пропущен',
