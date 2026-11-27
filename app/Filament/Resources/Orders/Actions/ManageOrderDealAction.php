@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Orders\Actions;
 use App\Models\Order;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Services\Orders\OrderDealControl;
+use App\Services\Orders\OrderWorkflow;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
@@ -47,11 +48,17 @@ class ManageOrderDealAction
                 Hidden::make('expected_manager_id'),
                 Hidden::make('expected_assigned_to'),
                 Select::make('stage')->label('Этап заказа')->options(function (Order $record): array {
+                    if (OrderWorkflow::managedBy1c($record)) {
+                        return array_intersect_key(Order::DEAL_STAGES, [$record->effectiveDealStage() => true]);
+                    }
+
                     $keys = array_keys(Order::DEAL_STAGES);
                     $index = array_search($record->effectiveDealStage(), $keys, true);
                     return array_slice(Order::DEAL_STAGES, $index, 2, true);
                 })
-                    ->helperText('При переходе проверяется готовность заказа. Пропустить неподтверждённый этап нельзя.')
+                    ->helperText(fn (Order $record): string => OrderWorkflow::managedBy1c($record)
+                        ? 'Этапы отгрузки и получения обновляются из 1С.'
+                        : 'При переходе проверяется готовность заказа. Пропустить неподтверждённый этап нельзя.')
                     ->live()->required(),
                 Select::make('manager_id')->label('Ответственный')
                     ->options(fn (): array => AssignOrderManagerAction::options())->searchable()->required(),

@@ -53,9 +53,14 @@ class OrderDealControlTest extends TestCase
         ]);
         $card = fn () => Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->getRouteKey()]);
 
-        $card()->assertSeeHtml('data-order-next-action="confirmFulfillment"')
+        $confirmation = $card()->assertSeeHtml('data-order-next-action="confirmFulfillment"')
             ->assertDontSee('Печать этикетки Европочты')
-            ->mountAction('confirmFulfillment')->assertActionMounted('confirmFulfillment');
+            ->assertActionVisible('confirmInternalOrder');
+        $this->assertNotContains(
+            'confirmFulfillment',
+            collect($confirmation->instance()->getCachedHeaderActions())->filter(fn ($action) => $action instanceof \Filament\Actions\Action)->map->getName(),
+        );
+        $confirmation->mountAction('confirmFulfillment')->assertActionMounted('confirmFulfillment');
         $this->assertNull($item->fresh()->fulfillment_confirmed_at);
 
         $item->update([

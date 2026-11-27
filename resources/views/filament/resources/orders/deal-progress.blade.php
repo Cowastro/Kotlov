@@ -11,6 +11,7 @@
     $overdue = $active && $order->deal_control_at?->isPast();
     $today = $active && $order->deal_control_at?->timezone('Europe/Minsk')->isToday();
     $isTable ??= false;
+    $canSelectStage = $isTable && $active && ! \App\Services\Orders\OrderWorkflow::managedBy1c($order);
     $controlLabel = $order->dealControlLabel();
     if (! $isTable && $active && ! $order->deal_control_at) {
         $controlLabel = 'Срок контроля не назначен';
@@ -42,8 +43,8 @@
             @endphp
             <button type="button"
                 class="order-deal__step {{ $loop->index < $currentIndex || $completed ? 'is-done' : '' }} {{ $loop->index === $currentIndex && ! $completed ? 'is-current' : '' }}"
-                @disabled(! $active || $loop->index < $currentIndex || $loop->index > $currentIndex + 1)
-                @if ($active && $loop->index >= $currentIndex && $loop->index <= $currentIndex + 1) wire:click.stop="mountAction('manageDeal', @js(['stage' => $key]), @js($context))" @endif
+                @disabled(! $canSelectStage || $loop->index < $currentIndex || $loop->index > $currentIndex + 1)
+                @if ($canSelectStage && $loop->index >= $currentIndex && $loop->index <= $currentIndex + 1) wire:click.stop="mountAction('manageDeal', @js(['stage' => $key]), @js($context))" @endif
                 title="{{ $hint }}"
                 aria-label="{{ $label }}"
                 aria-description="{{ $hint }}"
