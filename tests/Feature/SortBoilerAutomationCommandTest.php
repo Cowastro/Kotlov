@@ -137,6 +137,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $towelUnion = $card('Американка угловая для полотенцесушителя 1"х1" гайка-штуцер хромированная (2 шт.)', $plumbing);
         $cistern = $card('Впускной механизм с нижней подачей 1/2", AV Engineering', $plumbing);
         $neptun = $card('Система контроля протечки воды 1/2" PROFI Base NEPTUN', $plumbing);
+        $pumpParts = $section('komplektuyushchie-dlya-nasosov');
+        $cable = $card('UNIPUMP Кабель КВВ 3*1,5 (бухта 500 м)', $pumpParts);
+        $pumpBlock = $card('UNIPUMP Блок управления насосом ТУРБИ-М2 (1,5-3,0 бар)', $pumpParts);
+        $guideRail = $card('Автоматическая трубная муфта WELLMIX DN 100 для насоса WQ2 и GNWQ 11кВт и выше', $pumpParts);
+        $screwJoint = $card('IMP PUMPS Винтовое соединение R 1" без уплотнений', $pumpParts);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -340,6 +345,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Подключение полотенцесушителей', $value('Тип', $towelUnion));
         $this->assertSame('Арматура бачков, писсуаров и инсталляции', $value('Тип', $cistern));
         $this->assertSame($leaks->id, $neptun->fresh()->category_id);
+        $this->assertSame('Кабели', $value('Тип', $cable));
+        $this->assertSame('Автоматика, реле и частотники', $value('Тип', $pumpBlock));
+        $this->assertSame('Монтаж насоса и скважины', $value('Тип', $guideRail));
+        $this->assertSame('Фитинги и соединения', $value('Тип', $screwJoint));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
