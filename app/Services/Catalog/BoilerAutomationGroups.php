@@ -17,6 +17,7 @@ final class BoilerAutomationGroups
 
     /** Title pattern => section the card belongs to (from «Регуляторы» or «Запчасти для котлов»). */
     public const MOVES = [
+        '/^фильтр для очистки воды electrolux/u' => 'filtry',
         '/^(blist|ермак) стекло термостойк/u' => 'stekla-dlya-pechey-i-kaminov',
         '/^мангал вертикальный большой/u' => 'mangalyi',
         '/^ермак (бак навесной|катализатор|конвектор дымохода|модуль закрытой каменки|парообразователь|сетка-каменка|тэн|теплообменник|удлинитель тоннеля)/u' => 'aksessuary-dlya-bani',
@@ -274,6 +275,9 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::HUMIDIFIERS => [
+                'Тип' => [self::HUMIDIFIER_TYPES, array_values(array_unique(self::HUMIDIFIER_TYPES))],
+            ],
             self::HEATING_MATS => [
                 'Площадь обогрева' => [fn (string $title) => self::matSpec($title)[0], self::MAT_AREAS],
                 'Удельная мощность' => [fn (string $title) => self::matSpec($title)[1], ['150 Вт/м²', '160 Вт/м²', '180 Вт/м²', '200 Вт/м²']],
@@ -1643,6 +1647,7 @@ final class BoilerAutomationGroups
 
     /** Title pattern => «Тип» inside «Фильтры», in filter order; the first match wins. */
     public const WATER_FILTER_TYPES = [
+        '/^фильтр для очистки воды|обратн\w* осмос|osmoprof/u' => 'Системы очистки питьевой воды',
         '/промывн|самоочищ/u' => 'Промывные фильтры',
         '/шламоуловит|магнитн/u' => 'Шламоуловители и магнитные фильтры',
         '/грязевик|фланцев|чугунн/u' => 'Грязевики и фланцевые фильтры',
@@ -2441,6 +2446,22 @@ final class BoilerAutomationGroups
 
         return [$bucket, in_array($density, [150, 160, 180, 200], true) ? $density.' Вт/м²' : null];
     }
+
+    public const HUMIDIFIERS = 'uvlazhniteli-vozdukha';
+
+    /**
+     * Title pattern => «Тип» inside «Увлажнители воздуха», in filter order; the first match wins. Cards named by the model
+     * only go by the series: Electrolux EHU / Ballu UHB / Boneco U humidifiers, Boneco H hybrids (humidifier + purifier),
+     * Ballu AP purifiers, Electrolux EDH / EDM / EDL dehumidifiers.
+     */
+    public const HUMIDIFIER_TYPES = [
+        '/смола|calcoff/u' => 'Расходники и аксессуары',
+        '/приточн/u' => 'Приточные очистители (бризеры)',
+        '/осушитель|electrolux ed[hml]-/u' => 'Осушители воздуха',
+        '/^boneco h\d/u' => 'Климатические комплексы (увлажнение и очистка)',
+        '/очиститель|^ballu ap-/u' => 'Очистители воздуха',
+        '/увлажнитель|ehu-|uhb-|^boneco u\d/u' => 'Увлажнители воздуха',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
