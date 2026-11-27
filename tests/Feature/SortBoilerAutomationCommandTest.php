@@ -148,6 +148,13 @@ class SortBoilerAutomationCommandTest extends TestCase
         $stoneNet = $card('Сетка для камней Везувий Стандарт Ø 300', $bathSection);
         $kazan = $card('Казан чугунный Везувий 12л с ручкой (БЕЗ КРЫШКИ)', $bathSection);
         $fireStove = $card('Печь-Камин ВЕЗУВИЙ ПК-01 (205) беж. 12 кВт (200 м3) Ø 150 мм', $bathSection);
+        $safetySection = $section('predokhranitelnaya-i-reguliruyushchaya-armatura');
+        $safetyGroups = $child('gruppy-bezopasnosti', $safetySection);
+        $safetyValve = $card('Клапан предохранительный MSW 10 бар, 3\\4", Afriso', $safetySection);
+        $varmegaValve = $card('Varmega VM16624 1/2" х 3/4", 3 бар', $safetySection);
+        $boilerGroup = $card('Группа безопасности котла KSG mini 50 кВт с изоляцией, Afriso', $safetyGroups);
+        $trv = $card('Клапан регулирующий проходной седельный TRV-25-10', $safetySection);
+        $sfa = $card('Sanicubic 2 Classic', $safetySection);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
@@ -360,6 +367,13 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Сетки и каменки для камней', $value('Тип', $stoneNet));
         $this->assertSame('Казаны, мангалы и коптильни', $value('Тип', $kazan));
         $this->assertSame('Печи и каменки', $value('Тип', $fireStove));
+        $this->assertSame('Предохранительные клапаны', $value('Тип', $safetyValve));
+        $this->assertSame('Ду 20 (3/4")', $value('Диаметр (Ду)', $safetyValve));
+        $this->assertSame('Предохранительные клапаны', $value('Тип', $varmegaValve));
+        $this->assertSame('Группы безопасности', $value('Тип', $boilerGroup));
+        $this->assertSame('Балансировочные и регулирующие клапаны', $value('Тип', $trv));
+        $this->assertSame('Ду 25 (1")', $value('Диаметр (Ду)', $trv));
+        $this->assertSame('Канализационные насосные установки (SFA)', $value('Тип', $sfa));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
