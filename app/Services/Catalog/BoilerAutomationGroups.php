@@ -43,6 +43,8 @@ final class BoilerAutomationGroups
         '/^аквабрайт абф/u' => 'filtry',
         '/^шланг гибкий гофрированный .*для газа/u' => self::GAS_HOSES,
         '/^шланг душевой/u' => self::PLUMBING_PARTS,
+        '/^master flash/u' => 'krovelnye-prohodki-master-flash',
+        '/^лампа для бани/u' => 'abazhury-dlya-bani',
         '/^переходник varmega vmtf/u' => 'rezbovye-fitingi',
         '/^труба varmega pe-xa/u' => 'truby-iz-sshitogo-polietilena',
         '/^монтажный ключ varmega/u' => 'instrumenty-dlya-montazha',
@@ -260,6 +262,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::STOVE_CASTINGS => [
+                'Тип' => [self::CASTING_TYPES, array_values(array_unique(self::CASTING_TYPES))],
+                'Покрытие' => [self::CASTING_FINISHES, array_values(self::CASTING_FINISHES)],
+            ],
             self::OUTDOOR_SEWER => [
                 'Тип' => [self::SEWER_TYPES, self::SEWER_ORDER],
                 'Диаметр' => [fn (string $title) => self::sewerDiameter($title, self::OUTDOOR_SEWER_DIAMETERS), array_map(fn (int $mm) => $mm.' мм', self::OUTDOOR_SEWER_DIAMETERS)],
@@ -1373,6 +1379,32 @@ final class BoilerAutomationGroups
             default => '6 м',
         };
     }
+
+    public const STOVE_CASTINGS = 'pechnoe-i-kaminnoe-lite';
+
+    /** Title pattern => «Тип» inside «Печное и каминное литьё», in filter order; the first match wins. */
+    public const CASTING_TYPES = [
+        '/^стекло/u' => 'Стёкла для дверок',
+        '/поддувал|зольн/u' => 'Поддувальные дверки и зольники',
+        '/прочистн/u' => 'Прочистные дверки',
+        '/каминн|панорамн/u' => 'Каминные дверки',
+        '/дверк|дверц|двер[ьи]/u' => 'Топочные (печные) дверки',
+        '/тоннел/u' => 'Монтажные тоннели',
+        '/колосник/u' => 'Колосники',
+        '/плит|конфорк/u' => 'Плиты и конфорки',
+        '/задвижк|шибер/u' => 'Задвижки',
+        '/духов/u' => 'Духовые шкафы',
+        '/мангал|гриль|очаг/u' => 'Мангалы и очаги-гриль',
+        '/^труба|проходной элемент|фартук/u' => 'Трубы и проходные элементы',
+        '/./u' => 'Фурнитура и прочее',
+    ];
+
+    /** Title pattern => «Покрытие» of a cast door (Везувий and the like name it in brackets). */
+    public const CASTING_FINISHES = [
+        '/бронз/u' => 'Бронза',
+        '/антрацит/u' => 'Антрацит',
+        '/не крашен|некрашен/u' => 'Не крашенная',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
