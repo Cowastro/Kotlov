@@ -16,9 +16,9 @@
     $displayAvailabilityStatus = method_exists($product, 'publicAvailabilityStatus') ? $product->publicAvailabilityStatus() : $availabilityStatus;
     // Публичный каталог всегда остаётся розничным. Оптовое предложение
     // показывается и заказывается только из отдельного B2B-кабинета.
-    $cityStock = $product->is_active && ! $product->is_archived
-        ? app(\App\Services\ManagerStorefrontProductContext::class)->ecokaminWarehouseLabels($product)
-        : [];
+    $publicStockLabel = $product->is_active && ! $product->is_archived
+        ? app(\App\Services\ManagerStorefrontProductContext::class)->ecokaminPublicStockLabel($product)
+        : null;
     $b2bComparison = [];
     $b2bOffer = null;
     $isB2bOffer = false;
@@ -144,9 +144,9 @@
             @endif
         </div>
 
-        @foreach ($cityStock as $city => $stockLabel)
-            <div class="text-caption-01">{{ $city }} — {{ $stockLabel }}</div>
-        @endforeach
+        @if ($publicStockLabel)
+            <div class="text-caption-01">{{ $publicStockLabel }}</div>
+        @endif
 
         @includeWhen(str_starts_with($product->name, 'Теплообменник Sakovich Pellet Standart '), 'partials.sakovich-exchanger-price-note')
 
@@ -199,7 +199,7 @@
         @include('partials.manager-product-context', ['product' => $product, 'compact' => true, 'productUrl' => $productUrl])
 
         {{-- Наличие --}}
-        @if (! $cityStock)
+        @if (! $publicStockLabel)
             <div class="mb-10">
                 @if ($isB2bOffer)
                     <span class="text-caption-01 text-success">
