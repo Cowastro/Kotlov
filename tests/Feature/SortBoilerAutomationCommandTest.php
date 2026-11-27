@@ -168,6 +168,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $stoveDoor = $card('Дверца Fireway K-211 топочная 250×280 мм', $castings);
         $ashDoor = $card('Дверка ВЕЗУВИЙ поддувальная ДП-2 (Бронза)', $castings);
         $doorGlass = $card('Стекло Везувий 270 (0,207х0,247)', $castings);
+        $fasteners = $section('krepezh-i-metizy');
+        $anchor = $card('Анкер латунный (дюбель-втулка) М10 (12х33 мм) GOOD WORK', $fasteners);
+        $washer = $card('Шайба М24 плоская увеличенная оцинкованная DIN 9021 (4 шт в блистере) ADMIRAL', $fasteners);
+        $clip = $card('Крепеж-клипса для труб 28 GOOD WORK', $fasteners);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -416,6 +420,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertNull($value('Покрытие', $stoveDoor));
         $this->assertSame('Поддувальные дверки и зольники', $value('Тип', $ashDoor));
         $this->assertSame('Стёкла для дверок', $value('Тип', $doorGlass));
+        $this->assertSame('Анкеры и дюбели', $value('Тип', $anchor));
+        $this->assertSame('М10', $value('Размер резьбы', $anchor));
+        $this->assertSame('Шайбы', $value('Тип', $washer));
+        $this->assertSame('М24', $value('Размер резьбы', $washer));
+        $this->assertSame('Клипсы, скобы и держатели', $value('Тип', $clip));
+        $this->assertNull($value('Размер резьбы', $clip));
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
