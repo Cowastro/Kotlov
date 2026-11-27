@@ -271,6 +271,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::FIREPLACE_GRILLES => [
+                'Тип' => [self::GRILLE_TYPES, array_values(array_unique(self::GRILLE_TYPES))],
+                'Размер' => [fn (string $title) => self::grilleSize($title), self::GRILLE_SIZES],
+                'Цвет' => [self::GRILLE_COLORS, array_values(array_unique(self::GRILLE_COLORS))],
+                'Жалюзи' => [['/жалюзи/u' => 'С жалюзи'], ['С жалюзи']],
+            ],
             self::HYDRO_SEPARATORS => [
                 'Тип' => [self::HYDRO_SEPARATOR_TYPES, array_values(array_unique(self::HYDRO_SEPARATOR_TYPES))],
                 'Число контуров' => [fn (string $title) => self::hydroCircuits($title), array_map(fn (int $n) => self::circuitsLabel($n), range(2, 12))],
@@ -2091,6 +2097,53 @@ final class BoilerAutomationGroups
     public static function circuitsLabel(int $n): string
     {
         return $n.' '.(in_array($n % 10, [2, 3, 4], true) && ! in_array($n % 100, [12, 13, 14], true) ? 'контура' : 'контуров');
+    }
+
+    public const FIREPLACE_GRILLES = 'kaminnye-reshyotki';
+
+    /** Title pattern => «Тип» inside «Каминные решётки», in filter order; the first match wins. */
+    public const GRILLE_TYPES = [
+        '/luft n[lp]|aero/u' => 'Большие панели (LUFT NL/NP, AERO)',
+        '/luft/u' => 'Щелевые LUFT',
+        '/oskar|oscar|venus|fresh|медн|латунь|никелир/u' => 'Декоративные',
+        '/решетка каминная/u' => 'Классические',
+    ];
+
+    /** Title pattern => «Цвет» of a fireplace grille; the first match wins. */
+    public const GRILLE_COLORS = [
+        '/черная-латунь/u' => 'Чёрная с латунью',
+        '/бел/u' => 'Белая',
+        '/ч[её]рн|\bc \d|luft n[lp] .*\bc\b/u' => 'Чёрная',
+        '/графит/u' => 'Графитовая',
+        '/рустик/u' => 'Рустик',
+        '/крем/u' => 'Кремовая',
+        '/медн/u' => 'Медная',
+        '/латунь/u' => 'Латунь',
+        '/никел/u' => 'Никель',
+    ];
+
+    /** «Размер» options of fireplace grilles, small to large. */
+    public const GRILLE_SIZES = [
+        '11×11 см', '11×17 см', '17×17 см', '17×30 см', '17×37 см', '17×49 см', '22×30 см',
+        '9×20 см', '9×40 см', '9×60 см', '9×80 см', '9×100 см', '12×20 см', '12×40 см', '12×80 см', '12×100 см',
+        '40×60 см', '40×80 см', '55×77 см',
+    ];
+
+    /** The face size of a fireplace grille, cm: Kratki «17х30», LUFT «9х100», LUFT NL «800х400х90» mm, AERO «90*600». */
+    public static function grilleSize(string $title): ?string
+    {
+        $t = mb_strtolower(trim(html_entity_decode($title)));
+        if (! preg_match('/(\d{1,3})\s*[xх×*]\s*(\d{2,3})/u', $t, $m)) {
+            return null;
+        }
+        [$a, $b] = [(int) $m[1], (int) $m[2]];
+        if ($a >= 90 || $b > 100) {
+            [$a, $b] = [(int) round($a / 10), (int) round($b / 10)];
+        }
+        [$a, $b] = $a <= $b ? [$a, $b] : [$b, $a];
+        $size = $a.'×'.$b.' см';
+
+        return in_array($size, self::GRILLE_SIZES, true) ? $size : null;
     }
 
     public const GAS_HOSES = 'gazovye-shlangi';
