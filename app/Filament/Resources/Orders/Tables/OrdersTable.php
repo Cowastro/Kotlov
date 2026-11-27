@@ -129,7 +129,7 @@ class OrdersTable
                     'archivedBy:id,name',
                     'placedEconomicSnapshot',
                     'latestSettlement',
-                    'supplierOrderRequests:id,order_id,supplier_id,supplier_name,status,transfer_mode,sent_at,acknowledged_at',
+                    'supplierOrderRequests:id,order_id,supplier_id,supplier_name,number,status,transfer_mode,sent_at,acknowledged_at',
                     'portalLinks' => fn ($query) => $query
                         ->whereNull('revoked_at')
                         ->where('expires_at', '>', now())

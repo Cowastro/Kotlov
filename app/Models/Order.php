@@ -353,7 +353,7 @@ class Order extends Model
     public function latestOnecOrderTask(): MorphOne
     {
         return $this->morphOne(OneCAgentTask::class, 'subject')
-            ->ofMany('id', 'max', fn (Builder $query): Builder => $query
+            ->ofMany(['id' => 'max'], fn (Builder $query): Builder => $query
                 ->whereIn('type', [OrderTaskHandler::TYPE, OrderSupplyTaskHandler::TYPE]));
     }
 
