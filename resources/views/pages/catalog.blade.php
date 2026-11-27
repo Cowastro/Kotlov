@@ -441,7 +441,7 @@
 
                                 {{-- Атрибуты категории (select-тип, in_filter=true) --}}
                                 @foreach ($specificationFacets as $key => $facet)
-                                    <details class="widget-facet" @if ($loop->first || collect($facet['options'])->contains('active', true)) open @endif>
+                                    <details class="widget-facet" open>
                                         <summary class="fw-semibold mb-2">{{ $facet['label'] }}</summary>
                                         <ul class="list-unstyled d-flex flex-column gap-2">
                                             @foreach ($facet['options'] as $option)
@@ -464,7 +464,7 @@
                                     @continue($isBoilerHub && $selectedSubcategory === null && !request()->filled('attr.'.$attr->id))
                                     <div class="widget-facet">
                                         <div class="facet-title" data-bs-target="#attr-{{ $attr->id }}"
-                                            role="button" data-bs-toggle="collapse" aria-expanded="false">
+                                            role="button" data-bs-toggle="collapse" aria-expanded="true">
                                             <h6>{{ $attr->name }}
                                                 @if ($attr->suffix)
                                                     <span class="cl-text-2 fw-normal">({{ $attr->suffix }})</span>
@@ -472,7 +472,7 @@
                                             </h6>
                                             <span class="icon icon-CaretDown"></span>
                                         </div>
-                                        <div id="attr-{{ $attr->id }}" class="collapse">
+                                        <div id="attr-{{ $attr->id }}" class="collapse show">
                                             <ul class="collapse-body filter-group-check">
                                                 @foreach ($attr->options as $option)
                                                     <li class="list-item">
