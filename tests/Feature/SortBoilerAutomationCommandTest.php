@@ -264,6 +264,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $grills = $section('mangalyi');
         $asgard = $card('Мангал передвижной ComfortProm Асгард с крышей + решетка барбекю (сталь 3 мм)', $grills);
         $hikeGrill = $card('Мангал складной ComfortProm Пегас', $grills);
+        $dryPumps = $section('kanalizatsionnye-nasosy-sukhoy-ustanovki');
+        $wellmix = $card('Канализационный насос сухой установки WELLMIX 80 WL 50-25-7.5', $dryPumps);
+        $sanicubic = $card('Sanicubic 2 Pro', $dryPumps);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -536,6 +539,11 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Насосы сухой установки WELLMIX', $value('Тип', $wellmix));
+        $this->assertSame('5,5–7,5 кВт', $value('Мощность двигателя', $wellmix));
+        $this->assertSame('Ду 80', $value('Диаметр выхода (Ду)', $wellmix));
+        $this->assertSame('Канализационные установки SFA', $value('Тип', $sanicubic));
+        $this->assertNull($value('Мощность двигателя', $sanicubic));
         $this->assertSame('Мангалы', $value('Тип', $asgard));
         $this->assertSame('Передвижной (на колёсах)', $value('Конструкция', $asgard));
         $this->assertSame('С крышей или навесом', $value('Крыша', $asgard));

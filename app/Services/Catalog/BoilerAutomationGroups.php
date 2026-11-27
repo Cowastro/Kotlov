@@ -274,6 +274,11 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::DRY_SEWAGE_PUMPS => [
+                'Тип' => [self::DRY_SEWAGE_TYPES, array_values(array_unique(self::DRY_SEWAGE_TYPES))],
+                'Мощность двигателя' => [fn (string $title) => self::wellmixPower($title), ['До 1,5 кВт', '2,2–4 кВт', '5,5–7,5 кВт', '11–15 кВт', '18,5–22 кВт']],
+                'Диаметр выхода (Ду)' => [fn (string $title) => preg_match('/wellmix (\d{2,3}) wl/u', mb_strtolower($title), $m) ? 'Ду '.$m[1] : null, ['Ду 50', 'Ду 65', 'Ду 80', 'Ду 100', 'Ду 150', 'Ду 200', 'Ду 250', 'Ду 300']],
+            ],
             self::GRILLS => [
                 'Тип' => [self::GRILL_TYPES, array_values(array_unique(self::GRILL_TYPES))],
                 'Конструкция' => [self::GRILL_BUILDS, array_values(array_unique(self::GRILL_BUILDS))],
@@ -2319,6 +2324,32 @@ final class BoilerAutomationGroups
         '/складн|разборн|поход|пикник|пионер|облегченн/u' => 'Складной, переносной',
         '/^мангал/u' => 'Стационарный',
     ];
+
+    public const DRY_SEWAGE_PUMPS = 'kanalizatsionnye-nasosy-sukhoy-ustanovki';
+
+    /** Title pattern => «Тип» inside «Канализационные насосы сухой установки», in filter order. */
+    public const DRY_SEWAGE_TYPES = [
+        '/сигнализац|задвижка/u' => 'Аксессуары',
+        '/^канализационный насос/u' => 'Насосы сухой установки WELLMIX',
+        '/sani|citilift|насосная установка/u' => 'Канализационные установки SFA',
+    ];
+
+    /** The motor power of a WELLMIX dry-pit pump: «WL 80-10-4» = Q 80 m³/h, H 10 m, 4 kW. */
+    public static function wellmixPower(string $title): ?string
+    {
+        if (! preg_match('/wl \d+-\d+-(\d+(?:\.\d+)?)/u', mb_strtolower($title), $m)) {
+            return null;
+        }
+        $kw = (float) $m[1];
+
+        return match (true) {
+            $kw <= 1.5 => 'До 1,5 кВт',
+            $kw <= 4 => '2,2–4 кВт',
+            $kw <= 7.5 => '5,5–7,5 кВт',
+            $kw <= 15 => '11–15 кВт',
+            default => '18,5–22 кВт',
+        };
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
