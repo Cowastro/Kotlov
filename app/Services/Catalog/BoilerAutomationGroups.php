@@ -275,6 +275,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::HEATING_CABLES => [
+                'Мощность' => [fn (string $title) => self::cableSpec($title)[0], self::CABLE_POWERS],
+                'Длина кабеля' => [fn (string $title) => self::cableSpec($title)[1], self::CABLE_LENGTHS],
+            ],
             self::HUMIDIFIERS => [
                 'Тип' => [self::HUMIDIFIER_TYPES, array_values(array_unique(self::HUMIDIFIER_TYPES))],
             ],
@@ -2462,6 +2466,50 @@ final class BoilerAutomationGroups
         '/очиститель|^ballu ap-/u' => 'Очистители воздуха',
         '/увлажнитель|ehu-|uhb-|^boneco u\d/u' => 'Увлажнители воздуха',
     ];
+
+    public const HEATING_CABLES = 'nagrevatelynye-kabeli';
+
+    public const CABLE_POWERS = ['До 300 Вт', '300–600 Вт', '600–1000 Вт', '1000–1500 Вт', '1500–2000 Вт', 'Более 2000 Вт'];
+
+    public const CABLE_LENGTHS = ['До 20 м', '20–50 м', '50–100 м', 'Более 100 м'];
+
+    /**
+     * [power bucket, length bucket] of an underfloor heating cable: OneKeyElectro «OKE-1200-86,0» (W-m), Теплолюкс
+     * «101,5 м/1800 Вт», Electrolux / Royal Thermo «2-17-2000» (17 W/m, 2000 W), Grand Meyer «THC20-115» (20 W/m, 115 m).
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    public static function cableSpec(string $title): array
+    {
+        $t = mb_strtolower(trim(html_entity_decode($title)));
+        $num = fn (string $v): float => (float) str_replace(',', '.', $v);
+        [$watts, $meters] = match (true) {
+            (bool) preg_match('/oke-(\d+)-(\d+(?:,\d+)?)/u', $t, $m) => [$num($m[1]), $num($m[2])],
+            (bool) preg_match('/(\d+(?:,\d+)?)\s*м\/(\d+)\s*вт/u', $t, $m) => [$num($m[2]), $num($m[1])],
+            (bool) preg_match('/\b2-17-(\d+)/u', $t, $m) => [$num($m[1]), $num($m[1]) / 17],
+            (bool) preg_match('/thc20-(\d+)/u', $t, $m) => [$num($m[1]) * 20, $num($m[1])],
+            default => [null, null],
+        };
+        if ($watts === null) {
+            return [null, null];
+        }
+        $power = match (true) {
+            $watts < 300 => 'До 300 Вт',
+            $watts < 600 => '300–600 Вт',
+            $watts < 1000 => '600–1000 Вт',
+            $watts < 1500 => '1000–1500 Вт',
+            $watts <= 2000 => '1500–2000 Вт',
+            default => 'Более 2000 Вт',
+        };
+        $length = match (true) {
+            $meters <= 20 => 'До 20 м',
+            $meters <= 50 => '20–50 м',
+            $meters <= 100 => '50–100 м',
+            default => 'Более 100 м',
+        };
+
+        return [$power, $length];
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 

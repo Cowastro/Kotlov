@@ -281,6 +281,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $boneco = $card('Boneco H400', $humidifiers);
         $dehumidifier = $card('Electrolux EDL-20L', $humidifiers);
         $drinkFilter = $card('Фильтр для очистки воды Electrolux iStream TotalPure X-3 Softening', $humidifiers);
+        $heatCables = $section('nagrevatelynye-kabeli');
+        $etcCable = $card('Нагревательный кабель Electrolux ETC 2-17-1200', $heatCables);
+        $thcCable = $card('Нагревательный кабель Grand Meyer THC20-115', $heatCables);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -553,6 +556,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('1000–1500 Вт', $value('Мощность', $etcCable));
+        $this->assertSame('50–100 м', $value('Длина кабеля', $etcCable));
+        $this->assertSame('Более 2000 Вт', $value('Мощность', $thcCable));
+        $this->assertSame('Более 100 м', $value('Длина кабеля', $thcCable));
         $this->assertSame('Увлажнители воздуха', $value('Тип', $ehu));
         $this->assertSame('Климатические комплексы (увлажнение и очистка)', $value('Тип', $boneco));
         $this->assertSame('Осушители воздуха', $value('Тип', $dehumidifier));
