@@ -119,6 +119,12 @@
         margin-top: 6px;
     }
 
+    [id^="order-item-"]:target {
+        border-radius: 0.375rem;
+        outline: 2px solid var(--primary-500, #d97706);
+        outline-offset: 4px;
+    }
+
     .order-deal--compact > .order-deal__heading,
     .order-deal--compact > .order-deal__track,
     .order-deal--compact > .order-deal__control,

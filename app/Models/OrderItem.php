@@ -275,6 +275,11 @@ class OrderItem extends Model
         return $this->supplyContextCache ??= app(OrderItemSupplyContextResolver::class)->resolve($this);
     }
 
+    public function adminAnchor(): string
+    {
+        return 'order-item-'.$this->getKey();
+    }
+
     public function currentSupplyContact(): ?string
     {
         $supplier = $this->fulfillmentSupplier ?: $this->supplySupplier;

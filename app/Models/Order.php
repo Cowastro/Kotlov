@@ -1008,7 +1008,7 @@ class Order extends Model
             ]);
         }
         if (($supply['unknown_availability_count'] ?? 0) > 0) {
-            $problems->push(['code' => 'no_stock', 'severity' => 'warning', 'label' => 'Наличие требует уточнения: '.$supply['unknown_availability_count']]);
+            $problems->push(['code' => 'availability_unknown', 'severity' => 'warning', 'label' => 'Наличие требует уточнения: '.$supply['unknown_availability_count']]);
         }
         if ($supply['unavailable_count'] > 0) {
             $problems->push(['code' => 'no_stock', 'severity' => 'warning', 'label' => 'Нет подтверждённого остатка: '.$supply['unavailable_count']]);

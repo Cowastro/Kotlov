@@ -288,11 +288,19 @@ class OrderDealControlTest extends TestCase
         foreach ([$stock, $margin] as $order) {
             $order->update(['manager_id' => $manager->id]);
             $order->items()->create([
-                'product_name' => 'Товар', 'quantity' => 1, 'price' => 100, 'total' => 100,
+                'product_name' => $order->is($margin) ? 'Товар с низкой маржой' : 'Товар без остатка',
+                'quantity' => 1, 'price' => 100, 'total' => 100,
                 'supply_status' => 'own_stock', 'supply_captured_at' => now(),
                 'supply_is_available' => $order->is($margin), 'supply_purchase_price' => $order->is($margin) ? 95 : 70,
             ]);
         }
+        $stockItem = $stock->items()->firstOrFail();
+        $marginItem = $margin->items()->firstOrFail();
+        $healthyItem = $stock->items()->create([
+            'product_name' => 'Товар в наличии', 'quantity' => 1, 'price' => 100, 'total' => 100,
+            'supply_status' => 'own_stock', 'supply_captured_at' => now(), 'supply_is_available' => true,
+            'supply_purchase_price' => 70,
+        ]);
 
         Livewire::actingAs($manager)->test(ListOrders::class)
             ->assertDontSeeHtml('data-order-queue-attention')
@@ -302,7 +310,13 @@ class OrderDealControlTest extends TestCase
             ->assertSee('Нет подтверждённого остатка')
             ->assertSee('Сверить остаток и источник отгрузки')
             ->assertSee('Маржа ниже 10%')
-            ->assertSee('Сверить входную цену и цену продажи');
+            ->assertSee('Сверить входную цену и цену продажи')
+            ->assertSeeHtml('/admin/orders/'.$stock->id.'#'.$stockItem->adminAnchor())
+            ->assertSeeHtml('/admin/orders/'.$margin->id.'#'.$marginItem->adminAnchor())
+            ->assertDontSeeHtml('#'.$healthyItem->adminAnchor());
+
+        $this->actingAs($manager)->get('/admin/orders/'.$stock->id)->assertOk()
+            ->assertSeeHtml('id="'.$stockItem->adminAnchor().'"');
     }
 
     public function test_stalled_order_queue_and_repeated_staff_digests_follow_real_progress(): void
