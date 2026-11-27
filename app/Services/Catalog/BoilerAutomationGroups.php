@@ -258,6 +258,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::SAFETY_VALVES => [
+                'Тип' => [self::SAFETY_TYPES, array_values(array_unique(self::SAFETY_TYPES))],
+                'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
+            ],
             self::BATH_ACCESSORIES => [
                 'Тип' => [self::BATH_TYPES, array_values(array_unique(self::BATH_TYPES))],
             ],
@@ -446,7 +450,7 @@ final class BoilerAutomationGroups
     ];
 
     /** Sections whose filters also cover the cards of their subsections (the parent page lists them all). */
-    public const WITH_SUBSECTIONS = [self::PELLET_BURNERS, self::LEAKS, self::BATH_ACCESSORIES];
+    public const WITH_SUBSECTIONS = [self::PELLET_BURNERS, self::LEAKS, self::BATH_ACCESSORIES, self::SAFETY_VALVES];
 
     public const PELLET_BURNERS = 'pelletnye-gorelki';
 
@@ -886,13 +890,15 @@ final class BoilerAutomationGroups
      */
     public static function ballValveDn(string $title): ?string
     {
-        $title = mb_strtolower(trim(html_entity_decode($title)));
+        $title = str_replace('\\', '/', mb_strtolower(trim(html_entity_decode($title))));
         $dn = null;
         $pipe = [16 => 10, 18 => 15, 20 => 15, 25 => 20, 32 => 25, 40 => 32, 50 => 40, 63 => 50];
         if (preg_match('/пресс-соединения ду\s*(\d{2})/u', $title, $m) && isset($pipe[(int) $m[1]])) {
             $dn = $pipe[(int) $m[1]];
         } elseif (preg_match('/(?:ду|dn)\s*(\d{2,3})/u', $title, $m)) {
             $dn = (int) $m[1];
+        } elseif (preg_match('/(?:trv|ктз|ск-11)-?\s?(\d{2,3})(?!\d)|rdt-[\d.]+-(\d{2,3})/u', $title, $m)) {
+            $dn = (int) ($m[1] !== '' ? $m[1] : $m[2]);
         } elseif (preg_match('/(?:(?<![а-я])пп(?![а-я])|ppr)\D{0,25}?(?<![\d\/])(16|20|25|32|40|50|63)(?!\d)|(?<![\d\/.,])(16|20|25|32|40|50|63)(?:\s*х[^()]*)?\s*\(для пэ/u', $title, $m)) {
             $dn = $pipe[(int) ($m[1] !== '' ? $m[1] : $m[2])];
         } elseif (preg_match('/(?<![\d\/.,])(1 1\/4|1 1\/2|1\/2|3\/4|3\/8|1|2)(?=["″”]|\s*(?:нар|вн|х|x)|\s*$)/u', $title, $m)) {
@@ -1238,6 +1244,28 @@ final class BoilerAutomationGroups
         '/^(печь|закрытая каменка|чугунная печь|камин )/u' => 'Печи и каменки',
         '/двер|конфорк|кружок|крышка чугунная|колосник|плита усиленная|стекло/u' => 'Чугунное литьё: дверки, плиты, конфорки',
         '/./u' => 'Коврики, отделка и прочее',
+    ];
+
+    public const SAFETY_VALVES = 'predokhranitelnaya-i-reguliruyushchaya-armatura';
+
+    /**
+     * Title pattern => «Тип» inside «Предохранительная и регулирующая арматура» and «Группы безопасности», in filter
+     * order. Varmega VM166/VM167 cards named by article and set pressure are safety valves.
+     */
+    public const SAFETY_TYPES = [
+        '/группа безопасности/u' => 'Группы безопасности',
+        '/предохранит|аварийн\w* клапан|клапан аварийн|^varmega vm16[67]/u' => 'Предохранительные клапаны',
+        '/редуктор|регулятор давления/u' => 'Редукторы давления',
+        '/перепад|перепускн/u' => 'Регуляторы перепада и перепускные клапаны',
+        '/балансировочн|клапан регулирующ/u' => 'Балансировочные и регулирующие клапаны',
+        '/обратн/u' => 'Обратные клапаны',
+        '/воздухоотводчик|развоздуш|сепаратор/u' => 'Воздухоотводчики и сепараторы',
+        '/электромагнитн|отсекающ|термозапорн/u' => 'Электромагнитные и отсекающие клапаны',
+        '/электропривод/u' => 'Электроприводы',
+        '/sani|sololift|канализационная насосная|аварийная сигнализация/u' => 'Канализационные насосные установки (SFA)',
+        '/задвижк/u' => 'Задвижки',
+        '/3-х|приоритет|подпиточн|компенсатор|клапан/u' => 'Прочие клапаны',
+        '/./u' => 'Комплектующие',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
