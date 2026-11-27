@@ -155,12 +155,17 @@ class ViewOrder extends ViewRecord
         return $action?->isVisible() && $action->isAuthorized() ? $action : null;
     }
 
+    public function getCachedHeaderActions(): array
+    {
+        $next = $this->nextStepAction();
+
+        return array_values(array_filter(parent::getCachedHeaderActions(), fn (Action|ActionGroup $action): bool =>
+            ! ($action instanceof Action && $action === $next)));
+    }
+
     protected function getHeaderActions(): array
     {
         return [
-            \App\Filament\Resources\Orders\Actions\VamExpressOrderActions::make()
-                ->label(fn (): string => $this->record->delivery_type === 'vam_express' ? 'ВАМ: отправление и статус' : 'Выбрать ВАМ Экспресс')
-                ->visible(fn (): bool => in_array($this->record->status, ['processing', 'shipped', 'delivered'], true)),
             $this->confirmFulfillmentAction(),
             Action::make('advanceWorkflow')
                 ->label(fn (): string => app(OrderWorkflow::class)->step($this->record)['label'] ?? 'Следующий этап')
@@ -307,65 +312,6 @@ class ViewOrder extends ViewRecord
                         ->success()
                         ->title('Запрос резерва отправлен')
                         ->body('Письмо отправлено с order@kotlov.by. Переписка #'.$thread->id.' привязана к заявке и заказу.')
-                        ->send();
-                }),
-            Action::make('confirmSettlement')
-                ->label('Зафиксировать взаиморасчёт')
-                ->icon('heroicon-o-banknotes')
-                ->color('success')
-                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
-                ->modalHeading('Подтверждение экономики и взаиморасчётов')
-                ->modalDescription('Будет создана неизменяемая версия расчёта. Если маршрут, поставщик, цена или комиссия изменятся, текущая версия останется в истории и потребуется новая.')
-                ->schema([
-                    TextInput::make('delivery_cost')
-                        ->label('Фактический расход на доставку, BYN')
-                        ->numeric()
-                        ->minValue(0)
-                        ->default(0)
-                        ->required()
-                        ->helperText('Введите 0 явно, если расхода нет.'),
-                    TextInput::make('payment_fee')
-                        ->label('Эквайринг / комиссия оплаты, BYN')
-                        ->numeric()
-                        ->minValue(0)
-                        ->default(0)
-                        ->required()
-                        ->helperText('Введите 0 явно, если расхода нет.'),
-                    TextInput::make('refund_total')
-                        ->label('Возвраты и компенсации, BYN')
-                        ->numeric()
-                        ->minValue(0)
-                        ->default(0)
-                        ->required()
-                        ->helperText('Введите 0 явно, если возвратов нет.'),
-                    Textarea::make('note')
-                        ->label('Основание / комментарий')
-                        ->rows(3)
-                        ->maxLength(2000),
-                ])
-                ->requiresConfirmation()
-                ->modalSubmitActionLabel('Зафиксировать новую версию')
-                ->action(function (array $data): void {
-                    $settlement = app(OrderSettlementManager::class)->confirm(
-                        $this->record,
-                        (float) $data['delivery_cost'],
-                        (float) $data['payment_fee'],
-                        (float) $data['refund_total'],
-                        auth()->user(),
-                        $data['note'] ?? null,
-                    );
-
-                    $this->record->refresh()->load([
-                        'items.fulfillmentSupplier',
-                        'latestSettlement.lines.orderItem',
-                        'latestSettlement.lines.supplier',
-                        'latestSettlement.confirmer',
-                    ]);
-
-                    Notification::make()
-                        ->success()
-                        ->title('Взаиморасчёт зафиксирован')
-                        ->body('Версия '.$settlement->version.' · прибыль '.number_format((float) $settlement->net_profit, 2, '.', ' ').' BYN.')
                         ->send();
                 }),
             Action::make('recordSupplierEmailResponse')
@@ -691,19 +637,89 @@ class ViewOrder extends ViewRecord
                         $this->reloadRecord();
                         Notification::make()->success()->title('Оплата поставщику отмечена')->send();
                     }),
+                Action::make('confirmSettlement')
+                    ->label('Зафиксировать взаиморасчёт')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success')
+                    ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
+                    ->modalHeading('Подтверждение экономики и взаиморасчётов')
+                    ->modalDescription('Будет создана неизменяемая версия расчёта. Если маршрут, поставщик, цена или комиссия изменятся, текущая версия останется в истории и потребуется новая.')
+                    ->schema([
+                        TextInput::make('delivery_cost')
+                            ->label('Фактический расход на доставку, BYN')
+                            ->numeric()
+                            ->minValue(0)
+                            ->default(0)
+                            ->required()
+                            ->helperText('Введите 0 явно, если расхода нет.'),
+                        TextInput::make('payment_fee')
+                            ->label('Эквайринг / комиссия оплаты, BYN')
+                            ->numeric()
+                            ->minValue(0)
+                            ->default(0)
+                            ->required()
+                            ->helperText('Введите 0 явно, если расхода нет.'),
+                        TextInput::make('refund_total')
+                            ->label('Возвраты и компенсации, BYN')
+                            ->numeric()
+                            ->minValue(0)
+                            ->default(0)
+                            ->required()
+                            ->helperText('Введите 0 явно, если возвратов нет.'),
+                        Textarea::make('note')
+                            ->label('Основание / комментарий')
+                            ->rows(3)
+                            ->maxLength(2000),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalSubmitActionLabel('Зафиксировать новую версию')
+                    ->action(function (array $data): void {
+                        $settlement = app(OrderSettlementManager::class)->confirm(
+                            $this->record,
+                            (float) $data['delivery_cost'],
+                            (float) $data['payment_fee'],
+                            (float) $data['refund_total'],
+                            auth()->user(),
+                            $data['note'] ?? null,
+                        );
+
+                        $this->record->refresh()->load([
+                            'items.fulfillmentSupplier',
+                            'latestSettlement.lines.orderItem',
+                            'latestSettlement.lines.supplier',
+                            'latestSettlement.confirmer',
+                        ]);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Взаиморасчёт зафиксирован')
+                            ->body('Версия '.$settlement->version.' · прибыль '.number_format((float) $settlement->net_profit, 2, '.', ' ').' BYN.')
+                            ->send();
+                    }),
             ])
-                ->label('Документы')
+                ->label('Документы и расчёты')
                 ->icon('heroicon-o-document-text')
                 ->color('gray')
                 ->button(),
             ActionGroup::make([
-                ManageOrderDealAction::make(),
+                ManageOrderDealAction::make()->label('Контроль заказа'),
+            \App\Filament\Resources\Orders\Actions\VamExpressOrderActions::make()
+                ->label(fn (): string => $this->record->delivery_type === 'vam_express' ? 'ВАМ: отправление и статус' : 'Выбрать ВАМ Экспресс')
+                ->visible(fn (): bool => $this->record->status === 'processing'
+                    || ($this->record->delivery_type === 'vam_express' && in_array($this->record->status, ['shipped', 'delivered'], true))),
+
                 $this->confirmSingleFulfillmentAction(),
-                \App\Filament\Resources\Orders\Actions\InternalOrderActions::confirm(),
+                \App\Filament\Resources\Orders\Actions\InternalOrderActions::confirm()
+                    ->label(fn (): string => $this->record->is_internal ? 'Подтвердить внутренний заказ' : 'Перевести во внутренний заказ')
+                    ->visible(fn (): bool => $this->record->dealIsActive() && ($this->record->is_internal
+                        ? $this->record->needsFulfillmentConfirmation()
+                        : in_array($this->record->status, ['new', 'checking', 'confirmed'], true))),
                 \App\Filament\Resources\Orders\Actions\InternalOrderActions::complete(),
                 AssignOrderToPartnerAction::make(),
-                \App\Filament\Resources\Orders\Actions\OrderReviewLinkAction::make(),
-                \App\Filament\Resources\Orders\Actions\OrderReviewSmsAction::make(),
+                \App\Filament\Resources\Orders\Actions\OrderReviewLinkAction::make()
+                    ->visible(fn (): bool => $this->record->canRequestCustomerReview()),
+                \App\Filament\Resources\Orders\Actions\OrderReviewSmsAction::make()
+                    ->visible(fn (): bool => $this->record->canRequestCustomerReview()),
                 ActionGroup::make([
                     Action::make('publishOrderOnline')
                         ->label('Создать ссылку и QR заказа')
