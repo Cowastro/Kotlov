@@ -48,7 +48,7 @@ class ManageOrderDealAction
                 Hidden::make('expected_manager_id'),
                 Hidden::make('expected_assigned_to'),
                 Select::make('stage')->label('Этап заказа')->options(function (Order $record): array {
-                    if (OrderWorkflow::managedBy1c($record)) {
+                    if (! OrderWorkflow::canAdvanceManually($record)) {
                         return array_intersect_key(Order::DEAL_STAGES, [$record->effectiveDealStage() => true]);
                     }
 
@@ -56,8 +56,8 @@ class ManageOrderDealAction
                     $index = array_search($record->effectiveDealStage(), $keys, true);
                     return array_slice(Order::DEAL_STAGES, $index, 2, true);
                 })
-                    ->helperText(fn (Order $record): string => OrderWorkflow::managedBy1c($record)
-                        ? 'Этапы отгрузки и получения обновляются из 1С.'
+                    ->helperText(fn (Order $record): string => ! OrderWorkflow::canAdvanceManually($record)
+                        ? 'Этапы обновляются по данным 1С и перевозчика.'
                         : 'При переходе проверяется готовность заказа. Пропустить неподтверждённый этап нельзя.')
                     ->live()->required(),
                 Select::make('manager_id')->label('Ответственный')

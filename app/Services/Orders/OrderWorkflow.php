@@ -63,16 +63,40 @@ class OrderWorkflow
     /** @return array{next:string,label:string,icon:string,color:string,heading:string,description:string,submit:string}|null */
     public function step(Order $order): ?array
     {
-        return self::managedBy1c($order) || $order->executionTransferPending() ? null : (self::STEPS[$order->status] ?? null);
+        if (! self::canAdvanceManually($order) || $order->executionTransferPending()) {
+            return null;
+        }
+
+        if (self::canConfirmOwnDelivery($order)) {
+            return array_replace(self::STEPS['shipped'], [
+                'label' => 'Подтвердить получение',
+                'heading' => 'Покупатель получил заказ?',
+                'description' => 'Подтвердите, что наш водитель вручил заказ покупателю. Заказ перейдёт в этап «Получен».',
+                'submit' => 'Подтвердить получение',
+            ]);
+        }
+
+        return self::STEPS[$order->status] ?? null;
     }
 
     /**
-     * In 1C, delivery and handover are 1C's: «Передать в доставку» / «Отметить доставленным» move by the 1C state
-     * (and the customer hears of it from there). The manager's steps before — check, confirm, start — stay.
+     * The 1C workflow drives dispatch. Receipt for our own transport is confirmed separately by a manager.
      */
     public static function managedBy1c(Order $order): bool
     {
         return filled($order->onec_order_guid) && ! $order->onec_deleted && in_array($order->status, ['processing', 'shipped'], true);
+    }
+
+    public static function canAdvanceManually(Order $order): bool
+    {
+        return ! self::managedBy1c($order) || self::canConfirmOwnDelivery($order);
+    }
+
+    public static function canConfirmOwnDelivery(Order $order): bool
+    {
+        return $order->status === 'shipped' && $order->onec_posted && self::managedBy1c($order)
+            && in_array($order->delivery_type, ['courier', 'own_transport'], true)
+            && blank($order->carrier_provider);
     }
 
     public function blocker(Order $order): ?string
@@ -86,8 +110,8 @@ class OrderWorkflow
             return 'Передача в исполнение уже запущена. Дождитесь результата; повторная отправка не требуется.';
         }
 
-        if (self::managedBy1c($order)) {
-            return 'Заказ в 1С ('.$order->onec_order_number.'): доставку и выдачу ведёт 1С — этап и уведомление клиенту сменятся сами по состоянию заказа в 1С.';
+        if (! self::canAdvanceManually($order)) {
+            return 'Заказ в 1С ('.$order->onec_order_number.'): этап обновляется по данным 1С и перевозчика.';
         }
 
         if ($order->status === 'processing' && $order->hasPendingSupply()) {
@@ -197,6 +221,10 @@ class OrderWorkflow
 
             if ($locked->status !== $expectedStatus) {
                 throw new DomainException('Статус заказа уже изменился. Обновите страницу и повторите действие.');
+            }
+
+            if ($nextStatus === 'delivered' && ! self::canAdvanceManually($locked)) {
+                throw new DomainException('Условия доставки изменились. Обновите заказ и проверьте способ получения.');
             }
 
             $locked->transitionTo($nextStatus, $comment, $this->managerAttributes($locked, $manager));

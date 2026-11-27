@@ -11,7 +11,7 @@
     $overdue = $active && $order->deal_control_at?->isPast();
     $today = $active && $order->deal_control_at?->timezone('Europe/Minsk')->isToday();
     $isTable ??= false;
-    $canSelectStage = $isTable && $active && ! \App\Services\Orders\OrderWorkflow::managedBy1c($order);
+    $canSelectStage = $isTable && $active && \App\Services\Orders\OrderWorkflow::canAdvanceManually($order);
     $controlLabel = $order->dealControlLabel();
     if (! $isTable && $active && ! $order->deal_control_at) {
         $controlLabel = 'Срок контроля не назначен';

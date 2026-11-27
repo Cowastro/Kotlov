@@ -87,6 +87,40 @@ class OrderDealControlTest extends TestCase
         \Illuminate\Support\Facades\Http::assertNothingSent();
     }
 
+    public function test_a_manager_can_confirm_receipt_for_a_shipped_one_c_order_delivered_by_our_driver(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Mail::fake();
+        $manager = $this->manager();
+        $order = $this->order('shipped');
+        $order->forceFill([
+            'delivery_type' => 'courier', 'onec_order_guid' => 'aaaaaaaa-0000-0000-0000-000000000766',
+            'onec_order_number' => 'МПУТ-000766', 'onec_posted' => true, 'onec_doc_status' => 'Закрыт',
+            'deal_next_action' => 'получен', 'deal_control_at' => now()->subDay(),
+        ])->save();
+
+        $page = Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->id])
+            ->assertSeeInOrder(['Следующий шаг', 'После вручения заказа покупателю подтвердите получение.', 'Подтвердить получение'])
+            ->assertSee('Просрочено')
+            ->mountAction('advanceWorkflow')->assertActionMounted('advanceWorkflow');
+        $this->assertSame('shipped', $order->fresh()->status);
+        $page->callMountedAction()->assertHasNoActionErrors();
+        $received = $order->fresh();
+        $this->assertSame('delivered', $received->status);
+        $this->assertSame('completed', $received->effectiveDealStage());
+        $this->assertSame('Работа завершена', $received->dealControlLabel());
+        $this->assertSame('Закрыт', $received->onec_doc_status);
+
+        $external = $this->order('shipped');
+        $external->forceFill([
+            'delivery_type' => 'evropochta', 'onec_order_guid' => 'aaaaaaaa-0000-0000-0000-000000000767',
+            'onec_posted' => true, 'onec_doc_status' => 'Закрыт',
+        ])->save();
+        Livewire::test(ViewOrder::class, ['record' => $external->id])
+            ->assertDontSee('Подтвердить получение')->assertActionHidden('advanceWorkflow');
+        $this->assertSame('shipped', $external->fresh()->status);
+    }
+
     public function test_order_card_opens_supplier_assignment_and_preselects_the_sent_request(): void
     {
         Filament::setCurrentPanel(Filament::getPanel('admin'));

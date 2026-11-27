@@ -416,6 +416,10 @@ class Order extends Model
         }
 
         if (filled($this->onec_order_guid) && ! $this->onec_deleted && in_array($this->status, ['confirmed', 'processing', 'shipped'], true)) {
+            if (\App\Services\Orders\OrderWorkflow::canConfirmOwnDelivery($this)) {
+                return 'После вручения заказа покупателю подтвердите получение.';
+            }
+
             return $this->status === 'shipped'
                 ? 'Заказ отгружен. Ожидаем подтверждение получения от перевозчика или отметку о вручении нашим транспортом.'
                 : 'Заказ принят в работу. Комплектация и обеспечение обновляются из 1С; после отгрузки ожидаем данные доставки и получения.';

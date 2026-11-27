@@ -668,6 +668,7 @@ class OrdersTable
             ->recordActions([
                 ManageOrderDealAction::make()->iconButton()->tooltip('Этап сделки и контроль'),
                 Action::make('advanceWorkflow')
+                    ->authorize(fn (Order $record): bool => OrderResource::canEdit($record))
                     ->label(fn (Order $record): string => self::compactWorkflowLabel($record))
                     ->icon(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['icon'] ?? 'heroicon-o-arrow-right')
                     ->color(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['color'] ?? 'gray')
