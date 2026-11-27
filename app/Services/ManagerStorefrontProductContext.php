@@ -43,6 +43,27 @@ class ManagerStorefrontProductContext
             return collect();
         }
 
+        return $this->buildOffers($product);
+    }
+
+    /** Only city-level stock labels are public. */
+    public function ecokaminWarehouseLabels(Product $product): array
+    {
+        if (! $this->isEcokamin($product)) {
+            return [];
+        }
+
+        return $this->buildOffers($product)->pluck('city_stock')->filter()->first() ?? [];
+    }
+
+    private function isEcokamin(Product $product): bool
+    {
+        return $product->brand?->slug === 'ecokamin'
+            || mb_strtolower((string) $product->brand?->name) === 'экокамин';
+    }
+
+    private function buildOffers(Product $product): Collection
+    {
         $product->loadMissing([
             'brand:id,name,slug',
             'supplierProducts.supplier.crmCounterparty.contactPoints',
@@ -53,8 +74,7 @@ class ManagerStorefrontProductContext
 
         $retailPrice = (float) $product->price > 0 ? (float) $product->price : null;
         $productNameKey = $this->productNameKey($product->name);
-        $isEcokamin = $product->brand?->slug === 'ecokamin'
-            || mb_strtolower((string) $product->brand?->name) === 'экокамин';
+        $isEcokamin = $this->isEcokamin($product);
         // СанБизнесГруп sells ЭкоКамин to СБГ бай at the retail price less the dealer discount (−20%, the same
         // fixed discount as the partner price), so this is our purchase price for every СанБизнесГруп channel.
         $sbgPurchase = $isEcokamin && $retailPrice !== null
@@ -80,6 +100,8 @@ class ManagerStorefrontProductContext
                 return [
                     'manual_match' => false,
                     'legacy_supplier_offer' => true,
+                    'confirmed_quantity' => $offer->supplier?->is_active && $offer->match_status !== 'ignored'
+                        && $offer->stock_status !== 'missing_from_feed' && $offer->hasFreshStockQuantity(),
                     'assignment_only' => $offer->match_confidence === 'brand_assignment',
                     'supplier_key' => $this->supplierKey($offer->supplier?->name),
                     'matches_product_name' => $this->productNameKey($offer->supplier_name) === $productNameKey,
@@ -135,6 +157,7 @@ class ManagerStorefrontProductContext
                     'legacy_supplier_offer' => false,
                     'assignment_only' => false,
                     'updated_label' => $quantity !== null ? 'Остаток обновлён' : 'Данные 1С обновлены',
+                    'confirmed_quantity' => $offer->match_status === 'matched' && $quantity !== null,
                     'supplier_key' => $this->supplierKey($source?->supplier?->name ?: $source?->name),
                     'matches_product_name' => $this->productNameKey($offer->name) === $productNameKey,
                     'supplier' => $source?->supplier?->name ?: ($source?->name ?: 'Интеграция'),
@@ -185,6 +208,7 @@ class ManagerStorefrontProductContext
                 'stock' => $stock->isFresh() ? $stock->formattedAvailableQuantity() : 'Остаток уточняется',
                 'stock_quantity' => $stock->isFresh() ? (float) $stock->available_quantity : null,
                 'stock_key' => 'warehouse:'.$stock->id,
+                'confirmed_quantity' => $stock->isFresh() && $stock->available_quantity !== null,
                 'warehouse' => $stock->warehouse_name,
                 'delivery_days' => $stock->delivery_days,
                 'in_stock' => $stock->hasFreshPositiveStock(),
@@ -207,12 +231,12 @@ class ManagerStorefrontProductContext
             // links. Keep the supplier once and preserve its warehouse breakdown
             // inside that single offer instead of repeating the same name.
             ->groupBy('supplier_key')
-            ->map(fn (Collection $offers): array => $this->mergeSupplierOffers($offers))
+            ->map(fn (Collection $offers): array => $this->mergeSupplierOffers($offers, $isEcokamin))
             ->values();
     }
 
     /** @param Collection<int, array<string, mixed>> $offers */
-    private function mergeSupplierOffers(Collection $offers): array
+    private function mergeSupplierOffers(Collection $offers, bool $isEcokamin): array
     {
         // A brand-to-supplier assignment is a contact fallback, not a second
         // physical warehouse. Keep it only when there is no real source.
@@ -245,6 +269,14 @@ class ManagerStorefrontProductContext
         $best['phones'] = $offers->pluck('phones')->flatten()->filter()->unique()->values()->all();
         $best['emails'] = $offers->pluck('emails')->flatten()->filter()->unique()->values()->all();
         $best['locations'] = $locations->all();
+        if ($isEcokamin && $offers->contains(fn (array $row): bool => ! $row['assignment_only']
+            && in_array($row['warehouse'], ['Склад Москва', 'Склад Минск'], true))) {
+            foreach (['Москва', 'Минск'] as $city) {
+                $confirmed = $offers->first(fn (array $row): bool => $row['warehouse'] === 'Склад '.$city
+                    && ! $row['assignment_only'] && $row['confirmed_quantity']);
+                $best['city_stock'][$city] = $confirmed['stock'] ?? 'наличие уточняется';
+            }
+        }
         if ($best['assignment_only'] ?? false) {
             $best['warehouse'] = null;
             $best['stock'] = 'Остаток не загружался · уточнить';

@@ -268,8 +268,19 @@ class ManagerStorefrontExperienceTest extends TestCase
             'compact' => true,
         ]);
         $this->assertSame(1, substr_count($html, 'ООО «СанБизнесГруп»'));
-        $this->assertStringContainsString('Склад Москва: 4 шт.', $html);
-        $this->assertStringContainsString('Склад Минск: 7 шт.', $html);
+        $this->assertStringContainsString('Москва — 4 шт.', $html);
+        $this->assertStringContainsString('Минск — 7 шт.', $html);
+        $this->assertStringNotContainsString('11 шт. · 2 склада', $html);
+
+        $product->update(['sku' => 'PS-012.008']);
+        $product->warehouseStocks()->update(['available_quantity' => 21]);
+        $offer->update(['stock_quantity' => null, 'in_stock' => true]);
+        $this->assertSame(['Москва' => '21 шт.', 'Минск' => 'наличие уточняется'],
+            app(ManagerStorefrontProductContext::class)->ecokaminWarehouseLabels($product->fresh()));
+        auth()->logout();
+        $this->get('/manager-storefront-test/manager-storefront-product')
+            ->assertOk()->assertSeeText('Москва — 21 шт.')->assertSeeText('Минск — наличие уточняется')
+            ->assertDontSeeText('SECRET-123');
     }
 
     public function test_ecokamin_site_availability_is_not_called_the_minsk_warehouse(): void
