@@ -19,7 +19,7 @@ final class BoilerAutomationGroups
     public const MOVES = [
         '/вентилятор наддува|центробежный вентилятор наддува/u' => self::FANS,
         '/^регулятор тяги/u' => self::SECTION,
-        '/^(?!.*(regulus|esbe|смесительн|тр[её]хходов))(?:.*)(?:головка термостатическ|термоголовка|термостатическая головка|набор термостатическ|термостатический клапан|термостатическ\w* клапан|термостат радиаторный|^сервопривод salus t30)/u' => 'radiatornaya-armatura',
+        '/^(?!.*(regulus|esbe|смесительн|тр[её]хходов|насосн))(?:.*)(?:головка термостатическ|термоголовка|термостатическая головка|набор термостатическ|термостатический клапан|термостатическ\w* клапан|термостат радиаторный|^сервопривод salus t30)/u' => 'radiatornaya-armatura',
         '/^терморегулятор (electrolux|elektrolux) et|^терморегулятор накладной watts/u' => 'termoregulyatory-dlya-teplogo-pola',
         '/^сигнализатор загазованности/u' => 'signalizatory-zagazovannosti',
         '/^(датчик температуры(?!.*hommyn)|датчик уличной|hx 31|hx 52)/u' => 'datchiki',
@@ -271,6 +271,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::PUMP_GROUPS => [
+                'Тип' => [self::PUMP_GROUP_TYPES, array_values(array_unique(self::PUMP_GROUP_TYPES))],
+                'Контур' => [fn (string $title) => self::pumpGroupCircuit($title), ['Прямой', 'Смесительный', 'Защита обратки', 'Гелиосистема']],
+                'Насос в комплекте' => [fn (string $title) => self::pumpGroupPump($title), ['С насосом', 'Без насоса']],
+                'Присоединение' => [fn (string $title) => self::pumpGroupDn($title), ['Ду 20 (3/4")', 'Ду 25 (1")', 'Ду 32 (1 1/4")', 'Ду 40 (1 1/2")']],
+            ],
             self::MP_FITTINGS => [
                 'Тип' => [self::PRESS_TYPES, self::PRESS_ORDER],
                 'Способ соединения' => [self::MP_JOINTS, array_values(array_unique(self::MP_JOINTS))],
@@ -1944,6 +1950,70 @@ final class BoilerAutomationGroups
         '/^(кольцо|элемент уплотнительный)/u' => 'Уплотнения',
         '/./u' => 'Латунь',
     ];
+
+    public const PUMP_GROUPS = 'gruppy-bystrogo-montazha-kotelnyx';
+
+    /** Title pattern => «Тип» inside «Гидрострелки, насосные группы быстрого монтажа»; the first match wins. */
+    public const PUMP_GROUP_TYPES = [
+        '/^(крепление|комплект (консолей|адаптеров)|соединитель)/u' => 'Крепления и комплектующие',
+        '/группа безопасности/u' => 'Группы безопасности котла',
+        '/^(гидрострелка|гидравлическ)/u' => 'Гидрострелки и гидроразделители',
+        '/коллектор/u' => 'Распределительные коллекторы',
+        '/насосн|групп\w* (быстрого|автономной)|насосно-смесительн/u' => 'Насосные группы',
+        '/контроллер|датчик|сервопривод|сервомотор|реле/u' => 'Автоматика и приводы',
+        '/клапан|смеситель/u' => 'Клапаны и смесители',
+    ];
+
+    private static function isPumpGroup(string $t): bool
+    {
+        return (bool) preg_match('/насосн|групп\w* (быстрого|автономной)|насосно-смесительн/u', $t) && ! str_contains($t, 'коллектор');
+    }
+
+    /** The heating circuit of a pump group: direct (UK), mixing (MK), return protection or solar. */
+    public static function pumpGroupCircuit(string $title): ?string
+    {
+        $t = mb_strtolower(trim(html_entity_decode($title)));
+        if (! self::isPumpGroup($t)) {
+            return null;
+        }
+
+        return match (true) {
+            (bool) preg_match('/sol|солн|srs\d/u', $t) => 'Гелиосистема',
+            (bool) preg_match('/обратн|fwr|mtre|thermix/u', $t) => 'Защита обратки',
+            (bool) preg_match('/смесит|(?<![a-z])mk(?:re)?(?![a-z])|ход|термостат|сервопривод|mix|smt|kombimix|promo|pf mb|cse/u', $t) => 'Смесительный',
+            (bool) preg_match('/прям|(?<![a-z])uk(?![a-z])|sa 125|fbr/u', $t) => 'Прямой',
+            default => null,
+        };
+    }
+
+    public static function pumpGroupPump(string $title): ?string
+    {
+        $t = mb_strtolower(trim(html_entity_decode($title)));
+        if (! self::isPumpGroup($t)) {
+            return null;
+        }
+
+        return match (true) {
+            str_contains($t, 'без насоса') => 'Без насоса',
+            (bool) preg_match('/насосом|grundfos|wilo|upso?\s?\d/u', $t) => 'С насосом',
+            default => null,
+        };
+    }
+
+    /** The connection size of a pump group, manifold or safety group: «DN 32», «Ду 25», «1"», «3/4"». */
+    public static function pumpGroupDn(string $title): ?string
+    {
+        $t = mb_strtolower(trim(html_entity_decode($title)));
+        if (preg_match('/(?:dn|ду)\s*-?\s*(20|25|32|40)\b/u', $t, $m)) {
+            $dn = (int) $m[1];
+        } elseif (preg_match('/(?<![\d\/])(1 1\/2|1 1\/4|3\/4|1)\s*(?:"|”)/u', $t, $m)) {
+            $dn = ['3/4' => 20, '1' => 25, '1 1/4' => 32, '1 1/2' => 40][$m[1]];
+        } else {
+            return null;
+        }
+
+        return ['Ду 20 (3/4")', 'Ду 25 (1")', 'Ду 32 (1 1/4")', 'Ду 40 (1 1/2")'][[20 => 0, 25 => 1, 32 => 2, 40 => 3][$dn]];
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 
