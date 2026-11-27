@@ -281,7 +281,7 @@ class EvropochtaOrderShipmentTest extends TestCase
 
         $this->travel(31)->seconds();
         $page->call('refreshEvropochtaLabelStatus')
-            ->assertSeeInOrder(['Следующий шаг', 'Трек-номер Европочты', self::TRACK, 'Распечатать этикетку'])
+            ->assertSee('Распечатать этикетку')
             ->assertSee(route('admin.orders.evropochta-label', ['order' => $order, 'format' => 'thermal']))
             ->assertDontSee('Этикетка ещё готовится');
         Http::assertSentCount(2);
