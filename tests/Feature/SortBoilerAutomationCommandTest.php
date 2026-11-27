@@ -300,6 +300,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $floorPipe = $card('Труба PE-Xc Kermi x-net 20x2 из сшитого полиэтилена', $waterFloor);
         $floorTape = $card('Лента демпферная Energofloor 10 мм/0,1х11 м', $waterFloor);
         $xommet = $card('XOMMET Профиль ХОММЕТ 3м, 9000000', $waterFloor);
+        $cabinets = $section('kollektornye-shkafy');
+        $builtInCabinet = $card('Шкаф коллекторный ШРВ-3 (700х120-180х648-711) WESTER', $cabinets);
+        $outdoorCabinet = $card('Varmega VM35526 ШРНГ-6 17-18', $cabinets);
+        $kanCabinet = $card('Шкаф встраиваемый Slim+ 750-850x850x110-160 KAN', $cabinets);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -572,6 +576,12 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Встраиваемый', $value('Установка', $builtInCabinet));
+        $this->assertSame('ШР-3 (8–10 выходов)', $value('Типоразмер', $builtInCabinet));
+        $this->assertSame('Наружный', $value('Установка', $outdoorCabinet));
+        $this->assertSame('ШР-6 (17–18 выходов)', $value('Типоразмер', $outdoorCabinet));
+        $this->assertSame('Встраиваемый', $value('Установка', $kanCabinet));
+        $this->assertNull($value('Типоразмер', $kanCabinet));
         $this->assertSame('Трубы', $value('Тип', $floorPipe));
         $this->assertSame('20 мм', $value('Диаметр трубы', $floorPipe));
         $this->assertSame('Демпферная лента', $value('Тип', $floorTape));

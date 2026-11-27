@@ -276,6 +276,10 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::COLLECTOR_CABINETS => [
+                'Установка' => [['/шрн|наружн/u' => 'Наружный', '/шрв|встр/u' => 'Встраиваемый'], ['Встраиваемый', 'Наружный']],
+                'Типоразмер' => [fn (string $title) => preg_match('/шр[внг]{1,2}-([0-7])(?!\d)/u', mb_strtolower($title), $m) ? self::CABINET_SIZES[(int) $m[1]] : null, array_values(self::CABINET_SIZES)],
+            ],
             self::WATER_FLOOR => [
                 'Тип' => [self::WATER_FLOOR_TYPES, array_values(array_unique(self::WATER_FLOOR_TYPES))],
                 'Диаметр трубы' => [fn (string $title) => preg_match('/^труба (?!\(пешель).*?(?<!\d)(16|20|25)\s?[x×х]/u', mb_strtolower($title), $m) ? $m[1].' мм' : null, ['16 мм', '20 мм', '25 мм']],
@@ -2564,6 +2568,20 @@ final class BoilerAutomationGroups
         '/скоба|клипс|фиксатор|дюбель-хомут/u' => 'Крепёж трубы (скобы, клипсы)',
         '/расходомер/u' => 'Расходомеры',
         '/./u' => 'Прочее',
+    ];
+
+    public const COLLECTOR_CABINETS = 'kollektornye-shkafy';
+
+    /** ШРВ/ШРН size number => «Типоразмер» of a collector cabinet with the collector outlets it fits. */
+    public const CABINET_SIZES = [
+        0 => 'ШР-0 (1–3 выхода)',
+        1 => 'ШР-1 (4–5 выходов)',
+        2 => 'ШР-2 (6–7 выходов)',
+        3 => 'ШР-3 (8–10 выходов)',
+        4 => 'ШР-4 (11–12 выходов)',
+        5 => 'ШР-5 (13–16 выходов)',
+        6 => 'ШР-6 (17–18 выходов)',
+        7 => 'ШР-7 (19 и более выходов)',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
