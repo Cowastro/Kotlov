@@ -253,16 +253,18 @@ class SortBoilerAutomationCommandTest extends TestCase
         $weldNozzle = $card('Насадка сменная к сварочному аппарату Ду 25', $tools);
         $crimpPliers = $card('Щипцы обжимные Giacoqest 1/2" (в комплекте с калибратором, шестигранным ключом) GIACOMINI', $tools);
         $firewood = $section('drovnitsyi');
+        $section('stekla-dlya-pechey-i-kaminov');
         $logRack = $card('Дровница кованная D310 Везувий', $firewood);
         $ermakGlass = $card('Ермак Стекло термостойкое 153x153x4,0 (ПБС)', $firewood);
         $bioFire = $card('Kratki Настенный биокамин DELTA3/TUV', $firewood);
+        $ermakModule = $card('Ермак Модуль закрытой каменки ERMAK 20/24', $firewood);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=17')
+            ->expectsOutputToContain('metric.boiler_automation.moved=19')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -529,7 +531,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
         $this->assertSame('Дровницы', $value('Тип', $logRack));
-        $this->assertSame('Термостойкие стёкла', $value('Тип', $ermakGlass));
+        $this->assertSame($section('stekla-dlya-pechey-i-kaminov')->id, $ermakGlass->fresh()->category_id);
+        $this->assertSame($section('aksessuary-dlya-bani')->id, $ermakModule->fresh()->category_id);
+        $this->assertSame('Сетки и каменки для камней', $value('Тип', $ermakModule));
         $this->assertSame('Биокамины и остекление', $value('Тип', $bioFire));
         $this->assertSame('Тросы и вантузы для прочистки', $value('Тип', $toiletNozzle));
         $this->assertSame('Насадки для сварочных аппаратов', $value('Тип', $weldNozzle));
