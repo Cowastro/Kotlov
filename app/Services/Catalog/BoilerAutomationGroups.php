@@ -276,6 +276,13 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::MP_PIPES => [
+                'Тип' => [['/гофр|пешель/u' => 'Защитная гофротруба', '/./u' => 'Металлопластиковая труба'], ['Металлопластиковая труба', 'Защитная гофротруба']],
+                'Диаметр трубы' => [fn (string $title) => preg_match('/^(?!.*(гофр|пешель)).*?(?<![\d,.])(16|20|26)\s?[x×х*(]/u', mb_strtolower($title), $m) ? $m[2].' мм' : null, ['16 мм', '20 мм', '26 мм']],
+                'Материал' => [['/pe-rt/u' => 'PE-RT/AL/PE-RT', '/pe-xb/u' => 'PE-Xb/AL/PE-Xb', '/pe-x[cс]/u' => 'PE-Xc/AL/PE'], ['PE-RT/AL/PE-RT', 'PE-Xb/AL/PE-Xb', 'PE-Xc/AL/PE']],
+                'Гофра под трубу' => [self::CORRUGATED_SLEEVES, array_values(self::CORRUGATED_SLEEVES)],
+                'Цвет гофры' => [['/(гофр|пешель).*красн/u' => 'Красная', '/(гофр|пешель).*син/u' => 'Синяя'], ['Красная', 'Синяя']],
+            ],
             self::COLLECTOR_CABINETS => [
                 'Установка' => [['/шрн|наружн/u' => 'Наружный', '/шрв|встр/u' => 'Встраиваемый'], ['Встраиваемый', 'Наружный']],
                 'Типоразмер' => [fn (string $title) => preg_match('/шр[внг]{1,2}-([0-7])(?!\d)/u', mb_strtolower($title), $m) ? self::CABINET_SIZES[(int) $m[1]] : null, array_values(self::CABINET_SIZES)],
@@ -2582,6 +2589,18 @@ final class BoilerAutomationGroups
         5 => 'ШР-5 (13–16 выходов)',
         6 => 'ШР-6 (17–18 выходов)',
         7 => 'ШР-7 (19 и более выходов)',
+    ];
+
+    public const MP_PIPES = 'metalloplastikovye-truby';
+
+    /** Title pattern => the pipe a protective corrugated sleeve fits; the first match wins. */
+    public const CORRUGATED_SLEEVES = [
+        '/(гофр|пешель).*(12-14)/u' => '12–14 мм',
+        '/(гофр|пешель).*(16-18|16х18)/u' => '16–18 мм',
+        '/(гофр|пешель).*18-20/u' => '18–20 мм',
+        '/гофрированная 25/u' => '25–26 мм',
+        '/гофрированная 32/u' => '32 мм',
+        '/гофрированная 40/u' => '40 мм',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
