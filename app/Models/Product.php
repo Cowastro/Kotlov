@@ -1095,6 +1095,14 @@ class Product extends Model
         return $this->hasMany(ProductWarehouseStock::class);
     }
 
+    public function ecokaminMoscowStock(): HasOne
+    {
+        return $this->hasOne(ProductWarehouseStock::class)
+            ->where('warehouse_code', 'ecokamin-moscow')
+            ->orderByDesc('last_synced_at')
+            ->orderByDesc('id');
+    }
+
     public function supplierMailThreads(): HasMany
     {
         return $this->hasMany(CrmMailThread::class);

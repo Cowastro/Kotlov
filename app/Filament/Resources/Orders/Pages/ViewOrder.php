@@ -60,6 +60,7 @@ class ViewOrder extends ViewRecord
     {
         return static::getResource()::getEloquentQuery()->with([
             'items.product.category',
+            'items.product.ecokaminMoscowStock',
             'items.product.supplierProducts.supplier',
             'items.product.integrationProducts.source.supplier',
             'items.integrationProduct.source.supplier',

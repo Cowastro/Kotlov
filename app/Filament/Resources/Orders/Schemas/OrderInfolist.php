@@ -453,7 +453,12 @@ class OrderInfolist
                                         ->label('Наличие')
                                         ->columnSpan(2)
                                         ->state(fn (OrderItem $record): string => app(OrderItemAvailabilityDisplay::class)->label($record))
-                                        ->helperText(fn (OrderItem $record): string => app(OrderItemAvailabilityDisplay::class)->details($record))
+                                        ->helperText(function (OrderItem $record): HtmlString {
+                                            $display = app(OrderItemAvailabilityDisplay::class);
+                                            $moscow = $display->moscowStockNote($record);
+
+                                            return new HtmlString(($moscow ? '<strong>'.e($moscow).'</strong><br>' : '').e($display->details($record)));
+                                        })
                                         ->color(fn (OrderItem $record): string => app(OrderItemAvailabilityDisplay::class)->color($record))
                                         ->tooltip(fn (OrderItem $record): ?string => app(OrderItemAvailabilityDisplay::class)->history($record))
                                         ->weight('bold')

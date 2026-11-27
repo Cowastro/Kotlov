@@ -40,6 +40,23 @@ class OrderItemAvailabilityDisplay
         ])->filter()->implode(' · ');
     }
 
+    public function moscowStockNote(OrderItem $item): ?string
+    {
+        $stock = $item->product?->ecokaminMoscowStock;
+
+        if ($stock?->available_quantity === null) {
+            return null;
+        }
+
+        $date = ($stock->as_of_date ?? $stock->last_synced_at)?->format('d.m.Y');
+        $quantity = $stock->formattedAvailableQuantity();
+        $datedQuantity = $quantity.($date ? ' на '.$date : '');
+
+        return $stock->isFresh()
+            ? 'ЭкоКамин, Москва — '.$datedQuantity
+            : 'ЭкоКамин, Москва — наличие уточняется (последний остаток: '.$datedQuantity.')';
+    }
+
     public function color(OrderItem $item): string
     {
         $current = $this->current($item);
