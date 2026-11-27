@@ -157,17 +157,22 @@ class ViewOrder extends ViewRecord
     public function reviewOwnStockFulfillment(): void
     {
         $item = $this->ownStockReview()['item'] ?? null;
-        $items = $item ? $this->getSchema('infolist')?->getComponent('items') : null;
+        $items = $item ? $this->getSchema('infolist')?->getComponentByStatePath('items') : null;
         if (! $items instanceof \Filament\Infolists\Components\RepeatableEntry) {
             return;
         }
 
         foreach ($items->getItems() as $row) {
-            if ($row->getRecord()?->is($item) && ($key = $row->getComponent('supply_supplier')?->getKey())) {
-                $this->mountAction('assignItemSupplier', ['reviewOwnStock' => true], ['schemaComponent' => $key]);
-
-                return;
+            if (! $row->getRecord()?->is($item)) {
+                continue;
             }
+
+            $action = $row->getComponentByStatePath('supply_supplier')?->getAction('assignItemSupplier');
+            if ($action?->isVisible() && $action->isAuthorized()) {
+                $this->mountAction($action->getName(), ['reviewOwnStock' => true], $action->getContext());
+            }
+
+            return;
         }
     }
 

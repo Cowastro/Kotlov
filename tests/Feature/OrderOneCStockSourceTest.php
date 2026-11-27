@@ -155,12 +155,15 @@ class OrderOneCStockSourceTest extends TestCase
         $page = Livewire::test(ViewOrder::class, ['record' => $item->order_id])
             ->assertSee('На нашем складе свободно 0 шт. из 1 шт. по заказу.')
             ->assertSee('Проверить исполнение')
-            ->call('reviewOwnStockFulfillment')
-            ->assertSee('Поставщик: '.$item->product_name)
-            ->assertSee('Наш склад, 1С')
-            ->assertSee('ЭкоКамин, Москва')
-            ->assertSee('21 шт.');
-        $this->assertTrue($page->instance()->getMountedAction()->getRecord()->is($item));
+            ->call('reviewOwnStockFulfillment');
+        $instance = $page->instance();
+        $action = $instance->getMountedAction();
+        $this->assertSame('assignItemSupplier', $action?->getName());
+        $this->assertTrue($action->getRecord()->is($item));
+        $schema = $instance->getSchema($instance->getMountedActionSchemaName());
+        $this->assertSame('Свободно: 0 шт.', $schema->getComponent('review_own_stock')->getState());
+        $this->assertStringContainsString('21 шт.', $schema->getComponent('review_moscow_stock')->getState());
+        $page->assertSet('mountedActions.0.data.request_reserve_now', false);
         $page->call('unmountAction');
         $this->assertSame('own_stock', $item->fresh()->fulfillment_route);
 
