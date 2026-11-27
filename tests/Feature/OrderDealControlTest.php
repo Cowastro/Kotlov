@@ -141,6 +141,57 @@ class OrderDealControlTest extends TestCase
         $this->assertSame('agreed', $order->effectiveDealStage());
     }
 
+    public function test_attention_queue_opens_the_first_supplier_assignment_without_saving(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $manager = $this->manager();
+        $order = $this->order('processing');
+        $items = $order->items()->createMany([
+            ['product_name' => 'Первая позиция', 'price' => 50, 'quantity' => 1, 'total' => 50, 'fulfillment_route' => 'supplier_purchase'],
+            ['product_name' => 'Вторая позиция', 'price' => 50, 'quantity' => 1, 'total' => 50, 'fulfillment_route' => 'supplier_purchase'],
+        ]);
+        Livewire::actingAs($manager)->test(ListOrders::class)
+            ->assertDontSeeHtml('data-order-queue-next-step')
+            ->call('selectOrderTab', 'attention')
+            ->assertCanSeeTableRecords([$order])
+            ->assertSee('Назначить поставщика')
+            ->assertSee('Позиций: 2')
+            ->assertSeeHtml('next-step=fulfillment');
+
+        $card = Livewire::withQueryParams(['next-step' => 'fulfillment'])->test(ViewOrder::class, ['record' => $order->id])
+            ->assertSeeHtml('wire:init="openQueueNextStep"')->call('openQueueNextStep')
+            ->assertSet('queueNextStep', null);
+        $action = $card->instance()->getMountedAction();
+        $this->assertSame('assignItemSupplier', $action?->getName());
+        $this->assertTrue($action->getRecord()->is($items->first()));
+        $card->call('unmountAction');
+        $this->assertNull($items->first()->fresh()->fulfillment_supplier_id);
+    }
+
+    public function test_attention_queue_opens_pickup_preparation_and_rechecks_stale_links(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $manager = $this->manager();
+        $order = $this->order('processing');
+        $item = $order->items()->create([
+            'product_name' => 'Товар', 'price' => 100, 'quantity' => 1, 'total' => 100,
+            'fulfillment_confirmed_at' => now(), 'fulfillment_route' => 'own_stock', 'fulfillment_availability_status' => 'available',
+        ]);
+
+        Livewire::actingAs($manager)->test(ListOrders::class)->call('selectOrderTab', 'attention')
+            ->assertCanSeeTableRecords([$order])->assertSee('Подготовить самовывоз')->assertSeeHtml('next-step=delivery');
+
+        $card = fn () => Livewire::withQueryParams(['next-step' => 'delivery'])->test(ViewOrder::class, ['record' => $order->id])
+            ->call('openQueueNextStep');
+        $card()->assertActionMounted('prepareOrderDelivery')->assertSet('mountedActions.0.data.method', 'pickup')
+            ->call('unmountAction');
+        $this->assertNull($order->fresh()->delivery_preparation);
+
+        $item->update(['fulfillment_confirmed_at' => null]);
+        $this->assertNull($card()->instance()->getMountedAction());
+        $this->assertSame('processing', $order->fresh()->status);
+    }
+
     public function test_label_is_not_dispatch_and_dispatch_is_not_receipt(): void
     {
         $order = $this->order('processing');

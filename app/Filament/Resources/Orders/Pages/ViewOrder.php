@@ -21,10 +21,9 @@ use App\Models\SupplierOrderRequest;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\Orders\OrderAvailabilityConfirmation;
-use App\Services\Orders\OrderDeliveryPreparation;
-use App\Services\Orders\OrderItemAvailabilityDisplay;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderItemFulfillmentPicker;
+use App\Services\Orders\OrderNextStep;
 use App\Services\Orders\OrderPortal;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\OrderWorkflow;
@@ -49,6 +48,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Throwable;
 
 class ViewOrder extends ViewRecord
@@ -58,6 +58,19 @@ class ViewOrder extends ViewRecord
     protected static string $resource = OrderResource::class;
 
     protected array $extraBodyAttributes = ['class' => 'order-view-page'];
+
+    #[Locked]
+    public ?string $queueNextStep = null;
+
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        $step = request()->query('next-step');
+        if (in_array($step, ['fulfillment', 'delivery'], true)) {
+            $this->queueNextStep = $step;
+        }
+    }
 
     protected function resolveRecord(int|string $key): Order
     {
@@ -103,22 +116,7 @@ class ViewOrder extends ViewRecord
 
     public function nextStepAction(): ?Action
     {
-        $order = $this->record;
-
-        if (! OrderResource::canEdit($order) || in_array($order->status, ['delivered', 'completed', 'cancelled'], true)) {
-            return null;
-        }
-
-        $candidates = match (true) {
-            $order->usesGuidedFulfillment() && $order->needsFulfillmentConfirmation() => ['confirmFulfillment', 'confirmItemFulfillment'],
-            $this->pendingSupplierReply() !== null => ['recordSupplierEmailResponse'],
-            $order->needsEvropochtaShipment() => ['createEvropochtaShipment', 'prepareEvropochtaShipment'],
-            app(OrderDeliveryPreparation::class)->needsPreparation($order) => ['prepareOrderDelivery'],
-            $order->status === 'processing' && blank($order->onec_order_guid) => ['advanceWorkflow', 'onecOrder'],
-            default => ['advanceWorkflow'],
-        };
-
-        foreach ($candidates as $name) {
+        foreach (app(OrderNextStep::class)->actionCandidates($this->record) as $name) {
             $action = $this->cachedActions[$name] ?? null;
 
             if ($action?->isVisible() && $action->isAuthorized() && ! $action->isDisabled()) {
@@ -132,28 +130,20 @@ class ViewOrder extends ViewRecord
     /** @return array{item: OrderItem, message: ?string, count: int}|null */
     public function nextFulfillmentStep(): ?array
     {
-        $order = $this->record;
-        if (! OrderResource::canEdit($order) || ! in_array($order->status, ['new', 'checking', 'confirmed', 'processing'], true)) {
-            return null;
+        return app(OrderNextStep::class)->fulfillmentIssue($this->record);
+    }
+
+    public function openQueueNextStep(): void
+    {
+        $step = $this->queueNextStep;
+        $this->queueNextStep = null;
+
+        if ($step === 'fulfillment') {
+            $this->openNextFulfillmentStep();
+        } elseif ($step === 'delivery' && $this->nextFulfillmentStep() === null
+            && $this->nextStepAction()?->getName() === 'prepareOrderDelivery') {
+            $this->mountAction('prepareOrderDelivery');
         }
-
-        $unassigned = $order->items->filter(fn (OrderItem $item): bool => blank($item->fulfillment_supplier_id)
-            && in_array($item->fulfillment_route ?: $item->supplyContext()['status'], ['supplier_purchase', 'direct_supplier'], true));
-        $canReviewOwnStock = $order->status !== 'new'
-            && ! (filled($order->onec_order_guid) && ! $order->onec_deleted && $order->onec_posted);
-        $shortages = [];
-        if ($canReviewOwnStock) {
-            $display = app(OrderItemAvailabilityDisplay::class);
-            foreach ($order->items as $item) {
-                if ($message = $display->ownStockShortage($item)) {
-                    $shortages[] = ['item' => $item, 'message' => $message];
-                }
-            }
-        }
-
-        $next = $shortages[0] ?? ['item' => $unassigned->first(), 'message' => null];
-
-        return $next['item'] ? $next + ['count' => count($shortages) + $unassigned->count()] : null;
     }
 
     public function openNextFulfillmentStep(): void
@@ -184,12 +174,7 @@ class ViewOrder extends ViewRecord
 
     public function pendingSupplierReply(): ?SupplierOrderRequest
     {
-        if (! OrderResource::canEdit($this->record) || ! in_array($this->record->status, ['confirmed', 'processing'], true)) {
-            return null;
-        }
-
-        return $this->record->supplierOrderRequests->first(fn (SupplierOrderRequest $request): bool => $request->status === 'sent'
-            && $request->transfer_mode === 'email');
+        return app(OrderNextStep::class)->pendingSupplierReply($this->record);
     }
 
     public function nextStepLabelAction(): ?Action
