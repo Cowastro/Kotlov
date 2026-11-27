@@ -308,6 +308,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $mpPipe = $card('Труба PE-Xb/AL/PE-Xb металлопластиковая 20х2,0 (бухта 100 м) GENERAL FITTINGS', $mpPipes);
         $teceMpPipe = $card('Труба металлополимерная универсальная PE-Xc/AL/PE 20х3,4 (21х3,45) (отрезок 4 м) арт. 732020 TECEfleх', $mpPipes);
         $mpSleeve = $card('Труба защитная гофрированная 25 Ду 25 (Дн 30) синяя (50 м)', $mpPipes);
+        $gateValves = $section('zadvizhki');
+        $steelGate = $card('Задвижка стальная 30с41нж Ру 16 Ду 125 BRDHSB', $gateValves);
+        $rubberGate = $card('Задвижка чугунная с обрезиненным клином 30ч39р Ру 10/16 Ду 80 с гайкой BENARMO', $gateValves);
+        $gateStem = $card('Шток телескопический для задвижек 30ч39р 1,7-2,9 м Ду 200 BENARMO', $gateValves);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -580,6 +584,15 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Клиновые с металлическим уплотнением', $value('Тип', $steelGate));
+        $this->assertSame('Сталь', $value('Материал', $steelGate));
+        $this->assertSame('Ду 125', $value('Диаметр (Ду)', $steelGate));
+        $this->assertSame('Ру 16', $value('Давление (Ру)', $steelGate));
+        $this->assertSame('Клиновые с обрезиненным клином', $value('Тип', $rubberGate));
+        $this->assertSame('Чугун', $value('Материал', $rubberGate));
+        $this->assertSame('Ру 16', $value('Давление (Ру)', $rubberGate));
+        $this->assertSame('Штоки и комплектующие', $value('Тип', $gateStem));
+        $this->assertNull($value('Диаметр (Ду)', $gateStem));
         $this->assertSame('Металлопластиковая труба', $value('Тип', $mpPipe));
         $this->assertSame('20 мм', $value('Диаметр трубы', $mpPipe));
         $this->assertSame('PE-Xb/AL/PE-Xb', $value('Материал', $mpPipe));

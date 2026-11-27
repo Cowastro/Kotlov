@@ -276,6 +276,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::GATE_VALVES => [
+                'Тип' => [self::GATE_VALVE_TYPES, array_values(array_unique(self::GATE_VALVE_TYPES))],
+                'Материал' => [['/^задвижка чугун|^шиберная/u' => 'Чугун', '/^задвижка стальн/u' => 'Сталь'], ['Сталь', 'Чугун']],
+                'Диаметр (Ду)' => [fn (string $title) => str_starts_with(mb_strtolower($title), 'шток') ? null : self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
+                'Давление (Ру)' => [['/^(?!шток).*ру 10\/16/u' => 'Ру 16', '/ру 10(?!\d)/u' => 'Ру 10', '/ру 16(?!\d)/u' => 'Ру 16'], ['Ру 10', 'Ру 16']],
+            ],
             self::MP_PIPES => [
                 'Тип' => [['/гофр|пешель/u' => 'Защитная гофротруба', '/./u' => 'Металлопластиковая труба'], ['Металлопластиковая труба', 'Защитная гофротруба']],
                 'Диаметр трубы' => [fn (string $title) => preg_match('/^(?!.*(гофр|пешель)).*?(?<![\d,.])(16|20|26)\s?[x×х*(]/u', mb_strtolower($title), $m) ? $m[2].' мм' : null, ['16 мм', '20 мм', '26 мм']],
@@ -2601,6 +2607,16 @@ final class BoilerAutomationGroups
         '/гофрированная 25/u' => '25–26 мм',
         '/гофрированная 32/u' => '32 мм',
         '/гофрированная 40/u' => '40 мм',
+    ];
+
+    public const GATE_VALVES = 'zadvizhki';
+
+    /** Title pattern => «Тип» inside «Задвижки», in filter order; the first match wins. */
+    public const GATE_VALVE_TYPES = [
+        '/^шток/u' => 'Штоки и комплектующие',
+        '/шиберн/u' => 'Шиберные',
+        '/обрезиненным клином/u' => 'Клиновые с обрезиненным клином',
+        '/30ч6бр|30с41нж/u' => 'Клиновые с металлическим уплотнением',
     ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
