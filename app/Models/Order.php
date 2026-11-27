@@ -364,6 +364,11 @@ class Order extends Model
         return $this->hasMany(OrderStatusSms::class)->latest('id');
     }
 
+    public function vamExpressShipments(): HasMany
+    {
+        return $this->hasMany(VamExpressShipment::class);
+    }
+
     public function latestOnecOrderTask(): MorphOne
     {
         return $this->morphOne(OneCAgentTask::class, 'subject')

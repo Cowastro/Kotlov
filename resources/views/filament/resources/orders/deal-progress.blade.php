@@ -60,6 +60,24 @@
             </button>
         @endforeach
     </div>
+    @if ($isTable && (in_array($order->delivery_type, ['evropochta', 'vam_express'], true) || $order->vamExpressShipments->isNotEmpty()))
+        <div class="flex flex-wrap gap-1" data-order-carrier-status>
+            @if ($order->delivery_type === 'evropochta')
+                <x-filament::badge size="sm" :color="\App\Services\Shipping\EvropochtaShipmentSummary::color($order)">
+                    Европочта · {{ \App\Services\Shipping\EvropochtaShipmentSummary::status($order) }}
+                </x-filament::badge>
+            @elseif ($order->vamExpressShipments->isNotEmpty())
+                @foreach ($order->vamExpressShipments as $shipment)
+                    <x-filament::badge size="sm" :color="\App\Support\Shipping\VamExpressStatus::color($shipment->carrier_status)">
+                        ВАМ Экспресс{{ $order->vamExpressShipments->count() > 1 && filled($shipment->display_id) ? ' '.$shipment->display_id : '' }}
+                        · {{ filled($shipment->carrier_status) ? $shipment->carrier_status : 'Статус ещё не проверен' }}
+                    </x-filament::badge>
+                @endforeach
+            @elseif ($order->delivery_type === 'vam_express')
+                <x-filament::badge size="sm" color="gray">ВАМ Экспресс · Не оформлено</x-filament::badge>
+            @endif
+        </div>
+    @endif
     <div class="order-deal__control {{ $overdue ? 'is-overdue' : ($today ? 'is-today' : '') }}">
         <span>{{ $controlLabel }}</span>
         @if ($active)

@@ -8,6 +8,7 @@ use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Models\Order;
 use App\Models\OneCAgentTask;
 use App\Models\User;
+use App\Models\VamExpressShipment;
 use App\Services\Orders\OrderDealControl;
 use App\Services\Orders\OrderDealControlNotifier;
 use App\Services\Orders\StaleOrderFollowUpReminder;
@@ -294,6 +295,29 @@ class OrderDealControlTest extends TestCase
         $this->travel(3)->hours();
         $this->assertSame(0, $reminders->notify());
         $this->assertSame('processing', $stalled->fresh()->status);
+    }
+
+    public function test_order_list_shows_carrier_status_from_the_linked_shipments(): void
+    {
+        $euro = $this->order('shipped');
+        $euro->forceFill(['delivery_type' => 'evropochta', 'evropochta_tracking_number' => 'BY00000012345'])->save();
+        $euro->forceFill([
+            'carrier_provider' => 'evropochta', 'carrier_reference' => 'BY00000012345',
+            'carrier_status_text' => 'Выдано', 'carrier_stage' => 'delivered',
+        ])->save();
+        $vam = $this->order('shipped');
+        $vam->forceFill(['delivery_type' => 'vam_express'])->save();
+        $shipment = new VamExpressShipment(['remote_id' => 'carrier-test', 'display_id' => 'VAM123', 'carrier_status' => 'В пути']);
+        $vam->vamExpressShipments()->save($shipment);
+        $pickup = $this->order('shipped');
+
+        $list = Livewire::actingAs($this->manager())->test(ListOrders::class)
+            ->assertCanSeeTableRecords([$euro, $vam, $pickup])
+            ->assertSee('Европочта · Выдано')
+            ->assertSee('ВАМ Экспресс')
+            ->assertSee('· В пути')
+            ->assertDontSee('ВАМ Экспресс · Не оформлено');
+        $this->assertSame(2, substr_count($list->html(), 'data-order-carrier-status'));
     }
 
     public function test_label_is_not_dispatch_and_dispatch_is_not_receipt(): void
