@@ -45,6 +45,7 @@ final class BoilerAutomationGroups
         '/^шланг душевой/u' => self::PLUMBING_PARTS,
         '/^master flash/u' => 'krovelnye-prohodki-master-flash',
         '/^лампа для бани/u' => 'abazhury-dlya-bani',
+        '/energofloor/u' => 'vodyanoy-teplyy-pol',
         '/^(дюбель-хомут|скоба теплого пола)|пешель\) защитная/u' => 'vodyanoy-teplyy-pol',
         '/ливнев|лив\. канал|ливнесток/u' => self::OUTDOOR_SEWER,
         '/^(sanicubic|sanifloor|sanidouche|sanivite|saniaccess)|sanialarm|^канализационная насосная установка|^шиберная задвижка .*sfa/u' => 'kanalizatsionnye-nasosy-sukhoy-ustanovki',
@@ -270,6 +271,12 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::PIPE_INSULATION => [
+                'Тип' => [self::INSULATION_TYPES, array_values(array_unique(self::INSULATION_TYPES))],
+                'Диаметр трубы' => [fn (string $title) => self::insulationSize($title, 0), ['До 18 мм', '20–28 мм', '32–42 мм', '45–64 мм', '76–114 мм']],
+                'Толщина изоляции' => [fn (string $title) => self::insulationSize($title, 1), ['4 мм', '6 мм', '9 мм', '13 мм', '20 мм', '30 мм', '40 мм', '50 мм', '60 мм']],
+                'Цвет' => [['/^(трубка|теплоизоляция).*красн/u' => 'Красная', '/^(трубка|теплоизоляция).*син/u' => 'Синяя', '/^(трубка|теплоизоляция).*ч[её]рн/u' => 'Чёрная'], ['Красная', 'Синяя', 'Чёрная']],
+            ],
             self::SAUNA_DOORS => [
                 'Цвет стекла' => [self::DOOR_GLASS, ['Бронза', 'Бронза матовая', 'Графит', 'Графит матовый', 'Сатин (матовое)', 'Прозрачное']],
                 'Высота' => [fn (string $title) => self::doorSize($title, 0), ['170 см', '180 см', '190 см', '200 см', '210 см']],
@@ -1821,6 +1828,47 @@ final class BoilerAutomationGroups
         $value = $part === 0 ? $height : (int) (round($width / 10) * 10);
 
         return $value.' см';
+    }
+
+    public const PIPE_INSULATION = 'teploizolyatsiya-dlya-trub';
+
+    /** Title pattern => «Тип» inside «Теплоизоляция для труб», in filter order; the first match wins. */
+    public const INSULATION_TYPES = [
+        '/шумоизол|acoustic|tonlos/u' => 'Шумоизоляция канализации',
+        '/k-flex/u' => 'Трубки из вспененного каучука',
+        '/трубк|теплоизоляция для труб/u' => 'Трубки из вспененного полиэтилена',
+        '/цилиндр|paroc/u' => 'Цилиндры из минеральной ваты',
+        '/^лента/u' => 'Ленты и аксессуары',
+        '/./u' => 'Прочее',
+    ];
+
+    /**
+     * The pipe diameter ($part 0) or the wall thickness ($part 1) of pipe insulation: Energoflex «35/9»,
+     * mineral wool «Ц100/А-1200.22.40», PAROC «48-30-115», Порифлекс «15 мм (толщина 9 мм)», ACOUSTIC «110».
+     */
+    public static function insulationSize(string $title, int $part): ?string
+    {
+        $t = mb_strtolower(trim(html_entity_decode($title)));
+        [$d, $w] = match (true) {
+            (bool) preg_match('/-\d{3,4}\.(\d{2,3})\.(\d{2})/u', $t, $m) => [(int) $m[1], (int) $m[2]],
+            (bool) preg_match('/paroc.*?(\d{2,3})-(\d{2})-\d+/u', $t, $m) => [(int) $m[1], (int) $m[2]],
+            (bool) preg_match('/(?<![\d.,])(\d{2,3})\/(\d{1,2})(?![\d,.])/u', $t, $m) && str_contains($t, 'energoflex') => [(int) $m[1], (int) $m[2]],
+            (bool) preg_match('/(\d{2,3})\s*мм\s*\(толщина\s*(\d{1,2})/u', $t, $m) => [(int) $m[1], (int) $m[2]],
+            (bool) preg_match('/acoustic\S*\s+(\d{2,3})/u', $t, $m) => [(int) $m[1], null],
+            default => [null, null],
+        };
+        if ($part === 1) {
+            return $w !== null && in_array($w, [4, 6, 9, 13, 20, 30, 40, 50, 60], true) ? $w.' мм' : null;
+        }
+
+        return match (true) {
+            $d === null => null,
+            $d <= 18 => 'До 18 мм',
+            $d <= 28 => '20–28 мм',
+            $d <= 42 => '32–42 мм',
+            $d <= 64 => '45–64 мм',
+            default => '76–114 мм',
+        };
     }
 
     public const GAS_HOSES = 'gazovye-shlangi';
