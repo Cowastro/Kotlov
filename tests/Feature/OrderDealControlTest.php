@@ -83,6 +83,40 @@ class OrderDealControlTest extends TestCase
         \Illuminate\Support\Facades\Http::assertNothingSent();
     }
 
+    public function test_order_card_points_to_the_supplier_position_and_preselects_the_sent_request(): void
+    {
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $manager = $this->manager();
+        $order = $this->order('processing');
+        $item = $order->items()->create([
+            'product_name' => 'Позиция для закупки', 'product_sku' => 'PURCHASE-1',
+            'price' => 100, 'quantity' => 1, 'total' => 100, 'fulfillment_route' => 'supplier_purchase',
+        ]);
+        $card = fn () => Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->getRouteKey()]);
+        $card()->assertSee('Назначьте поставщика для позиции')
+            ->assertSeeHtml('href="#order-item-supplier-'.$item->id.'"')
+            ->assertSeeHtml('id="order-item-supplier-'.$item->id.'"');
+
+        $supplier = \App\Models\Supplier::create(['name' => 'Поставщик для проверки', 'code' => 'deal-test-supplier']);
+        $item->update(['fulfillment_supplier_id' => $supplier->id, 'fulfillment_confirmed_at' => now()]);
+        $request = $order->supplierOrderRequests()->create([
+            'supplier_id' => $supplier->id, 'supplier_name' => $supplier->name, 'number' => 'REQ-DEAL-1',
+            'route' => 'supplier_purchase', 'status' => 'sent', 'transfer_mode' => 'email',
+        ]);
+        $request->items()->create([
+            'order_item_id' => $item->id, 'product_name' => $item->product_name,
+            'product_sku' => $item->product_sku, 'quantity' => 1,
+        ]);
+
+        $card()->assertSee('Ждём ответ от Поставщик для проверки по заявке REQ-DEAL-1')
+            ->assertSee('Позиция для закупки · PURCHASE-1')
+            ->assertSee('Зафиксировать ответ поставщика')
+            ->mountAction('recordSupplierEmailResponse', ['supplierOrderRequestId' => $request->id])
+            ->assertActionMounted('recordSupplierEmailResponse')
+            ->assertSchemaStateSet(['supplier_order_request_id' => $request->id]);
+        $this->assertSame('sent', $request->fresh()->status);
+    }
+
     public function test_pending_agent_transfer_does_not_offer_duplicate_execution(): void
     {
         $order = $this->order('confirmed');

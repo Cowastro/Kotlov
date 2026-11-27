@@ -107,6 +107,7 @@ class ViewOrder extends ViewRecord
 
         $candidates = match (true) {
             $order->usesGuidedFulfillment() && $order->needsFulfillmentConfirmation() => ['confirmFulfillment', 'confirmItemFulfillment'],
+            $this->pendingSupplierReply() !== null => ['recordSupplierEmailResponse'],
             $order->needsEvropochtaShipment() => ['createEvropochtaShipment', 'prepareEvropochtaShipment'],
             $order->status === 'processing' && blank($order->onec_order_guid) => ['advanceWorkflow', 'onecOrder', 'prepareOrderDelivery'],
             default => ['advanceWorkflow'],
@@ -121,6 +122,26 @@ class ViewOrder extends ViewRecord
         }
 
         return null;
+    }
+
+    public function supplierItemToAssign(): ?OrderItem
+    {
+        if (! OrderResource::canEdit($this->record) || ! in_array($this->record->status, ['new', 'checking', 'confirmed', 'processing'], true)) {
+            return null;
+        }
+
+        return $this->record->items->first(fn (OrderItem $item): bool => blank($item->fulfillment_supplier_id)
+            && in_array($item->fulfillment_route ?: $item->supplyContext()['status'], ['supplier_purchase', 'direct_supplier'], true));
+    }
+
+    public function pendingSupplierReply(): ?SupplierOrderRequest
+    {
+        if (! OrderResource::canEdit($this->record) || ! in_array($this->record->status, ['confirmed', 'processing'], true)) {
+            return null;
+        }
+
+        return $this->record->supplierOrderRequests->first(fn (SupplierOrderRequest $request): bool => $request->status === 'sent'
+            && $request->transfer_mode === 'email');
     }
 
     public function nextStepLabelAction(): ?Action
@@ -352,11 +373,15 @@ class ViewOrder extends ViewRecord
                 ->icon('heroicon-o-inbox-arrow-down')
                 ->color('info')
                 ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
+                ->authorize(fn (): bool => OrderResource::canEdit($this->record))
                 ->visible(fn (): bool => $this->record->supplierOrderRequests
                     ->contains(fn (SupplierOrderRequest $request): bool => $request->status === 'sent'
                         && $request->transfer_mode === 'email'))
                 ->modalHeading('Зафиксировать ответ поставщика')
                 ->modalDescription('Письмо остаётся в связанной переписке. Здесь фиксируется итог: резерв подтверждён или поставщик отказал.')
+                ->fillForm(fn (array $arguments): array => [
+                    'supplier_order_request_id' => $arguments['supplierOrderRequestId'] ?? null,
+                ])
                 ->schema([
                     Select::make('supplier_order_request_id')
                         ->label('Заявка')

@@ -68,8 +68,24 @@
     @if (! $isTable)
         <div class="order-deal__next">
             <strong>Следующий шаг</strong>
-            <p>{{ $order->workflowNextStep() }}</p>
-            @if (isset($nextAction))
+            @if (isset($supplierItem))
+                <p>Назначьте поставщика для позиции «{{ $supplierItem->product_name }}»{{ $supplierItem->product_sku ? ' · '.$supplierItem->product_sku : '' }}.</p>
+                <x-filament::button tag="a" size="sm" :href="'#order-item-supplier-'.$supplierItem->id" icon="heroicon-o-arrow-down">
+                    Перейти к назначению поставщика
+                </x-filament::button>
+            @elseif (($nextAction ?? null)?->getName() === 'recordSupplierEmailResponse' && isset($supplierReply))
+                <p>Ждём ответ от {{ $supplierReply->supplier_name }} по заявке {{ $supplierReply->number }}.</p>
+                @if ($supplierReply->items->isNotEmpty())
+                    <p>{{ $supplierReply->items->map(fn ($item) => $item->product_name.($item->product_sku ? ' · '.$item->product_sku : ''))->join(', ') }}</p>
+                @endif
+                <x-filament::button type="button" size="sm" icon="heroicon-o-inbox-arrow-down"
+                    wire:click="mountAction('recordSupplierEmailResponse', { supplierOrderRequestId: {{ $supplierReply->id }} })">
+                    Зафиксировать ответ поставщика
+                </x-filament::button>
+            @else
+                <p>{{ $order->workflowNextStep() }}</p>
+            @endif
+            @if (! isset($supplierItem) && isset($nextAction) && $nextAction->getName() !== 'recordSupplierEmailResponse')
                 <x-filament::button type="button" size="sm" :icon="$nextAction->getIcon()"
                     data-order-next-action="{{ $nextAction->getName() }}"
                     wire:click="mountAction('{{ $nextAction->getName() }}')">
