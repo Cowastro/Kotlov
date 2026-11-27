@@ -125,11 +125,16 @@ class SupplierProduct extends Model
 
     public function hasFreshPositiveStock(?CarbonInterface $now = null): bool
     {
+        return (float) $this->stock_quantity > 0 && $this->hasFreshStockQuantity($now);
+    }
+
+    public function hasFreshStockQuantity(?CarbonInterface $now = null): bool
+    {
         $confirmedAt = $this->last_stock_synced_at
             ?? $this->last_synced_at
             ?? $this->updated_at;
 
-        return (float) $this->stock_quantity > 0
+        return $this->stock_quantity !== null
             && $confirmedAt !== null
             && $confirmedAt->gte(($now ?? now())->copy()->subHours(self::STALE_AFTER_HOURS));
     }

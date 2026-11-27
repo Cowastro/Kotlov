@@ -16,9 +16,15 @@
                     <div class="manager-product-context__line">
             @endif
                     <strong>{{ $offer['supplier'] }}</strong>
+                    @if (! empty($offer['city_stock']))
+                        @foreach ($offer['city_stock'] as $city => $label)
+                            <span class="manager-product-context__wide">{{ $city }} — {{ $label }}</span>
+                        @endforeach
+                    @else
                     <span class="{{ $offer['is_fresh'] ? 'is-fresh' : ($offer['in_stock'] ? 'is-stale' : 'is-empty') }}">
                         {{ $offer['stock'] }}{{ $offer['in_stock'] && ! $offer['is_fresh'] ? ' · требуется проверка' : '' }}
                     </span>
+                    @endif
             @if ($compact)
                     </summary>
             @else
@@ -39,6 +45,7 @@
                     @endif
                     @if (count($offer['locations'] ?? []) > 1)
                         @foreach ($offer['locations'] as $location)
+                            @continue(isset($offer['city_stock']) && in_array($location['warehouse'], ['Склад Москва', 'Склад Минск'], true))
                             <span class="manager-product-context__wide">
                                 {{ $location['warehouse'] ?: 'Склад не указан' }}: {{ $location['stock'] }}{{ $location['in_stock'] && ! $location['is_fresh'] ? ' · требуется проверка' : '' }}
                             </span>

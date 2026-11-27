@@ -261,6 +261,9 @@
                                         ? (\App\Models\Product::availabilityStatusOptions()[$availabilityStatus] ?? 'Уточняйте наличие')
                                         : $product->publicAvailabilityLabel();
                                     $displayAvailabilityStatus = $b2bOffer ? $availabilityStatus : $product->publicAvailabilityStatus();
+                                    $cityStock = ! $b2bOffer && $product->is_active && ! $product->is_archived
+                                        ? app(\App\Services\ManagerStorefrontProductContext::class)->ecokaminWarehouseLabels($product)
+                                        : [];
                                     $displayPrice = $b2bComparison['wholesale_price'] ?? (float) $product->price;
                                     $installmentMonthlyLabel = $displayPrice > 0
                                         ? '≈ '.number_format($displayPrice / 6, 2, ',', ' ').' BYN/мес.'
@@ -495,6 +498,10 @@
                                                 {{ $b2bOffer->formattedStockQuantity() }}
                                             @endif
                                         </span>
+                                    @elseif ($cityStock)
+                                        @foreach ($cityStock as $city => $stockLabel)
+                                            <div class="fw-medium">{{ $city }} — {{ $stockLabel }}</div>
+                                        @endforeach
                                     @elseif ($displayAvailabilityStatus === 'in_stock')
                                         <span class="stock in-stock fw-medium text-success">
                                             <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }}
