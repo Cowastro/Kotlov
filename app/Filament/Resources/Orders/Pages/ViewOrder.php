@@ -154,6 +154,23 @@ class ViewOrder extends ViewRecord
         return null;
     }
 
+    public function reviewOwnStockFulfillment(): void
+    {
+        $item = $this->ownStockReview()['item'] ?? null;
+        $items = $item ? $this->getSchema('infolist')?->getComponent('items') : null;
+        if (! $items instanceof \Filament\Infolists\Components\RepeatableEntry) {
+            return;
+        }
+
+        foreach ($items->getItems() as $row) {
+            if ($row->getRecord()?->is($item) && ($key = $row->getComponent('supply_supplier')?->getKey())) {
+                $this->mountAction('assignItemSupplier', ['reviewOwnStock' => true], ['schemaComponent' => $key]);
+
+                return;
+            }
+        }
+    }
+
     public function pendingSupplierReply(): ?SupplierOrderRequest
     {
         if (! OrderResource::canEdit($this->record) || ! in_array($this->record->status, ['confirmed', 'processing'], true)) {

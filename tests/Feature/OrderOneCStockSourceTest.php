@@ -142,16 +142,27 @@ class OrderOneCStockSourceTest extends TestCase
 
     public function test_order_links_a_confirmed_own_stock_shortage_to_the_affected_item(): void
     {
-        [$item, $stock] = $this->fixture();
+        [$item, $stock, , $supplier] = $this->fixture();
         $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
         $item->update(['fulfillment_route' => 'own_stock', 'fulfillment_confirmed_at' => now(),
             'fulfillment_availability_status' => 'available']);
+        $item->product->warehouseStocks()->create([
+            'supplier_id' => $supplier->id, 'warehouse_code' => 'ecokamin-moscow',
+            'warehouse_name' => 'Склад Москва', 'available_quantity' => 21, 'last_synced_at' => now(),
+        ]);
         $stock->update(['stock_on_hand' => 0, 'stock_reserved' => 0]);
 
-        Livewire::test(ViewOrder::class, ['record' => $item->order_id])
+        $page = Livewire::test(ViewOrder::class, ['record' => $item->order_id])
             ->assertSee('На нашем складе свободно 0 шт. из 1 шт. по заказу.')
             ->assertSee('Проверить исполнение')
-            ->assertSeeHtml('href="#order-item-supplier-'.$item->id.'"');
+            ->call('reviewOwnStockFulfillment')
+            ->assertSee('Поставщик: '.$item->product_name)
+            ->assertSee('Наш склад, 1С')
+            ->assertSee('ЭкоКамин, Москва')
+            ->assertSee('21 шт.');
+        $this->assertTrue($page->instance()->getMountedAction()->getRecord()->is($item));
+        $page->call('unmountAction');
+        $this->assertSame('own_stock', $item->fresh()->fulfillment_route);
 
         $item->update(['fulfillment_availability_status' => 'reserved']);
         Livewire::test(ViewOrder::class, ['record' => $item->order_id])->assertDontSee('Проверить исполнение');
