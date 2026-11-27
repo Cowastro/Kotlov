@@ -156,7 +156,7 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertTrue($summary['problems']->pluck('label')->contains('Не определён поставщик: 1'));
     }
 
-    public function test_low_margin_is_an_explicit_manager_warning(): void
+    public function test_low_margin_remains_in_economics_without_a_manager_warning(): void
     {
         $fixture = $this->fixture(100);
 
@@ -165,8 +165,7 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertSame(0.0, $summary['margin_total']);
         $this->assertSame(0.0, $summary['margin_percent']);
         $this->assertSame(1, $summary['low_margin_count']);
-        $this->assertSame('warning', $summary['severity']);
-        $this->assertTrue($summary['problems']->pluck('label')->contains('Маржа ниже 10%: 1'));
+        $this->assertFalse($summary['problems']->pluck('label')->contains('Маржа ниже 10%: 1'));
     }
 
     public function test_order_snapshot_does_not_change_when_supplier_offer_or_contact_changes(): void

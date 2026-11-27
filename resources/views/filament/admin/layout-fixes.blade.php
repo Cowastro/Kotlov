@@ -110,6 +110,17 @@
         min-width: 24rem;
     }
 
+    .orders-workspace--attention :is(.fi-ta-cell-deal-progress, .fi-ta-header-cell-deal-progress) {
+        width: 13rem;
+        min-width: 13rem;
+    }
+
+    [data-order-queue-attention] {
+        max-width: 18rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
     .order-deal > * {
         min-width: 0;
     }

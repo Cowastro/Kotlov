@@ -104,7 +104,9 @@ class OrdersTable
             ->toArray();
 
         return $table
-            ->extraAttributes(['class' => 'orders-workspace'])
+            ->extraAttributes(fn (ListOrders $livewire): array => [
+                'class' => $livewire->activeTab === 'attention' ? 'orders-workspace orders-workspace--attention' : 'orders-workspace',
+            ])
             ->searchable()
             ->searchPlaceholder('№ заказа, клиент, телефон или артикул')
             ->searchUsing(fn (Builder $query, string $search): Builder => self::searchOrders($query, $search))
@@ -112,7 +114,7 @@ class OrdersTable
                 ->withSum('items', 'quantity')
                 ->with([
                     'partnerBranch:id,name,city_id',
-                    'items:id,order_id,product_id,integration_product_id,supplier_product_id,warehouse_stock_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_warehouse_name,supply_delivery_days,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price,fulfillment_availability_status,fulfillment_confirmed_at',
+                    'items:id,order_id,product_id,integration_product_id,supplier_product_id,warehouse_stock_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_warehouse_name,supply_delivery_days,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price,fulfillment_availability_status,fulfillment_confirmed_at,current_availability',
                     'items.fulfillmentSupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
                     'items.fulfillmentSupplier.crmCounterparty.contactPoints',
                     'items.supplySupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
@@ -284,7 +286,8 @@ class OrdersTable
                     ->state(fn (Order $record): string => 'Заказ '.self::formatMoney((float) $record->total))
                     ->description(fn (Order $record): HtmlString => new HtmlString(
                         '<details class="order-cell-details"><summary>'.e(self::economicSummary($record))
-                        .'</summary><div class="order-cell-details__body">'.e(self::economicDetails($record)).'</div></details>'
+                        .'</summary><div class="order-cell-details__body">'.e(self::economicDetails($record))
+                        .self::marginItemDetails($record).'</div></details>'
                     ))
                     ->disabledClick()
                     ->color(fn (Order $record): string => match (true) {
@@ -327,6 +330,7 @@ class OrdersTable
                     ->view('filament.resources.orders.deal-progress')
                     ->viewData(fn (Order $record, ListOrders $livewire): array => [
                         'isTable' => true,
+                        'isAttention' => $livewire->activeTab === 'attention',
                         'queueShortcut' => $livewire->activeTab === 'stale_follow_up'
                             ? app(OrderNextStep::class)->queueShortcut($record)
                             : null,
@@ -534,6 +538,7 @@ class OrdersTable
 
                 TextColumn::make('items_list')
                     ->label('Товары и поставка')
+                    ->visible(fn (ListOrders $livewire): bool => $livewire->activeTab !== 'attention')
                     ->state(fn (Order $record): HtmlString => self::compactProductList($record))
                     ->html()
                     ->disabledClick()
@@ -1037,6 +1042,21 @@ class OrdersTable
             : '';
 
         return $goods.' · Вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN · Маржа ≈ '.$margin.$percent;
+    }
+
+    private static function marginItemDetails(Order $record): string
+    {
+        $ids = $record->supplySummary()['problem_item_ids'];
+        $items = $record->items->whereIn('id', [...$ids['low_margin'], ...$ids['negative_margin']]);
+
+        return $items->map(function (OrderItem $item): string {
+            $context = $item->supplyContext();
+
+            return '<div>'.e($item->product_sku ?: $item->product_name)
+                .' · Входная '.e(self::formatMoney($context['wholesale_price']))
+                .' · Продажа '.e(self::formatMoney((float) $item->price))
+                .' · Маржа '.e(number_format($context['margin_percent'], 1, '.', ' ')).'%</div>';
+        })->implode('');
     }
 
     public static function supplierReserveStatus(Order $order): string

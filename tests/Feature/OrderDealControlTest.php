@@ -198,7 +198,7 @@ class OrderDealControlTest extends TestCase
         $this->assertSame('processing', $order->fresh()->status);
     }
 
-    public function test_attention_queue_links_the_current_failed_order_task_and_shows_supplier_and_label_waits(): void
+    public function test_attention_queue_links_the_current_failed_task_and_omits_label_readiness(): void
     {
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         $manager = $this->manager();
@@ -234,7 +234,7 @@ class OrderDealControlTest extends TestCase
             ->assertSeeHtml(OneCAgentTaskResource::getUrl('view', ['record' => $failedTask]))
             ->assertDontSeeHtml(OneCAgentTaskResource::getUrl('view', ['record' => $oldTask]))
             ->assertSee('Ждём ответ поставщика · Тестовый поставщик · REQ-WAIT-1')
-            ->assertSee('Этикетка Европочты ещё готовится');
+            ->assertDontSee('Этикетка Европочты ещё готовится');
 
         OneCAgentTask::create(array_replace($taskData, ['status' => OneCAgentTask::QUEUED]));
         $request->update(['status' => 'acknowledged']);
@@ -279,7 +279,7 @@ class OrderDealControlTest extends TestCase
         $this->assertFalse(\App\Services\Orders\OrderCarrierAttention::query(Order::query())->exists());
     }
 
-    public function test_attention_queue_explains_stock_and_margin_without_expanding_the_order(): void
+    public function test_attention_queue_shows_stock_while_margin_stays_in_economics(): void
     {
         config(['shop.order_management.minimum_margin_percent' => 10]);
         $manager = $this->manager();
@@ -295,25 +295,33 @@ class OrderDealControlTest extends TestCase
             ]);
         }
         $stockItem = $stock->items()->firstOrFail();
-        $marginItem = $margin->items()->firstOrFail();
+        $stockItem->update([
+            'supply_stock_quantity' => 0, 'supply_source_label' => 'Склад поставщика',
+            'current_availability' => ['stock_quantity' => 3, 'is_available' => true, 'source_label' => 'Проверено у поставщика'],
+        ]);
         $healthyItem = $stock->items()->create([
             'product_name' => 'Товар в наличии', 'quantity' => 1, 'price' => 100, 'total' => 100,
             'supply_status' => 'own_stock', 'supply_captured_at' => now(), 'supply_is_available' => true,
             'supply_purchase_price' => 70,
         ]);
 
-        Livewire::actingAs($manager)->test(ListOrders::class)
+        $queue = Livewire::actingAs($manager)->test(ListOrders::class)
             ->assertDontSeeHtml('data-order-queue-attention')
             ->call('selectOrderTab', 'attention')
-            ->assertCanSeeTableRecords([$stock, $margin])
+            ->assertCanSeeTableRecords([$stock])
+            ->assertCanNotSeeTableRecords([$margin])
             ->assertSee('Что сделать')
             ->assertSee('Нет подтверждённого остатка')
             ->assertSee('Сверить остаток и источник отгрузки')
-            ->assertSee('Маржа ниже 10%')
-            ->assertSee('Сверить входную цену и цену продажи')
+            ->assertSee('Последняя проверка: 3 шт. · Проверено у поставщика')
+            ->assertSee('При заказе: 0 шт. · Склад поставщика')
+            ->assertDontSee('Маржа ниже 10%')
             ->assertSeeHtml('/admin/orders/'.$stock->id.'#'.$stockItem->adminAnchor())
-            ->assertSeeHtml('/admin/orders/'.$margin->id.'#'.$marginItem->adminAnchor())
             ->assertDontSeeHtml('#'.$healthyItem->adminAnchor());
+
+        $queue->call('selectOrderTab', 'work_queue')
+            ->assertCanSeeTableRecords([$margin])
+            ->assertSee('Входная 95.00 BYN · Продажа 100.00 BYN · Маржа 5.0%');
 
         $this->actingAs($manager)->get('/admin/orders/'.$stock->id)->assertOk()
             ->assertSeeHtml('id="'.$stockItem->adminAnchor().'"');
