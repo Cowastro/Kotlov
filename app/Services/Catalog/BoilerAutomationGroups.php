@@ -41,6 +41,8 @@ final class BoilerAutomationGroups
         '/^(косой|т-образный \(прямой\)|[cс]етчатый промывной( поворотный)?|комбинированный промывной) фильтр .*varmega/u' => 'filtry',
         '/^комнатный термостат \(терморегулятор\) varmega/u' => self::SECTION,
         '/^аквабрайт абф/u' => 'filtry',
+        '/^шланг гибкий гофрированный .*для газа/u' => self::GAS_HOSES,
+        '/^шланг душевой/u' => self::PLUMBING_PARTS,
         '/^переходник varmega vmtf/u' => 'rezbovye-fitingi',
         '/^труба varmega pe-xa/u' => 'truby-iz-sshitogo-polietilena',
         '/^монтажный ключ varmega/u' => 'instrumenty-dlya-montazha',
@@ -258,6 +260,13 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::FLEX_HOSES => [
+                'Назначение' => [self::FLEX_USES, array_values(self::FLEX_USES)],
+                'Присоединение' => [self::FLEX_JOINTS, array_values(self::FLEX_JOINTS)],
+                'Резьба' => [self::FLEX_THREADS, ['1/2"', '3/4"', '1"']],
+                'Оплётка' => [self::FLEX_BRAIDS, array_values(self::FLEX_BRAIDS)],
+                'Длина' => [fn (string $title) => self::flexLength($title), self::FLEX_LENGTHS],
+            ],
             self::SAFETY_VALVES => [
                 'Тип' => [self::SAFETY_TYPES, array_values(array_unique(self::SAFETY_TYPES))],
                 'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
@@ -1267,6 +1276,61 @@ final class BoilerAutomationGroups
         '/3-х|приоритет|подпиточн|компенсатор|клапан/u' => 'Прочие клапаны',
         '/./u' => 'Комплектующие',
     ];
+
+    public const FLEX_HOSES = 'gibkaya-podvodka-dlya-vody';
+
+    /** Title pattern => «Назначение» of a water connection hose; the first match wins. */
+    public const FLEX_USES = [
+        '/стирал|посудомоеч/u' => 'Для стиральных и посудомоечных машин',
+        '/станций водоснабжения/u' => 'Для насосных станций',
+        '/иголка|м10|m10|ml10|смесител/u' => 'Для смесителей (иголка М10)',
+        '/./u' => 'Универсальная (резьба — резьба)',
+    ];
+
+    /** Title pattern => «Присоединение» of a water connection hose. */
+    public const FLEX_JOINTS = [
+        '/иголка|м10|m10|ml10/u' => 'Иголка М10 — гайка',
+        '/гайка\s*\d[^-–]*[-–]\s*гайка|гайка\/гайка|вр[–-]g?1\/2″?\s*вр|внутренняя\/внутренняя|внутренняя резьба мм|(?<![а-яa-z])[мm][мm]\s+(?=[\df])|г\/г/u' => 'Гайка — гайка (ВР–ВР)',
+        '/штуцер|(?<![а-я])нр(?![а-я])|наружн|(?<![а-я])мр(?![а-я])/u' => 'Гайка — штуцер (ВР–НР)',
+    ];
+
+    /** Title pattern => «Резьба» of a water connection hose (the larger thread of the two). */
+    public const FLEX_THREADS = [
+        '/(?<![\d\/])1"(?!\d)/u' => '1"',
+        '/3\/4/u' => '3/4"',
+        '/1\/2|3\/8/u' => '1/2"',
+    ];
+
+    /** Title pattern => «Оплётка» of a water connection hose. */
+    public const FLEX_BRAIDS = [
+        '/(?<![a-z])sus(?![a-z])|нерж|s\.s|сильфон/u' => 'Нержавеющая сталь',
+        '/nylon|нейлон/u' => 'Нейлон',
+        '/пвх/u' => 'ПВХ',
+    ];
+
+    /** «Длина» options of a water connection hose. */
+    public const FLEX_LENGTHS = ['До 50 см', '60–80 см', '90–120 см', '150 см', '200 см и длиннее'];
+
+    /** The length band of a hose from «80см», «L= 150 см», «500 мм» or «1,2 м». */
+    public static function flexLength(string $title): ?string
+    {
+        $title = mb_strtolower(trim(html_entity_decode($title)));
+        $cm = match (true) {
+            (bool) preg_match('/(\d{2,3})\s*[cс]м/u', $title, $m) => (int) $m[1],
+            (bool) preg_match('/(\d{3,4})\s*мм/u', $title, $m) => (int) round($m[1] / 10),
+            (bool) preg_match('/(?<![\d.,])(\d(?:[.,]\d)?)\s*м(?![а-ям])/u', $title, $m) => (int) round((float) str_replace(',', '.', $m[1]) * 100),
+            default => null,
+        };
+
+        return match (true) {
+            $cm === null => null,
+            $cm <= 50 => 'До 50 см',
+            $cm <= 80 => '60–80 см',
+            $cm <= 120 => '90–120 см',
+            $cm <= 150 => '150 см',
+            default => '200 см и длиннее',
+        };
+    }
 
     public const GAS_HOSES = 'gazovye-shlangi';
 

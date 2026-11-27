@@ -155,12 +155,17 @@ class SortBoilerAutomationCommandTest extends TestCase
         $boilerGroup = $card('Группа безопасности котла KSG mini 50 кВт с изоляцией, Afriso', $safetyGroups);
         $trv = $card('Клапан регулирующий проходной седельный TRV-25-10', $safetySection);
         $sfa = $card('Sanicubic 2 Classic', $safetySection);
+        $flex = $section('gibkaya-podvodka-dlya-vody');
+        $flexSus = $card('Подводка гибкая, SUS, гайка 3/4" - штуцер 3/4" 80см AV Engineering', $flex);
+        $flexNeedle = $card('Подводка гибкая, Nylon, иголка м10 короткая - гайка 1/2" 120 см AV Engineering', $flex);
+        $flexMetres = $card('Тифлос Шланг водопроводный гибкий G1/2″ ВР–G1/2″ ВР, 1,0 м', $flex);
+        $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=12')
+            ->expectsOutputToContain('metric.boiler_automation.moved=13')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -374,6 +379,18 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Балансировочные и регулирующие клапаны', $value('Тип', $trv));
         $this->assertSame('Ду 25 (1")', $value('Диаметр (Ду)', $trv));
         $this->assertSame('Канализационные насосные установки (SFA)', $value('Тип', $sfa));
+        $this->assertSame('Универсальная (резьба — резьба)', $value('Назначение', $flexSus));
+        $this->assertSame('Гайка — штуцер (ВР–НР)', $value('Присоединение', $flexSus));
+        $this->assertSame('3/4"', $value('Резьба', $flexSus));
+        $this->assertSame('Нержавеющая сталь', $value('Оплётка', $flexSus));
+        $this->assertSame('60–80 см', $value('Длина', $flexSus));
+        $this->assertSame('Для смесителей (иголка М10)', $value('Назначение', $flexNeedle));
+        $this->assertSame('Иголка М10 — гайка', $value('Присоединение', $flexNeedle));
+        $this->assertSame('Нейлон', $value('Оплётка', $flexNeedle));
+        $this->assertSame('90–120 см', $value('Длина', $flexNeedle));
+        $this->assertSame('Гайка — гайка (ВР–ВР)', $value('Присоединение', $flexMetres));
+        $this->assertSame('90–120 см', $value('Длина', $flexMetres));
+        $this->assertSame($hoses->id, $flexGas->fresh()->category_id);
         $this->assertNull($value('Питание', $pstg));
         $this->assertNull($value('Питание', $cv));
         $this->assertSame(['Для твердотопливных котлов', 'Для котлов с автоподачей (пеллеты, уголь)', 'Для газовых котлов'], DB::table('attribute_options')
