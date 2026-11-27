@@ -274,6 +274,9 @@ final class BoilerAutomationGroups
                 'Для котла мощностью' => [fn (string $title) => self::fanBoilerPower($title), self::FAN_BOILER_POWERS],
             ],
             ...$pumps,
+            self::HUMIDIFIERS => [
+                'Тип' => [self::HUMIDIFIER_TYPES, array_values(array_unique(self::HUMIDIFIER_TYPES))],
+            ],
             self::HEATING_MATS => [
                 'Площадь обогрева' => [fn (string $title) => self::matSpec($title)[0], self::MAT_AREAS],
                 'Удельная мощность' => [fn (string $title) => self::matSpec($title)[1], ['150 Вт/м²', '160 Вт/м²', '180 Вт/м²', '200 Вт/м²']],
@@ -2441,6 +2444,23 @@ final class BoilerAutomationGroups
 
         return [$bucket, in_array($density, [150, 160, 180, 200], true) ? $density.' Вт/м²' : null];
     }
+
+    public const HUMIDIFIERS = 'uvlazhniteli-vozdukha';
+
+    /**
+     * Title pattern => «Тип» inside «Увлажнители воздуха», in filter order; the first match wins. Cards named by the model
+     * only go by the series: Electrolux EHU / Ballu UHB / Boneco U humidifiers, Boneco H hybrids (humidifier + purifier),
+     * Ballu AP purifiers, Electrolux EDH / EDM / EDL dehumidifiers.
+     */
+    public const HUMIDIFIER_TYPES = [
+        '/фильтр для очистки воды/u' => 'Фильтры для питьевой воды',
+        '/смола|calcoff/u' => 'Расходники и аксессуары',
+        '/приточн/u' => 'Приточные очистители (бризеры)',
+        '/осушитель|electrolux ed[hml]-/u' => 'Осушители воздуха',
+        '/^boneco h\d/u' => 'Климатические комплексы (увлажнение и очистка)',
+        '/очиститель|^ballu ap-/u' => 'Очистители воздуха',
+        '/увлажнитель|ehu-|uhb-|^boneco u\d/u' => 'Увлажнители воздуха',
+    ];
 
     public const GAS_HOSES = 'gazovye-shlangi';
 

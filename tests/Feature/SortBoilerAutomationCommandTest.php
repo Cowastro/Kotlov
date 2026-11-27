@@ -276,6 +276,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $heatMats = $section('nagrevatelynye-maty');
         $okeMat = $card('Мат нагревательный "OneKeyElectro" OKE-1050-7,00', $heatMats);
         $meyerMat = $card('Нагревательный мат Grand Meyer THM200-015', $heatMats);
+        $humidifiers = $section('uvlazhniteli-vozdukha');
+        $ehu = $card('Electrolux EHU-5115D', $humidifiers);
+        $boneco = $card('Boneco H400', $humidifiers);
+        $dehumidifier = $card('Electrolux EDL-20L', $humidifiers);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -548,6 +552,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Увлажнители воздуха', $value('Тип', $ehu));
+        $this->assertSame('Климатические комплексы (увлажнение и очистка)', $value('Тип', $boneco));
+        $this->assertSame('Осушители воздуха', $value('Тип', $dehumidifier));
         $this->assertSame('6–8 м²', $value('Площадь обогрева', $okeMat));
         $this->assertSame('150 Вт/м²', $value('Удельная мощность', $okeMat));
         $this->assertSame('1,5–2 м²', $value('Площадь обогрева', $meyerMat));
