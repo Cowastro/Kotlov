@@ -212,6 +212,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $cooper = $card('Дверь стеклянная для бани Cooper PRO 190×81,5, бронза', $doors);
         $fireway = $card('Дверь для бани стеклянная Fireway 1800×700 графит матовый', $doors);
         $doorwood = $card('ДВЕРЬ "ТЕПЛАЯ НОЧЬ" БРОНЗА МАТОВАЯ 190 х 60', $doors);
+        $insulation = $section('teploizolyatsiya-dlya-trub');
+        $foamTube = $card('Трубка теплоизоляционная Energoflex Super Protect 28/9 2 м красная', $insulation);
+        $woolShell = $card('Цилиндр теплоизоляционный Ц100/А-1200.60.40 Winpipe', $insulation);
+        $tape = $card('Лента армированная самоклеящаяся Energopro 48 мм х 25 м (красная) С', $insulation);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -484,6 +488,15 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Трубки из вспененного полиэтилена', $value('Тип', $foamTube));
+        $this->assertSame('20–28 мм', $value('Диаметр трубы', $foamTube));
+        $this->assertSame('9 мм', $value('Толщина изоляции', $foamTube));
+        $this->assertSame('Красная', $value('Цвет', $foamTube));
+        $this->assertSame('Цилиндры из минеральной ваты', $value('Тип', $woolShell));
+        $this->assertSame('45–64 мм', $value('Диаметр трубы', $woolShell));
+        $this->assertSame('40 мм', $value('Толщина изоляции', $woolShell));
+        $this->assertSame('Ленты и аксессуары', $value('Тип', $tape));
+        $this->assertNull($value('Цвет', $tape));
         $this->assertSame('Бронза', $value('Цвет стекла', $cooper));
         $this->assertSame('190 см', $value('Высота', $cooper));
         $this->assertSame('80 см', $value('Ширина', $cooper));
