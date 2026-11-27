@@ -163,9 +163,19 @@ class OrderOneCStockSourceTest extends TestCase
         $schema = $instance->getSchema($instance->getMountedActionSchemaName());
         $this->assertSame('Свободно: 0 шт.', $schema->getComponent('review_own_stock')->getState());
         $this->assertStringContainsString('21 шт.', $schema->getComponent('review_moscow_stock')->getState());
-        $page->assertSet('mountedActions.0.data.request_reserve_now', false);
+        $this->assertStringContainsString('ЭкоКамин, склад Москва', (string) $action->getModalDescription());
+        $page->assertSet('mountedActions.0.data.fulfillment_route', 'supplier_purchase')
+            ->assertSet('mountedActions.0.data.supplier_id', $supplier->id)
+            ->assertSet('mountedActions.0.data.availability_status', 'clarifying')
+            ->assertSet('mountedActions.0.data.request_reserve_now', false);
         $page->call('unmountAction');
         $this->assertSame('own_stock', $item->fresh()->fulfillment_route);
+
+        $moscow = $item->product->ecokaminMoscowStock;
+        $moscow->update(['last_synced_at' => now()->subDays(15)]);
+        Livewire::test(ViewOrder::class, ['record' => $item->order_id])
+            ->call('reviewOwnStockFulfillment')
+            ->assertSet('mountedActions.0.data.fulfillment_route', 'own_stock');
 
         $item->update(['fulfillment_availability_status' => 'reserved']);
         Livewire::test(ViewOrder::class, ['record' => $item->order_id])->assertDontSee('Проверить исполнение');
