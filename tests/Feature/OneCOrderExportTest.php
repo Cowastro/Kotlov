@@ -597,11 +597,10 @@ class OneCOrderExportTest extends TestCase
         $this->assertSame('shipped', $order->fresh()->status);
     }
 
-    public function test_external_carrier_delivery_of_an_order_in_1c_is_not_moved_by_hand(): void
+    public function test_delivery_of_an_order_in_1c_is_not_moved_by_hand(): void
     {
         $workflow = app(OrderWorkflow::class);
-        $inOneC = $this->order(['status' => 'processing', 'delivery_type' => 'evropochta',
-            'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000770', 'onec_order_number' => 'МПУТ-000770',
+        $inOneC = $this->order(['status' => 'processing', 'onec_order_guid' => 'dddddddd-0000-0000-0000-000000000770', 'onec_order_number' => 'МПУТ-000770',
             'onec_exported_at' => now(), 'onec_posted' => true]);
         $this->assertNull($workflow->step($inOneC), 'no «Передать в доставку»');
         $this->assertNull($workflow->step($inOneC->forceFill(['status' => 'shipped'])), 'no «Отметить доставленным»');
@@ -609,7 +608,7 @@ class OneCOrderExportTest extends TestCase
             $workflow->advance($inOneC->fresh(), $this->admin);
             $this->fail('a 1C order is not moved to delivery by hand');
         } catch (DomainException $e) {
-            $this->assertStringContainsString('по данным 1С и перевозчика', $e->getMessage());
+            $this->assertStringContainsString('ведёт 1С', $e->getMessage());
         }
         $this->assertSame('processing', $inOneC->fresh()->status);
 
