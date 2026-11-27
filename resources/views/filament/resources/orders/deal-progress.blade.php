@@ -11,6 +11,7 @@
     $overdue = $active && $order->deal_control_at?->isPast();
     $today = $active && $order->deal_control_at?->timezone('Europe/Minsk')->isToday();
     $isTable ??= false;
+    $isAttention ??= false;
     $canSelectStage = $isTable && $active && ! \App\Services\Orders\OrderWorkflow::managedBy1c($order);
     $controlLabel = $order->dealControlLabel();
     if (! $isTable && $active && ! $order->deal_control_at) {
@@ -20,12 +21,15 @@
     $preparingDelivery = ($nextAction ?? null)?->getName() === 'prepareOrderDelivery';
 @endphp
 <section class="order-deal {{ $isTable ? 'order-deal--compact' : 'order-deal--full' }}"
-    wire:key="order-deal-layout-v4-{{ $order->getKey() }}-{{ $isTable ? 'table' : 'card' }}-{{ $order->effectiveDealStage() }}"
-    style="display:block;flex:none;{{ $isTable ? 'width:384px;min-width:384px;max-width:384px;' : 'width:100%;min-width:0;' }}">
+    wire:key="order-deal-layout-v4-{{ $order->getKey() }}-{{ $isAttention ? 'attention' : ($isTable ? 'table' : 'card') }}-{{ $order->effectiveDealStage() }}"
+    style="display:block;flex:none;{{ $isTable && ! $isAttention ? 'width:384px;min-width:384px;max-width:384px;' : 'width:100%;min-width:0;' }}">
     <div class="order-deal__heading">
         <strong title="Исполнение заказа · {{ \App\Models\Order::STATUSES[$order->status] ?? $order->status }}">{{ $order->status === 'cancelled' ? 'Закрыт с причиной' : $stages[$order->effectiveDealStage()] }}</strong>
-        <span>{{ $currentIndex + 1 }} / {{ count($stages) }}</span>
+        @unless ($isAttention)
+            <span>{{ $currentIndex + 1 }} / {{ count($stages) }}</span>
+        @endunless
     </div>
+    @unless ($isAttention)
     <div class="order-deal__track" aria-label="Этапы сделки"
         style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));width:100%;gap:4px;">
         @foreach ($stages as $key => $label)
@@ -60,6 +64,7 @@
             </button>
         @endforeach
     </div>
+    @endunless
     <div class="order-deal__control {{ $overdue ? 'is-overdue' : ($today ? 'is-today' : '') }}">
         <span>{{ $controlLabel }}</span>
         @if ($active)
@@ -163,16 +168,20 @@
             <span title="Ответственный менеджер">{{ $order->manager?->name ?: ($order->assigned_to ?: 'Без ответственного') }}</span>
             <span class="order-deal__fulfillment-status">{{ \App\Models\Order::STATUSES[$order->status] ?? $order->status }}</span>
         @endif
-        <span title="Позиции с зафиксированным решением менеджера; остаток поставщика показывается отдельно">Проверено менеджером {{ $order->items->whereNotNull('fulfillment_confirmed_at')->count() }}/{{ $order->items->count() }}</span>
+        @unless ($isAttention)
+            <span title="Позиции с зафиксированным решением менеджера; остаток поставщика показывается отдельно">Проверено менеджером {{ $order->items->whereNotNull('fulfillment_confirmed_at')->count() }}/{{ $order->items->count() }}</span>
+        @endunless
         @if ($isTable)
             <span @class(['order-payment-confirmed' => $order->payment_status === 'paid'])>{{ $order->payment_status === 'paid' ? '✓ Оплачен' : $order->paymentStatusLabel() }}</span>
         @endif
-        @if ($order->managementSummary()['problem_count'] > 0)
+        @if (! $isAttention && $order->managementSummary()['problem_count'] > 0)
             <span class="order-control-indicator">Проблем: {{ $order->managementSummary()['problem_count'] }}</span>
         @endif
     </div>
     @if (! $isTable && $order->deal_stage_changed_at)
         <div class="order-deal__changed">Последняя отметка менеджера {{ $order->deal_stage_changed_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}. Все изменения — в истории этапов и действий.</div>
     @endif
-    @include('filament.resources.orders.review-status', ['order' => $order])
+    @unless ($isAttention)
+        @include('filament.resources.orders.review-status', ['order' => $order])
+    @endunless
 </section>

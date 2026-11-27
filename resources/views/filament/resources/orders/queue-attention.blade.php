@@ -13,7 +13,17 @@
             @if (! empty($reason['items']))
                 <ul class="grid gap-1">
                     @foreach ($reason['items'] as $item)
-                        <li><a href="{{ $item['url'] }}" class="underline" data-order-attention-item>{{ $item['label'] }}</a></li>
+                        <li>
+                            <a href="{{ $item['url'] }}" class="block truncate underline" title="{{ $item['label'] }}" data-order-attention-item>{{ $item['label'] }}</a>
+                            <details class="order-cell-details">
+                                <summary title="Показать источник остатка">{{ $item['balance'] }}</summary>
+                                <div class="order-cell-details__body" data-order-attention-details>
+                                    @foreach ($item['stock'] as $moment => $stock)
+                                        <div>{{ $moment }}: {{ $stock['quantity'] }} · {{ $stock['source'] }}</div>
+                                    @endforeach
+                                </div>
+                            </details>
+                        </li>
                     @endforeach
                 </ul>
             @endif

@@ -952,9 +952,10 @@ class Order extends Model
             'needs_attention' => $query
                 ->operationallyActive()
                 ->where(function (Builder $attention): void {
-                    $ignored = config('onec.order_queue_enabled', false)
-                        ? ['needs_attention' => true]
-                        : ['needs_attention' => true, 'sync_problem' => true];
+                    $ignored = ['needs_attention' => true, 'low_margin' => true, 'negative_margin' => true];
+                    if (! config('onec.order_queue_enabled', false)) {
+                        $ignored['sync_problem'] = true;
+                    }
 
                     foreach (array_keys(array_diff_key(self::OPERATIONAL_PROBLEMS, $ignored)) as $problem) {
                         $attention->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem($problem));
@@ -996,16 +997,6 @@ class Order extends Model
         }
         if ($supply['missing_price_count'] > 0) {
             $problems->push(['code' => 'missing_price', 'severity' => 'critical', 'label' => 'Нет входной цены: '.$supply['missing_price_count']]);
-        }
-        if ($supply['negative_margin_count'] > 0) {
-            $problems->push(['code' => 'negative_margin', 'severity' => 'critical', 'label' => 'Убыточных позиций: '.$supply['negative_margin_count']]);
-        }
-        if ($supply['low_margin_count'] > 0) {
-            $problems->push([
-                'code' => 'low_margin',
-                'severity' => 'warning',
-                'label' => 'Маржа ниже '.number_format($supply['minimum_margin_percent'], 0).'%: '.$supply['low_margin_count'],
-            ]);
         }
         if (($supply['unknown_availability_count'] ?? 0) > 0) {
             $problems->push(['code' => 'availability_unknown', 'severity' => 'warning', 'label' => 'Наличие требует уточнения: '.$supply['unknown_availability_count']]);

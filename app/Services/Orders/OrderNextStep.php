@@ -67,7 +67,7 @@ class OrderNextStep
     }
 
     /** @return list<array{label: string, action: string, url?: string, link?: string}> */
-    public function queueWaitReasons(Order $order): array
+    public function queueWaitReasons(Order $order, bool $includeLabel = true): array
     {
         $reasons = OrderCarrierAttention::reasons($order);
         $task = $order->latestOnecOrderTask;
@@ -88,7 +88,7 @@ class OrderNextStep
             ];
         }
 
-        if ($order->delivery_type === 'evropochta' && preg_match('/^BY\d{12}$/D', (string) $order->evropochta_tracking_number)) {
+        if ($includeLabel && $order->delivery_type === 'evropochta' && preg_match('/^BY\d{12}$/D', (string) $order->evropochta_tracking_number)) {
             $status = app(Evropochta::class)->labelStatus($order->evropochta_tracking_number, 'thermal');
             if ($status !== Evropochta::LABEL_READY) {
                 $reasons[] = [
@@ -109,13 +109,14 @@ class OrderNextStep
         return $reasons;
     }
 
-    /** @return list<array{label: string, action: string, url?: string, link?: string, items?: list<array{label: string, url: string}>}> */
+    /** @return list<array{label: string, action: string, url?: string, link?: string, items?: list<array<string, mixed>>}> */
     public function queueAttentionReasons(Order $order): array
     {
-        $reasons = $this->queueWaitReasons($order);
+        $reasons = $this->queueWaitReasons($order, includeLabel: false);
         $orderUrl = OrderResource::getUrl('view', ['record' => $order]);
         $summary = $order->managementSummary();
         $problems = $summary['problems'];
+        $itemDetails = [];
         $mixedItems = $order->items->whereNotNull('supply_captured_at')->whereNotNull('supply_supplier_id');
         if ($mixedItems->pluck('supply_supplier_id')->unique()->count() > 1) {
             $problems = $problems->concat([['code' => 'mixed_suppliers', 'label' => 'Несколько поставщиков']]);
@@ -129,7 +130,6 @@ class OrderNextStep
             $action = match ($problem['code']) {
                 'missing_supplier' => 'Назначить поставщика по позиции',
                 'missing_price' => 'Уточнить входную цену по позиции',
-                'negative_margin', 'low_margin' => 'Сверить входную цену и цену продажи',
                 'no_stock', 'availability_unknown' => $order->status === 'shipped'
                     ? 'Сверить остаток и источник отгрузки'
                     : 'Подтвердить остаток или выбрать другой источник',
@@ -145,10 +145,10 @@ class OrderNextStep
                     ->loadMissing('items:id,supplier_order_request_id,order_item_id')->pluck('items')->flatten(1)->pluck('order_item_id')->all(),
                 default => $summary['problem_item_ids'][$problem['code']] ?? [],
             };
-            $items = $order->items->whereIn('id', $itemIds)->map(fn (OrderItem $item): array => [
-                'label' => $item->product_name.($item->product_sku ? ' · '.$item->product_sku : ''),
-                'url' => $orderUrl.'#'.$item->adminAnchor(),
-            ])->values()->all();
+            $items = $order->items->whereIn('id', $itemIds)
+                ->map(function (OrderItem $item) use (&$itemDetails, $orderUrl): array {
+                    return $itemDetails[$item->id] ??= $this->attentionItemDetails($item, $orderUrl);
+                })->values()->all();
             $reasons[] = ['label' => $problem['label'], 'action' => $action, 'items' => $items];
         }
 
@@ -158,6 +158,48 @@ class OrderNextStep
             'url' => $orderUrl,
             'link' => 'Открыть заказ',
         ]];
+    }
+
+    private function attentionItemDetails(OrderItem $item, string $orderUrl): array
+    {
+        $supply = $item->supplyContext();
+        $checked = $item->currentAvailabilityForDisplay();
+        $supplyStock = $this->attentionStockDetails($supply);
+        $checkedStock = $checked === [] ? null : $this->attentionStockDetails($checked);
+        $stock = $checkedStock ? ['Последняя проверка' => $checkedStock] : [];
+        if ($checkedStock === null || ($supply['is_snapshot'] && $supplyStock !== $checkedStock)) {
+            $stock[$supply['is_snapshot'] ? 'При заказе' : 'По данным источника'] = $supplyStock;
+        }
+
+        return [
+            'label' => $item->product_name.($item->product_sku ? ' · '.$item->product_sku : ''),
+            'url' => $orderUrl.'#'.$item->adminAnchor(),
+            'stock' => $stock,
+            'balance' => ($checkedStock ?? $supplyStock)['short'],
+        ];
+    }
+
+    /** @return array{quantity: string, source: string, short: string} */
+    private function attentionStockDetails(array $data): array
+    {
+        $quantity = $data['stock_quantity'] ?? null;
+        if ($quantity === null) {
+            $balance = $data['stock_label'] ?? 'Остаток неизвестен';
+            $short = 'Уточнить';
+        } else {
+            $balance = rtrim(rtrim(number_format((float) $quantity, 3, ',', ' '), '0'), ',').' шт.';
+            $short = $balance;
+            if ($quantity > 0 && ($data['is_available'] ?? null) !== true) {
+                $balance .= ' · наличие не подтверждено';
+                $short = 'Уточнить';
+            }
+        }
+
+        return [
+            'quantity' => $balance,
+            'source' => $data['stock_source_label'] ?? $data['source_label'] ?? $data['supplier_name'] ?? 'Источник не указан',
+            'short' => $short,
+        ];
     }
 
     /** @return array{label: string, url: string, count: int}|null */
