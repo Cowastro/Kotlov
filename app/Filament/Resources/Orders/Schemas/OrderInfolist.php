@@ -144,7 +144,7 @@ class OrderInfolist
                                 : ($record->assigned_to ?? null)),
                     ]),
 
-                Section::make('1С: что сделано и что дальше')
+                Section::make('Состояние в 1С')
                     ->icon('heroicon-o-arrows-right-left')
                     ->columnSpanFull()
                     ->compact()
@@ -168,6 +168,10 @@ class OrderInfolist
                                     'labelAction' => $livewire->nextStepLabelAction(),
                                     'supplierItem' => $livewire->supplierItemToAssign(),
                                     'supplierReply' => $livewire->pendingSupplierReply(),
+                                    'onecHint' => (bool) auth()->user()?->isManager() && app(OneCItemCreator::class)->source() !== null
+                                        && $livewire->getRecord()->status !== 'cancelled'
+                                        ? app(OneCOrderJourney::class)->next($livewire->getRecord())
+                                        : null,
                                 ]),
                         ]),
 
