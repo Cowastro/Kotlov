@@ -33,9 +33,11 @@
         </x-filament::badge>
     @elseif ($method === 'vam_express')
         @forelse ($order->vamExpressShipments as $shipment)
-            @php($vamUrl = filled($shipment->remote_id) ? $shipment->portalUrl() : null)
+            @php($vamUrl = \App\Filament\Resources\VamExpress\VamExpressShipmentResource::canAccess()
+                ? \App\Filament\Resources\VamExpress\VamExpressShipmentResource::getUrl('view', ['record' => $shipment])
+                : null)
             <x-filament::badge size="sm" :color="\App\Support\Shipping\VamExpressStatus::color($shipment->carrier_status)"
-                :tag="$vamUrl ? 'a' : 'span'" :href="$vamUrl" target="_blank"
+                :tag="$vamUrl ? 'a' : 'span'" :href="$vamUrl"
                 :icon="$vamUrl ? 'heroicon-o-arrow-top-right-on-square' : null"
                 :title="$vamUrl ? 'Открыть отправление ВАМ Экспресс' : null">
                 @if ($order->vamExpressShipments->count() > 1 && filled($shipment->display_id))

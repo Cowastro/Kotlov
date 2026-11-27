@@ -321,9 +321,16 @@ class OrderDealControlTest extends TestCase
             ->assertSee('search=BY00000012345')
             ->assertSee('tableAction=trackEvropochtaShipment')
             ->assertSee('tableActionRecord='.$euro->id)
-            ->assertSee('https://vamexpress.by/UserUI/TicketEdit.aspx?id=carrier-test')
+            ->assertSee('/admin/vam-express-shipments/'.$shipment->id)
+            ->assertDontSee('https://vamexpress.by/UserUI/TicketEdit.aspx?id=carrier-test')
             ->assertDontSee('Не оформлено');
         $this->assertSame(3, substr_count($list->html(), 'data-order-delivery'));
+
+        $this->actingAs($this->manager())->get('/admin/vam-express-shipments/'.$shipment->id)
+            ->assertOk()
+            ->assertSee('Отправление ВАМ Экспресс VAM123')
+            ->assertSee($vam->number)
+            ->assertSee('В пути');
     }
 
     public function test_label_is_not_dispatch_and_dispatch_is_not_receipt(): void
