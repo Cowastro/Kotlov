@@ -57,6 +57,18 @@ class OrderItemAvailabilityDisplay
             : 'ЭкоКамин, Москва — наличие уточняется (последний остаток: '.$datedQuantity.')';
     }
 
+    public function ownStockLabel(OrderItem $item): string
+    {
+        $current = $this->current($item);
+        if (($current['stock_source'] ?? null) !== 'onec' || ($current['stock_quantity'] ?? null) === null) {
+            return 'Актуальный остаток уточняется';
+        }
+
+        $free = rtrim(rtrim(number_format((float) $current['stock_quantity'], 3, '.', ' '), '0'), '.');
+
+        return 'Свободно: '.$free.' шт.';
+    }
+
     public function ownStockShortage(OrderItem $item): ?string
     {
         if ($item->fulfillment_route !== 'own_stock' || ! $item->fulfillment_confirmed_at

@@ -263,7 +263,7 @@ class OrderInfolist
                                                 ->modalHeading(fn (OrderItem $record): string => 'Поставщик: '.$record->product_name)
                                                 ->modalDescription('Рекомендация из базы сохранится для сравнения. Здесь фиксируется фактический поставщик, наличие или резерв и решение менеджера.')
                                                 ->modalSubmitActionLabel('Подтвердить')
-                                                ->fillForm(function (OrderItem $record): array {
+                                                ->fillForm(function (OrderItem $record, array $arguments): array {
                                                     $recommendedRoute = $record->supplyContext()['status'];
                                                     $route = $record->fulfillment_route
                                                         ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase');
@@ -279,13 +279,23 @@ class OrderInfolist
                                                         'supplier_id' => $supplierId,
                                                         'purchase_price' => self::assignmentPrice($record, $route),
                                                         'availability_status' => $record->fulfillment_availability_status,
-                                                        'request_reserve_now' => true,
+                                                        'request_reserve_now' => ! ($arguments['reviewOwnStock'] ?? false),
                                                         'reservation_quantity' => $record->quantity,
                                                         'reservation_recipient' => $supplier?->contactEmailAddresses()[0] ?? null,
                                                         'note' => null,
                                                     ];
                                                 })
                                                 ->schema([
+                                                    \Filament\Schemas\Components\Grid::make(['default' => 1, 'sm' => 2])
+                                                        ->visible(fn (OrderItem $record): bool => $record->product?->ecokaminMoscowStock !== null)
+                                                        ->schema([
+                                                            TextEntry::make('review_own_stock')->label('Наш склад, 1С')
+                                                                ->state(fn (OrderItem $record): string => app(OrderItemAvailabilityDisplay::class)->ownStockLabel($record)),
+                                                            TextEntry::make('review_moscow_stock')->label('ЭкоКамин, Москва')
+                                                                ->state(fn (OrderItem $record): string => app(OrderItemAvailabilityDisplay::class)->moscowStockNote($record)
+                                                                    ?? 'Наличие уточняется')
+                                                                ->formatStateUsing(fn (string $state): string => \Illuminate\Support\Str::after($state, 'ЭкоКамин, Москва — ')),
+                                                        ]),
                                                     Select::make('fulfillment_route')
                                                         ->label('Как исполняем')
                                                         ->options(OrderItem::FULFILLMENT_ROUTES)

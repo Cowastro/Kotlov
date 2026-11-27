@@ -72,7 +72,7 @@
             @if (isset($ownStockReview))
                 <p><strong>{{ $ownStockReview['item']->product_name }}{{ $ownStockReview['item']->product_sku ? ' · '.$ownStockReview['item']->product_sku : '' }}</strong></p>
                 <p>{{ $ownStockReview['message'] }}</p>
-                <x-filament::button tag="a" size="sm" color="warning" :href="'#order-item-supplier-'.$ownStockReview['item']->id">
+                <x-filament::button type="button" size="sm" color="warning" wire:click="reviewOwnStockFulfillment">
                     Проверить исполнение
                 </x-filament::button>
             @endif
