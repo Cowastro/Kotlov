@@ -40,6 +40,49 @@ class OrderDealControlTest extends TestCase
         $this->assertFalse($order->canRequestCustomerReview());
     }
 
+    public function test_order_card_offers_the_current_step_and_the_existing_europochta_label(): void
+    {
+        config(['services.evropochta.token' => 'test-token']);
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $manager = $this->manager();
+        $order = $this->order();
+        $order->update(['delivery_type' => 'evropochta']);
+        $item = $order->items()->create([
+            'product_name' => 'Товар', 'price' => 100, 'quantity' => 1, 'total' => 100,
+        ]);
+        $card = fn () => Livewire::actingAs($manager)->test(ViewOrder::class, ['record' => $order->getRouteKey()]);
+
+        $card()->assertSeeHtml('data-order-next-action="confirmFulfillment"')
+            ->assertDontSee('Печать этикетки Европочты')
+            ->mountAction('confirmFulfillment')->assertActionMounted('confirmFulfillment');
+        $this->assertNull($item->fresh()->fulfillment_confirmed_at);
+
+        $item->update([
+            'fulfillment_confirmed_at' => now(), 'fulfillment_route' => 'own_stock',
+            'fulfillment_availability_status' => 'available',
+        ]);
+        $order->update(['status' => 'confirmed']);
+        $card()->assertSeeHtml('data-order-next-action="advanceWorkflow"');
+
+        $order->update(['status' => 'processing']);
+        $card()->assertSeeHtml('data-order-next-action="prepareEvropochtaShipment"')
+            ->assertDontSee('Печать этикетки Европочты');
+
+        $order->update(['evropochta_quote' => [
+            'store_id_finish' => 2,
+            'parcel' => ['store_id_start' => 1, 'weight' => 1, 'length' => 10, 'width' => 10, 'height' => 10],
+        ]]);
+        $card()->assertSeeHtml('data-order-next-action="createEvropochtaShipment"');
+
+        $order->forceFill(['evropochta_tracking_number' => '9999900000001'])->save();
+        $card()->assertSee('Печать этикетки Европочты')
+            ->assertSee(route('admin.orders.evropochta-label', ['order' => $order, 'format' => 'thermal']))
+            ->assertDontSeeHtml('data-order-next-action="createEvropochtaShipment"');
+        $this->assertSame('processing', $order->fresh()->status);
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
     public function test_pending_agent_transfer_does_not_offer_duplicate_execution(): void
     {
         $order = $this->order('confirmed');

@@ -97,6 +97,43 @@ class ViewOrder extends ViewRecord
         return Width::Full;
     }
 
+    public function nextStepAction(): ?Action
+    {
+        $order = $this->record;
+
+        if (! OrderResource::canEdit($order) || in_array($order->status, ['delivered', 'completed', 'cancelled'], true)) {
+            return null;
+        }
+
+        $candidates = match (true) {
+            $order->usesGuidedFulfillment() && $order->needsFulfillmentConfirmation() => ['confirmFulfillment', 'confirmItemFulfillment'],
+            $order->needsEvropochtaShipment() => ['createEvropochtaShipment', 'prepareEvropochtaShipment'],
+            $order->status === 'processing' && blank($order->onec_order_guid) => ['advanceWorkflow', 'onecOrder', 'prepareOrderDelivery'],
+            default => ['advanceWorkflow'],
+        };
+
+        foreach ($candidates as $name) {
+            $action = $this->cachedActions[$name] ?? null;
+
+            if ($action?->isVisible() && $action->isAuthorized() && ! $action->isDisabled()) {
+                return $action;
+            }
+        }
+
+        return null;
+    }
+
+    public function nextStepLabelAction(): ?Action
+    {
+        if ($this->record->status === 'cancelled') {
+            return null;
+        }
+
+        $action = $this->cachedActions['printEvropochtaLabel_thermal'] ?? null;
+
+        return $action?->isVisible() && $action->isAuthorized() ? $action : null;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -862,6 +899,7 @@ class ViewOrder extends ViewRecord
             ->authorize(fn (): bool => OrderResource::canEdit($this->record))
             ->disabled(fn (): bool => ! $this->record->needsFulfillmentConfirmation())
             ->visible(fn (): bool => $this->record->needsFulfillmentConfirmation() && in_array($this->record->status, ['new', 'checking', 'confirmed'], true))
+            ->requiresConfirmation()
             ->modalHeading('План исполнения всего заказа')->modalWidth(Width::FiveExtraLarge)
             ->modalDescription('Все позиции, включая ожидаемые, останутся в заказе. Сначала подтвердите заказ, затем передайте в исполнение и согласуйте доставку. Оформление в 1С выполняется отдельным шагом после подготовки доставки.')
             ->modalSubmitActionLabel('Принять заказ')

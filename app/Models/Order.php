@@ -406,7 +406,9 @@ class Order extends Model
         }
 
         if ($this->usesGuidedFulfillment() && $this->needsFulfillmentConfirmation()) {
-            return 'Нажмите «Принять весь заказ»: проверьте доступное и ожидаемое количество по всем позициям.';
+            return $this->status === 'processing'
+                ? 'Подтвердите исполнение позиций, по которым ещё нет решения.'
+                : 'Проверьте доступное и ожидаемое количество по всем позициям.';
         }
 
         if ($this->status === 'shipped' && $this->customerCarrierLabel()) {
@@ -422,7 +424,7 @@ class Order extends Model
         if ($this->needsEvropochtaShipment()) {
             $tariffStep = blank($this->evropochta_quote) ? 'Сначала подготовьте отправление и рассчитайте тариф. ' : '';
 
-            return $this->procurementStep().$tariffStep.'В меню «Европочта» оформите отправление и получите трек. Затем подтвердите «Подготовить доставку / самовывоз» и оформите заказ в 1С. Ярлык не означает фактическую отгрузку.';
+            return $this->procurementStep().$tariffStep.'После оформления отправления появятся трек-номер и ссылка на этикетку. Затем согласуйте доставку.';
         }
 
         if ($this->executionTransferPending()) {

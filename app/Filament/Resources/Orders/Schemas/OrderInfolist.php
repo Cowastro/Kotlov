@@ -163,7 +163,10 @@ class OrderInfolist
                         ->schema([
                             ViewEntry::make('deal_progress')->hiddenLabel()
                                 ->view('filament.resources.orders.deal-progress')
-                                ->viewData(['isTable' => false]),
+                                ->viewData(fn ($livewire): array => [
+                                    'nextAction' => $livewire->nextStepAction(),
+                                    'labelAction' => $livewire->nextStepLabelAction(),
+                                ]),
                         ]),
 
                     Section::make('Товары заказа')
