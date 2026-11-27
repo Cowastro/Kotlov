@@ -304,6 +304,10 @@ class SortBoilerAutomationCommandTest extends TestCase
         $builtInCabinet = $card('Шкаф коллекторный ШРВ-3 (700х120-180х648-711) WESTER', $cabinets);
         $outdoorCabinet = $card('Varmega VM35526 ШРНГ-6 17-18', $cabinets);
         $kanCabinet = $card('Шкаф встраиваемый Slim+ 750-850x850x110-160 KAN', $cabinets);
+        $mpPipes = $section('metalloplastikovye-truby');
+        $mpPipe = $card('Труба PE-Xb/AL/PE-Xb металлопластиковая 20х2,0 (бухта 100 м) GENERAL FITTINGS', $mpPipes);
+        $teceMpPipe = $card('Труба металлополимерная универсальная PE-Xc/AL/PE 20х3,4 (21х3,45) (отрезок 4 м) арт. 732020 TECEfleх', $mpPipes);
+        $mpSleeve = $card('Труба защитная гофрированная 25 Ду 25 (Дн 30) синяя (50 м)', $mpPipes);
         $flexGas = $card('Шланг гибкий гофрированный с присоединительными элементами Ру 0,005 МПа Dn 12-гайка/гайка (1/2") 1,0 м (для газа) ZURFLEX', $flex);
 
         $this->artisan('catalog:sort-boiler-automation')->expectsOutputToContain('metric.status=dry_run')->assertSuccessful();
@@ -576,6 +580,15 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Без покрытия (чёрные)', $value('Покрытие', $steelElbow));
         $this->assertSame('Ду 300', $value('Диаметр (Ду)', $steelCap));
         $this->assertSame('PE-Xa', $value('Материал', $pexXa));
+        $this->assertSame('Металлопластиковая труба', $value('Тип', $mpPipe));
+        $this->assertSame('20 мм', $value('Диаметр трубы', $mpPipe));
+        $this->assertSame('PE-Xb/AL/PE-Xb', $value('Материал', $mpPipe));
+        $this->assertSame('20 мм', $value('Диаметр трубы', $teceMpPipe));
+        $this->assertSame('PE-Xc/AL/PE', $value('Материал', $teceMpPipe));
+        $this->assertSame('Защитная гофротруба', $value('Тип', $mpSleeve));
+        $this->assertNull($value('Диаметр трубы', $mpSleeve));
+        $this->assertSame('25–26 мм', $value('Гофра под трубу', $mpSleeve));
+        $this->assertSame('Синяя', $value('Цвет гофры', $mpSleeve));
         $this->assertSame('Встраиваемый', $value('Установка', $builtInCabinet));
         $this->assertSame('ШР-3 (8–10 выходов)', $value('Типоразмер', $builtInCabinet));
         $this->assertSame('Наружный', $value('Установка', $outdoorCabinet));
