@@ -155,6 +155,9 @@ class SortBoilerAutomationCommandTest extends TestCase
         $boilerGroup = $card('Группа безопасности котла KSG mini 50 кВт с изоляцией, Afriso', $safetyGroups);
         $trv = $card('Клапан регулирующий проходной седельный TRV-25-10', $safetySection);
         $sfa = $card('Sanicubic 2 Classic', $safetySection);
+        $liftPumps = $section('kanalizatsionnye-nasosy-sukhoy-ustanovki');
+        $stoveFireplaces = $section('pechi-kaminy');
+        $stormTee = $card('Тройник ПП лив. канал. Ру 3 Ду 110х110х87* OSTENDORF', $sewer);
         $flex = $section('gibkaya-podvodka-dlya-vody');
         $flexSus = $card('Подводка гибкая, SUS, гайка 3/4" - штуцер 3/4" 80см AV Engineering', $flex);
         $flexNeedle = $card('Подводка гибкая, Nylon, иголка м10 короткая - гайка 1/2" 120 см AV Engineering', $flex);
@@ -178,7 +181,7 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame($regulators->id, $head->fresh()->category_id);
 
         $this->artisan('catalog:sort-boiler-automation', ['--apply' => true])
-            ->expectsOutputToContain('metric.boiler_automation.moved=13')
+            ->expectsOutputToContain('metric.boiler_automation.moved=16')
             ->assertSuccessful();
 
         $this->assertSame($radiator->id, $head->fresh()->category_id);
@@ -384,14 +387,22 @@ class SortBoilerAutomationCommandTest extends TestCase
         $this->assertSame('Приборы: термометры и часы', $value('Тип', $bathThermometer));
         $this->assertSame('Сетки и каменки для камней', $value('Тип', $stoneNet));
         $this->assertSame('Казаны, мангалы и коптильни', $value('Тип', $kazan));
-        $this->assertSame('Печи и каменки', $value('Тип', $fireStove));
+        $this->assertSame($stoveFireplaces->id, $fireStove->fresh()->category_id);
         $this->assertSame('Предохранительные клапаны', $value('Тип', $safetyValve));
         $this->assertSame('Ду 20 (3/4")', $value('Диаметр (Ду)', $safetyValve));
         $this->assertSame('Предохранительные клапаны', $value('Тип', $varmegaValve));
         $this->assertSame('Группы безопасности', $value('Тип', $boilerGroup));
         $this->assertSame('Балансировочные и регулирующие клапаны', $value('Тип', $trv));
         $this->assertSame('Ду 25 (1")', $value('Диаметр (Ду)', $trv));
-        $this->assertSame('Канализационные насосные установки (SFA)', $value('Тип', $sfa));
+        $this->assertSame($liftPumps->id, $sfa->fresh()->category_id);
+        $this->assertSame($outdoorSewer->id, $stormTee->fresh()->category_id);
+        $this->assertSame('Тройники', $value('Тип', $stormTee));
+        $this->assertSame(['Муфты, американки и переходники', 'Тройники', 'Отводы и колена'], DB::table('attribute_options')
+            ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Тип')
+            ->where('attributes.category_id', $pp->id)->orderBy('attribute_options.sort_order')->limit(3)->pluck('attribute_options.name')->all());
+        $this->assertSame('Внутренняя — внутренняя резьба', DB::table('attribute_options')
+            ->join('attributes', 'attributes.id', '=', 'attribute_options.attribute_id')->where('attributes.name', 'Присоединение')
+            ->where('attributes.category_id', $balls->id)->orderBy('attribute_options.sort_order')->value('attribute_options.name'));
         $this->assertSame('Универсальная (резьба — резьба)', $value('Назначение', $flexSus));
         $this->assertSame('Гайка — штуцер (ВР–НР)', $value('Присоединение', $flexSus));
         $this->assertSame('3/4"', $value('Резьба', $flexSus));

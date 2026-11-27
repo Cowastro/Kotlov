@@ -45,6 +45,12 @@ final class BoilerAutomationGroups
         '/^шланг душевой/u' => self::PLUMBING_PARTS,
         '/^master flash/u' => 'krovelnye-prohodki-master-flash',
         '/^лампа для бани/u' => 'abazhury-dlya-bani',
+        '/ливнев|лив\. канал|ливнесток/u' => self::OUTDOOR_SEWER,
+        '/^(sanicubic|sanifloor|sanidouche|sanivite|saniaccess)|sanialarm|^канализационная насосная установка|^шиберная задвижка .*sfa/u' => 'kanalizatsionnye-nasosy-sukhoy-ustanovki',
+        '/^(печь-камин|чугунная печь-камин|камин\s+этна)/u' => 'pechi-kaminy',
+        '/^(закрытая каменка|печь-каменка скала)/u' => 'drovianye-peci-bannye',
+        '/^(печь отопительная бв-|печь сибирь)/u' => 'peci-drovianye-otopitelnye',
+        '/^печь портативная горный алтай/u' => 'burzhuiki-pechi',
         '/^переходник varmega vmtf/u' => 'rezbovye-fitingi',
         '/^труба varmega pe-xa/u' => 'truby-iz-sshitogo-polietilena',
         '/^монтажный ключ varmega/u' => 'instrumenty-dlya-montazha',
@@ -326,13 +332,13 @@ final class BoilerAutomationGroups
                 'Кран для питьевой воды' => [['/пит\\.? ?вод|питьев/u' => 'С краном для питьевой воды'], ['С краном для питьевой воды']],
             ],
             self::BALL_VALVES => [
-                'Присоединение' => [self::BALL_JOINTS, array_values(array_unique(self::BALL_JOINTS))],
+                'Присоединение' => [self::BALL_JOINTS, self::BALL_JOINT_ORDER],
                 'Диаметр (Ду)' => [fn (string $title) => self::ballValveDn($title), array_map(fn (int $dn) => self::dnLabel($dn), self::BALL_DNS)],
                 'Ручка' => [self::BALL_HANDLES, array_values(array_unique(self::BALL_HANDLES))],
                 'Для газа' => [self::BALL_GAS, array_values(self::BALL_GAS)],
             ],
             self::PP_FITTINGS => [
-                'Тип' => [self::PP_TYPES, array_values(array_unique(self::PP_TYPES))],
+                'Тип' => [self::PP_TYPES, self::PP_ORDER],
                 'Диаметр' => [fn (string $title) => self::pipeDiameter($title, self::PP_DIAMETERS), array_map(fn (int $mm) => $mm.' мм', self::PP_DIAMETERS)],
                 'Соединение' => [self::PP_JOINTS, array_values(array_unique(self::PP_JOINTS))],
                 'Цвет' => [self::PP_COLORS, array_values(self::PP_COLORS)],
@@ -827,7 +833,25 @@ final class BoilerAutomationGroups
 
     public const PP_FITTINGS = 'fitingi-dlya-polipropilenovykh-trub';
 
-    /** Title pattern => «Тип» inside «Фитинги для полипропиленовых труб», in filter order; the first match wins. */
+    /** «Тип» options of «Фитинги для полипропиленовых труб», the most asked-for first. */
+    public const PP_ORDER = [
+        'Муфты, американки и переходники',
+        'Тройники',
+        'Отводы и колена',
+        'Заглушки',
+        'Обводы',
+        'Крестовины',
+        'Краны и вентили',
+        'Компенсаторы',
+        'Фильтры',
+        'Фланцы и бурты',
+        'Опоры и крепления',
+        'Коллекторы и узлы',
+        'Сёдла',
+        'Инструмент и прочее',
+    ];
+
+    /** Title pattern => «Тип» inside «Фитинги для полипропиленовых труб»; the first match wins. */
     public const PP_TYPES = [
         '/кран|вентиль|клапан/u' => 'Краны и вентили',
         '/^(?:п\/п )?тройник|тройной/u' => 'Тройники',
@@ -879,7 +903,18 @@ final class BoilerAutomationGroups
 
     public const BALL_VALVES = 'sharovye-krany';
 
-    /** Title pattern => «Присоединение» of a ball valve, in filter order; the first match wins. */
+    /** «Присоединение» options of a ball valve, the household threads first. */
+    public const BALL_JOINT_ORDER = [
+        'Внутренняя — внутренняя резьба',
+        'Внутренняя — наружная резьба',
+        'Наружная — наружная резьба',
+        'С американкой, гайкой или сгоном',
+        'Под пластиковую или пресс-трубу',
+        'Фланцевое',
+        'Под приварку',
+    ];
+
+    /** Title pattern => «Присоединение» of a ball valve; the first match wins. */
     public const BALL_JOINTS = [
         '/фланц|ф\/ф|кшцф|кшшс/u' => 'Фланцевое',
         '/приварк|кшцп|с\/с/u' => 'Под приварку',
